@@ -304,3 +304,44 @@ function startOfWeek(value: Date): Date {
   next.setDate(next.getDate() - offset)
   return next
 }
+
+export function formFromAutomation(
+  item: import('./protocol.js').AutomationViewModel,
+  workspaces: readonly WorkspaceOption[] = [],
+  defaultModel?: ModelOption | null,
+): AutomationFormState {
+  const base = defaultFormState(new Date(), workspaces, defaultModel)
+  const schedule = item.schedule
+  const modelKey = item.provider && item.model ? `${item.provider}::${item.model}` : 'default'
+  const common = {
+    ...base,
+    name: item.name,
+    prompt: item.prompt,
+    permission: item.permission,
+    workspaceId: item.workspaceId ?? base.workspaceId,
+    modelKey,
+  }
+  switch (schedule.kind) {
+    case 'once':
+      return { ...common, scheduleKind: 'once', onceAt: toLocalInput(schedule.at) }
+    case 'interval':
+      return { ...common, scheduleKind: 'interval', everyMinutes: String(schedule.everyMinutes) }
+    case 'hourly':
+      return { ...common, scheduleKind: 'hourly', hourlyMinute: String(schedule.minute).padStart(2, '0') }
+    case 'daily':
+      return { ...common, scheduleKind: 'daily', time: schedule.time }
+    case 'weekly':
+      return { ...common, scheduleKind: 'weekly', time: schedule.time, weekdays: [...schedule.weekdays] }
+    case 'monthly':
+      return { ...common, scheduleKind: 'monthly', time: schedule.time, monthDay: String(schedule.day) }
+    case 'custom':
+      return { ...common, scheduleKind: 'custom', time: schedule.time, customDays: String(schedule.everyDays) }
+  }
+}
+
+function toLocalInput(iso: string): string {
+  const value = new Date(iso)
+  if (Number.isNaN(value.getTime())) return localDateTimeValue()
+  const offset = value.getTimezoneOffset() * 60_000
+  return new Date(value.getTime() - offset).toISOString().slice(0, 16)
+}

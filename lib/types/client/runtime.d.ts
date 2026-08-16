@@ -15,6 +15,7 @@ export interface AutomationRuntime {
     refresh(): Promise<void>;
     createAutomation(input: CreateAutomationInput): Promise<void>;
     mutateAutomation(automationId: string, mutation: MutateRequest['mutation']): Promise<void>;
+    updateAutomation(automationId: string, input: CreateAutomationInput): Promise<void>;
     runNow(automationId: string): Promise<void>;
     markRunRead(runId: string): Promise<void>;
 }

@@ -50,3 +50,4 @@ export interface HistoryGroup {
     readonly items: readonly import('./protocol.js').AutomationRunViewModel[];
 }
 export declare function groupHistory(runs: readonly import('./protocol.js').AutomationRunViewModel[], range: HistoryRange, now: Date, t: Translate): HistoryGroup[];
+export declare function formFromAutomation(item: import('./protocol.js').AutomationViewModel, workspaces?: readonly WorkspaceOption[], defaultModel?: ModelOption | null): AutomationFormState;

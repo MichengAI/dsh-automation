@@ -6,6 +6,7 @@ import type {
   MarkReadRequest,
   MutateRequest,
   RunNowRequest,
+  UpdateRequest,
 } from './protocol.js'
 import { unwrapRpcResult } from './protocol.js'
 
@@ -28,6 +29,7 @@ export interface AutomationRuntime {
   refresh(): Promise<void>
   createAutomation(input: CreateAutomationInput): Promise<void>
   mutateAutomation(automationId: string, mutation: MutateRequest['mutation']): Promise<void>
+  updateAutomation(automationId: string, input: CreateAutomationInput): Promise<void>
   runNow(automationId: string): Promise<void>
   markRunRead(runId: string): Promise<void>
 }
@@ -98,6 +100,10 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     async mutateAutomation(automationId, mutation) {
       const payload: MutateRequest = { sessionId: 'settings', automationId, mutation }
       await mutateThenRefresh('mutate', payload)
+    },
+    async updateAutomation(automationId, input) {
+      const payload: UpdateRequest = { sessionId: 'settings', automationId, input }
+      await mutateThenRefresh('update', payload)
     },
     async runNow(automationId) {
       const payload: RunNowRequest = { sessionId: 'settings', automationId }

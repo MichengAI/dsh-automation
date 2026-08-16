@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule } from '../src/client/helpers.ts'
+import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation } from '../src/client/helpers.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
 import { createAutomationRuntime } from '../src/client/runtime.ts'
 
@@ -65,4 +65,41 @@ test('RPC 结果必须失败关闭，运行时会在变更后刷新快照', asyn
   })
   assert.deepEqual(calls, ['create', 'snapshot'])
   assert.equal(runtime.source.getSnapshot().phase, 'ready')
+  await runtime.updateAutomation('a1', {
+    name: 'n2',
+    prompt: 'p2',
+    schedule: { kind: 'daily', time: '10:00' },
+    timeZone: 'Asia/Shanghai',
+    permission: 'workspace-write',
+    workspaceId: 'ws_1',
+    cwd: 'D:\\work\\demo',
+  })
+  assert.deepEqual(calls, ['create', 'snapshot', 'update', 'snapshot'])
+})
+
+test('编辑表单会从已有任务还原名称、计划和模型', () => {
+  const form = formFromAutomation({
+    id: 'a1',
+    revision: 2,
+    name: '每日回归',
+    prompt: '检查失败用例',
+    status: 'active',
+    schedule: { kind: 'weekly', time: '08:30', weekdays: [1, 3, 5] },
+    scheduleSummary: '',
+    timeZone: 'Asia/Shanghai',
+    permission: 'workspace-write',
+    workspaceId: 'ws_1',
+    provider: 'deepseek',
+    model: 'v4',
+    createdAt: '2026-08-16T00:00:00.000Z',
+    updatedAt: '2026-08-16T00:00:00.000Z',
+  }, workspaces, { provider: 'openai', model: 'gpt', label: 'GPT' })
+  assert.equal(form.name, '每日回归')
+  assert.equal(form.prompt, '检查失败用例')
+  assert.equal(form.scheduleKind, 'weekly')
+  assert.equal(form.time, '08:30')
+  assert.deepEqual(form.weekdays, [1, 3, 5])
+  assert.equal(form.permission, 'workspace-write')
+  assert.equal(form.workspaceId, 'ws_1')
+  assert.equal(form.modelKey, 'deepseek::v4')
 })

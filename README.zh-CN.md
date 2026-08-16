@@ -1,60 +1,135 @@
-# dsh-automation
+<h1 align="center">DSH Automation</h1>
 
-在独立 DSH Session 中按计划执行编码任务，并从 Web 或 Agent 管理这些规则。
+<p align="center">
+  <strong>在独立 Session 中按计划执行编码任务的 DeepSeek Harness Web 插件。</strong>
+</p>
 
-[简体中文](README.zh-CN.md) · [交接入口](docs/00-交接入口/00-阅读导航.md) · [Apache-2.0](LICENSE)
+<p align="center">
+  <a href="https://github.com/MichengAI/dsh-automation/issues">反馈问题</a>
+  · <a href="https://www.npmjs.com/package/@michengai/dsh-automation">在 npm 查看</a>
+  · <a href="README.md">English</a>
+</p>
 
-这是 DeepSeek Harness 的社区插件，不是 DeepSeek 官方产品。
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="Apache License 2.0"></a>
+  <a href="https://www.npmjs.com/package/@michengai/dsh-automation"><img src="https://img.shields.io/npm/v/%40michengai/dsh-automation?label=npm" alt="npm 包"></a>
+  <img src="https://img.shields.io/badge/DSH-Web%20Plugin-10b981" alt="DSH Web Plugin">
+  <img src="https://img.shields.io/badge/Node.js-%E2%89%A522.19-339933?logo=nodedotjs&logoColor=white" alt="Node.js 22.19 或更高版本">
+</p>
 
-## 它解决什么
+> DSH Automation 是社区维护的插件，并非 DeepSeek AI 官方产品。
 
-DSH Core Schedule 适合“十分钟后回到当前对话”。本插件适合另一类工作：
+## 功能概览
 
-- 每天 09:00 检查依赖和测试，结果写进一条新 Session
-- 每周一生成仓库健康报告
+- 在「设置 → 定时任务」集中管理规则和运行历史。
+- 支持从 Web 或 Agent 工具创建、暂停、恢复、立即运行和删除。
+- 每次到期都启动全新 root Agent 和 Session，不继承来源对话。
+- 计划类型包括不重复、间隔、每小时、每天、每周、每月和自定义间隔天数。
+- 新建弹窗可选择工作目录、模型、技能，以及 `read-only` / `workspace-write`。
+- 「通过对话创建」会关闭设置页，并在输入框填入：`我要创建一个定时任务，每【时间间隔】执行【具体任务】`。
+- 运行状态包含 `queued`、`running`、`succeeded`、`failed`、`skipped`、`cancelled`。
 
-每次触发都会创建全新 root Agent 和 Session，不会继承来源对话。
+## 前置条件
 
-## 功能
-
-- Web 会话页 **自动化** 标签：创建、暂停、恢复、立即运行、删除、查看历史
-- 6 个工作区作用域工具：`automation_create` / `list` / `update` / `runs` / `run_now` / `delete`
-- 计划类型：单次、固定间隔、每天、每周
-- 运行状态：`queued` / `running` / `succeeded` / `failed` / `skipped` / `cancelled`
-- 默认只读；需要改文件时必须显式选择 `workspace-write`
-
+- 已可正常运行 DeepSeek Harness Web，且可在 PowerShell 中使用 `dsh`。
+- 以下示例使用 `web` profile；请替换为实际目标 profile。
+- 从源码安装或二次开发需要 Node.js 22.19+；仅从 npm 安装无需在任意目录执行 `npm install`。
 
 ## 安装
 
-安装到 Web profile 后重启 `dsh web`：
+### 从 npm 安装
+
+在任意 PowerShell 目录执行。请通过 `dsh plugin` 安装到 DSH profile：
 
 ```powershell
-dsh plugin --profile web add github:MichengAI/dsh-automation
-dsh web
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+dsh plugin --profile web add @michengai/dsh-automation
+dsh --profile web --dump-config
 ```
 
-本地开发：
+安装或升级后重启 DSH Web，或重新加载当前 Web profile。若镜像未同步最新版本，可在安装命令末尾追加 `--registry=https://registry.npmjs.org/`。
+
+### 从源码安装
+
+适用于调试或使用未发布改动。克隆后的目录会直接作为插件安装路径：
 
 ```powershell
-dsh plugin --profile web add .\
-dsh web
-```
-
-## 安全边界
-
-- 计划不是授权。每次运行都会重新解析工作区、preset 和权限。
-- 无人值守审批策略为 `never`，不会永久等待一个不存在的人。
-- 禁止 `danger-full-access`。
-- 没有自动重试，避免重复产生副作用。
-- Host 重启后，遗留的 `queued`/`running` 会变成 `failed(host_interrupted)`。
-
-## 开发
-
-```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+Set-Location D:\Repository\deepseek-harness-plugin
+git clone https://github.com/MichengAI/dsh-automation.git
+Set-Location .\dsh-automation
 pnpm install
-pnpm check
+pnpm test
+pnpm build
+dsh plugin --profile web add .
+dsh --profile web --dump-config
 ```
 
-## 许可
+完成后重启 DSH Web 或重新加载当前 Web profile。`dsh plugin ... add .` 会自动读取并应用 `cordis.patch.yml`；不要手工复制 `lib` 文件。
 
-[Apache-2.0](LICENSE)。产品模型参考了社区中的独立自动化实践，详见 [NOTICE](NOTICE)。
+## 使用
+
+打开「设置 → 定时任务」，再按下表操作：
+
+| 目标 | 操作 | 范围 |
+| --- | --- | --- |
+| 创建规则 | 点击「新建定时任务」，填写名称、计划、任务说明、工作目录、模型、技能和权限。 | 当前 Host |
+| 通过对话创建 | 点击「通过对话创建」。设置页关闭，输入框填入模板提示词。 | 当前对话 |
+| 暂停或恢复 | 使用任务卡片上的开关。 | 单条规则 |
+| 立即运行 | 打开卡片菜单，选择「立即执行」。 | 单条规则 |
+| 删除 | 打开卡片菜单，选择「删除任务」。运行历史会保留。 | 仅定义 |
+| 查看记录 | 打开「执行记录」，再按天、周、月、任务或状态筛选。 | 当前 Host |
+
+每次派发都使用保存的任务说明、工作区、模型和权限边界，不会复用来源对话中的批准。
+
+## 权限与安全边界
+
+| 项目 | 行为 |
+| --- | --- |
+| 权限 | 默认 `read-only`。改文件必须显式选择 `workspace-write`。 |
+| 完全访问 | 不提供无人值守 `danger-full-access`。 |
+| 审批 | 无人值守使用 fail-closed 的 `never`，不会等待一个不存在的人。 |
+| 重试 | 已经开始的运行不会自动重试。 |
+| Host 重启 | 遗留的 `queued` / `running` 会变成 `failed(host_interrupted)`。 |
+| 重叠 | 同一规则同时最多一个 active run。冲突 occurrence 记为 `skipped(overlap)`。 |
+
+计划只表达未来意图，不是缓存下来的授权。
+
+## 二次开发
+
+当前源码在 `src`，构建产物在 `lib`：
+
+- [src\index.ts](src/index.ts)：Host 插件、工具和 RPC。
+- [src\service.ts](src/service.ts)：持久化定义、时钟和运行准入。
+- [src\client\index.ts](src/client/index.ts)：设置页和对话预填。
+- `tests\*.test.ts`：领域、周期、服务、客户端和包契约测试。
+
+修改后运行测试、重新构建，并以本地目录安装验证：
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+pnpm check
+dsh plugin --profile web add .
+```
+
+修改执行逻辑时必须保留 at-most-once 派发、Agent 工具的工作区边界，以及无人值守 fail-closed 审批。
+
+## 验证
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+pnpm test
+pnpm build
+```
+
+`pnpm check` 会连续执行类型检查、测试和构建。
+
+## 项目文档与许可证
+
+项目状态、使用边界、技术架构和迭代记录从[文档交接入口](docs/00-交接入口/00-阅读导航.md)开始。补充说明见 NOTICE。
+
+本项目采用 [Apache License 2.0](LICENSE)。

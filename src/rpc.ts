@@ -204,6 +204,20 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
           }, signal)
           return { ok: true, value: { id: value.id, revision: value.revision } }
         }
+        case 'update': {
+          const id = string(payload.automationId, 'automationId')
+          const input = record(payload.input, 'input')
+          const timeZone = string(input.timeZone, 'input.timeZone')
+          const value = await service.update(scopeOf(payload), id, {
+            name: string(input.name, 'input.name'),
+            prompt: string(input.prompt, 'input.prompt'),
+            schedule: toDomainSchedule(input.schedule, timeZone),
+            permissionPreset: string(input.permission, 'input.permission') as 'read-only' | 'workspace-write',
+            ...(input.provider === undefined ? {} : { provider: input.provider === null ? null : string(input.provider, 'input.provider') }),
+            ...(input.model === undefined ? {} : { model: input.model === null ? null : string(input.model, 'input.model') }),
+          }, signal)
+          return { ok: true, value: { id: value.id, revision: value.revision } }
+        }
         case 'run-now': {
           const run = await service.runNow(scopeOf(payload), string(payload.automationId, 'automationId'), signal)
           return { ok: true, value: { runId: run.id } }

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import type { Translate } from './contracts.js'
 import {
   AutomationFormError,
@@ -6,6 +6,7 @@ import {
   type AutomationFormState,
   type ScheduleKind,
 } from './helpers.js'
+import { FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
 import { MenuPanel, MenuSelect } from './menu.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
@@ -13,7 +14,7 @@ const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', '
 const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
 
 export function CreateModal({
-  t, busy, workspaces, models, defaultModel, skills, draft, onClose, onSubmit,
+  t, busy, workspaces, models, defaultModel, skills, draft, editing, onClose, onSubmit,
 }: {
   readonly t: Translate
   readonly busy: boolean
@@ -22,6 +23,7 @@ export function CreateModal({
   readonly defaultModel: { provider: string; model: string; label: string } | null
   readonly skills: readonly { id: string; name: string }[]
   readonly draft?: Partial<AutomationFormState>
+  readonly editing?: boolean
   readonly onClose: () => void
   readonly onSubmit: (form: AutomationFormState) => Promise<void>
 }): JSX.Element {
@@ -31,6 +33,18 @@ export function CreateModal({
     setForm(current => ({ ...current, ...patch }))
     setValidationError(undefined)
   }
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      onClose()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => { window.removeEventListener('keydown', onKey, true) }
+  }, [onClose])
 
   const handleSubmit = async (event: FormEvent): Promise<void> => {
     event.preventDefault()
@@ -48,12 +62,17 @@ export function CreateModal({
   const datePart = form.onceAt.slice(0, 10)
   const timePart = form.onceAt.slice(11, 16) || '09:00'
   const workspace = workspaces.find(item => item.id === form.workspaceId)
+  const skillLabel = form.skills.length === 1
+    ? (skills.find(item => item.id === form.skills[0])?.name ?? t('form.skills'))
+    : form.skills.length > 1
+      ? `${t('form.skills')} ${form.skills.length}`
+      : t('form.skills')
   return (
     <div className="dsh-st-mask" role="presentation" onClick={onClose}>
       <form className="dsh-st-modal" onClick={event => event.stopPropagation()} onSubmit={handleSubmit}>
         <div className="dsh-st-modal-head">
           <div>
-            <h2>{t('modal.title')}</h2>
+            <h2>{editing === true ? t('modal.edit') : t('modal.title')}</h2>
             <p>{t('form.subtitle')}</p>
           </div>
           <button type="button" className="dsh-st-icon" onClick={onClose} aria-label={t('form.cancel')}>×</button>
@@ -138,16 +157,20 @@ export function CreateModal({
           <div className="dsh-st-prompt-card">
             <textarea value={form.prompt} placeholder={t('form.promptPlaceholder')} onChange={event => update({ prompt: event.target.value })} />
             <div className="dsh-st-composer">
-              <MenuPanel label={<span>📁 {workspace?.title || t('form.workspace')}</span>}>
-                {workspaces.map(item => (
-                  <button key={item.id} type="button" className={item.id === form.workspaceId ? 'is-on' : ''} onClick={() => update({ workspaceId: item.id })}>
-                    {item.title}
-                    <small>{item.path}</small>
-                  </button>
-                ))}
-              </MenuPanel>
-              <div className="dsh-st-composer-right">
-                <MenuPanel label={<span>✦ {t('form.skills')}{form.skills.length > 0 ? ` ${form.skills.length}` : ''}</span>}>
+              <div className="dsh-st-composer-left">
+                {editing === true ? (
+                  <span className="dsh-st-chip-btn is-static"><FolderIcon width={14} height={14} />{workspace?.title || t('form.workspace')}</span>
+                ) : (
+                  <MenuPanel ghost label={<><FolderIcon width={14} height={14} />{workspace?.title || t('form.workspace')}</>}>
+                    {workspaces.map(item => (
+                      <button key={item.id} type="button" className={item.id === form.workspaceId ? 'is-on' : ''} onClick={() => update({ workspaceId: item.id })}>
+                        {item.title}
+                        <small>{item.path}</small>
+                      </button>
+                    ))}
+                  </MenuPanel>
+                )}
+                <MenuPanel ghost label={<><SparkleIcon width={14} height={14} />{skillLabel}</>}>
                   {skills.length === 0 && <div className="dsh-st-select-empty">{t('form.skillsEmpty')}</div>}
                   {skills.map(item => (
                     <button
@@ -165,6 +188,8 @@ export function CreateModal({
                   ))}
                 </MenuPanel>
                 <MenuSelect
+                  pill
+                  icon={<ShieldIcon width={14} height={14} />}
                   value={form.permission}
                   options={[
                     { value: 'read-only', label: t('form.readOnly') },
@@ -172,7 +197,10 @@ export function CreateModal({
                   ]}
                   onChange={value => update({ permission: value })}
                 />
+              </div>
+              <div className="dsh-st-composer-right">
                 <MenuSelect
+                  pill
                   value={form.modelKey}
                   options={[
                     { value: 'default', label: t('form.modelDefault') },

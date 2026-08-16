@@ -119,6 +119,11 @@ export interface MutateRequest {
     readonly automationId: string;
     readonly mutation: 'pause' | 'resume' | 'delete';
 }
+export interface UpdateRequest {
+    readonly sessionId?: string;
+    readonly automationId: string;
+    readonly input: CreateAutomationInput;
+}
 export interface RunNowRequest {
     readonly sessionId?: string;
     readonly automationId: string;

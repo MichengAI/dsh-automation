@@ -8,6 +8,7 @@ import {
   formatDuration,
   formatSchedule,
   formatWithin,
+  formFromAutomation,
   groupHistory,
   type AutomationFormState,
   type HistoryRange,
@@ -43,6 +44,7 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
   const [tab, setTab] = useState<Tab>('mine')
   const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
+  const [editingId, setEditingId] = useState<string>()
   const [draft, setDraft] = useState<Partial<AutomationFormState>>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
@@ -92,8 +94,21 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
     }
   }
 
+  const closeModal = (): void => {
+    setCreating(false)
+    setDraft(undefined)
+    setEditingId(undefined)
+  }
+
   const openCreate = (partial?: Partial<AutomationFormState>): void => {
+    setEditingId(undefined)
     setDraft(partial)
+    setCreating(true)
+  }
+
+  const openEdit = (item: AutomationViewModel): void => {
+    setEditingId(item.id)
+    setDraft(formFromAutomation(item, workspaces, snapshot?.defaultModel ?? null))
     setCreating(true)
   }
 
@@ -195,6 +210,7 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
                   t={t}
                   now={now}
                   busy={busy}
+                  onEdit={() => openEdit(item)}
                   onToggle={() => { void runAction(() => runtime.mutateAutomation(item.id, item.status === 'active' ? 'pause' : 'resume')) }}
                   onRun={() => { void runAction(() => runtime.runNow(item.id)) }}
                   onDelete={() => { void runAction(() => runtime.mutateAutomation(item.id, 'delete')) }}
@@ -218,19 +234,22 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
 
       {creating && (
         <CreateModal
+          key={editingId ?? 'create'}
           t={t}
           busy={busy}
           workspaces={workspaces}
           models={models}
           defaultModel={snapshot?.defaultModel ?? null}
           skills={snapshot?.skills ?? []}
+          editing={editingId !== undefined}
           {...(draft === undefined ? {} : { draft })}
-          onClose={() => { setCreating(false); setDraft(undefined) }}
+          onClose={closeModal}
           onSubmit={async (form) => {
             await runAction(async () => {
-              await runtime.createAutomation(buildCreateInput(form, workspaces, models))
-              setCreating(false)
-              setDraft(undefined)
+              const input = buildCreateInput(form, workspaces, models)
+              if (editingId === undefined) await runtime.createAutomation(input)
+              else await runtime.updateAutomation(editingId, input)
+              closeModal()
             })
           }}
         />
@@ -240,12 +259,13 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
 }
 
 function TaskCard({
-  item, t, now, busy, onToggle, onRun, onDelete,
+  item, t, now, busy, onEdit, onToggle, onRun, onDelete,
 }: {
   readonly item: AutomationViewModel
   readonly t: Translate
   readonly now: Date
   readonly busy: boolean
+  readonly onEdit: () => void
   readonly onToggle: () => void
   readonly onRun: () => void
   readonly onDelete: () => void
@@ -262,12 +282,12 @@ function TaskCard({
   }, [menu])
 
   return (
-    <article className="dsh-st-card" ref={root}>
+    <article className="dsh-st-card" ref={root} onClick={onEdit}>
       <div className="dsh-st-card-head">
-        <button type="button" className={`dsh-st-switch ${item.status === 'active' ? 'is-on' : ''}`} role="switch" aria-checked={item.status === 'active'} disabled={busy} onClick={onToggle} />
-        <button type="button" className="dsh-st-more" onClick={() => setMenu(value => !value)} aria-label={t('card.delete')}><MoreIcon /></button>
+        <button type="button" className={`dsh-st-switch ${item.status === 'active' ? 'is-on' : ''}`} role="switch" aria-checked={item.status === 'active'} disabled={busy} onClick={(event) => { event.stopPropagation(); onToggle() }} />
+        <button type="button" className="dsh-st-more" onClick={(event) => { event.stopPropagation(); setMenu(value => !value) }} aria-label={t('card.delete')}><MoreIcon /></button>
         {menu && (
-          <div className="dsh-st-menu">
+          <div className="dsh-st-menu" onClick={event => event.stopPropagation()}>
             <button type="button" disabled={busy} onClick={() => { setMenu(false); onRun() }}><PlayIcon />{t('menu.run')}</button>
             <button type="button" className="is-danger" disabled={busy} onClick={() => { setMenu(false); onDelete() }}><TrashIcon />{t('menu.delete')}</button>
           </div>

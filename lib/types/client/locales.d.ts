@@ -44,6 +44,7 @@ export declare const en: {
     readonly 'form.modelDefault': "Follow default model";
     readonly 'form.error.workspace': "Select a workspace.";
     readonly 'modal.title': "New scheduled task";
+    readonly 'modal.edit': "Edit scheduled task";
     readonly 'modal.save': "Save";
     readonly 'header.eyebrow': "Unattended coding work";
     readonly 'header.title': "Automations";

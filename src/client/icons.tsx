@@ -65,3 +65,11 @@ export function ClockIcon(props: IconProps): JSX.Element {
 export function ChatIcon(props: IconProps): JSX.Element {
   return <IconFrame {...props}><path d="M5.5 6.5h13v9.2H9.2L5.5 18.8V6.5Z" /></IconFrame>
 }
+
+export function FolderIcon(props: IconProps): JSX.Element {
+  return <IconFrame {...props}><path d="M4 7.2h6.1l1.7 1.8H20V18H4V7.2Z" /></IconFrame>
+}
+
+export function SparkleIcon(props: IconProps): JSX.Element {
+  return <IconFrame {...props}><path d="M12 3.6 13.3 8.7 18.4 10 13.3 11.3 12 16.4 10.7 11.3 5.6 10 10.7 8.7 12 3.6Z" /></IconFrame>
+}

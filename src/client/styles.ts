@@ -35,6 +35,8 @@ const CSS_TEXT = `
 .dsh-st-filters>button.is-on{background:rgba(255,255,255,.14)}
 .dsh-st-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .dsh-st-card,.dsh-st-empty{position:relative;padding:16px;border:1px solid var(--dsw-alias-border-l2);border-radius:16px;background:rgba(255,255,255,.03)}
+.dsh-st-card{cursor:pointer}
+.dsh-st-card:hover{border-color:rgba(75,124,255,.45)}
 .dsh-st-card h3,.dsh-st-empty h3{margin:10px 0 6px;font-size:15px}
 .dsh-st-card p,.dsh-st-empty p{margin:0 0 14px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .dsh-st-card-head{display:flex;align-items:center;justify-content:space-between}
@@ -58,12 +60,12 @@ const CSS_TEXT = `
 .dsh-st-error{color:#ff6b6b;font-size:12px}
 .dsh-st-muted{color:var(--dsw-alias-label-secondary)}
 .dsh-st-mask{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.45)}
-.dsh-st-modal{width:min(560px,100%);max-height:min(88vh,760px);overflow:auto;padding:20px;border:1px solid var(--dsw-alias-border-l2);border-radius:18px;background:var(--dsw-alias-bg-base)}
+.dsh-st-modal{width:min(760px,100%);max-height:min(92vh,900px);overflow:auto;padding:24px;border:1px solid var(--dsw-alias-border-l2);border-radius:20px;background:var(--dsw-alias-bg-base)}
 .dsh-st-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .dsh-st-modal-head h2{margin:0 0 4px;font-size:20px}
 .dsh-st-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-size:13px}
 .dsh-st-field input,.dsh-st-field select,.dsh-st-field textarea{width:100%;padding:9px 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);color:inherit}
-.dsh-st-field textarea{min-height:110px;resize:vertical}
+.dsh-st-field textarea{min-height:240px;resize:vertical}
 .dsh-st-inline{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .dsh-st-inline select,.dsh-st-inline input{flex:1;min-width:120px}
 .dsh-st-weekdays{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
@@ -74,29 +76,44 @@ const CSS_TEXT = `
 @media(max-width:860px){.dsh-st-top,.dsh-st-banner{flex-direction:column}.dsh-st-grid,.dsh-st-example-row{grid-template-columns:1fr}.dsh-st-search{width:100%}.dsh-st-filters{width:100%;margin:8px 0}}
 .dsh-st-select{position:relative;min-width:108px}
 .dsh-st-select.is-wide{min-width:148px}
-.dsh-st-select-btn,.dsh-st-chip-btn,.dsh-st-field input,.dsh-st-field textarea{border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:rgba(255,255,255,.04);color:inherit}
+.dsh-st-select-btn,.dsh-st-field input,.dsh-st-field textarea{border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:rgba(255,255,255,.04);color:inherit}
 .dsh-st-select-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:36px;width:100%;padding:0 12px;cursor:pointer}
+.dsh-st-select.is-pill{width:auto;min-width:0;flex:none}
+.dsh-st-select.is-pill .dsh-st-select-btn{width:auto;min-height:28px;height:28px;padding:0 8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:13px;font-weight:500;gap:6px;white-space:nowrap}
+.dsh-st-select.is-pill .dsh-st-select-btn:hover{background:rgba(255,255,255,.06);color:var(--dsw-alias-label-primary)}
+.dsh-st-select.is-pill .dsh-st-select-menu{min-width:196px}
 .dsh-st-select-btn em{width:8px;height:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.7}
 .dsh-st-select-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:8;min-width:100%;max-height:240px;overflow:auto;padding:6px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:0 12px 32px rgba(0,0,0,.32)}
 .dsh-st-select-menu button{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:inherit;text-align:left;cursor:pointer}
 .dsh-st-select-menu button small{color:var(--dsw-alias-label-tertiary);font-size:11px}
 .dsh-st-select-menu button:hover,.dsh-st-select-menu button.is-on{background:rgba(255,255,255,.06)}
 .dsh-st-select-empty{padding:10px;color:var(--dsw-alias-label-tertiary);font-size:12px}
-.dsh-st-chip-btn{display:inline-flex;align-items:center;min-height:32px;padding:0 10px;border-radius:999px;cursor:pointer}
+.dsh-st-chip-btn{display:inline-flex;align-items:center;gap:6px;min-height:28px;height:28px;padding:0 8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer}
+.dsh-st-chip-btn:hover{background:rgba(255,255,255,.06);color:var(--dsw-alias-label-primary)}
+.dsh-st-chip-btn.is-static{cursor:default;opacity:.78}
+.dsh-st-chip-btn em,.dsh-st-select.is-pill .dsh-st-select-btn em{width:6px;height:6px;margin-left:2px;opacity:.55}
 .dsh-st-suffix{color:var(--dsw-alias-label-secondary);font-size:13px}
 .dsh-st-inline input.is-narrow{width:72px;flex:none}
 .dsh-st-weekdays button{min-width:52px;height:34px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:transparent}
 .dsh-st-weekdays button.is-on{border-color:transparent;background:#fff;color:#111}
-.dsh-st-prompt-card{border:1px solid var(--dsw-alias-border-l2);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.03)}
-.dsh-st-prompt-card textarea{border:0;background:transparent;min-height:140px}
-.dsh-st-composer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-top:1px solid var(--dsw-alias-border-l2)}
-.dsh-st-composer-right{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.dsh-st-prompt-card{display:flex;flex-direction:column;min-height:320px;border:1px solid var(--dsw-alias-border-l2);border-radius:22px;overflow:visible;background:rgba(255,255,255,.03)}
+.dsh-st-prompt-card textarea{flex:1;border:0;background:transparent;min-height:240px;padding:16px 18px;font-size:14px;line-height:1.65}
+.dsh-st-composer,.dsh-st-composer-left,.dsh-st-composer-right{display:flex;align-items:center;flex-wrap:nowrap}
+.dsh-st-composer{justify-content:space-between;gap:8px;padding:2px 8px 10px;border-top:0}
+.dsh-st-composer-left,.dsh-st-composer-right{gap:2px;min-width:0}
+.dsh-st-composer .dsh-st-select{min-width:0}
+.dsh-st-composer .dsh-st-select-menu{top:auto;bottom:calc(100% + 6px)}
+.dsh-st-composer-right .dsh-st-select-menu{left:auto;right:0}
+.dsh-st-composer svg{flex:none}
 
 `
 
 export function installStyles(): () => void {
   const existing = document.getElementById(STYLE_ID)
-  if (existing !== null) return () => undefined
+  if (existing instanceof HTMLStyleElement) {
+    existing.textContent = CSS_TEXT
+    return () => undefined
+  }
   const style = document.createElement('style')
   style.id = STYLE_ID
   style.textContent = CSS_TEXT
