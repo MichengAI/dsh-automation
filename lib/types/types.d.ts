@@ -1,7 +1,7 @@
 export type AutomationStatus = 'active' | 'paused';
 export type AutomationRunStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped' | 'cancelled';
 export type Weekday = 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA' | 'SU';
-export type PermissionPreset = 'read-only' | 'workspace-write';
+export type PermissionPreset = 'read-only' | 'workspace-write' | 'full-access';
 export interface OnceSchedule {
     readonly kind: 'once';
     readonly at: string;

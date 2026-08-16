@@ -1,6 +1,9 @@
 /** 持久化定义、occurrence 认领、时钟与执行调度。 */
 
 import { randomUUID } from 'node:crypto'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/dsh-agent-presets'
@@ -348,16 +351,9 @@ export class AutomationService {
       const key = `${provider}/${model}`
       if (seen.has(key)) continue
       seen.add(key)
-      models.push({ provider, model, label: String(item.label ?? item.displayName ?? `${provider} / ${model}`) })
+      models.push({ provider, model, label: prettyModelLabel(item, provider, model) })
     }
-    const skills: { readonly id: string; readonly name: string }[] = []
-    const skillHost = this.ctx.get?.('skill') as { list?: () => Iterable<any>; catalog?: () => Iterable<any> } | undefined
-    const rawSkills = skillHost?.list?.() ?? skillHost?.catalog?.() ?? []
-    for (const item of rawSkills) {
-      const id = String(item.id ?? item.slug ?? item.name ?? '')
-      if (id === '') continue
-      skills.push({ id, name: String(item.name ?? item.title ?? id) })
-    }
+    const skills = collectSkillOptions(this.ctx)
     return {
       workspaces,
       models,
@@ -648,3 +644,66 @@ export class AutomationService {
 }
 
 
+
+
+function prettyModelLabel(item: any, provider: string, model: string): string {
+  const raw = String(item.label ?? item.displayName ?? item.title ?? '')
+  if (raw !== '' && !raw.includes('/') && !raw.includes('::')) return raw
+  return model.split(/[-_]/g).map((part) => {
+    if (part.toLowerCase() === 'deepseek') return 'DeepSeek'
+    if (/^v\d/i.test(part)) return part.slice(0, 1).toUpperCase() + part.slice(1)
+    if (part === '') return part
+    return part.slice(0, 1).toUpperCase() + part.slice(1)
+  }).join('-') || `${provider} / ${model}`
+}
+
+function collectSkillOptions(ctx: Context): { readonly id: string; readonly name: string }[] {
+  const seen = new Set<string>()
+  const skills: { readonly id: string; readonly name: string }[] = []
+  const push = (idRaw: unknown, nameRaw?: unknown): void => {
+    const id = String(idRaw ?? '').trim()
+    if (id === '' || seen.has(id)) return
+    seen.add(id)
+    skills.push({ id, name: String(nameRaw ?? id) })
+  }
+  const host = (ctx as any).skills ?? ctx.get?.('skills') ?? ctx.get?.('skill')
+  const raw = host?.list?.() ?? host?.catalog?.() ?? host?.all?.() ?? host?.values?.() ?? []
+  try {
+    for (const item of raw) {
+      if (item === undefined || item === null) continue
+      if (typeof item === 'string') push(item, item)
+      else push(item.id ?? item.slug ?? item.name, item.name ?? item.title ?? item.displayName ?? item.id)
+    }
+  } catch {
+    // 宿主目录接口不稳定时回退到本地技能目录。
+  }
+  const roots = [
+    join(process.env.DSH_HOME?.trim() || join(homedir(), '.dsh'), 'skills'),
+    join(homedir(), '.agents', 'skills'),
+  ]
+  for (const root of roots) {
+    if (!existsSync(root)) continue
+    for (const entry of readdirSync(root, { withFileTypes: true })) {
+      if (entry.name.startsWith('.')) continue
+      if (entry.isDirectory()) {
+        const doc = join(root, entry.name, 'SKILL.md')
+        push(entry.name, readSkillTitle(doc) ?? entry.name)
+      } else if (entry.name.endsWith('.md')) {
+        push(entry.name.replace(/\.md$/i, ''), readSkillTitle(join(root, entry.name)) ?? entry.name.replace(/\.md$/i, ''))
+      }
+    }
+  }
+  return skills
+}
+
+function readSkillTitle(file: string): string | undefined {
+  if (!existsSync(file)) return undefined
+  try {
+    const text = readFileSync(file, 'utf8')
+    const match = text.match(/^name:\s*(.+)$/m)
+    const value = match?.[1]?.trim()
+    return value === '' ? undefined : value
+  } catch {
+    return undefined
+  }
+}

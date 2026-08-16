@@ -139,7 +139,7 @@ export async function executeAutomationRun(
         installModelSelection(agentCtx, { current: selection, assembled: undefined })
         const agent = agentCtx.agent
         if (agent === undefined) throw new Error('automation setup has no scoped Agent')
-        setSandboxMode(agent.session, target.permissionPreset)
+        if (target.permissionPreset !== 'full-access') setSandboxMode(agent.session, target.permissionPreset)
         setApprovalPolicy(agent.session, 'never')
         agentCtx.tools.guard((exec: ToolExecution) => unattendedToolGuardReason(exec.name, exec.arguments))
       },

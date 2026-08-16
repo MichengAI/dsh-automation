@@ -35,7 +35,7 @@ export const automationScheduleSchema = z.discriminatedUnion('kind', [
   }),
 ])
 
-const permissionPreset = z.enum(['read-only', 'workspace-write'])
+const permissionPreset = z.enum(['read-only', 'workspace-write', 'full-access'])
 const creator = z.object({ kind: z.enum(['agent', 'web']), sessionId: nonBlank })
 const targetSnapshot = z.object({
   workspaceId: nonBlank,

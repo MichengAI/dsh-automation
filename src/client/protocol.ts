@@ -3,7 +3,7 @@
 export type AutomationStatus = 'active' | 'paused'
 export type AutomationRunStatus =
   | 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped' | 'cancelled' | 'interrupted'
-export type AutomationPermission = 'read-only' | 'workspace-write'
+export type AutomationPermission = 'read-only' | 'workspace-write' | 'full-access'
 
 export type AutomationSchedule =
   | { readonly kind: 'once'; readonly at: string; readonly timeZone?: string }

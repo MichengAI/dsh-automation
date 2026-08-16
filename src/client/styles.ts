@@ -59,8 +59,8 @@ const CSS_TEXT = `
 .dsh-st-run p{display:flex;gap:10px;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px}
 .dsh-st-error{color:#ff6b6b;font-size:12px}
 .dsh-st-muted{color:var(--dsw-alias-label-secondary)}
-.dsh-st-mask{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.45)}
-.dsh-st-modal{width:min(760px,100%);max-height:min(92vh,900px);overflow:auto;padding:24px;border:1px solid var(--dsw-alias-border-l2);border-radius:20px;background:var(--dsw-alias-bg-base)}
+.dsh-st-mask{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:rgba(0,0,0,.45)}
+.dsh-st-modal{width:min(760px,100%);max-height:min(92vh,900px);overflow:visible;padding:24px;border:1px solid var(--dsw-alias-border-l2);border-radius:20px;background:var(--dsw-alias-bg-base)}
 .dsh-st-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .dsh-st-modal-head h2{margin:0 0 4px;font-size:20px}
 .dsh-st-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-size:13px}
@@ -74,17 +74,21 @@ const CSS_TEXT = `
 .dsh-st-check{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px;font-size:12px}
 .dsh-st-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 @media(max-width:860px){.dsh-st-top,.dsh-st-banner{flex-direction:column}.dsh-st-grid,.dsh-st-example-row{grid-template-columns:1fr}.dsh-st-search{width:100%}.dsh-st-filters{width:100%;margin:8px 0}}
-.dsh-st-select{position:relative;min-width:108px}
+.dsh-st-select{position:relative;min-width:108px;z-index:1}.dsh-st-select.is-open{z-index:30}
 .dsh-st-select.is-wide{min-width:148px}
 .dsh-st-select-btn,.dsh-st-field input,.dsh-st-field textarea{border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:rgba(255,255,255,.04);color:inherit}
 .dsh-st-select-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:36px;width:100%;padding:0 12px;cursor:pointer}
 .dsh-st-select.is-pill{width:auto;min-width:0;flex:none}
 .dsh-st-select.is-pill .dsh-st-select-btn{width:auto;min-height:28px;height:28px;padding:0 8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:13px;font-weight:500;gap:6px;white-space:nowrap}
 .dsh-st-select.is-pill .dsh-st-select-btn:hover{background:rgba(255,255,255,.06);color:var(--dsw-alias-label-primary)}
-.dsh-st-select.is-pill .dsh-st-select-menu{min-width:196px}
+.dsh-st-select.is-pill .dsh-st-select-menu,.dsh-st-select-menu.is-composer{min-width:260px}
 .dsh-st-select-btn em{width:8px;height:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.7}
-.dsh-st-select-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:80;min-width:196px;max-height:280px;overflow:auto;padding:6px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:#2a2c31;box-shadow:0 16px 40px rgba(0,0,0,.42)}
-.dsh-st-select-menu.is-float{position:fixed}
+.dsh-st-select-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:196px;max-height:280px;overflow:auto;padding:6px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:#2a2c31;box-shadow:0 16px 40px rgba(0,0,0,.42)}
+.dsh-st-select-menu.is-up{top:auto;bottom:calc(100% + 6px)}
+.dsh-st-select-menu.is-end{left:auto;right:0}
+.dsh-st-menu-row{white-space:nowrap}
+.dsh-st-menu-row.is-kv .dsh-st-menu-row-main{flex:none}
+.dsh-st-menu-row.is-kv .dsh-st-menu-row-side{flex:1;justify-content:flex-end;min-width:0}
 .dsh-st-select-menu button,.dsh-st-menu-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:8px 10px;border:0;border-radius:10px;background:transparent;color:inherit;text-align:left;cursor:pointer;font-size:13px}
 .dsh-st-menu-row-main{display:inline-flex;align-items:center;gap:8px;min-width:0}
 .dsh-st-menu-row-side{display:inline-flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:12px}

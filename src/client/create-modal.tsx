@@ -7,7 +7,7 @@ import {
   type ScheduleKind,
 } from './helpers.js'
 import { FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
-import { MenuPanel, MenuRow, MenuSelect, MenuSurface, useMenuState } from './menu.js'
+import { MenuPanel, MenuRow, MenuSelect, useMenuState } from './menu.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom']
@@ -166,20 +166,19 @@ export function CreateModal({
             <textarea value={form.prompt} placeholder={t('form.promptPlaceholder')} onChange={event => update({ prompt: event.target.value })} />
             <div className="dsh-st-composer">
               <div className="dsh-st-composer-left">
-                <MenuPanel ghost label={<><FolderIcon width={14} height={14} />{workspace?.title || t('form.workspace')}</>}>
+                <MenuPanel ghost up label={<><FolderIcon width={14} height={14} />{workspace?.title || t('form.workspace')}</>}>
                   {workspaces.length === 0 && <div className="dsh-st-select-empty">{t('form.error.workspace')}</div>}
                   {workspaces.map(item => (
                     <MenuRow
                       key={item.id}
                       icon={<FolderIcon width={14} height={14} />}
                       label={item.title}
-                      hint={<small>{item.path}</small>}
                       active={item.id === form.workspaceId}
                       onClick={() => update({ workspaceId: item.id })}
                     />
                   ))}
                 </MenuPanel>
-                <MenuPanel ghost label={<><SparkleIcon width={14} height={14} />{skillLabel}</>}>
+                <MenuPanel ghost up persist label={<><SparkleIcon width={14} height={14} />{skillLabel}</>}>
                   {skills.length === 0 && <div className="dsh-st-select-empty">{t('form.skillsEmpty')}</div>}
                   {skills.map(item => (
                     <MenuRow
@@ -197,11 +196,13 @@ export function CreateModal({
                 </MenuPanel>
                 <MenuSelect
                   pill
+                  up
                   icon={<ShieldIcon width={14} height={14} />}
                   value={form.permission}
                   options={[
                     { value: 'read-only', label: t('form.readOnly'), icon: <ShieldIcon width={14} height={14} /> },
                     { value: 'workspace-write', label: t('form.workspaceWrite'), icon: <ShieldIcon width={14} height={14} /> },
+                    { value: 'full-access', label: t('form.fullAccess'), icon: <ShieldIcon width={14} height={14} /> },
                   ]}
                   onChange={value => update({ permission: value })}
                 />
@@ -253,10 +254,11 @@ function ModelPicker({
   }
 
   return (
-    <div className="dsh-st-select is-pill" ref={menu.root}>
+    <div className={`dsh-st-select is-pill${menu.open ? " is-open" : ""}`} ref={menu.root}>
       <button
         type="button"
         className="dsh-st-select-btn"
+        onMouseDown={event => event.stopPropagation()}
         onClick={() => {
           if (menu.open) {
             menu.setOpen(false)
@@ -269,11 +271,11 @@ function ModelPicker({
         <em />
       </button>
       {menu.open && (
-        <MenuSurface style={menu.style}>
+        <div className="dsh-st-select-menu is-composer is-up is-end">
           {pane === 'root' && (
             <>
-              <MenuRow label={t('form.model')} hint={modelLabel} chevron onClick={() => setPane('model')} />
-              <MenuRow label={t('form.effort')} hint={effortLabel} chevron onClick={() => setPane('effort')} />
+              <MenuRow kv label={t('form.model')} hint={modelLabel} chevron onClick={() => setPane('model')} />
+              <MenuRow kv label={t('form.effort')} hint={effortLabel} chevron onClick={() => setPane('effort')} />
             </>
           )}
           {pane === 'model' && (
@@ -304,7 +306,7 @@ function ModelPicker({
               onClick={() => { onEffort(item); menu.setOpen(false) }}
             />
           ))}
-        </MenuSurface>
+        </div>
       )}
     </div>
   )

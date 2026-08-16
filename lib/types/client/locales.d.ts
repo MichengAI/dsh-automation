@@ -106,6 +106,7 @@ export declare const en: {
     readonly 'form.readOnly': "Read-only";
     readonly 'form.readOnlyHint': "Inspect the workspace without changing files.";
     readonly 'form.workspaceWrite': "Workspace write";
+    readonly 'form.fullAccess': "Full access";
     readonly 'form.workspaceWriteHint': "May change files in this workspace; past approvals are not reused.";
     readonly 'form.cancel': "Cancel";
     readonly 'form.submit': "Create automation";
@@ -136,6 +137,7 @@ export declare const en: {
     readonly 'card.never': "Not yet run";
     readonly 'card.permission.read-only': "Read-only";
     readonly 'card.permission.workspace-write': "Workspace write";
+    readonly 'card.permission.full-access': "Full access";
     readonly 'schedule.onceAt': "Once · {time}";
     readonly 'schedule.everyMinutes': "Every {count} minutes";
     readonly 'schedule.dailyAt': "Daily · {time}";

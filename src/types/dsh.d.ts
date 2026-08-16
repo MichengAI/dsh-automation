@@ -47,7 +47,7 @@ declare module '@deepseek-ai/dsh-llm' {
 }
 
 declare module '@deepseek-ai/dsh-sandbox-policy' {
-  export function setSandboxMode(session: unknown, mode: 'read-only' | 'workspace-write'): void
+  export function setSandboxMode(session: unknown, mode: 'read-only' | 'workspace-write' | 'full-access'): void
 }
 
 declare module '@deepseek-ai/dsh-session' {

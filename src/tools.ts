@@ -116,7 +116,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         every_minutes: { type: 'integer', description: '间隔计划的分钟数，最小 5。' },
         time: { type: 'string', description: '每天或每周计划的本地 HH:mm。' },
         weekdays: { type: 'array', items: { type: 'string', enum: WEEKDAYS } },
-        permission: { type: 'string', enum: ['read-only', 'workspace-write'] },
+        permission: { type: 'string', enum: ['read-only', 'workspace-write', 'full-access'] },
       },
       output: JSON_OUTPUT,
       async execute(args: CreateArgs, exec: ToolRunContext) {
@@ -174,7 +174,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         every_minutes: { type: 'integer' },
         time: { type: 'string' },
         weekdays: { type: 'array', items: { type: 'string', enum: WEEKDAYS } },
-        permission: { type: 'string', enum: ['read-only', 'workspace-write'] },
+        permission: { type: 'string', enum: ['read-only', 'workspace-write', 'full-access'] },
       },
       output: JSON_OUTPUT,
       async execute(args: UpdateArgs, exec: ToolRunContext) {
