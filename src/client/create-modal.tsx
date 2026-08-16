@@ -12,6 +12,7 @@ import { MenuPanel, MenuRow, MenuSelect, useMenuState } from './menu.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom']
+const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'))
 const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
 const EFFORTS = ['none', 'low', 'medium', 'high'] as const
 
@@ -66,6 +67,8 @@ export function CreateModal({
 
   const datePart = form.onceAt.slice(0, 10)
   const timePart = form.onceAt.slice(11, 16) || '09:00'
+  const today = localDateValue(new Date())
+  const minOnceTime = datePart === today ? localTimeValue(new Date()) : undefined
   const workspace = workspaces.find(item => item.id === form.workspaceId)
   const skillLabel = form.skills.length === 1
     ? (skills.find(item => item.id === form.skills[0])?.name ?? t('form.skills'))
@@ -105,8 +108,8 @@ export function CreateModal({
             />
             {form.scheduleKind === 'once' && (
               <>
-                <input type="date" value={datePart} onChange={event => update({ onceAt: `${event.target.value}T${timePart}` })} />
-                <input type="time" value={timePart} onChange={event => update({ onceAt: `${datePart}T${event.target.value}` })} />
+                <input type="date" min={today} value={datePart} onChange={event => update({ onceAt: clampOnceAt(`${event.target.value}T${timePart}`) })} />
+                <TimeSelect value={timePart} {...(minOnceTime === undefined ? {} : { minTime: minOnceTime })} onChange={value => update({ onceAt: clampOnceAt(`${datePart}T${value}`) })} />
               </>
             )}
             {form.scheduleKind === 'interval' && (
@@ -122,7 +125,7 @@ export function CreateModal({
               </>
             )}
             {(form.scheduleKind === 'daily' || form.scheduleKind === 'weekly') && (
-              <input type="time" value={form.time} onChange={event => update({ time: event.target.value })} />
+              <TimeSelect value={form.time} onChange={value => update({ time: value })} />
             )}
             {form.scheduleKind === 'monthly' && (
               <>
@@ -134,14 +137,14 @@ export function CreateModal({
                   })}
                   onChange={value => update({ monthDay: value })}
                 />
-                <input type="time" value={form.time} onChange={event => update({ time: event.target.value })} />
+                <TimeSelect value={form.time} onChange={value => update({ time: value })} />
               </>
             )}
             {form.scheduleKind === 'custom' && (
               <>
                 <input className="is-narrow" type="number" min={1} value={form.customDays} onChange={event => update({ customDays: event.target.value })} />
                 <span className="dsh-st-suffix">{t('form.daysShort')}</span>
-                <input type="time" value={form.time} onChange={event => update({ time: event.target.value })} />
+                <TimeSelect value={form.time} onChange={value => update({ time: value })} />
               </>
             )}
           </div>
@@ -347,4 +350,49 @@ function ModelPicker({
       )}
     </div>
   )
+}
+
+
+function TimeSelect({
+  value,
+  onChange,
+  minTime,
+}: {
+  readonly value: string
+  readonly onChange: (value: string) => void
+  readonly minTime?: string
+}): JSX.Element {
+  const hour = value.slice(0, 2) || '09'
+  const minute = value.slice(3, 5) || '00'
+  const minHour = minTime?.slice(0, 2)
+  const minMinute = minTime?.slice(3, 5)
+  const hours = HOURS.filter(item => minHour === undefined || item >= minHour)
+  const minutes = MINUTES.filter(item => minHour === undefined || hour > minHour || minMinute === undefined || item >= minMinute)
+  return (
+    <div className="dsh-st-time">
+      <MenuSelect value={hour} options={hours.map(item => ({ value: item, label: item }))} onChange={next => onChange(`${next}:${minute}`)} />
+      <span className="dsh-st-time-sep">:</span>
+      <MenuSelect value={minute} options={minutes.map(item => ({ value: item, label: item }))} onChange={next => onChange(`${hour}:${next}`)} />
+    </div>
+  )
+}
+
+function localDateValue(now: Date): string {
+  const offset = now.getTimezoneOffset() * 60_000
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10)
+}
+
+function localTimeValue(now: Date): string {
+  const offset = now.getTimezoneOffset() * 60_000
+  return new Date(now.getTime() - offset).toISOString().slice(11, 16)
+}
+
+function clampOnceAt(value: string): string {
+  const selected = new Date(value)
+  const now = new Date()
+  if (!Number.isFinite(selected.getTime()) || selected.getTime() > now.getTime()) return value
+  const next = new Date(now.getTime() + 60_000)
+  next.setSeconds(0, 0)
+  const offset = next.getTimezoneOffset() * 60_000
+  return new Date(next.getTime() - offset).toISOString().slice(0, 16)
 }

@@ -1,6 +1,14 @@
 export declare const NS = "dsh-automation";
 export declare const en: {
     readonly tab: "Scheduled tasks";
+    readonly 'sidebar.tab': "Scheduled";
+    readonly 'sidebar.tabs': "Workspace views";
+    readonly 'sidebar.tasksTab': "Tasks";
+    readonly 'sidebar.channelsTab': "Channels";
+    readonly 'sidebar.empty': "No scheduled runs yet.";
+    readonly 'sidebar.tasksEmpty': "No web tasks yet.";
+    readonly 'sidebar.ungrouped': "Ungrouped";
+    readonly 'sidebar.section': "Scheduled";
     readonly 'header.lead': "Plan automatic tasks, or trigger them by hand. Describe the recurring work in any chat to create it quickly.";
     readonly 'examples.title': "Recommended examples";
     readonly 'examples.1.title': "Daily regression check";
@@ -35,7 +43,6 @@ export declare const en: {
     readonly 'action.chatCreate': "Create in chat";
     readonly 'action.create': "New scheduled task";
     readonly 'banner.wake': "Scheduled tasks run only while this computer stays awake.";
-    readonly 'banner.keepAwake': "Keep system awake";
     readonly 'tabs.mine': "My tasks";
     readonly 'tabs.runs': "Run history";
     readonly 'sort.created': "Newest first";

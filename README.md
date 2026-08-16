@@ -28,6 +28,7 @@
 - Lets you pick workspace, model, skills, and `read-only` / `workspace-write` permission in the create dialog.
 - Fills a chat draft from **Create in chat**: `I want to create a scheduled task that runs every [interval] and does [the actual task]`.
 - Keeps durable run history with `queued`, `running`, `succeeded`, `failed`, `skipped`, and `cancelled`.
+- Adds a sidebar **Scheduled** tab. Folders are task names and child sessions are run times. On stock DSH it wraps the official workspace tree instead of replacing it, and it does not depend on `dsh-codex-ui`.
 
 ## Prerequisites
 

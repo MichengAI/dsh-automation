@@ -122,3 +122,11 @@ test('编辑一次性任务允许保留已经过去的时间', () => {
   const updated = buildCreateInput(form, workspaces, [], new Date('2026-08-16T10:00:00+08:00'), { allowPastOnce: true })
   assert.equal(updated.schedule.kind, 'once')
 })
+
+import { automationSessionTitle } from '../src/run-title.ts'
+
+test('automation session title uses run time and task name', () => {
+  const title = automationSessionTitle('自动执行-报表系统-生成部署', '2026-08-16T02:30:00.000Z')
+  assert.ok(title.includes('自动执行-报表系统-生成部署'))
+  assert.ok(title.includes('2026-08-16'))
+})

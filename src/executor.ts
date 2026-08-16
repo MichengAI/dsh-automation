@@ -10,6 +10,7 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { WorkspaceId } from '@deepseek-ai/dsh-workspace'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import { automationSessionTitle } from './run-title.ts'
 import type { AutomationDefinition, AutomationRun } from './types.ts'
 
 interface TextBlock { readonly type: string; readonly text?: string }
@@ -146,6 +147,7 @@ export async function executeAutomationRun(
     }))
     await handle.agent.whenIdle()
     await workspace.attachSession(sessionId)
+    pinAutomationSessionTitle(ctx, handle.agent.session, automationSessionTitle(definition.name, run.startedAt ?? run.scheduledFor))
     const firstSeq = handle.agent.session.seq
     handle.agent.followup(createUserMessage({
       content: [{ type: 'text', text: run.promptSnapshot }],
@@ -225,5 +227,15 @@ export async function executeAutomationRun(
     removeCancellationListener()
     if (timeout !== undefined) clearTimeout(timeout)
     await handle?.dispose().catch(() => {})
+  }
+}
+
+function pinAutomationSessionTitle(ctx: Context, session: unknown, title: string): void {
+  const service = (ctx as Context & { sessionTitle?: { rename(target: unknown, value: string): unknown } }).sessionTitle
+  if (service === undefined) return
+  try {
+    service.rename(session, title)
+  } catch (error: unknown) {
+    ctx.logger.warn(`dsh-automation: failed to pin session title: ${error instanceof Error ? error.message : String(error)}`)
   }
 }

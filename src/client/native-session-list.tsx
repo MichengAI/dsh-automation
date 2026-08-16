@@ -1,0 +1,135 @@
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import type { Translate } from './contracts.js'
+import {
+  ArchiveIcon,
+  BranchIcon,
+  ChevronIcon,
+  EllipsisIcon,
+  FolderClosedIcon,
+  FolderOpenIcon,
+  PencilIcon,
+} from './icons.js'
+import type { AutomationRuntime } from './runtime.js'
+import { formatRunStamp, groupScheduledSessions } from './schedule-rail-model.js'
+
+export function relativeTime(value: string): string {
+  const ts = Date.parse(value || '')
+  if (!Number.isFinite(ts)) return ''
+  const delta = Math.max(0, Date.now() - ts)
+  const min = Math.floor(delta / 60000)
+  if (min < 1) return '刚刚'
+  if (min < 60) return String(min) + '分钟'
+  const hour = Math.floor(min / 60)
+  if (hour < 24) return String(hour) + '小时'
+  return String(Math.floor(hour / 24)) + '天'
+}
+
+export function NativeScheduleSessionList(props: {
+  readonly t: Translate
+  readonly runtime: AutomationRuntime
+  readonly openSession?: (sessionId: string) => void
+  readonly useSessions?: (select: (state: any) => any) => any
+  readonly useWorkspaces?: (select: (state: any) => any) => any
+  readonly renameSession?: (sessionId: string, title: string) => void | Promise<void>
+  readonly archiveSession?: (sessionId: string) => void | Promise<void>
+  readonly deleteSession?: (sessionId: string) => void | Promise<void>
+  readonly forkSession?: (sessionId: string) => void | Promise<void>
+}): JSX.Element {
+  const { t, runtime, openSession, useSessions, useWorkspaces, renameSession, archiveSession, deleteSession, forkSession } = props
+  const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
+  const selectedId = useSessions ? useSessions((snap: { current?: string | null }) => snap?.current ?? null) : null
+  const archivedIds: string[] = useWorkspaces ? useWorkspaces((snap: { archivedSessionIds?: string[] }) => snap?.archivedSessionIds ?? []) : []
+  const [folded, setFolded] = useState<Record<string, boolean>>({})
+  useEffect(() => {
+    void runtime.refresh().catch(() => undefined)
+    const timer = window.setInterval(() => { void runtime.refresh().catch(() => undefined) }, 15_000)
+    return () => { window.clearInterval(timer) }
+  }, [runtime])
+  const archived = useMemo(() => new Set(archivedIds), [archivedIds])
+  const groups = useMemo(() => {
+    const snapshot = state.snapshot
+    if (snapshot === undefined) return []
+    return groupScheduledSessions(snapshot.automations, snapshot.runs).map((group) => ({
+      ...group,
+      sessions: group.sessions.filter((session) => !archived.has(session.id)).map((session) => {
+        const run = snapshot.runs.find((item) => item.sessionId === session.id)
+        return {
+          ...session,
+          title: formatRunStamp((run && (run.startedAt || run.scheduledFor)) || ''),
+          updatedAt: (run && (run.startedAt || run.scheduledFor)) || '',
+        }
+      }),
+    })).filter((group) => group.sessions.length > 0)
+  }, [archived, state.snapshot])
+  return (
+    <div className='dsh-st-n'>
+      <div className='dsh-st-n-head'><span className='dsh-st-n-head-label'>{t('sidebar.section')}</span></div>
+      <div className='dsh-st-n-tree' role='tree'>
+        {state.phase === 'loading' && groups.length === 0 && <div className='dsh-st-n-empty'>{t('loading')}</div>}
+        {groups.length === 0 && state.phase !== 'loading' && <div className='dsh-st-n-empty'>{t('sidebar.empty')}</div>}
+        {groups.map((group) => {
+          const expanded = folded[group.id] !== true
+          return (
+            <div key={group.id} className='dsh-st-n-group'>
+              <button type='button' className='dsh-st-n-row' role='treeitem' aria-expanded={expanded} onClick={() => setFolded((current) => ({ ...current, [group.id]: expanded }))}>
+                <span className='dsh-st-n-slot dsh-st-n-folder'>{expanded ? <FolderOpenIcon width={16} height={16} /> : <FolderClosedIcon width={16} height={16} />}</span>
+                <span className='dsh-st-n-slot dsh-st-n-chevron'><span className={expanded ? 'dsh-st-n-arrow is-open' : 'dsh-st-n-arrow'}><ChevronIcon width={14} height={14} /></span></span>
+                <span className='dsh-st-n-title'>{group.name}</span>
+              </button>
+              {expanded && group.sessions.map((session) => (
+                <NativeSessionRow key={session.id} id={session.id} title={session.title} updatedAt={session.updatedAt} running={session.running} selected={selectedId === session.id} onOpen={() => { openSession?.(session.id) }} {...(renameSession === undefined ? {} : { renameSession })} {...(archiveSession === undefined ? {} : { archiveSession })} {...(deleteSession === undefined ? {} : { deleteSession })} {...(forkSession === undefined ? {} : { forkSession })} />
+              ))}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function NativeSessionRow(props: {
+  readonly id: string
+  readonly title: string
+  readonly updatedAt: string
+  readonly running: boolean
+  readonly selected: boolean
+  readonly onOpen: () => void
+  readonly renameSession?: (sessionId: string, title: string) => void | Promise<void>
+  readonly archiveSession?: (sessionId: string) => void | Promise<void>
+  readonly deleteSession?: (sessionId: string) => void | Promise<void>
+  readonly forkSession?: (sessionId: string) => void | Promise<void>
+}): JSX.Element {
+  const { id, title, updatedAt, running, selected, onOpen, renameSession, archiveSession, deleteSession, forkSession } = props
+  const [menu, setMenu] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [draft, setDraft] = useState(title)
+  useEffect(() => { setDraft(title) }, [title])
+  const run = (action: () => void | Promise<void>): void => { void Promise.resolve(action()).catch(() => undefined) }
+  const rowClass = 'dsh-st-n-sess' + (selected ? ' is-on' : '') + (menu ? ' is-menu' : '')
+  return (
+    <div className={rowClass} role='treeitem' tabIndex={0} aria-selected={selected} onClick={onOpen} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); setMenu((open) => !open) }} onMouseLeave={() => setMenu(false)}>
+      <span className='dsh-st-n-slot' />
+      {renaming ? (
+        <input className='dsh-st-n-rename' value={draft} autoFocus aria-label='重命名会话' onChange={(event) => setDraft(event.target.value)} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => {
+          if (event.key === 'Enter') { event.preventDefault(); setRenaming(false); if (draft.trim() !== '' && draft.trim() !== title) run(() => renameSession?.(id, draft.trim())) }
+          if (event.key === 'Escape') { event.preventDefault(); setRenaming(false); setDraft(title) }
+        }} onBlur={() => { setRenaming(false); if (draft.trim() !== '' && draft.trim() !== title) run(() => renameSession?.(id, draft.trim())) }} />
+      ) : <span className='dsh-st-n-title'>{title}</span>}
+      {running && <i className='dsh-st-rail-dot' />}
+      <span className='dsh-st-n-time'>{relativeTime(updatedAt)}</span>
+      <span className='dsh-st-n-acts'>
+        <button type='button' className='dsh-st-n-ico' aria-label={title + ' 更多'} onClick={(event) => { event.stopPropagation(); setMenu((open) => !open) }}>
+          <EllipsisIcon width={16} height={16} />
+        </button>
+      </span>
+      {menu && (
+        <div className='dsh-st-n-menu' onClick={(event) => event.stopPropagation()}>
+          <button type='button' onClick={() => { setMenu(false); setRenaming(true) }}><span className='dsh-st-n-mi'><PencilIcon width={16} height={16} /></span>重命名</button>
+          <button type='button' onClick={() => { setMenu(false); run(() => forkSession?.(id)) }}><span className='dsh-st-n-mi'><BranchIcon width={16} height={16} /></span>分叉会话</button>
+          <button type='button' onClick={() => { setMenu(false); run(() => archiveSession?.(id)) }}><span className='dsh-st-n-mi'><ArchiveIcon width={16} height={16} /></span>归档会话</button>
+
+        </div>
+      )}
+    </div>
+  )
+}

@@ -7,6 +7,7 @@ declare module '@deepseek-ai/cordis' {
     readonly agentDefaultModel: any
     readonly agentPresets: any
     readonly sessions: any
+    readonly sessionTitle?: { rename(session: unknown, title: string): unknown }
     readonly workspaceRegistry: any
     readonly storageDomain: any
     readonly connection: any
