@@ -48,7 +48,6 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
   const [draft, setDraft] = useState<Partial<AutomationFormState>>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
-  const [keepAwake, setKeepAwake] = useState(false)
   const [historyRange, setHistoryRange] = useState<HistoryRange>('day')
   const [historyTask, setHistoryTask] = useState('all')
   const [historyStatus, setHistoryStatus] = useState<'all' | AutomationRunStatus>('all')
@@ -59,13 +58,6 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
     const timer = window.setInterval(() => { void runtime.refresh().catch(() => undefined) }, POLL_INTERVAL_MS)
     return () => { window.clearInterval(timer) }
   }, [runtime])
-
-  useEffect(() => {
-    if (!keepAwake || !('wakeLock' in navigator)) return
-    let lock: WakeLockSentinel | undefined
-    void navigator.wakeLock.request('screen').then((value) => { lock = value }).catch(() => undefined)
-    return () => { void lock?.release() }
-  }, [keepAwake])
 
   const snapshot = state.snapshot
   const workspaces = snapshot?.workspaces ?? []
@@ -132,12 +124,8 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
         </div>
       </header>
 
-      <div className="dsh-st-banner">
+      <div className="dsh-st-banner" role="note">
         <span><InfoIcon />{t('banner.wake')}</span>
-        <label className="dsh-st-toggle">
-          {t('banner.keepAwake')}
-          <button type="button" className={keepAwake ? 'is-on' : ''} role="switch" aria-checked={keepAwake} onClick={() => setKeepAwake(value => !value)} />
-        </label>
       </div>
 
       <section className="dsh-st-examples">
