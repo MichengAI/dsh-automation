@@ -10,6 +10,8 @@ import {
   formatWithin,
   formFromAutomation,
   groupHistory,
+  loadClientSkills,
+  mergeSkills,
   type AutomationFormState,
   type HistoryRange,
   type ScheduleKind,
@@ -52,9 +54,11 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
   const [historyRange, setHistoryRange] = useState<HistoryRange>('day')
   const [historyTask, setHistoryTask] = useState('all')
   const [historyStatus, setHistoryStatus] = useState<'all' | AutomationRunStatus>('all')
+  const [extraSkills, setExtraSkills] = useState<readonly { id: string; name: string }[]>([])
   const now = useMemo(() => new Date(state.snapshot?.serverNow ?? Date.now()), [state.snapshot?.serverNow, state.refreshedAt])
 
   useEffect(() => {
+    void loadClientSkills().then(setExtraSkills).catch(() => undefined)
     void runtime.refresh().catch(() => undefined)
     const timer = window.setInterval(() => { void runtime.refresh().catch(() => undefined) }, POLL_INTERVAL_MS)
     return () => { window.clearInterval(timer) }
@@ -240,7 +244,8 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
           workspaces={workspaces}
           models={models}
           defaultModel={snapshot?.defaultModel ?? null}
-          skills={snapshot?.skills ?? []}
+          skills={mergeSkills(snapshot?.skills, extraSkills)}
+          onAddWorkspace={async (path) => runtime.addWorkspace(path).then((value) => value.id)}
           editing={editingId !== undefined}
           {...(draft === undefined ? {} : { draft })}
           onClose={closeModal}

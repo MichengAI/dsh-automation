@@ -3,6 +3,7 @@ import type {
   AutomationSnapshot,
   CreateAutomationInput,
   CreateRequest,
+  AddWorkspaceRequest,
   MarkReadRequest,
   MutateRequest,
   RunNowRequest,
@@ -32,6 +33,7 @@ export interface AutomationRuntime {
   updateAutomation(automationId: string, input: CreateAutomationInput): Promise<void>
   runNow(automationId: string): Promise<void>
   markRunRead(runId: string): Promise<void>
+  addWorkspace(path: string): Promise<{ id: string }>
 }
 
 export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
@@ -112,6 +114,12 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     async markRunRead(runId) {
       const payload: MarkReadRequest = { sessionId: 'settings', runId }
       await mutateThenRefresh('mark-read', payload)
+    },
+    async addWorkspace(path) {
+      const payload: AddWorkspaceRequest = { sessionId: 'settings', path }
+      const value = unwrapRpcResult<{ id: string }>(await rpc.call(CHANNEL, 'add-workspace', payload))
+      await refresh()
+      return value
     },
   }
 }

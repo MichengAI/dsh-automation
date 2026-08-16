@@ -3,10 +3,11 @@ import type { Translate } from './contracts.js'
 import {
   AutomationFormError,
   defaultFormState,
+  prettyModelName,
   type AutomationFormState,
   type ScheduleKind,
 } from './helpers.js'
-import { FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
+import { FolderIcon, PlusIcon, ShieldIcon, SparkleIcon } from './icons.js'
 import { MenuPanel, MenuRow, MenuSelect, useMenuState } from './menu.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
@@ -15,7 +16,7 @@ const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(
 const EFFORTS = ['none', 'low', 'medium', 'high'] as const
 
 export function CreateModal({
-  t, busy, workspaces, models, defaultModel, skills, draft, editing, onClose, onSubmit,
+  t, busy, workspaces, models, defaultModel, skills, draft, editing, onClose, onSubmit, onAddWorkspace,
 }: {
   readonly t: Translate
   readonly busy: boolean
@@ -27,9 +28,12 @@ export function CreateModal({
   readonly editing?: boolean
   readonly onClose: () => void
   readonly onSubmit: (form: AutomationFormState) => Promise<void>
+  readonly onAddWorkspace?: (path: string) => Promise<string>
 }): JSX.Element {
   const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel), ...draft }))
   const [validationError, setValidationError] = useState<string>()
+  const [addingWorkspace, setAddingWorkspace] = useState(false)
+  const [workspacePath, setWorkspacePath] = useState('')
   const update = (patch: Partial<AutomationFormState>): void => {
     setForm(current => ({ ...current, ...patch }))
     setValidationError(undefined)
@@ -177,6 +181,12 @@ export function CreateModal({
                       onClick={() => update({ workspaceId: item.id })}
                     />
                   ))}
+                  <div className="dsh-st-menu-split" />
+                  <MenuRow
+                    icon={<PlusIcon width={14} height={14} />}
+                    label={t('form.addWorkspace')}
+                    onClick={() => { setWorkspacePath(''); setAddingWorkspace(true) }}
+                  />
                 </MenuPanel>
                 <MenuPanel ghost up persist label={<><SparkleIcon width={14} height={14} />{skillLabel}</>}>
                   {skills.length === 0 && <div className="dsh-st-select-empty">{t('form.skillsEmpty')}</div>}
@@ -221,6 +231,33 @@ export function CreateModal({
           </div>
         </div>
 
+        {addingWorkspace && (
+          <div className="dsh-st-subdialog">
+            <strong>{t('form.addWorkspace')}</strong>
+            <label className="dsh-st-field">
+              {t('form.workspacePath')}
+              <input value={workspacePath} placeholder={t('form.workspacePathPlaceholder')} onChange={event => setWorkspacePath(event.target.value)} />
+            </label>
+            <div className="dsh-st-modal-actions">
+              <button type="button" className="dsh-st-btn" onClick={() => setAddingWorkspace(false)}>{t('form.cancel')}</button>
+              <button
+                type="button"
+                className="dsh-st-btn dsh-st-btn--primary"
+                disabled={busy || onAddWorkspace === undefined}
+                onClick={async () => {
+                  if (onAddWorkspace === undefined) return
+                  try {
+                    const id = await onAddWorkspace(workspacePath)
+                    update({ workspaceId: id })
+                    setAddingWorkspace(false)
+                  } catch (caught) {
+                    setValidationError(caught instanceof Error ? caught.message : t('error.action'))
+                  }
+                }}
+              >{t('modal.save')}</button>
+            </div>
+          </div>
+        )}
         {validationError !== undefined && <p className="dsh-st-error">{validationError}</p>}
         <div className="dsh-st-modal-actions">
           <button type="button" className="dsh-st-btn" onClick={onClose} disabled={busy}>{t('form.cancel')}</button>
@@ -244,7 +281,7 @@ function ModelPicker({
   const menu = useMenuState()
   const [pane, setPane] = useState<'root' | 'model' | 'effort'>('root')
   const selected = models.find(item => `${item.provider}::${item.model}` === modelKey)
-  const modelLabel = selected?.label ?? t('form.modelDefault')
+  const modelLabel = selected === undefined ? t('form.modelDefault') : prettyModelName(selected.model)
   const effortLabel = t(`form.effort.${effort}` as 'form.effort.high')
   const trigger = effort === 'none' ? modelLabel : `${modelLabel} ${effortLabel}`
 
@@ -290,7 +327,7 @@ function ModelPicker({
                 return (
                   <MenuRow
                     key={value}
-                    label={item.label}
+                    label={prettyModelName(item.model)}
                     active={value === modelKey}
                     onClick={() => { onModelKey(value); menu.setOpen(false) }}
                   />

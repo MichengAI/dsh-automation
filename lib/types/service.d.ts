@@ -85,6 +85,7 @@ export declare class AutomationService {
     }>;
     runNow(scope: AutomationScope, id: string, signal?: AbortSignal): Promise<AutomationRun>;
     markRead(scope: AutomationScope, runId: string, signal?: AbortSignal): Promise<AutomationRun>;
+    addWorkspace(path: string): Promise<WorkspaceOption>;
     private collectOptions;
     private resolveCreateTarget;
     private resolveScope;

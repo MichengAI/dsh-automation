@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation } from '../src/client/helpers.ts'
+import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, prettyModelName } from '../src/client/helpers.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
 import { createAutomationRuntime } from '../src/client/runtime.ts'
 
@@ -102,4 +102,9 @@ test('编辑表单会从已有任务还原名称、计划和模型', () => {
   assert.equal(form.permission, 'workspace-write')
   assert.equal(form.workspaceId, 'ws_1')
   assert.equal(form.modelKey, 'deepseek::v4')
+})
+
+
+test('模型名去掉供应商前缀，只保留展示名', () => {
+  assert.equal(prettyModelName('deepseek-v4-pro'), 'DeepSeek-V4-Pro')
 })

@@ -1,6 +1,6 @@
 import type { Translate } from './contracts.js';
 import { type AutomationFormState } from './helpers.js';
-export declare function CreateModal({ t, busy, workspaces, models, defaultModel, skills, draft, editing, onClose, onSubmit, }: {
+export declare function CreateModal({ t, busy, workspaces, models, defaultModel, skills, draft, editing, onClose, onSubmit, onAddWorkspace, }: {
     readonly t: Translate;
     readonly busy: boolean;
     readonly workspaces: readonly {
@@ -26,4 +26,5 @@ export declare function CreateModal({ t, busy, workspaces, models, defaultModel,
     readonly editing?: boolean;
     readonly onClose: () => void;
     readonly onSubmit: (form: AutomationFormState) => Promise<void>;
+    readonly onAddWorkspace?: (path: string) => Promise<string>;
 }): JSX.Element;

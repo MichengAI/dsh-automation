@@ -349,3 +349,54 @@ function toLocalInput(iso: string): string {
   const offset = value.getTimezoneOffset() * 60_000
   return new Date(value.getTime() - offset).toISOString().slice(0, 16)
 }
+
+
+export function prettyModelName(model: string): string {
+  return model.split(/[-_]/g).map((part) => {
+    if (part.toLowerCase() === 'deepseek') return 'DeepSeek'
+    if (/^v\d/i.test(part)) return part.slice(0, 1).toUpperCase() + part.slice(1)
+    if (part === '') return part
+    return part.slice(0, 1).toUpperCase() + part.slice(1)
+  }).join('-')
+}
+
+export function mergeSkills(
+  ...lists: readonly (readonly { readonly id: string; readonly name: string }[] | undefined)[]
+): { readonly id: string; readonly name: string }[] {
+  const seen = new Set<string>()
+  const skills: { readonly id: string; readonly name: string }[] = []
+  for (const list of lists) {
+    for (const item of list ?? []) {
+      if (seen.has(item.id)) continue
+      seen.add(item.id)
+      skills.push(item)
+    }
+  }
+  return skills
+}
+
+
+export async function loadClientSkills(): Promise<{ readonly id: string; readonly name: string }[]> {
+  try {
+    const response = await fetch('/api/dsh-skills-manager/state')
+    if (!response.ok) return []
+    const payload = await response.json() as {
+      readonly roots?: readonly { readonly skills?: readonly { readonly name?: string }[] }[]
+      readonly value?: { readonly roots?: readonly { readonly skills?: readonly { readonly name?: string }[] }[] }
+    }
+    const roots = payload.roots ?? payload.value?.roots ?? []
+    const skills: { readonly id: string; readonly name: string }[] = []
+    const seen = new Set<string>()
+    for (const root of roots) {
+      for (const item of root.skills ?? []) {
+        const name = String(item.name ?? '').trim()
+        if (name === '' || seen.has(name)) continue
+        seen.add(name)
+        skills.push({ id: name, name })
+      }
+    }
+    return skills
+  } catch {
+    return []
+  }
+}

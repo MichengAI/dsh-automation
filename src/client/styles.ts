@@ -113,6 +113,9 @@ const CSS_TEXT = `
 .dsh-st-composer-left,.dsh-st-composer-right{gap:2px;min-width:0}
 .dsh-st-composer .dsh-st-select{min-width:0}
 .dsh-st-composer svg{flex:none}
+.dsh-st-menu-split{height:1px;margin:6px 8px;background:rgba(255,255,255,.08)}
+.dsh-st-subdialog{margin:0 0 12px;padding:12px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:rgba(255,255,255,.03)}
+.dsh-st-subdialog>strong{display:block;margin:0 0 8px;font-size:13px}
 
 `
 

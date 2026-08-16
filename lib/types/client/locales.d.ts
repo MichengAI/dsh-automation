@@ -40,6 +40,9 @@ export declare const en: {
     readonly 'tabs.runs': "Run history";
     readonly 'sort.created': "Newest first";
     readonly 'form.workspace': "Workspace";
+    readonly 'form.addWorkspace': "Add workspace...";
+    readonly 'form.workspacePath': "Folder path";
+    readonly 'form.workspacePathPlaceholder': "D:\\work\\project";
     readonly 'form.model': "Model";
     readonly 'form.modelDefault': "Follow default model";
     readonly 'form.effort': "Reasoning";
@@ -103,9 +106,9 @@ export declare const en: {
     readonly 'form.days': "Weekdays";
     readonly 'form.timeZone': "Time zone";
     readonly 'form.permission': "Permission boundary";
-    readonly 'form.readOnly': "Read-only";
+    readonly 'form.readOnly': "Read Only";
     readonly 'form.readOnlyHint': "Inspect the workspace without changing files.";
-    readonly 'form.workspaceWrite': "Workspace write";
+    readonly 'form.workspaceWrite': "Workspace Write";
     readonly 'form.fullAccess': "Full access";
     readonly 'form.workspaceWriteHint': "May change files in this workspace; past approvals are not reused.";
     readonly 'form.cancel': "Cancel";

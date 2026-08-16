@@ -311,6 +311,30 @@ export class AutomationService {
     }, signal)
   }
 
+  async addWorkspace(path: string): Promise<WorkspaceOption> {
+    const cwd = path.trim()
+    if (cwd === '') throw new Error('请输入工作区目录。')
+    if (!existsSync(cwd)) throw new Error('目录不存在。')
+    const registry = this.ctx.workspaceRegistry as {
+      create?: (input: { path: string }) => Promise<any> | any
+      register?: (input: string) => Promise<any> | any
+      add?: (input: string) => Promise<any> | any
+      resolveByPath?: (input: string) => Promise<any> | any
+    }
+    const created = await (registry.create?.({ path: cwd })
+      ?? registry.register?.(cwd)
+      ?? registry.add?.(cwd)
+      ?? registry.resolveByPath?.(cwd))
+    if (created === undefined || created === null) throw new Error('无法添加工作区。')
+    const id = String(created.id ?? created.workspaceId ?? '')
+    if (id === '') throw new Error('无法添加工作区。')
+    return {
+      id,
+      title: String(created.title ?? created.name ?? cwd),
+      path: String(created.path ?? cwd),
+    }
+  }
+
   private collectOptions(): {
     readonly workspaces: WorkspaceOption[]
     readonly models: ModelOption[]
@@ -646,15 +670,13 @@ export class AutomationService {
 
 
 
-function prettyModelLabel(item: any, provider: string, model: string): string {
-  const raw = String(item.label ?? item.displayName ?? item.title ?? '')
-  if (raw !== '' && !raw.includes('/') && !raw.includes('::')) return raw
+function prettyModelLabel(_item: any, _provider: string, model: string): string {
   return model.split(/[-_]/g).map((part) => {
     if (part.toLowerCase() === 'deepseek') return 'DeepSeek'
     if (/^v\d/i.test(part)) return part.slice(0, 1).toUpperCase() + part.slice(1)
     if (part === '') return part
     return part.slice(0, 1).toUpperCase() + part.slice(1)
-  }).join('-') || `${provider} / ${model}`
+  }).join('-') || model
 }
 
 function collectSkillOptions(ctx: Context): { readonly id: string; readonly name: string }[] {
@@ -677,13 +699,19 @@ function collectSkillOptions(ctx: Context): { readonly id: string; readonly name
   } catch {
     // 宿主目录接口不稳定时回退到本地技能目录。
   }
+  const home = process.env.USERPROFILE?.trim() || process.env.HOME?.trim() || homedir()
   const roots = [
-    join(process.env.DSH_HOME?.trim() || join(homedir(), '.dsh'), 'skills'),
-    join(homedir(), '.agents', 'skills'),
+    join(process.env.DSH_HOME?.trim() || join(home, '.dsh'), 'skills'),
+    join(home, '.dsh', 'skills'),
+    join(process.env.DSH_AGENTS_HOME?.trim() || join(home, '.agents'), 'skills'),
+    join(home, '.agents', 'skills'),
+    join(home, '.codex', 'skills'),
   ]
   for (const root of roots) {
     if (!existsSync(root)) continue
-    for (const entry of readdirSync(root, { withFileTypes: true })) {
+    let entries: import('node:fs').Dirent[] = []
+    try { entries = readdirSync(root, { withFileTypes: true }) } catch { continue }
+    for (const entry of entries) {
       if (entry.name.startsWith('.')) continue
       if (entry.isDirectory()) {
         const doc = join(root, entry.name, 'SKILL.md')

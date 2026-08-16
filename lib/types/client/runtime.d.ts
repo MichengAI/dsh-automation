@@ -18,5 +18,8 @@ export interface AutomationRuntime {
     updateAutomation(automationId: string, input: CreateAutomationInput): Promise<void>;
     runNow(automationId: string): Promise<void>;
     markRunRead(runId: string): Promise<void>;
+    addWorkspace(path: string): Promise<{
+        id: string;
+    }>;
 }
 export declare function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime;
