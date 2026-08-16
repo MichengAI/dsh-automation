@@ -53,14 +53,3 @@ export interface HistoryGroup {
 export declare function groupHistory(runs: readonly import('./protocol.js').AutomationRunViewModel[], range: HistoryRange, now: Date, t: Translate): HistoryGroup[];
 export declare function formFromAutomation(item: import('./protocol.js').AutomationViewModel, workspaces?: readonly WorkspaceOption[], defaultModel?: ModelOption | null): AutomationFormState;
 export declare function prettyModelName(model: string): string;
-export declare function mergeSkills(...lists: readonly (readonly {
-    readonly id: string;
-    readonly name: string;
-}[] | undefined)[]): {
-    readonly id: string;
-    readonly name: string;
-}[];
-export declare function loadClientSkills(): Promise<{
-    readonly id: string;
-    readonly name: string;
-}[]>;

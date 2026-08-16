@@ -377,7 +377,7 @@ export class AutomationService {
       seen.add(key)
       models.push({ provider, model, label: prettyModelLabel(item, provider, model) })
     }
-    const skills = collectSkillOptions(this.ctx)
+    const skills = collectSkillOptions()
     return {
       workspaces,
       models,
@@ -679,33 +679,15 @@ function prettyModelLabel(_item: any, _provider: string, model: string): string 
   }).join('-') || model
 }
 
-function collectSkillOptions(ctx: Context): { readonly id: string; readonly name: string }[] {
+function collectSkillOptions(): { readonly id: string; readonly name: string }[] {
   const seen = new Set<string>()
   const skills: { readonly id: string; readonly name: string }[] = []
-  const push = (idRaw: unknown, nameRaw?: unknown): void => {
-    const id = String(idRaw ?? '').trim()
-    if (id === '' || seen.has(id)) return
-    seen.add(id)
-    skills.push({ id, name: String(nameRaw ?? id) })
-  }
-  const host = (ctx as any).skills ?? ctx.get?.('skills') ?? ctx.get?.('skill')
-  const raw = host?.list?.() ?? host?.catalog?.() ?? host?.all?.() ?? host?.values?.() ?? []
-  try {
-    for (const item of raw) {
-      if (item === undefined || item === null) continue
-      if (typeof item === 'string') push(item, item)
-      else push(item.id ?? item.slug ?? item.name, item.name ?? item.title ?? item.displayName ?? item.id)
-    }
-  } catch {
-    // 宿主目录接口不稳定时回退到本地技能目录。
-  }
   const home = process.env.USERPROFILE?.trim() || process.env.HOME?.trim() || homedir()
   const roots = [
     join(process.env.DSH_HOME?.trim() || join(home, '.dsh'), 'skills'),
     join(home, '.dsh', 'skills'),
     join(process.env.DSH_AGENTS_HOME?.trim() || join(home, '.agents'), 'skills'),
     join(home, '.agents', 'skills'),
-    join(home, '.codex', 'skills'),
   ]
   for (const root of roots) {
     if (!existsSync(root)) continue
@@ -714,10 +696,15 @@ function collectSkillOptions(ctx: Context): { readonly id: string; readonly name
     for (const entry of entries) {
       if (entry.name.startsWith('.')) continue
       if (entry.isDirectory()) {
-        const doc = join(root, entry.name, 'SKILL.md')
-        push(entry.name, readSkillTitle(doc) ?? entry.name)
+        const id = entry.name
+        if (seen.has(id)) continue
+        seen.add(id)
+        skills.push({ id, name: readSkillTitle(join(root, id, 'SKILL.md')) ?? id })
       } else if (entry.name.endsWith('.md')) {
-        push(entry.name.replace(/\.md$/i, ''), readSkillTitle(join(root, entry.name)) ?? entry.name.replace(/\.md$/i, ''))
+        const id = entry.name.replace(/\.md$/i, '')
+        if (id === '' || seen.has(id)) continue
+        seen.add(id)
+        skills.push({ id, name: readSkillTitle(join(root, entry.name)) ?? id })
       }
     }
   }
