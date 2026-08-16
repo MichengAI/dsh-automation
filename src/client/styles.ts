@@ -83,7 +83,7 @@ const CSS_TEXT = `
 .dsh-st-select-btn em{width:8px;height:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.7}
 .dsh-st-select-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:196px;max-height:280px;overflow:auto;padding:6px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:#2a2c31;box-shadow:0 16px 40px rgba(0,0,0,.42)}
 .dsh-st-select-menu.is-up{top:auto;bottom:calc(100% + 6px)}
-.dsh-st-select-menu.is-end{left:auto;right:0}
+.dsh-st-select-menu.is-end{left:auto;right:0}.dsh-st-select-menu.is-float{position:fixed;z-index:80;max-height:min(280px,calc(100vh - 24px));box-sizing:border-box}
 .dsh-st-menu-row{white-space:nowrap}
 .dsh-st-menu-row.is-kv .dsh-st-menu-row-main{flex:none}
 .dsh-st-menu-row.is-kv .dsh-st-menu-row-side{flex:1;justify-content:flex-end;min-width:0}

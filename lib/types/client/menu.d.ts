@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, type RefObject } from 'react';
 export interface MenuOption<T extends string> {
     readonly value: T;
     readonly label: string;
@@ -8,7 +8,18 @@ declare function useMenuOpen(): {
     readonly open: boolean;
     readonly setOpen: (value: boolean | ((current: boolean) => boolean)) => void;
     readonly root: React.RefObject<HTMLDivElement>;
+    readonly menu: React.RefObject<HTMLDivElement>;
 };
+export declare function MenuPopup({ open, anchor, menuRef, up, end, className, children, onClick, }: {
+    readonly open: boolean;
+    readonly anchor: RefObject<HTMLElement>;
+    readonly menuRef: RefObject<HTMLDivElement>;
+    readonly up?: boolean | undefined;
+    readonly end?: boolean | undefined;
+    readonly className: string;
+    readonly children: ReactNode;
+    readonly onClick?: () => void;
+}): JSX.Element | null;
 export declare function MenuRow({ icon, label, hint, active, chevron, kv, onClick, }: {
     readonly icon?: ReactNode;
     readonly label: ReactNode;

@@ -8,7 +8,7 @@ import {
   type ScheduleKind,
 } from './helpers.js'
 import { FolderIcon, PlusIcon, ShieldIcon, SparkleIcon } from './icons.js'
-import { MenuPanel, MenuRow, MenuSelect, useMenuState } from './menu.js'
+import { MenuPanel, MenuPopup, MenuRow, MenuSelect, useMenuState } from './menu.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom']
@@ -310,8 +310,7 @@ function ModelPicker({
         <span>{trigger}</span>
         <em />
       </button>
-      {menu.open && (
-        <div className="dsh-st-select-menu is-composer is-up is-end">
+      <MenuPopup open={menu.open} anchor={menu.root} menuRef={menu.menu} up end className="dsh-st-select-menu is-composer is-up is-end">
           {pane === 'root' && (
             <>
               <MenuRow kv label={t('form.model')} hint={modelLabel} chevron onClick={() => setPane('model')} />
@@ -346,8 +345,7 @@ function ModelPicker({
               onClick={() => { onEffort(item); menu.setOpen(false) }}
             />
           ))}
-        </div>
-      )}
+      </MenuPopup>
     </div>
   )
 }
