@@ -167,6 +167,26 @@ export interface WorkspaceListState {
   readonly archivedSessionIds?: readonly string[]
 }
 
+export function openScheduledSession(
+  id: string,
+  openRuntime?: (sessionId: string) => void,
+  openHost?: (sessionId: string) => void,
+): void {
+  if (id === '') return
+  const attempts = id.startsWith(AUTOMATION_SESSION_PREFIX) || id.startsWith('im:')
+    ? [openRuntime, openHost]
+    : [openHost, openRuntime]
+  for (const attempt of attempts) {
+    if (typeof attempt !== 'function') continue
+    try {
+      attempt(id)
+      return
+    } catch {
+      // 列表里有、宿主会话簿还没收录时，换下一个打开入口。
+    }
+  }
+}
+
 export function isHiddenSidebarSessionId(id: string): boolean {
   return id.startsWith(AUTOMATION_SESSION_PREFIX) || id.startsWith('im:')
 }

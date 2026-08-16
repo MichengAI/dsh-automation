@@ -5,6 +5,7 @@ import {
   formatRunStamp,
   groupNativeTaskSessions,
   groupScheduledSessions,
+  openScheduledSession,
   hasCodexUiSidebar,
   isNativeTaskSession,
   readNativeSidebarTab,
@@ -123,4 +124,19 @@ test('walks nested wrap chain back to official tree', () => {
 
 test('native session relative time matches official labels', () => {
   assert.equal(relativeTime(new Date().toISOString()), '刚刚')
+})
+
+test('scheduled sessions open through the runtime, not the filtered host tree', () => {
+  const opened: string[] = []
+  const host: string[] = []
+  openScheduledSession('dsh-automation-session-abc', (id) => { opened.push(id) }, (id) => { host.push(id) })
+  openScheduledSession('im:wecom:1', (id) => { opened.push(id) }, (id) => { host.push(id) })
+  openScheduledSession('normal-session', (id) => { opened.push(id) }, (id) => { host.push(id) })
+  assert.deepEqual(opened, ['dsh-automation-session-abc', 'im:wecom:1'])
+  assert.deepEqual(host, ['normal-session'])
+})
+test('scheduled session open falls back to host when runtime select rejects', () => {
+  const host: string[] = []
+  openScheduledSession('dsh-automation-session-abc', () => { throw new Error('sessions.select: unknown session') }, (id) => { host.push(id) })
+  assert.deepEqual(host, ['dsh-automation-session-abc'])
 })
