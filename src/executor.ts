@@ -118,7 +118,11 @@ export async function executeAutomationRun(
 
   const fallbackSelection = ctx.agentDefaultModel.currentSelection()
   const selection: ModelSelection = target.provider !== null && target.model !== null
-    ? { provider: target.provider, model: target.model }
+    ? {
+        provider: target.provider,
+        model: target.model,
+        ...(target.reasoningEffort ? { reasoningEffort: target.reasoningEffort } : {}),
+      }
     : fallbackSelection
   const sessionId = SessionId(config.sessionId)
   let handle: Awaited<ReturnType<Context['agents']['create']>> | undefined

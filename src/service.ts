@@ -56,6 +56,7 @@ export interface CreateRequest {
   readonly cwd?: string
   readonly provider?: string | null
   readonly model?: string | null
+  readonly reasoningEffort?: string | null
   readonly agentPreset?: string
 }
 
@@ -219,6 +220,7 @@ export class AutomationService {
         agentPreset: target.agentPreset,
         provider: target.provider,
         model: target.model,
+        ...(request.reasoningEffort === undefined ? {} : { reasoningEffort: request.reasoningEffort }),
         permissionPreset: request.permissionPreset ?? 'read-only',
         createdBy: { kind: scope.creatorKind, sessionId: scope.sessionId },
         now,

@@ -106,3 +106,9 @@ declare module '@deepseek-ai/dsh-tools' {
   }
   export function defineTool(definition: any): any
 }
+
+
+declare module "react-dom" {
+  import type { ReactNode, ReactPortal } from "react"
+  export function createPortal(children: ReactNode, container: Element | DocumentFragment): ReactPortal
+}

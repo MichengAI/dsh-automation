@@ -40,6 +40,7 @@ export interface AutomationViewModel {
   readonly cwd?: string
   readonly provider?: string | null
   readonly model?: string | null
+  readonly reasoningEffort?: string | null | undefined
   readonly nextRunAt?: string
   readonly lastRunAt?: string
   readonly lastRunStatus?: AutomationRunStatus
@@ -87,6 +88,7 @@ export interface CreateAutomationInput {
   readonly cwd: string
   readonly provider?: string | null
   readonly model?: string | null
+  readonly reasoningEffort?: string | null | undefined
 }
 
 export interface SnapshotRequest { readonly sessionId?: string }

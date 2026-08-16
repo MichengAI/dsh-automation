@@ -83,11 +83,17 @@ const CSS_TEXT = `
 .dsh-st-select.is-pill .dsh-st-select-btn:hover{background:rgba(255,255,255,.06);color:var(--dsw-alias-label-primary)}
 .dsh-st-select.is-pill .dsh-st-select-menu{min-width:196px}
 .dsh-st-select-btn em{width:8px;height:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.7}
-.dsh-st-select-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:8;min-width:100%;max-height:240px;overflow:auto;padding:6px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:0 12px 32px rgba(0,0,0,.32)}
-.dsh-st-select-menu button{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:inherit;text-align:left;cursor:pointer}
-.dsh-st-select-menu button small{color:var(--dsw-alias-label-tertiary);font-size:11px}
-.dsh-st-select-menu button:hover,.dsh-st-select-menu button.is-on{background:rgba(255,255,255,.06)}
-.dsh-st-select-empty{padding:10px;color:var(--dsw-alias-label-tertiary);font-size:12px}
+.dsh-st-select-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:80;min-width:196px;max-height:280px;overflow:auto;padding:6px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:#2a2c31;box-shadow:0 16px 40px rgba(0,0,0,.42)}
+.dsh-st-select-menu.is-float{position:fixed}
+.dsh-st-select-menu button,.dsh-st-menu-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:8px 10px;border:0;border-radius:10px;background:transparent;color:inherit;text-align:left;cursor:pointer;font-size:13px}
+.dsh-st-menu-row-main{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.dsh-st-menu-row-side{display:inline-flex;align-items:center;gap:8px;color:var(--dsw-alias-label-secondary);font-size:12px}
+.dsh-st-menu-row-side small{display:block;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary)}
+.dsh-st-select-menu button:hover,.dsh-st-menu-row:hover,.dsh-st-menu-row.is-on{background:rgba(255,255,255,.06)}
+.dsh-st-tick,.dsh-st-next{width:7px;height:11px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;flex:none}
+.dsh-st-tick{height:12px;width:6px;transform:rotate(45deg) translateY(-2px);border-right-color:#7aa2ff;border-bottom-color:#7aa2ff}
+.dsh-st-next{height:7px;transform:rotate(-45deg);opacity:.55}
+.dsh-st-select-empty{padding:14px 12px;color:var(--dsw-alias-label-tertiary);font-size:12px;text-align:center}
 .dsh-st-chip-btn{display:inline-flex;align-items:center;gap:6px;min-height:28px;height:28px;padding:0 8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer}
 .dsh-st-chip-btn:hover{background:rgba(255,255,255,.06);color:var(--dsw-alias-label-primary)}
 .dsh-st-chip-btn.is-static{cursor:default;opacity:.78}
@@ -102,8 +108,6 @@ const CSS_TEXT = `
 .dsh-st-composer{justify-content:space-between;gap:8px;padding:2px 8px 10px;border-top:0}
 .dsh-st-composer-left,.dsh-st-composer-right{gap:2px;min-width:0}
 .dsh-st-composer .dsh-st-select{min-width:0}
-.dsh-st-composer .dsh-st-select-menu{top:auto;bottom:calc(100% + 6px)}
-.dsh-st-composer-right .dsh-st-select-menu{left:auto;right:0}
 .dsh-st-composer svg{flex:none}
 
 `

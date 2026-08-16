@@ -7,11 +7,12 @@ import {
   type ScheduleKind,
 } from './helpers.js'
 import { FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
-import { MenuPanel, MenuSelect } from './menu.js'
+import { MenuPanel, MenuRow, MenuSelect, MenuSurface, useMenuState } from './menu.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom']
 const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
+const EFFORTS = ['none', 'low', 'medium', 'high'] as const
 
 export function CreateModal({
   t, busy, workspaces, models, defaultModel, skills, draft, editing, onClose, onSubmit,
@@ -68,7 +69,14 @@ export function CreateModal({
       ? `${t('form.skills')} ${form.skills.length}`
       : t('form.skills')
   return (
-    <div className="dsh-st-mask" role="presentation" onClick={onClose}>
+    <div
+      className="dsh-st-mask"
+      role="presentation"
+      onClick={(event) => {
+        if ((event.target as HTMLElement).closest('.dsh-st-select-menu') !== null) return
+        onClose()
+      }}
+    >
       <form className="dsh-st-modal" onClick={event => event.stopPropagation()} onSubmit={handleSubmit}>
         <div className="dsh-st-modal-head">
           <div>
@@ -152,39 +160,39 @@ export function CreateModal({
           </div>
         )}
 
-        <label className="dsh-st-field">
-          {t('form.prompt')}
+        <div className="dsh-st-field">
+          <span>{t('form.prompt')}</span>
           <div className="dsh-st-prompt-card">
             <textarea value={form.prompt} placeholder={t('form.promptPlaceholder')} onChange={event => update({ prompt: event.target.value })} />
             <div className="dsh-st-composer">
               <div className="dsh-st-composer-left">
-                {editing === true ? (
-                  <span className="dsh-st-chip-btn is-static"><FolderIcon width={14} height={14} />{workspace?.title || t('form.workspace')}</span>
-                ) : (
-                  <MenuPanel ghost label={<><FolderIcon width={14} height={14} />{workspace?.title || t('form.workspace')}</>}>
-                    {workspaces.map(item => (
-                      <button key={item.id} type="button" className={item.id === form.workspaceId ? 'is-on' : ''} onClick={() => update({ workspaceId: item.id })}>
-                        {item.title}
-                        <small>{item.path}</small>
-                      </button>
-                    ))}
-                  </MenuPanel>
-                )}
+                <MenuPanel ghost label={<><FolderIcon width={14} height={14} />{workspace?.title || t('form.workspace')}</>}>
+                  {workspaces.length === 0 && <div className="dsh-st-select-empty">{t('form.error.workspace')}</div>}
+                  {workspaces.map(item => (
+                    <MenuRow
+                      key={item.id}
+                      icon={<FolderIcon width={14} height={14} />}
+                      label={item.title}
+                      hint={<small>{item.path}</small>}
+                      active={item.id === form.workspaceId}
+                      onClick={() => update({ workspaceId: item.id })}
+                    />
+                  ))}
+                </MenuPanel>
                 <MenuPanel ghost label={<><SparkleIcon width={14} height={14} />{skillLabel}</>}>
                   {skills.length === 0 && <div className="dsh-st-select-empty">{t('form.skillsEmpty')}</div>}
                   {skills.map(item => (
-                    <button
+                    <MenuRow
                       key={item.id}
-                      type="button"
-                      className={form.skills.includes(item.id) ? 'is-on' : ''}
+                      icon={<SparkleIcon width={14} height={14} />}
+                      label={item.name}
+                      active={form.skills.includes(item.id)}
                       onClick={() => update({
                         skills: form.skills.includes(item.id)
                           ? form.skills.filter(id => id !== item.id)
                           : [...form.skills, item.id],
                       })}
-                    >
-                      {item.name}
-                    </button>
+                    />
                   ))}
                 </MenuPanel>
                 <MenuSelect
@@ -192,26 +200,25 @@ export function CreateModal({
                   icon={<ShieldIcon width={14} height={14} />}
                   value={form.permission}
                   options={[
-                    { value: 'read-only', label: t('form.readOnly') },
-                    { value: 'workspace-write', label: t('form.workspaceWrite') },
+                    { value: 'read-only', label: t('form.readOnly'), icon: <ShieldIcon width={14} height={14} /> },
+                    { value: 'workspace-write', label: t('form.workspaceWrite'), icon: <ShieldIcon width={14} height={14} /> },
                   ]}
                   onChange={value => update({ permission: value })}
                 />
               </div>
               <div className="dsh-st-composer-right">
-                <MenuSelect
-                  pill
-                  value={form.modelKey}
-                  options={[
-                    { value: 'default', label: t('form.modelDefault') },
-                    ...models.map(item => ({ value: `${item.provider}::${item.model}`, label: item.label })),
-                  ]}
-                  onChange={value => update({ modelKey: value })}
+                <ModelPicker
+                  t={t}
+                  models={models}
+                  modelKey={form.modelKey}
+                  effort={form.reasoningEffort}
+                  onModelKey={value => update({ modelKey: value })}
+                  onEffort={value => update({ reasoningEffort: value })}
                 />
               </div>
             </div>
           </div>
-        </label>
+        </div>
 
         {validationError !== undefined && <p className="dsh-st-error">{validationError}</p>}
         <div className="dsh-st-modal-actions">
@@ -219,6 +226,86 @@ export function CreateModal({
           <button type="submit" className="dsh-st-btn dsh-st-btn--primary" disabled={busy}>{t('modal.save')}</button>
         </div>
       </form>
+    </div>
+  )
+}
+
+function ModelPicker({
+  t, models, modelKey, effort, onModelKey, onEffort,
+}: {
+  readonly t: Translate
+  readonly models: readonly { provider: string; model: string; label: string }[]
+  readonly modelKey: string
+  readonly effort: string
+  readonly onModelKey: (value: string) => void
+  readonly onEffort: (value: string) => void
+}): JSX.Element {
+  const menu = useMenuState()
+  const [pane, setPane] = useState<'root' | 'model' | 'effort'>('root')
+  const selected = models.find(item => `${item.provider}::${item.model}` === modelKey)
+  const modelLabel = selected?.label ?? t('form.modelDefault')
+  const effortLabel = t(`form.effort.${effort}` as 'form.effort.high')
+  const trigger = effort === 'none' ? modelLabel : `${modelLabel} ${effortLabel}`
+
+  const open = (next: 'root' | 'model' | 'effort'): void => {
+    setPane(next)
+    menu.setOpen(true)
+  }
+
+  return (
+    <div className="dsh-st-select is-pill" ref={menu.root}>
+      <button
+        type="button"
+        className="dsh-st-select-btn"
+        onClick={() => {
+          if (menu.open) {
+            menu.setOpen(false)
+            return
+          }
+          open('root')
+        }}
+      >
+        <span>{trigger}</span>
+        <em />
+      </button>
+      {menu.open && (
+        <MenuSurface style={menu.style}>
+          {pane === 'root' && (
+            <>
+              <MenuRow label={t('form.model')} hint={modelLabel} chevron onClick={() => setPane('model')} />
+              <MenuRow label={t('form.effort')} hint={effortLabel} chevron onClick={() => setPane('effort')} />
+            </>
+          )}
+          {pane === 'model' && (
+            <>
+              <MenuRow
+                label={t('form.modelDefault')}
+                active={modelKey === 'default'}
+                onClick={() => { onModelKey('default'); menu.setOpen(false) }}
+              />
+              {models.map(item => {
+                const value = `${item.provider}::${item.model}`
+                return (
+                  <MenuRow
+                    key={value}
+                    label={item.label}
+                    active={value === modelKey}
+                    onClick={() => { onModelKey(value); menu.setOpen(false) }}
+                  />
+                )
+              })}
+            </>
+          )}
+          {pane === 'effort' && EFFORTS.map(item => (
+            <MenuRow
+              key={item}
+              label={t(`form.effort.${item}` as 'form.effort.high')}
+              active={item === effort}
+              onClick={() => { onEffort(item); menu.setOpen(false) }}
+            />
+          ))}
+        </MenuSurface>
+      )}
     </div>
   )
 }

@@ -25,6 +25,7 @@ export interface AutomationFormState {
   readonly permission: CreateAutomationInput['permission']
   readonly workspaceId: string
   readonly modelKey: string
+  readonly reasoningEffort: string
   readonly skills: readonly string[]
 }
 
@@ -71,6 +72,7 @@ export function defaultFormState(
     modelKey: defaultModel === undefined || defaultModel === null
       ? 'default'
       : `${defaultModel.provider}::${defaultModel.model}`,
+    reasoningEffort: 'high',
     skills: [],
   }
 }
@@ -143,6 +145,7 @@ export function buildCreateInput(
     workspaceId: workspace.id,
     cwd: workspace.path,
     ...(selected === undefined ? { provider: null, model: null } : { provider: selected.provider, model: selected.model }),
+    reasoningEffort: form.reasoningEffort === 'none' ? null : form.reasoningEffort,
   }
 }
 
@@ -320,6 +323,7 @@ export function formFromAutomation(
     permission: item.permission,
     workspaceId: item.workspaceId ?? base.workspaceId,
     modelKey,
+    reasoningEffort: item.reasoningEffort ?? 'high',
   }
   switch (schedule.kind) {
     case 'once':

@@ -147,6 +147,7 @@ async function snapshotValue(service: AutomationService, payload: Record<string,
       cwd: definition.cwd,
       provider: definition.provider,
       model: definition.model,
+      reasoningEffort: definition.reasoningEffort,
       createdAt: definition.createdAt,
       updatedAt: definition.updatedAt,
     })),
@@ -187,6 +188,7 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
             ...(input.cwd === undefined ? {} : { cwd: string(input.cwd, 'input.cwd') }),
             ...(input.provider === undefined ? {} : { provider: input.provider === null ? null : string(input.provider, 'input.provider') }),
             ...(input.model === undefined ? {} : { model: input.model === null ? null : string(input.model, 'input.model') }),
+            ...(input.reasoningEffort === undefined ? {} : { reasoningEffort: input.reasoningEffort === null ? null : string(input.reasoningEffort, 'input.reasoningEffort') }),
           }, signal)
           return { ok: true, value: { id: created.id } }
         }
@@ -213,8 +215,11 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
             prompt: string(input.prompt, 'input.prompt'),
             schedule: toDomainSchedule(input.schedule, timeZone),
             permissionPreset: string(input.permission, 'input.permission') as 'read-only' | 'workspace-write',
+            ...(input.workspaceId === undefined ? {} : { workspaceId: string(input.workspaceId, 'input.workspaceId') }),
+            ...(input.cwd === undefined ? {} : { cwd: string(input.cwd, 'input.cwd') }),
             ...(input.provider === undefined ? {} : { provider: input.provider === null ? null : string(input.provider, 'input.provider') }),
             ...(input.model === undefined ? {} : { model: input.model === null ? null : string(input.model, 'input.model') }),
+            ...(input.reasoningEffort === undefined ? {} : { reasoningEffort: input.reasoningEffort === null ? null : string(input.reasoningEffort, 'input.reasoningEffort') }),
           }, signal)
           return { ok: true, value: { id: value.id, revision: value.revision } }
         }

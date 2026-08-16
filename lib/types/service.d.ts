@@ -27,6 +27,7 @@ export interface CreateRequest {
     readonly cwd?: string;
     readonly provider?: string | null;
     readonly model?: string | null;
+    readonly reasoningEffort?: string | null;
     readonly agentPreset?: string;
 }
 export interface AutomationScope {

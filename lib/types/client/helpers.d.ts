@@ -16,6 +16,7 @@ export interface AutomationFormState {
     readonly permission: CreateAutomationInput['permission'];
     readonly workspaceId: string;
     readonly modelKey: string;
+    readonly reasoningEffort: string;
     readonly skills: readonly string[];
 }
 export type FormErrorKey = 'form.error.name' | 'form.error.prompt' | 'form.error.once' | 'form.error.interval' | 'form.error.weekdays' | 'form.error.workspace';

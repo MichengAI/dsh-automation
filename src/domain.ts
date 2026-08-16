@@ -43,6 +43,7 @@ const targetSnapshot = z.object({
   agentPreset: nonBlank,
   provider: z.string().nullable(),
   model: z.string().nullable(),
+  reasoningEffort: z.string().min(1).nullable().optional(),
   permissionPreset,
 })
 
@@ -61,6 +62,7 @@ export const automationDefinitionSchema: z.ZodType<AutomationDefinition> = z.obj
   agentPreset: nonBlank,
   provider: z.string().nullable(),
   model: z.string().nullable(),
+  reasoningEffort: z.string().min(1).nullable().optional(),
   permissionPreset,
   createdBy: creator,
   createdAt: instant,
@@ -124,6 +126,7 @@ export function createDefinition(input: CreateAutomationInput): AutomationDefini
     agentPreset: requireNonBlank(input.agentPreset, 'agentPreset'),
     provider: input.provider ?? null,
     model: input.model ?? null,
+    ...(input.reasoningEffort === undefined ? {} : { reasoningEffort: input.reasoningEffort }),
     permissionPreset: input.permissionPreset ?? 'read-only',
     createdBy: input.createdBy,
     createdAt: now,
@@ -151,7 +154,10 @@ export function updateDefinition(
       : requireNonBlank(input.agentPreset, 'agentPreset'),
     provider: input.provider === undefined ? current.provider : input.provider,
     model: input.model === undefined ? current.model : input.model,
+    reasoningEffort: input.reasoningEffort === undefined ? current.reasoningEffort : input.reasoningEffort,
     permissionPreset: input.permissionPreset ?? current.permissionPreset,
+    workspaceId: input.workspaceId === undefined ? current.workspaceId : requireNonBlank(input.workspaceId, 'workspaceId'),
+    cwd: input.cwd === undefined ? current.cwd : requireNonBlank(input.cwd, 'cwd'),
     updatedAt: parseInstant(input.now, 'now'),
   })
 }
@@ -237,6 +243,7 @@ function queuedRun(
       agentPreset: definition.agentPreset,
       provider: definition.provider,
       model: definition.model,
+      ...(definition.reasoningEffort === undefined ? {} : { reasoningEffort: definition.reasoningEffort }),
       permissionPreset: definition.permissionPreset,
     },
     sessionId: null,
