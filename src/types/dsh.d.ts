@@ -11,6 +11,7 @@ declare module '@deepseek-ai/cordis' {
     readonly storageDomain: any
     readonly connection: any
     readonly tools: any
+    readonly llm?: any
     readonly logger: { warn(message: string): void }
     effect<T>(factory: () => T | Promise<T>, label?: string): T
     on(name: string, listener: (...args: any[]) => any): () => void

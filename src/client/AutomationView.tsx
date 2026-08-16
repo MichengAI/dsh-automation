@@ -88,7 +88,9 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
     try {
       await action()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t('error.action'))
+      setError(caught instanceof AutomationFormError
+        ? t(caught.key)
+        : caught instanceof Error ? caught.message : t('error.action'))
     } finally {
       setBusy(false)
     }
@@ -246,8 +248,10 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
           {...(draft === undefined ? {} : { draft })}
           onClose={closeModal}
           onSubmit={async (form) => {
+            const input = buildCreateInput(form, workspaces, models, new Date(), {
+              allowPastOnce: editingId !== undefined,
+            })
             await runAction(async () => {
-              const input = buildCreateInput(form, workspaces, models)
               if (editingId === undefined) await runtime.createAutomation(input)
               else await runtime.updateAutomation(editingId, input)
               closeModal()

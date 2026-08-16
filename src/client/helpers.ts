@@ -82,6 +82,7 @@ export function buildCreateInput(
   workspaces: readonly WorkspaceOption[],
   models: readonly ModelOption[],
   now = new Date(),
+  options: { readonly allowPastOnce?: boolean } = {},
 ): CreateAutomationInput {
   const name = form.name.trim()
   const prompt = form.prompt.trim()
@@ -94,7 +95,7 @@ export function buildCreateInput(
   switch (form.scheduleKind) {
     case 'once': {
       const at = new Date(form.onceAt)
-      if (!Number.isFinite(at.getTime()) || at.getTime() <= now.getTime()) {
+      if (!Number.isFinite(at.getTime()) || (options.allowPastOnce !== true && at.getTime() <= now.getTime())) {
         throw new AutomationFormError('form.error.once')
       }
       schedule = { kind: 'once', at: at.toISOString(), timeZone: form.timeZone }

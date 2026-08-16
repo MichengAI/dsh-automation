@@ -281,7 +281,7 @@ function ModelPicker({
   const menu = useMenuState()
   const [pane, setPane] = useState<'root' | 'model' | 'effort'>('root')
   const selected = models.find(item => `${item.provider}::${item.model}` === modelKey)
-  const modelLabel = selected === undefined ? t('form.modelDefault') : prettyModelName(selected.model)
+  const modelLabel = selected === undefined ? t('form.modelDefault') : selected.label
   const effortLabel = t(`form.effort.${effort}` as 'form.effort.high')
   const trigger = effort === 'none' ? modelLabel : `${modelLabel} ${effortLabel}`
 
@@ -327,7 +327,7 @@ function ModelPicker({
                 return (
                   <MenuRow
                     key={value}
-                    label={prettyModelName(item.model)}
+                    label={item.label}
                     active={value === modelKey}
                     onClick={() => { onModelKey(value); menu.setOpen(false) }}
                   />

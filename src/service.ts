@@ -170,7 +170,7 @@ export class AutomationService {
     return this.serialize(async () => {
       throwIfCancelled(signal)
       const now = toIso()
-      const options = this.collectOptions()
+      const options = await this.collectOptions()
       const scoped = scope.hostWide === true ? undefined : await this.resolveScope(scope)
       const workspaceId = scoped?.workspace.id
       const definitions = [...this.definitions.entries()]
@@ -335,12 +335,12 @@ export class AutomationService {
     }
   }
 
-  private collectOptions(): {
+  private async collectOptions(): Promise<{
     readonly workspaces: WorkspaceOption[]
     readonly models: ModelOption[]
     readonly defaultModel: ModelOption | null
     readonly skills: { readonly id: string; readonly name: string }[]
-  } {
+  }> {
     const registry = this.ctx.workspaceRegistry as {
       list?: () => Iterable<any>
       values?: () => Iterable<any>
@@ -360,28 +360,12 @@ export class AutomationService {
         path: String(item.path ?? item.cwd ?? ''),
       }))
       .filter(item => item.id !== '' && item.path !== '')
-    const defaultSelection = this.ctx.agentDefaultModel?.currentSelection?.()
-    const catalog = this.ctx.agentDefaultModel?.listSelections?.()
-      ?? this.ctx.agentDefaultModel?.catalog?.()
-      ?? this.ctx.agentDefaultModel?.available?.()
-      ?? []
-    const models: ModelOption[] = []
-    const seen = new Set<string>()
-    for (const item of [defaultSelection, ...catalog]) {
-      if (item === undefined || item === null) continue
-      const provider = String(item.provider ?? '')
-      const model = String(item.model ?? '')
-      if (provider === '' || model === '') continue
-      const key = `${provider}/${model}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      models.push({ provider, model, label: prettyModelLabel(item, provider, model) })
-    }
+    const collected = await collectModelOptions(this.ctx)
     const skills = collectSkillOptions()
     return {
       workspaces,
-      models,
-      defaultModel: models[0] ?? null,
+      models: collected.models,
+      defaultModel: collected.defaultModel,
       skills,
     }
   }
@@ -669,6 +653,45 @@ export class AutomationService {
 
 
 
+
+async function collectModelOptions(ctx: Context): Promise<{
+  readonly models: ModelOption[]
+  readonly defaultModel: ModelOption | null
+}> {
+  const found: ModelOption[] = []
+  const seen = new Set<string>()
+  const push = (provider: string, model: string, label?: string): void => {
+    if (provider === '' || model === '') return
+    const key = `${provider}::${model}`
+    if (seen.has(key)) return
+    seen.add(key)
+    found.push({ provider, model, label: label?.trim() || prettyModelLabel({}, provider, model) })
+  }
+
+  const current = ctx.agentDefaultModel?.currentSelection?.() ?? null
+  if (current !== null) push(String(current.provider ?? ''), String(current.model ?? ''))
+
+  const llm = (ctx as Context & { llm?: {
+    listProviders?: () => readonly { provider?: string }[]
+    listModels?: (provider: string) => Promise<readonly { id?: string; name?: string }[]>
+  } }).llm
+  for (const item of llm?.listProviders?.() ?? []) {
+    const provider = String(item.provider ?? '')
+    if (provider === '') continue
+    try {
+      for (const model of await llm?.listModels?.(provider) ?? []) {
+        push(provider, String(model.id ?? ''), model.name)
+      }
+    } catch {
+      // 单个供应商目录失败时不影响其他已生效供应商。
+    }
+  }
+
+  const defaultModel = current === null
+    ? found[0] ?? null
+    : found.find(item => item.provider === current.provider && item.model === current.model) ?? found[0] ?? null
+  return { models: found, defaultModel }
+}
 
 function prettyModelLabel(_item: any, _provider: string, model: string): string {
   return model.split(/[-_]/g).map((part) => {

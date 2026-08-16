@@ -26,7 +26,9 @@ export declare class AutomationFormError extends Error {
 }
 export declare function localDateTimeValue(date?: Date): string;
 export declare function defaultFormState(now?: Date, workspaces?: readonly WorkspaceOption[], defaultModel?: ModelOption | null): AutomationFormState;
-export declare function buildCreateInput(form: AutomationFormState, workspaces: readonly WorkspaceOption[], models: readonly ModelOption[], now?: Date): CreateAutomationInput;
+export declare function buildCreateInput(form: AutomationFormState, workspaces: readonly WorkspaceOption[], models: readonly ModelOption[], now?: Date, options?: {
+    readonly allowPastOnce?: boolean;
+}): CreateAutomationInput;
 export interface OverviewStats {
     readonly total: number;
     readonly active: number;

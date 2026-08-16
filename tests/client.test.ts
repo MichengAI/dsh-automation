@@ -108,3 +108,17 @@ test('编辑表单会从已有任务还原名称、计划和模型', () => {
 test('模型名去掉供应商前缀，只保留展示名', () => {
   assert.equal(prettyModelName('deepseek-v4-pro'), 'DeepSeek-V4-Pro')
 })
+
+
+test('编辑一次性任务允许保留已经过去的时间', () => {
+  const form = {
+    ...defaultFormState(new Date('2026-08-16T10:00:00+08:00'), workspaces),
+    name: '补跑',
+    prompt: '继续处理',
+    scheduleKind: 'once' as const,
+    onceAt: '2026-08-16T09:00',
+  }
+  assert.throws(() => buildCreateInput(form, workspaces, [], new Date('2026-08-16T10:00:00+08:00')), AutomationFormError)
+  const updated = buildCreateInput(form, workspaces, [], new Date('2026-08-16T10:00:00+08:00'), { allowPastOnce: true })
+  assert.equal(updated.schedule.kind, 'once')
+})
