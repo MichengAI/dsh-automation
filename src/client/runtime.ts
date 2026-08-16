@@ -13,6 +13,10 @@ import { unwrapRpcResult } from './protocol.js'
 
 const CHANNEL = '/dsh-automation'
 
+export function isTransportError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /failed to fetch|networkerror|load failed|network request failed/i.test(message)
+}
 export interface AutomationClientState {
   readonly phase: 'idle' | 'loading' | 'ready' | 'error'
   readonly snapshot?: AutomationSnapshot
@@ -34,6 +38,7 @@ export interface AutomationRuntime {
   runNow(automationId: string): Promise<void>
   markRunRead(runId: string): Promise<void>
   addWorkspace(path: string): Promise<{ id: string }>
+  adoptSession(sessionId: string): Promise<void>
 }
 
 export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
@@ -85,11 +90,31 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     return refreshPromise
   }
 
-  const mutateThenRefresh = async (endpoint: string, payload: unknown): Promise<void> => {
-    unwrapRpcResult<unknown>(await rpc.call(CHANNEL, endpoint, payload))
+  const callRpc = async (endpoint: string, payload: unknown): Promise<unknown> => {
+    try {
+      return await rpc.call(CHANNEL, endpoint, payload)
+    } catch (error) {
+      if (!isTransportError(error)) throw error
+      return await rpc.call(CHANNEL, endpoint, payload)
+    }
+  }
+
+  const mutateThenRefresh = async (
+    endpoint: string,
+    payload: unknown,
+    patch?: (snapshot: AutomationSnapshot) => AutomationSnapshot,
+  ): Promise<void> => {
+    unwrapRpcResult<unknown>(await callRpc(endpoint, payload))
+    if (patch !== undefined && state.snapshot !== undefined) {
+      publish({ phase: 'ready', snapshot: patch(state.snapshot), refreshedAt: Date.now() })
+    }
     const pendingBeforeRefresh = refreshPromise
     if (pendingBeforeRefresh !== undefined) await pendingBeforeRefresh.catch(() => undefined)
-    await refresh()
+    try {
+      await refresh()
+    } catch {
+      // 变更已经生效；刷新失败不应让用户以为删除/更新没成功。
+    }
   }
 
   return {
@@ -101,7 +126,12 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     },
     async mutateAutomation(automationId, mutation) {
       const payload: MutateRequest = { sessionId: 'settings', automationId, mutation }
-      await mutateThenRefresh('mutate', payload)
+      await mutateThenRefresh('mutate', payload, mutation === 'delete'
+        ? (snapshot) => ({
+            ...snapshot,
+            automations: snapshot.automations.filter(item => item.id !== automationId),
+          })
+        : undefined)
     },
     async updateAutomation(automationId, input) {
       const payload: UpdateRequest = { sessionId: 'settings', automationId, input }
@@ -114,6 +144,9 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     async markRunRead(runId) {
       const payload: MarkReadRequest = { sessionId: 'settings', runId }
       await mutateThenRefresh('mark-read', payload)
+    },
+    async adoptSession(sessionId) {
+      unwrapRpcResult<unknown>(await rpc.call(CHANNEL, 'adopt-session', { sessionId }))
     },
     async addWorkspace(path) {
       const payload: AddWorkspaceRequest = { sessionId: 'settings', path }

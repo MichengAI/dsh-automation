@@ -8,6 +8,7 @@ import {
   FolderClosedIcon,
   FolderOpenIcon,
   PencilIcon,
+  TrashIcon,
 } from './icons.js'
 import type { AutomationRuntime } from './runtime.js'
 import { formatRunStamp, groupScheduledSessions } from './schedule-rail-model.js'
@@ -63,7 +64,6 @@ export function NativeScheduleSessionList(props: {
   }, [archived, state.snapshot])
   return (
     <div className='dsh-st-n'>
-      <div className='dsh-st-n-head'><span className='dsh-st-n-head-label'>{t('sidebar.section')}</span></div>
       <div className='dsh-st-n-tree' role='tree'>
         {state.phase === 'loading' && groups.length === 0 && <div className='dsh-st-n-empty'>{t('loading')}</div>}
         {groups.length === 0 && state.phase !== 'loading' && <div className='dsh-st-n-empty'>{t('sidebar.empty')}</div>}
@@ -77,7 +77,7 @@ export function NativeScheduleSessionList(props: {
                 <span className='dsh-st-n-title'>{group.name}</span>
               </button>
               {expanded && group.sessions.map((session) => (
-                <NativeSessionRow key={session.id} id={session.id} title={session.title} updatedAt={session.updatedAt} running={session.running} selected={selectedId === session.id} onOpen={() => { openSession?.(session.id) }} {...(renameSession === undefined ? {} : { renameSession })} {...(archiveSession === undefined ? {} : { archiveSession })} {...(deleteSession === undefined ? {} : { deleteSession })} {...(forkSession === undefined ? {} : { forkSession })} />
+                <NativeSessionRow key={session.id} t={t} id={session.id} title={session.title} updatedAt={session.updatedAt} running={session.running} selected={selectedId === session.id} onOpen={() => { void Promise.resolve(runtime.adoptSession?.(session.id)).catch(() => undefined).finally(() => { openSession?.(session.id) }) }} {...(renameSession === undefined ? {} : { renameSession })} {...(archiveSession === undefined ? {} : { archiveSession })} {...(deleteSession === undefined ? {} : { deleteSession })} {...(forkSession === undefined ? {} : { forkSession })} />
               ))}
             </div>
           )
@@ -88,6 +88,7 @@ export function NativeScheduleSessionList(props: {
 }
 
 function NativeSessionRow(props: {
+  readonly t: Translate
   readonly id: string
   readonly title: string
   readonly updatedAt: string
@@ -99,22 +100,33 @@ function NativeSessionRow(props: {
   readonly deleteSession?: (sessionId: string) => void | Promise<void>
   readonly forkSession?: (sessionId: string) => void | Promise<void>
 }): JSX.Element {
-  const { id, title, updatedAt, running, selected, onOpen, renameSession, archiveSession, deleteSession, forkSession } = props
+  const { t, id, title, updatedAt, running, selected, onOpen, renameSession, archiveSession, deleteSession, forkSession } = props
   const [menu, setMenu] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [draft, setDraft] = useState(title)
   useEffect(() => { setDraft(title) }, [title])
   const run = (action: () => void | Promise<void>): void => { void Promise.resolve(action()).catch(() => undefined) }
   const rowClass = 'dsh-st-n-sess' + (selected ? ' is-on' : '') + (menu ? ' is-menu' : '')
-  return (
-    <div className={rowClass} role='treeitem' tabIndex={0} aria-selected={selected} onClick={onOpen} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); setMenu((open) => !open) }} onMouseLeave={() => setMenu(false)}>
-      <span className='dsh-st-n-slot' />
-      {renaming ? (
-        <input className='dsh-st-n-rename' value={draft} autoFocus aria-label='重命名会话' onChange={(event) => setDraft(event.target.value)} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => {
+  if (renaming) {
+    return (
+      <div className={rowClass}>
+        <input className='dsh-st-n-rename' value={draft} autoFocus aria-label={t('session.rename')} onChange={(event) => setDraft(event.target.value)} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => {
           if (event.key === 'Enter') { event.preventDefault(); setRenaming(false); if (draft.trim() !== '' && draft.trim() !== title) run(() => renameSession?.(id, draft.trim())) }
           if (event.key === 'Escape') { event.preventDefault(); setRenaming(false); setDraft(title) }
         }} onBlur={() => { setRenaming(false); if (draft.trim() !== '' && draft.trim() !== title) run(() => renameSession?.(id, draft.trim())) }} />
-      ) : <span className='dsh-st-n-title'>{title}</span>}
+      </div>
+    )
+  }
+  const menuItems = [
+    { id: 'rename', label: t('session.rename'), icon: <PencilIcon width={16} height={16} />, go: () => { setRenaming(true) } },
+    { id: 'fork', label: t('session.fork'), icon: <BranchIcon width={16} height={16} />, go: () => run(() => forkSession?.(id)) },
+    { id: 'archive', label: t('session.archive'), icon: <ArchiveIcon width={16} height={16} />, go: () => run(() => archiveSession?.(id)) },
+    { id: 'delete', label: t('session.delete'), icon: <TrashIcon width={16} height={16} />, danger: true, go: () => run(() => deleteSession?.(id)) },
+  ]
+  return (
+    <div className={rowClass} role='treeitem' tabIndex={0} aria-selected={selected} onClick={onOpen} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); setMenu((open) => !open) }}>
+      <span className='dsh-st-n-slot' />
+      <span className='dsh-st-n-title'>{title}</span>
       {running && <i className='dsh-st-rail-dot' />}
       <span className='dsh-st-n-time'>{relativeTime(updatedAt)}</span>
       <span className='dsh-st-n-acts'>
@@ -124,10 +136,11 @@ function NativeSessionRow(props: {
       </span>
       {menu && (
         <div className='dsh-st-n-menu' onClick={(event) => event.stopPropagation()}>
-          <button type='button' onClick={() => { setMenu(false); setRenaming(true) }}><span className='dsh-st-n-mi'><PencilIcon width={16} height={16} /></span>重命名</button>
-          <button type='button' onClick={() => { setMenu(false); run(() => forkSession?.(id)) }}><span className='dsh-st-n-mi'><BranchIcon width={16} height={16} /></span>分叉会话</button>
-          <button type='button' onClick={() => { setMenu(false); run(() => archiveSession?.(id)) }}><span className='dsh-st-n-mi'><ArchiveIcon width={16} height={16} /></span>归档会话</button>
-
+          {menuItems.map((item) => (
+            <button key={item.id} type='button' className={item.danger === true ? 'danger' : undefined} onClick={() => { setMenu(false); item.go() }}>
+              <span className='dsh-st-n-mi'>{item.icon}</span>{item.label}
+            </button>
+          ))}
         </div>
       )}
     </div>

@@ -9,7 +9,7 @@ import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/dsh-agent-presets'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { Domain, KvTable } from '@deepseek-ai/dsh-storage-domain'
-import type {} from '@deepseek-ai/dsh-workspace'
+import { WorkspaceId } from '@deepseek-ai/dsh-workspace'
 import {
   automationDomainSpec,
   createDefinition,
@@ -311,6 +311,16 @@ export class AutomationService {
     }, signal)
   }
 
+  async adoptSession(sessionId: string): Promise<void> {
+    const id = sessionId.trim()
+    if (id === '') return
+    const run = [...this.runs.entries()].map(([, item]) => item).find(item => item.sessionId === id)
+    if (run === undefined) return
+    const workspace = this.ctx.workspaceRegistry.get(WorkspaceId(run.targetSnapshot.workspaceId))
+    if (workspace === undefined) return
+    await workspace.attachSession(SessionId(id))
+  }
+
   async addWorkspace(path: string): Promise<WorkspaceOption> {
     const cwd = path.trim()
     if (cwd === '') throw new Error('请输入工作区目录。')
@@ -553,6 +563,7 @@ export class AutomationService {
       signal,
     })
     const finishedAt = toIso()
+    const boundSessionId = completion.sessionId ?? running.sessionId
     await this.runs.put(run.id, {
       ...running,
       status: completion.status,
@@ -562,6 +573,9 @@ export class AutomationService {
       error: completion.error ?? null,
       unread: true,
     })
+    if (typeof boundSessionId === 'string' && boundSessionId !== '') {
+      await this.adoptSession(boundSessionId).catch(() => undefined)
+    }
     await this.pruneWorkspaceHistory(run.targetSnapshot.workspaceId)
   }
 

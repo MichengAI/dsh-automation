@@ -231,6 +231,10 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
           const run = await service.markRead(scopeOf(payload), string(payload.runId, 'runId'), signal)
           return { ok: true, value: { runId: run.id, unread: run.unread } }
         }
+        case 'adopt-session': {
+          await service.adoptSession(string(payload.sessionId, 'sessionId'))
+          return { ok: true, value: { sessionId: string(payload.sessionId, 'sessionId') } }
+        }
         case 'add-workspace': {
           const workspace = await service.addWorkspace(string(payload.path, 'path'))
           return { ok: true, value: { id: workspace.id, title: workspace.title, path: workspace.path } }

@@ -64,6 +64,7 @@ export interface WorkspaceListState {
     readonly items?: readonly NativeWorkspaceLike[];
     readonly archivedSessionIds?: readonly string[];
 }
+export declare function openScheduledSession(id: string, openRuntime?: (sessionId: string) => void, openHost?: (sessionId: string) => void): void;
 export declare function isHiddenSidebarSessionId(id: string): boolean;
 export declare function filterWorkspaceListState<T extends WorkspaceListState>(state: T | undefined): T;
 export type WrapperFlags = {

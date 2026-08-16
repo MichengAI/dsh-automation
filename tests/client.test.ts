@@ -77,6 +77,34 @@ test('RPC 结果必须失败关闭，运行时会在变更后刷新快照', asyn
   assert.deepEqual(calls, ['create', 'snapshot', 'update', 'snapshot'])
 })
 
+test('删除成功后即使刷新失败也要从列表里拿掉任务', async () => {
+  const snapshot = {
+    scope: { cwd: 'D:\\work' },
+    automations: [
+      { id: 'keep', revision: 1, name: 'Keep', prompt: 'p', status: 'active', schedule: { kind: 'daily', time: '09:00' }, scheduleSummary: '', timeZone: 'Asia/Shanghai', permission: 'read-only', createdAt: '', updatedAt: '' },
+      { id: 'gone', revision: 1, name: 'Gone', prompt: 'p', status: 'active', schedule: { kind: 'daily', time: '09:00' }, scheduleSummary: '', timeZone: 'Asia/Shanghai', permission: 'read-only', createdAt: '', updatedAt: '' },
+    ],
+    runs: [],
+    serverNow: '2026-08-16T01:00:00.000Z',
+  }
+  let snapshots = 0
+  const runtime = createAutomationRuntime({
+    async call(_channel, endpoint) {
+      if (endpoint === 'snapshot') {
+        snapshots += 1
+        if (snapshots === 1) return { ok: true, value: snapshot }
+        throw new Error('Failed to fetch')
+      }
+      if (endpoint === 'mutate') return { ok: true, value: { id: 'gone', deleted: true } }
+      throw new Error(`unexpected ${endpoint}`)
+    },
+  })
+  await runtime.refresh()
+  await runtime.mutateAutomation('gone', 'delete')
+  const state = runtime.source.getSnapshot()
+  assert.deepEqual(state.snapshot?.automations.map(item => item.id), ['keep'])
+})
+
 test('编辑表单会从已有任务还原名称、计划和模型', () => {
   const form = formFromAutomation({
     id: 'a1',

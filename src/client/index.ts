@@ -12,7 +12,7 @@ import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefi
 import { createAutomationRuntime } from './runtime.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
 import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
-import { AUTOMATION_SESSION_PREFIX, hasCodexUiSidebar, pickWrappableWorkspacesEntry, resolveOfficialTreeComponent } from './schedule-rail-model.js'
+import { AUTOMATION_SESSION_PREFIX, hasCodexUiSidebar, openScheduledSession, pickWrappableWorkspacesEntry, resolveOfficialTreeComponent } from './schedule-rail-model.js'
 import { installStyles } from './styles.js'
 
 export const name = 'dsh-automation-client'
@@ -30,17 +30,38 @@ type HostComponent = ComponentType<any> & {
   __dshAutomationOriginal?: ComponentType<any>
 }
 
+const SETTINGS_CLOCK_SVG = '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true" data-dsh-schedule-icon="1"><path fill="currentColor" d="M8 1.15A6.85 6.85 0 1 0 8 14.85 6.85 6.85 0 0 0 8 1.15Zm0 1.4a5.45 5.45 0 1 1 0 10.9 5.45 5.45 0 0 1 0-10.9Z"/><path fill="currentColor" d="M8.62 4.35H7.28v4.2l3.02 1.78.67-1.13-2.35-1.39V4.35Z"/></svg>'
+
+function installSettingsNavIcon(labels: () => readonly string[]): () => void {
+  const apply = (): void => {
+    const wanted = new Set(labels().map(item => item.trim()).filter(item => item !== ''))
+    const buttons = document.querySelectorAll('button')
+    for (const button of buttons) {
+      const text = (button.textContent ?? '').replace(/\s+/g, ' ').trim()
+      if (!wanted.has(text)) continue
+      const svg = button.querySelector('svg')
+      if (svg === null || svg.getAttribute('data-dsh-schedule-icon') === '1') continue
+      svg.outerHTML = SETTINGS_CLOCK_SVG
+    }
+  }
+  apply()
+  const observer = new MutationObserver(apply)
+  observer.observe(document.documentElement, { childList: true, subtree: true })
+  return () => { observer.disconnect() }
+}
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => installStyles(), 'dsh-automation: styles')
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-automation: locale')
   const t = ctx.locale.bind(NS)
   const runtime = createAutomationRuntime(ctx.connection.rpc)
+  ctx.effect(() => installSettingsNavIcon(() => [t('tab'), 'Scheduled tasks', '定时任务']), 'dsh-automation: settings icon')
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
     id: 'scheduled-tasks',
     order: 28,
     locale: NS,
     label: () => t('tab'),
+    icon: 'schedule',
   }, function ScheduledTasksSettings(props: { close?: () => void }) {
     return createElement(AutomationView, { t, runtime, ...(props.close === undefined ? {} : { closeSettings: props.close }) })
   }))
@@ -54,7 +75,7 @@ export function apply(ctx: ClientContext): void {
     return createElement(ScheduleRail, {
       t,
       runtime,
-      ...(props.openSession === undefined ? {} : { openSession: props.openSession }),
+      openSession: (id) => { openScheduledSession(id, (sessionId) => { ctx.sessions?.open(sessionId) }, props.openSession) },
     })
   }))
   ctx.slots.inject('sidebar.workspaces', () => {
@@ -85,15 +106,18 @@ export function apply(ctx: ClientContext): void {
         order: 30,
         matchSession: (sessionId) => sessionId.startsWith(AUTOMATION_SESSION_PREFIX),
         render: (props) => {
-          const opener = typeof props.openSession === 'function'
+          const hostOpen = typeof props.openSession === 'function'
             ? props.openSession as (id: string) => void
             : typeof props.open === 'function'
               ? props.open as (id: string) => void
               : openSession
+          const opener = (id: string): void => {
+            openScheduledSession(id, (sessionId) => { ctx.sessions?.open(sessionId) }, hostOpen)
+          }
           return createElement(NativeScheduleSessionList, {
             t,
             runtime,
-            ...(opener === undefined ? {} : { openSession: opener }),
+            openSession: opener,
             ...(typeof props.useSessions === 'function' ? { useSessions: props.useSessions as any } : {}),
             ...(typeof props.useWorkspaces === 'function' ? { useWorkspaces: props.useWorkspaces as any } : {}),
             ...(typeof props.renameSession === 'function' ? { renameSession: props.renameSession as any } : {}),
@@ -133,7 +157,7 @@ export function apply(ctx: ClientContext): void {
         const registry = createNativeTabRegistry(originalComp)
         attachNativeTabRegistry(occupant, registry)
         function AutomationNativeWorkspaceShell(innerProps: NativeSwitcherProps): JSX.Element | null {
-          const openSession = innerProps.openSession ?? innerProps.open ?? ((id: string) => { ctx.sessions?.open(id) })
+          const openSession = (id: string): void => { openScheduledSession(id, (sessionId) => { ctx.sessions?.open(sessionId) }, innerProps.openSession ?? innerProps.open) }
           return createElement(NativeScheduleShell, {
             t,
             runtime,

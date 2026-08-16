@@ -16,6 +16,7 @@ export interface SlotRegisterOptions {
     readonly order?: number;
     readonly locale?: string;
     readonly label?: () => string;
+    readonly icon?: string;
     readonly priority?: number;
     readonly children?: Record<string, {
         readonly kind: string;

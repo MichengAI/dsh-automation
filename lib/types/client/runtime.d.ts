@@ -1,5 +1,6 @@
 import type { ClientRpc } from './contracts.js';
 import type { AutomationSnapshot, CreateAutomationInput, MutateRequest } from './protocol.js';
+export declare function isTransportError(error: unknown): boolean;
 export interface AutomationClientState {
     readonly phase: 'idle' | 'loading' | 'ready' | 'error';
     readonly snapshot?: AutomationSnapshot;
@@ -21,5 +22,6 @@ export interface AutomationRuntime {
     addWorkspace(path: string): Promise<{
         id: string;
     }>;
+    adoptSession(sessionId: string): Promise<void>;
 }
 export declare function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime;

@@ -24,6 +24,10 @@ export declare const en: {
     readonly 'chat.prompt': "I want to create a scheduled task that runs every [interval] and does [the actual task]";
     readonly 'menu.run': "Run now";
     readonly 'menu.delete': "Delete task";
+    readonly 'session.rename': "Rename";
+    readonly 'session.fork': "Fork session";
+    readonly 'session.archive': "Archive session";
+    readonly 'session.delete': "Delete session";
     readonly 'history.range.day': "By day";
     readonly 'history.range.week': "By week";
     readonly 'history.range.month': "By month";
@@ -169,6 +173,7 @@ export declare const en: {
     readonly 'error.title': "Automations could not be loaded";
     readonly 'error.retry': "Try again";
     readonly 'error.action': "The action failed. Please try again.";
+    readonly 'error.offline': "Could not reach the local automation service. Check that DSH is still running and try again.";
     readonly 'time.now': "now";
     readonly 'time.minuteAgo': "{count}m ago";
     readonly 'time.hourAgo': "{count}h ago";

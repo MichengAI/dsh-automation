@@ -26,6 +26,7 @@ import {
 } from './icons.js'
 import { CreateModal } from './create-modal.js'
 import { setChatPrefill } from './prefill.js'
+import { isTransportError } from './runtime.js'
 import type { AutomationRunStatus, AutomationRunViewModel, AutomationViewModel } from './protocol.js'
 
 const POLL_INTERVAL_MS = 15_000
@@ -82,7 +83,8 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
     } catch (caught) {
       setError(caught instanceof AutomationFormError
         ? t(caught.key)
-        : caught instanceof Error ? caught.message : t('error.action'))
+        : isTransportError(caught) ? t('error.offline')
+          : caught instanceof Error ? caught.message : t('error.action'))
     } finally {
       setBusy(false)
     }
@@ -109,18 +111,18 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
   return (
     <div className="dsh-st-shell">
       <header className="dsh-st-top">
-        <div>
+        <div className="dsh-st-heading">
           <h1>{t('tab')}</h1>
           <p>{t('header.lead')}</p>
         </div>
         <div className="dsh-st-toolbar">
-          <button type="button" className="dsh-st-icon" onClick={() => { void runtime.refresh() }} aria-label={t('section.refresh')}><RefreshIcon /></button>
           <input className="dsh-st-search" value={query} placeholder={t('search.placeholder')} onChange={event => setQuery(event.target.value)} />
           <button type="button" className="dsh-st-btn" onClick={() => {
             setChatPrefill(t('chat.prompt'))
             closeSettings?.()
           }}><ChatIcon />{t('action.chatCreate')}</button>
           <button type="button" className="dsh-st-btn dsh-st-btn--primary" onClick={() => openCreate()}><PlusIcon />{t('action.create')}</button>
+          <button type="button" className="dsh-st-icon" onClick={() => { void runtime.refresh() }} aria-label={t('section.refresh')}><RefreshIcon /></button>
         </div>
       </header>
 
