@@ -60,19 +60,19 @@ const CSS_TEXT = `
 .dsh-st-error{color:#ff6b6b;font-size:12px}
 .dsh-st-muted{color:var(--dsw-alias-label-secondary)}
 .dsh-st-mask{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:rgba(0,0,0,.45)}
-.dsh-st-modal{width:min(760px,100%);max-height:min(92vh,900px);overflow:visible;padding:24px;border:1px solid var(--dsw-alias-border-l2);border-radius:20px;background:var(--dsw-alias-bg-base)}
+.dsh-st-modal,.dsh-st-modal *{box-sizing:border-box}.dsh-st-modal{display:flex;flex-direction:column;width:min(760px,calc(100vw - 48px));max-width:100%;max-height:min(92vh,900px);overflow:hidden;padding:24px;border:1px solid var(--dsw-alias-border-l2);border-radius:20px;background:var(--dsw-alias-bg-base)}
 .dsh-st-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .dsh-st-modal-head h2{margin:0 0 4px;font-size:20px}
-.dsh-st-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-size:13px}
+.dsh-st-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;min-width:0;max-width:100%;font-size:13px}.dsh-st-field:has(.dsh-st-prompt-card){flex:1;min-height:0;margin-bottom:10px}
 .dsh-st-field input,.dsh-st-field select,.dsh-st-field textarea{width:100%;padding:9px 10px;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;background:var(--dsw-alias-bg-layer-1);color:inherit}
-.dsh-st-field textarea{min-height:240px;resize:vertical}
+.dsh-st-field textarea{min-height:140px;max-width:100%;resize:vertical}
 .dsh-st-inline{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .dsh-st-inline select,.dsh-st-inline input{flex:1;min-width:120px}
 .dsh-st-weekdays{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .dsh-st-weekdays button{min-width:40px;padding:6px 8px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:transparent;color:inherit;cursor:pointer}
 .dsh-st-weekdays button.is-on{border-color:#4b7cff;color:#4b7cff}
 .dsh-st-check{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px;font-size:12px}
-.dsh-st-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.dsh-st-modal-actions{display:flex;justify-content:flex-end;flex:none;gap:8px;margin-top:8px}
 @media(max-width:860px){.dsh-st-top,.dsh-st-banner{flex-direction:column}.dsh-st-grid,.dsh-st-example-row{grid-template-columns:1fr}.dsh-st-search{width:100%}.dsh-st-filters{width:100%;margin:8px 0}}
 .dsh-st-select{position:relative;min-width:108px;z-index:1}.dsh-st-select.is-open{z-index:30}
 .dsh-st-select.is-wide{min-width:148px}
@@ -106,8 +106,8 @@ const CSS_TEXT = `
 .dsh-st-inline input.is-narrow{width:72px;flex:none}
 .dsh-st-weekdays button{min-width:52px;height:34px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:transparent}
 .dsh-st-weekdays button.is-on{border-color:transparent;background:#fff;color:#111}
-.dsh-st-prompt-card{display:flex;flex-direction:column;min-height:320px;border:1px solid var(--dsw-alias-border-l2);border-radius:22px;overflow:visible;background:rgba(255,255,255,.03)}
-.dsh-st-prompt-card textarea{flex:1;border:0;background:transparent;min-height:240px;padding:16px 18px;font-size:14px;line-height:1.65}
+.dsh-st-prompt-card{display:flex;flex-direction:column;flex:1;min-height:160px;max-width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:22px;overflow:hidden;background:rgba(255,255,255,.03)}
+.dsh-st-prompt-card textarea{flex:1;width:100%;max-width:100%;min-height:140px;border:0;background:transparent;padding:16px 18px;font-size:14px;line-height:1.65;resize:none}
 .dsh-st-composer,.dsh-st-composer-left,.dsh-st-composer-right{display:flex;align-items:center;flex-wrap:nowrap}
 .dsh-st-composer{justify-content:space-between;gap:8px;padding:2px 8px 10px;border-top:0}
 .dsh-st-composer-left,.dsh-st-composer-right{gap:2px;min-width:0}
