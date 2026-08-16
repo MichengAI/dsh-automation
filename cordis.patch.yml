@@ -1,0 +1,9 @@
+# 一次安装同时挂载 Host 服务并发布 Web 客户端。
+- insert:
+    - id: dsh-automation
+      name: '@michengai/dsh-automation'
+      config:
+        maxConcurrentRuns: 2
+        runTimeoutMinutes: 60
+        misfireGraceMinutes: 15
+        historyLimit: 200

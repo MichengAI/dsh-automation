@@ -1,0 +1,17 @@
+import type { SVGProps } from 'react';
+type IconProps = SVGProps<SVGSVGElement>;
+export declare function AutomationIcon(props: IconProps): JSX.Element;
+export declare function PlusIcon(props: IconProps): JSX.Element;
+export declare function RefreshIcon(props: IconProps): JSX.Element;
+export declare function PlayIcon(props: IconProps): JSX.Element;
+export declare function PauseIcon(props: IconProps): JSX.Element;
+export declare function TrashIcon(props: IconProps): JSX.Element;
+export declare function ShieldIcon(props: IconProps): JSX.Element;
+export declare function CalendarIcon(props: IconProps): JSX.Element;
+export declare function CheckIcon(props: IconProps): JSX.Element;
+export declare function AlertIcon(props: IconProps): JSX.Element;
+export declare function MoreIcon(props: IconProps): JSX.Element;
+export declare function InfoIcon(props: IconProps): JSX.Element;
+export declare function ClockIcon(props: IconProps): JSX.Element;
+export declare function ChatIcon(props: IconProps): JSX.Element;
+export {};

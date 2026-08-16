@@ -1,0 +1,9 @@
+dsh-automation
+Copyright 2026 MichengAI contributors
+
+本项目的 TypeScript 源码、构建脚本与项目文档采用 Apache License 2.0。
+
+产品模型参考了 DeepSeek Harness 社区中的独立自动化实践：
+- 独立 Session 调度与审计历史（titanwings/dsh-automation，MIT）
+
+上述参考实现的许可证与版权仍归其原作者所有；本仓库实现为独立编写，不复制其专有代码。
