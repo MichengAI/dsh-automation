@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 
 export interface MenuOption<T extends string> {
@@ -6,6 +6,8 @@ export interface MenuOption<T extends string> {
   readonly label: string
   readonly icon?: ReactNode
 }
+
+const MenuHostContext = createContext<HTMLElement | null>(null)
 
 function useMenuOpen(): {
   readonly open: boolean
@@ -32,16 +34,17 @@ function useMenuOpen(): {
   return { open, setOpen, root, menu }
 }
 
-function flyoutStyle(anchor: HTMLElement, up?: boolean, end?: boolean): CSSProperties {
+function flyoutStyle(anchor: HTMLElement, host: HTMLElement, up?: boolean, end?: boolean): CSSProperties {
   const box = anchor.getBoundingClientRect()
+  const frame = host.getBoundingClientRect()
   const gap = 6
   return {
-    position: 'fixed',
-    zIndex: 80,
-    top: up === true ? 'auto' : `${box.bottom + gap}px`,
-    bottom: up === true ? `${window.innerHeight - box.top + gap}px` : 'auto',
-    left: end === true ? 'auto' : `${box.left}px`,
-    right: end === true ? `${window.innerWidth - box.right}px` : 'auto',
+    position: 'absolute',
+    zIndex: 1200,
+    top: up === true ? 'auto' : `${box.bottom - frame.top + gap}px`,
+    bottom: up === true ? `${frame.bottom - box.top + gap}px` : 'auto',
+    left: end === true ? 'auto' : `${box.left - frame.left}px`,
+    right: end === true ? `${frame.right - box.right}px` : 'auto',
   }
 }
 
@@ -64,12 +67,13 @@ export function MenuPopup({
   readonly children: ReactNode
   readonly onClick?: () => void
 }): JSX.Element | null {
+  const host = useContext(MenuHostContext)
   const [style, setStyle] = useState<CSSProperties>({})
 
   useLayoutEffect(() => {
-    if (!open || anchor.current === null) return
+    if (!open || anchor.current === null || host === null) return
     const update = (): void => {
-      if (anchor.current !== null) setStyle(flyoutStyle(anchor.current, up, end))
+      if (anchor.current !== null) setStyle(flyoutStyle(anchor.current, host, up, end))
     }
     update()
     window.addEventListener('resize', update)
@@ -78,15 +82,37 @@ export function MenuPopup({
       window.removeEventListener('resize', update)
       document.removeEventListener('scroll', update, true)
     }
-  }, [open, anchor, up, end])
+  }, [open, anchor, host, up, end])
 
-  if (!open || typeof document === 'undefined') return null
-  return createPortal(
-    <div ref={menuRef} className={`${className} is-float`} style={style} onClick={onClick}>
+  if (!open) return null
+
+  const node = (
+    <div
+      ref={menuRef}
+      className={`${className}${host !== null ? ' is-float' : ''}`}
+      style={host !== null ? style : undefined}
+      onMouseDown={event => event.stopPropagation()}
+      onClick={event => {
+        event.stopPropagation()
+        onClick?.()
+      }}
+    >
       {children}
-    </div>,
-    document.body,
+    </div>
   )
+
+  if (host !== null) return createPortal(node, host)
+  return node
+}
+
+export function MenuHostProvider({
+  host,
+  children,
+}: {
+  readonly host: HTMLElement | null
+  readonly children: ReactNode
+}): JSX.Element {
+  return <MenuHostContext.Provider value={host}>{children}</MenuHostContext.Provider>
 }
 
 export function MenuRow({
@@ -216,3 +242,4 @@ export function MenuPanel({
 export function useMenuState(): ReturnType<typeof useMenuOpen> {
   return useMenuOpen()
 }
+

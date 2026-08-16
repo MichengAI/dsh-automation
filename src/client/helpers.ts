@@ -43,6 +43,32 @@ export class AutomationFormError extends Error {
   }
 }
 
+const SKILL_GESTURE_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+/** Chat 点选技能后写入输入框的 `/name` 文本。优先用合法技能名，否则回退到目录 id。 */
+export function skillGestureToken(skill: { readonly id: string; readonly name: string }): string {
+  const raw = SKILL_GESTURE_NAME.test(skill.name) ? skill.name : skill.id
+  return `/${raw}`
+}
+
+/** 在光标处插入技能手势；已存在相同 token 时不重复插入。 */
+export function insertSkillGesture(
+  prompt: string,
+  token: string,
+  caret: number,
+): { readonly text: string; readonly caret: number } {
+  const normalized = token.startsWith('/') ? token : `/${token}`
+  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  if (new RegExp(`(^|\\s)${escaped}(?=\\s|$)`).test(prompt)) {
+    return { text: prompt, caret: Math.min(Math.max(caret, 0), prompt.length) }
+  }
+  const at = Math.min(Math.max(caret, 0), prompt.length)
+  const prefix = prompt.slice(0, at)
+  const suffix = prompt.slice(at)
+  const lead = prefix.length > 0 && !/\s$/.test(prefix) ? ' ' : ''
+  const inserted = `${lead}${normalized} `
+  return { text: prefix + inserted + suffix, caret: prefix.length + inserted.length }
+}
 export function localDateTimeValue(date = new Date()): string {
   const future = new Date(date.getTime() + 60 * 60 * 1000)
   future.setMinutes(0, 0, 0)
@@ -360,4 +386,5 @@ export function prettyModelName(model: string): string {
     return part.slice(0, 1).toUpperCase() + part.slice(1)
   }).join('-')
 }
+
 

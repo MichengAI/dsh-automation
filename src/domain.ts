@@ -84,6 +84,7 @@ export const automationRunSchema: z.ZodType<AutomationRun> = z.object({
   version: z.literal(1),
   id: nonBlank,
   automationId: nonBlank,
+  automationName: nonBlank.optional(),
   definitionRevision: z.number().int().positive(),
   occurrenceKey: nonBlank,
   trigger: z.enum(['schedule', 'manual']),
@@ -231,6 +232,7 @@ function queuedRun(
     version: 1,
     id,
     automationId: definition.id,
+    automationName: definition.name,
     definitionRevision: definition.revision,
     occurrenceKey: key,
     trigger,
@@ -273,3 +275,4 @@ function positiveInteger(value: number, field: string): number {
 }
 
 export type { AutomationSchedule }
+

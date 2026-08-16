@@ -85,6 +85,8 @@ export declare class AutomationService {
     }>;
     runNow(scope: AutomationScope, id: string, signal?: AbortSignal): Promise<AutomationRun>;
     markRead(scope: AutomationScope, runId: string, signal?: AbortSignal): Promise<AutomationRun>;
+    forgetSession(sessionId: string): Promise<void>;
+    forgetAutomationSessions(automationId: string): Promise<void>;
     adoptSession(sessionId: string): Promise<void>;
     addWorkspace(path: string): Promise<WorkspaceOption>;
     private collectOptions;

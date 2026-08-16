@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, prettyModelName } from '../src/client/helpers.ts'
+import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, insertSkillGesture, prettyModelName, skillGestureToken } from '../src/client/helpers.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
 import { createAutomationRuntime } from '../src/client/runtime.ts'
 
@@ -158,3 +158,16 @@ test('automation session title uses run time and task name', () => {
   assert.ok(title.includes('自动执行-报表系统-生成部署'))
   assert.ok(title.includes('2026-08-16'))
 })
+
+test('技能点选写入 /name，已存在则不重复', () => {
+  assert.equal(skillGestureToken({ id: 'daily-briefing', name: '每日早报' }), '/daily-briefing')
+  assert.equal(skillGestureToken({ id: 'folder', name: 'web-search' }), '/web-search')
+  const first = insertSkillGesture('检查失败', '/daily-briefing', 0)
+  assert.equal(first.text, '/daily-briefing 检查失败')
+  const again = insertSkillGesture(first.text, '/daily-briefing', first.caret)
+  assert.equal(again.text, first.text)
+  const mid = insertSkillGesture('请执行', '/web-search', 3)
+  assert.equal(mid.text, '请执行 /web-search ')
+})
+
+

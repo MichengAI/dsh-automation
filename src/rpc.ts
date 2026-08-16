@@ -154,7 +154,7 @@ async function snapshotValue(service: AutomationService, payload: Record<string,
     runs: snapshot.runs.map(run => ({
       id: run.id,
       automationId: run.automationId,
-      automationName: names.get(run.automationId) ?? run.automationId,
+      automationName: names.get(run.automationId) ?? run.automationName ?? run.automationId,
       status: run.error?.code === 'host_interrupted' ? 'interrupted' : run.status,
       trigger: run.trigger,
       scheduledFor: run.scheduledFor,
@@ -235,6 +235,14 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
           await service.adoptSession(string(payload.sessionId, 'sessionId'))
           return { ok: true, value: { sessionId: string(payload.sessionId, 'sessionId') } }
         }
+        case 'forget-session': {
+          await service.forgetSession(string(payload.sessionId, 'sessionId'))
+          return { ok: true, value: { sessionId: string(payload.sessionId, 'sessionId') } }
+        }
+        case 'forget-automation-sessions': {
+          await service.forgetAutomationSessions(string(payload.automationId, 'automationId'))
+          return { ok: true, value: { automationId: string(payload.automationId, 'automationId') } }
+        }
         case 'add-workspace': {
           const workspace = await service.addWorkspace(string(payload.path, 'path'))
           return { ok: true, value: { id: workspace.id, title: workspace.title, path: workspace.path } }
@@ -247,4 +255,6 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
     }
   }, { authority: 'loopback' })
 }
+
+
 

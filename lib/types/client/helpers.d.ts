@@ -24,6 +24,16 @@ export declare class AutomationFormError extends Error {
     readonly key: FormErrorKey;
     constructor(key: FormErrorKey);
 }
+/** Chat 点选技能后写入输入框的 `/name` 文本。优先用合法技能名，否则回退到目录 id。 */
+export declare function skillGestureToken(skill: {
+    readonly id: string;
+    readonly name: string;
+}): string;
+/** 在光标处插入技能手势；已存在相同 token 时不重复插入。 */
+export declare function insertSkillGesture(prompt: string, token: string, caret: number): {
+    readonly text: string;
+    readonly caret: number;
+};
 export declare function localDateTimeValue(date?: Date): string;
 export declare function defaultFormState(now?: Date, workspaces?: readonly WorkspaceOption[], defaultModel?: ModelOption | null): AutomationFormState;
 export declare function buildCreateInput(form: AutomationFormState, workspaces: readonly WorkspaceOption[], models: readonly ModelOption[], now?: Date, options?: {

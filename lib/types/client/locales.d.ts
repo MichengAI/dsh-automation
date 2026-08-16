@@ -28,6 +28,7 @@ export declare const en: {
     readonly 'session.fork': "Fork session";
     readonly 'session.archive': "Archive session";
     readonly 'session.delete': "Delete session";
+    readonly 'session.deleteFolder': "Delete folder";
     readonly 'history.range.day': "By day";
     readonly 'history.range.week': "By week";
     readonly 'history.range.month': "By month";

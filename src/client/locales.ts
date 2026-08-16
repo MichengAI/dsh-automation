@@ -29,6 +29,7 @@ export const en = {
   'session.fork': 'Fork session',
   'session.archive': 'Archive session',
   'session.delete': 'Delete session',
+  'session.deleteFolder': 'Delete folder',
   'history.range.day': 'By day',
   'history.range.week': 'By week',
   'history.range.month': 'By month',
@@ -215,6 +216,7 @@ export const zh: Record<AutomationLocaleKey, string> = {
   'session.fork': '分叉会话',
   'session.archive': '归档会话',
   'session.delete': '删除会话',
+  'session.deleteFolder': '删除文件夹',
   'history.range.day': '按天',
   'history.range.week': '按周',
   'history.range.month': '按月',
@@ -369,3 +371,4 @@ export const zh: Record<AutomationLocaleKey, string> = {
   'time.inHour': '{count} 小时后',
   'time.inDay': '{count} 天后',
 }
+

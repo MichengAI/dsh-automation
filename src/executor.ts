@@ -230,12 +230,14 @@ export async function executeAutomationRun(
   }
 }
 
-function pinAutomationSessionTitle(ctx: Context, session: unknown, title: string): void {
-  const service = (ctx as Context & { sessionTitle?: { rename(target: unknown, value: string): unknown } }).sessionTitle
-  if (service === undefined) return
+export function pinAutomationSessionTitle(ctx: Context, session: unknown, title: string): void {
+  // Cordis 未 inject 时直接读 ctx.sessionTitle 会抛错，必须走可选查询。
+  const service = ctx.get('sessionTitle') as { rename?(target: unknown, value: string): unknown } | undefined
+  if (service === undefined || typeof service.rename !== 'function') return
   try {
     service.rename(session, title)
   } catch (error: unknown) {
     ctx.logger.warn(`dsh-automation: failed to pin session title: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
+

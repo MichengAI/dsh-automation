@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { summarizeRun, unattendedToolGuardReason } from '../src/executor.ts'
+import { pinAutomationSessionTitle, summarizeRun, unattendedToolGuardReason } from '../src/executor.ts'
 
 test('无人值守守卫拒绝未知工具和后台 shell', () => {
   assert.equal(unattendedToolGuardReason('read', {}), undefined)
@@ -18,3 +18,35 @@ test('运行摘要只取本 run 区间内的最后一条助手文本和 turn 结
   assert.equal(result.text, '新结果')
   assert.equal(result.reason?.kind, 'completed')
 })
+
+test('未注入 sessionTitle 时不能让整次执行失败', () => {
+  const warnings: string[] = []
+  const ctx = {
+    get(name: string) {
+      if (name === 'sessionTitle') return undefined
+      return undefined
+    },
+    get sessionTitle() {
+      throw new Error('cannot get property "sessionTitle" without inject')
+    },
+    logger: { warn(message: string) { warnings.push(message) } },
+  } as never
+  pinAutomationSessionTitle(ctx, {}, '2026-08-17 00:36 - 每日回归检查')
+  assert.deepEqual(warnings, [])
+})
+
+test('sessionTitle.rename 失败只记日志，不抛出', () => {
+  const warnings: string[] = []
+  const ctx = {
+    get() {
+      return {
+        rename() { throw new Error('rename rejected') },
+      }
+    },
+    logger: { warn(message: string) { warnings.push(message) } },
+  } as never
+  pinAutomationSessionTitle(ctx, {}, 'title')
+  assert.equal(warnings.length, 1)
+  assert.match(warnings[0] ?? '', /rename rejected/)
+})
+

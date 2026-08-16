@@ -1,14 +1,16 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Translate } from './contracts.js'
 import {
   AutomationFormError,
   defaultFormState,
+  insertSkillGesture,
   prettyModelName,
+  skillGestureToken,
   type AutomationFormState,
   type ScheduleKind,
 } from './helpers.js'
 import { FolderIcon, PlusIcon, ShieldIcon, SparkleIcon } from './icons.js'
-import { MenuPanel, MenuPopup, MenuRow, MenuSelect, useMenuState } from './menu.js'
+import { MenuHostProvider, MenuPanel, MenuPopup, MenuRow, MenuSelect, useMenuState } from './menu.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom']
@@ -69,12 +71,25 @@ export function CreateModal({
   const timePart = form.onceAt.slice(11, 16) || '09:00'
   const today = localDateValue(new Date())
   const minOnceTime = datePart === today ? localTimeValue(new Date()) : undefined
+  const [menuHost, setMenuHost] = useState<HTMLDivElement | null>(null)
   const workspace = workspaces.find(item => item.id === form.workspaceId)
-  const skillLabel = form.skills.length === 1
-    ? (skills.find(item => item.id === form.skills[0])?.name ?? t('form.skills'))
-    : form.skills.length > 1
-      ? `${t('form.skills')} ${form.skills.length}`
-      : t('form.skills')
+  const promptRef = useRef<HTMLTextAreaElement>(null)
+  const caretRef = useRef(0)
+  const rememberCaret = (): void => {
+    const el = promptRef.current
+    if (el !== null) caretRef.current = el.selectionStart
+  }
+  const insertSkill = (skill: { id: string; name: string }): void => {
+    const next = insertSkillGesture(form.prompt, skillGestureToken(skill), caretRef.current)
+    update({ prompt: next.text })
+    queueMicrotask(() => {
+      const el = promptRef.current
+      if (el === null) return
+      el.focus()
+      el.setSelectionRange(next.caret, next.caret)
+      caretRef.current = next.caret
+    })
+  }
   return (
     <div
       className="dsh-st-mask"
@@ -84,6 +99,7 @@ export function CreateModal({
         onClose()
       }}
     >
+      <MenuHostProvider host={menuHost}>
       <form className="dsh-st-modal" onClick={event => event.stopPropagation()} onSubmit={handleSubmit}>
         <div className="dsh-st-modal-head">
           <div>
@@ -170,7 +186,7 @@ export function CreateModal({
         <div className="dsh-st-field">
           <span>{t('form.prompt')}</span>
           <div className="dsh-st-prompt-card">
-            <textarea value={form.prompt} placeholder={t('form.promptPlaceholder')} onChange={event => update({ prompt: event.target.value })} />
+            <textarea ref={promptRef} value={form.prompt} placeholder={t('form.promptPlaceholder')} onChange={event => { rememberCaret(); update({ prompt: event.target.value }) }} onSelect={rememberCaret} onClick={rememberCaret} onKeyUp={rememberCaret} />
             <div className="dsh-st-composer">
               <div className="dsh-st-composer-left">
                 <MenuPanel ghost up label={<><FolderIcon width={14} height={14} />{workspace?.title || t('form.workspace')}</>}>
@@ -191,19 +207,14 @@ export function CreateModal({
                     onClick={() => { setWorkspacePath(''); setAddingWorkspace(true) }}
                   />
                 </MenuPanel>
-                <MenuPanel ghost up persist label={<><SparkleIcon width={14} height={14} />{skillLabel}</>}>
+                <MenuPanel ghost up label={<><SparkleIcon width={14} height={14} />{t('form.skills')}</>}>
                   {skills.length === 0 && <div className="dsh-st-select-empty">{t('form.skillsEmpty')}</div>}
                   {skills.map(item => (
                     <MenuRow
                       key={item.id}
                       icon={<SparkleIcon width={14} height={14} />}
                       label={item.name}
-                      active={form.skills.includes(item.id)}
-                      onClick={() => update({
-                        skills: form.skills.includes(item.id)
-                          ? form.skills.filter(id => id !== item.id)
-                          : [...form.skills, item.id],
-                      })}
+                      onClick={() => insertSkill(item)}
                     />
                   ))}
                 </MenuPanel>
@@ -267,6 +278,8 @@ export function CreateModal({
           <button type="submit" className="dsh-st-btn dsh-st-btn--primary" disabled={busy}>{t('modal.save')}</button>
         </div>
       </form>
+      <div className="dsh-st-flyout-root" ref={setMenuHost} />
+      </MenuHostProvider>
     </div>
   )
 }
@@ -394,3 +407,5 @@ function clampOnceAt(value: string): string {
   const offset = next.getTimezoneOffset() * 60_000
   return new Date(next.getTime() - offset).toISOString().slice(0, 16)
 }
+
+

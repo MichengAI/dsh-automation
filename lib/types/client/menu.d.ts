@@ -20,6 +20,10 @@ export declare function MenuPopup({ open, anchor, menuRef, up, end, className, c
     readonly children: ReactNode;
     readonly onClick?: () => void;
 }): JSX.Element | null;
+export declare function MenuHostProvider({ host, children, }: {
+    readonly host: HTMLElement | null;
+    readonly children: ReactNode;
+}): JSX.Element;
 export declare function MenuRow({ icon, label, hint, active, chevron, kv, onClick, }: {
     readonly icon?: ReactNode;
     readonly label: ReactNode;

@@ -57,7 +57,7 @@ const CSS_TEXT = `
 .dsh-st-run p{display:flex;gap:10px;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px}
 .dsh-st-error{color:#ff6b6b;font-size:12px}
 .dsh-st-muted{color:var(--dsw-alias-label-secondary)}
-.dsh-st-mask{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:rgba(0,0,0,.45)}
+.dsh-st-mask{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:rgba(0,0,0,.45)}.dsh-st-flyout-root{position:absolute;inset:0;z-index:1200;overflow:visible;pointer-events:none}.dsh-st-flyout-root .dsh-st-select-menu{pointer-events:auto}
 .dsh-st-modal,.dsh-st-modal *{box-sizing:border-box}.dsh-st-modal{display:flex;flex-direction:column;width:min(760px,calc(100vw - 48px));max-width:100%;max-height:min(92vh,900px);overflow:hidden;padding:24px;border:1px solid var(--dsw-alias-border-l2);border-radius:20px;background:var(--dsw-alias-bg-base)}
 .dsh-st-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .dsh-st-modal-head h2{margin:0 0 4px;font-size:20px}
@@ -83,7 +83,7 @@ const CSS_TEXT = `
 .dsh-st-select-btn em{width:8px;height:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);opacity:.7}
 .dsh-st-select-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:196px;max-height:280px;overflow:auto;padding:6px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:#2a2c31;box-shadow:0 16px 40px rgba(0,0,0,.42)}
 .dsh-st-select-menu.is-up{top:auto;bottom:calc(100% + 6px)}
-.dsh-st-select-menu.is-end{left:auto;right:0}.dsh-st-select-menu.is-float{position:fixed;z-index:80;max-height:min(280px,calc(100vh - 24px));box-sizing:border-box}
+.dsh-st-select-menu.is-end{left:auto;right:0}.dsh-st-select-menu.is-float{position:absolute;z-index:1200;max-height:min(280px,calc(100vh - 24px));box-sizing:border-box}
 .dsh-st-menu-row{white-space:nowrap}
 .dsh-st-menu-row.is-kv .dsh-st-menu-row-main{flex:none}
 .dsh-st-menu-row.is-kv .dsh-st-menu-row-side{flex:1;justify-content:flex-end;min-width:0}
@@ -109,7 +109,7 @@ const CSS_TEXT = `
 .dsh-st-inline input[type=date]{min-width:148px;max-width:170px}
 .dsh-st-weekdays button{min-width:52px;height:34px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:transparent}
 .dsh-st-weekdays button.is-on{border-color:transparent;background:#fff;color:#111}
-.dsh-st-prompt-card{display:flex;flex-direction:column;flex:1;min-height:160px;max-width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:22px;overflow:hidden;background:rgba(255,255,255,.03)}
+.dsh-st-prompt-card{display:flex;flex-direction:column;flex:1;min-height:160px;max-width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:22px;overflow:visible;background:rgba(255,255,255,.03)}
 .dsh-st-prompt-card textarea{flex:1;width:100%;max-width:100%;min-height:140px;border:0;background:transparent;padding:16px 18px;font-size:14px;line-height:1.65;resize:none}
 .dsh-st-composer,.dsh-st-composer-left,.dsh-st-composer-right{display:flex;align-items:center;flex-wrap:nowrap}
 .dsh-st-composer{justify-content:space-between;gap:8px;padding:2px 8px 10px;border-top:0}
@@ -129,7 +129,7 @@ const CSS_TEXT = `
 .dsh-st-rail-folder{display:grid;place-items:center;width:16px;height:20px;flex:none;opacity:.8}
 .dsh-st-rail-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dsh-st-rail-session span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dsh-st-rail-dot{width:6px;height:6px;margin-left:auto;border-radius:50%;background:#34c759;flex:none}
+.dsh-st-rail-dot{width:6px;height:6px;margin-left:auto;border-radius:50%;background:#34c759;flex:none}.dsh-st-run-dot{flex:none;color:var(--dsw-static-deepseek-450,#4c8dff)}.dsh-st-run-dot-cell{fill:currentColor;opacity:.15;animation:dsh-st-run-chase 1s infinite}@keyframes dsh-st-run-chase{0%,12.4%{opacity:1}12.5%,24.9%{opacity:.6}25%,37.4%{opacity:.35}37.5%,100%{opacity:.15}}
 .dsh-st-shell-rail{display:flex;flex-direction:column;min-height:0;flex:1;height:100%;overflow:hidden}
 .dsh-st-shell-tabs{display:flex;flex:none;gap:18px;padding:4px 12px 0;border-bottom:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,.08))}
 .dsh-st-shell-tabs button{appearance:none;border:0;background:transparent;color:var(--dsw-alias-label-secondary,#8b8f98);padding:8px 0;font-size:13px;cursor:pointer}
@@ -153,3 +153,5 @@ export function installStyles(): () => void {
   document.head.append(style)
   return () => { style.remove() }
 }
+
+

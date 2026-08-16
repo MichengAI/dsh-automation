@@ -13,6 +13,7 @@ export interface ScheduleRailGroup {
 }
 export interface ScheduleRunLike {
     readonly automationId: string;
+    readonly automationName?: string;
     readonly sessionId?: string;
     readonly status: string;
     readonly startedAt?: string;
@@ -23,6 +24,8 @@ export interface NativeSessionLike {
     readonly title?: string;
     readonly blank?: boolean;
     readonly origin?: string;
+    readonly updatedAt?: number | string;
+    readonly running?: boolean;
 }
 export interface NativeWorkspaceLike {
     readonly id?: string;
@@ -33,6 +36,9 @@ export interface NativeWorkspaceLike {
 }
 export type NativeSidebarTab = 'tasks' | 'channels' | 'schedule';
 export { formatRunStamp } from '../run-title.js';
+/** 定时会话标题复刻任务树：优先用 Session 真实标题，没有再用执行时间兜底。 */
+export declare function scheduledSessionTitle(liveTitle: string | undefined, fallbackLabel: string): string;
+export declare function sessionUpdatedAtIso(value: number | string | undefined, fallback: string): string;
 export declare function groupScheduledSessions(automations: readonly {
     readonly id: string;
     readonly name: string;

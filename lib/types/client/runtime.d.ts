@@ -23,5 +23,7 @@ export interface AutomationRuntime {
         id: string;
     }>;
     adoptSession(sessionId: string): Promise<void>;
+    forgetSession(sessionId: string): Promise<void>;
+    forgetAutomationSessions(automationId: string): Promise<void>;
 }
 export declare function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime;

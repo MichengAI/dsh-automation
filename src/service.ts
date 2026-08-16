@@ -270,6 +270,11 @@ export class AutomationService {
       const current = await this.ownedDefinition(scope, id)
       throwIfCancelled(signal)
       deleteDefinition(current)
+      for (const [runId, run] of this.runs.entries()) {
+        if (run.automationId !== current.id) continue
+        if (run.automationName === current.name) continue
+        await this.runs.put(runId, { ...run, automationName: current.name })
+      }
       return this.definitions.delete(id)
     }, signal)
     this.requestPump()
@@ -309,6 +314,28 @@ export class AutomationService {
       await this.runs.put(runId, next)
       return next
     }, signal)
+  }
+
+  async forgetSession(sessionId: string): Promise<void> {
+    const id = sessionId.trim()
+    if (id === '') return
+    await this.serialize(async () => {
+      for (const [runId, run] of this.runs.entries()) {
+        if (run.sessionId !== id) continue
+        await this.runs.put(runId, { ...run, sessionId: null })
+      }
+    })
+  }
+
+  async forgetAutomationSessions(automationId: string): Promise<void> {
+    const id = automationId.trim()
+    if (id === '') return
+    await this.serialize(async () => {
+      for (const [runId, run] of this.runs.entries()) {
+        if (run.automationId !== id || run.sessionId === null) continue
+        await this.runs.put(runId, { ...run, sessionId: null })
+      }
+    })
   }
 
   async adoptSession(sessionId: string): Promise<void> {
@@ -759,3 +786,5 @@ function readSkillTitle(file: string): string | undefined {
     return undefined
   }
 }
+
+

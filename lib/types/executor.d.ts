@@ -26,4 +26,5 @@ export declare function summarizeRun(events: readonly SessionEventLike[], firstS
     readonly reason?: Record<string, any>;
 };
 export declare function executeAutomationRun(ctx: Context, definition: AutomationDefinition, run: AutomationRun, config: ExecutorConfig): Promise<RunCompletion>;
+export declare function pinAutomationSessionTitle(ctx: Context, session: unknown, title: string): void;
 export {};

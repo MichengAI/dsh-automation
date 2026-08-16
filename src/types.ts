@@ -118,6 +118,7 @@ export interface AutomationRun {
   readonly version: 1
   readonly id: string
   readonly automationId: string
+  readonly automationName?: string | undefined
   readonly definitionRevision: number
   readonly occurrenceKey: string
   readonly trigger: 'schedule' | 'manual'
@@ -168,3 +169,5 @@ export interface DeleteAutomationPlan {
   readonly id: string
   readonly preserveRunHistory: true
 }
+
+

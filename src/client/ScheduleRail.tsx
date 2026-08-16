@@ -1,6 +1,6 @@
 import { Component, createElement, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
 import type { Translate } from './contracts.js'
-import { ClockIcon } from './icons.js'
+import { ClockIcon, RunningStateDot } from './icons.js'
 import type { AutomationRuntime } from './runtime.js'
 import {
   filterTaskSessionState,
@@ -86,7 +86,7 @@ export function ScheduleRail({
               onClick={() => openSession?.(session.id)}
             >
               <span>{session.label}</span>
-              {session.running && <i className="dsh-st-rail-dot" />}
+              {session.running && <RunningStateDot />}
             </button>
           ))}
         </section>
@@ -248,3 +248,4 @@ function NativeTaskRail({
     </div>
   )
 }
+

@@ -39,6 +39,8 @@ export interface AutomationRuntime {
   markRunRead(runId: string): Promise<void>
   addWorkspace(path: string): Promise<{ id: string }>
   adoptSession(sessionId: string): Promise<void>
+  forgetSession(sessionId: string): Promise<void>
+  forgetAutomationSessions(automationId: string): Promise<void>
 }
 
 export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
@@ -148,6 +150,18 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     async adoptSession(sessionId) {
       unwrapRpcResult<unknown>(await rpc.call(CHANNEL, 'adopt-session', { sessionId }))
     },
+    async forgetSession(sessionId) {
+      await mutateThenRefresh('forget-session', { sessionId }, (snapshot) => ({
+        ...snapshot,
+        runs: snapshot.runs.map((run) => { if (run.sessionId !== sessionId) return run; const { sessionId: _ignored, ...rest } = run; return rest }),
+      }))
+    },
+    async forgetAutomationSessions(automationId) {
+      await mutateThenRefresh('forget-automation-sessions', { automationId }, (snapshot) => ({
+        ...snapshot,
+        runs: snapshot.runs.map((run) => { if (run.automationId !== automationId) return run; const { sessionId: _ignored, ...rest } = run; return rest }),
+      }))
+    },
     async addWorkspace(path) {
       const payload: AddWorkspaceRequest = { sessionId: 'settings', path }
       const value = unwrapRpcResult<{ id: string }>(await rpc.call(CHANNEL, 'add-workspace', payload))
@@ -156,3 +170,5 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     },
   }
 }
+
+

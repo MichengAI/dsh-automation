@@ -17,6 +17,7 @@ export interface ScheduleRailGroup {
 
 export interface ScheduleRunLike {
   readonly automationId: string
+  readonly automationName?: string
   readonly sessionId?: string
   readonly status: string
   readonly startedAt?: string
@@ -28,6 +29,8 @@ export interface NativeSessionLike {
   readonly title?: string
   readonly blank?: boolean
   readonly origin?: string
+  readonly updatedAt?: number | string
+  readonly running?: boolean
 }
 
 export interface NativeWorkspaceLike {
@@ -43,23 +46,58 @@ export type NativeSidebarTab = 'tasks' | 'channels' | 'schedule'
 export { formatRunStamp } from '../run-title.js'
 import { formatRunStamp } from '../run-title.js'
 
+/** 定时会话标题复刻任务树：优先用 Session 真实标题，没有再用执行时间兜底。 */
+export function scheduledSessionTitle(liveTitle: string | undefined, fallbackLabel: string): string {
+  const title = liveTitle?.trim() ?? ''
+  return title !== '' ? title : fallbackLabel
+}
+
+export function sessionUpdatedAtIso(value: number | string | undefined, fallback: string): string {
+  if (typeof value === 'number' && Number.isFinite(value)) return new Date(value).toISOString()
+  if (typeof value === 'string' && value.trim() !== '') return value
+  return fallback
+}
+
 export function groupScheduledSessions(
   automations: readonly { readonly id: string; readonly name: string }[],
   runs: readonly ScheduleRunLike[],
 ): ScheduleRailGroup[] {
-  return automations.map((item) => ({
-    id: item.id,
-    name: item.name,
-    sessions: runs
-      .filter(run => run.automationId === item.id && run.sessionId !== undefined && run.sessionId !== '')
-      .slice()
-      .sort((left, right) => Date.parse(right.startedAt ?? right.scheduledFor) - Date.parse(left.startedAt ?? left.scheduledFor))
-      .map(run => ({
-        id: run.sessionId as string,
-        running: run.status === 'running' || run.status === 'queued',
-        label: `${formatRunStamp(run.startedAt ?? run.scheduledFor)} - ${item.name}`,
-      })),
-  })).filter(group => group.sessions.length > 0)
+  const nameById = new Map<string, string>()
+  for (const item of automations) nameById.set(item.id, item.name)
+  for (const run of runs) {
+    const stored = (run.automationName || '').trim()
+    if (stored !== '' && stored !== run.automationId && !nameById.has(run.automationId)) {
+      nameById.set(run.automationId, stored)
+    }
+  }
+  const ids: string[] = []
+  const seen = new Set<string>()
+  for (const item of automations) {
+    if (seen.has(item.id)) continue
+    ids.push(item.id)
+    seen.add(item.id)
+  }
+  for (const run of runs) {
+    if (run.sessionId === undefined || run.sessionId === '' || seen.has(run.automationId)) continue
+    ids.push(run.automationId)
+    seen.add(run.automationId)
+  }
+  return ids.map((id) => {
+    const name = nameById.get(id) ?? id
+    return {
+      id,
+      name,
+      sessions: runs
+        .filter(run => run.automationId === id && run.sessionId !== undefined && run.sessionId !== '')
+        .slice()
+        .sort((left, right) => Date.parse(right.startedAt ?? right.scheduledFor) - Date.parse(left.startedAt ?? left.scheduledFor))
+        .map(run => ({
+          id: run.sessionId as string,
+          running: run.status === 'running' || run.status === 'queued',
+          label: formatRunStamp(run.startedAt ?? run.scheduledFor) + ' - ' + name,
+        })),
+    }
+  }).filter(group => group.sessions.length > 0)
 }
 
 export function isNativeTaskSession(item: NativeSessionLike | undefined): boolean {
@@ -261,3 +299,6 @@ export function pickWrappableWorkspacesEntry(entries: readonly unknown[]): unkno
   }
   return undefined
 }
+
+
+

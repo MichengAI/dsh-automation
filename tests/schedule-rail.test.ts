@@ -5,6 +5,8 @@ import {
   formatRunStamp,
   groupNativeTaskSessions,
   groupScheduledSessions,
+  scheduledSessionTitle,
+  sessionUpdatedAtIso,
   openScheduledSession,
   hasCodexUiSidebar,
   isNativeTaskSession,
@@ -140,3 +142,28 @@ test('scheduled session open falls back to host when runtime select rejects', ()
   openScheduledSession('dsh-automation-session-abc', () => { throw new Error('sessions.select: unknown session') }, (id) => { host.push(id) })
   assert.deepEqual(host, ['dsh-automation-session-abc'])
 })
+
+test('定时会话标题优先用真实 Session 名，和任务树一致', () => {
+  assert.equal(scheduledSessionTitle('集成本地Agents到dsh评估', '2026-08-17 01:37 - 哈哈哈'), '集成本地Agents到dsh评估')
+  assert.equal(scheduledSessionTitle('   ', '2026-08-17 01:37 - 哈哈哈'), '2026-08-17 01:37 - 哈哈哈')
+  assert.equal(sessionUpdatedAtIso('2026-08-17T01:37:00.000Z', 'fallback'), '2026-08-17T01:37:00.000Z')
+  assert.equal(sessionUpdatedAtIso(undefined, 'fallback'), 'fallback')
+})
+
+test('删除任务后仍保留会话文件夹', () => {
+  const groups = groupScheduledSessions([], [
+    {
+      automationId: 'gone',
+      automationName: '哈哈哈',
+      sessionId: AUTOMATION_SESSION_PREFIX + 'keep',
+      status: 'succeeded',
+      startedAt: '2026-08-17T01:37:00.000Z',
+      scheduledFor: '2026-08-17T01:37:00.000Z',
+    },
+  ])
+  assert.equal(groups.length, 1)
+  assert.equal(groups[0]?.id, 'gone')
+  assert.equal(groups[0]?.name, '哈哈哈')
+  assert.equal(groups[0]?.sessions.length, 1)
+})
+

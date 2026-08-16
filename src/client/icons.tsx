@@ -105,3 +105,26 @@ export function BranchIcon(props: IconProps): JSX.Element {
 export function ArchiveIcon(props: IconProps): JSX.Element {
   return <svg viewBox='0 0 20 20' width={props.width || 16} height={props.height || 16} fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'><path fill='currentColor' fillRule='evenodd' clipRule='evenodd' d='M15.866 2.06a2.526 2.526 0 0 1 2.525 2.525v.902c0 .54-.172 1.04-.461 1.45l.009.085v5.866c0 .746 0 1.35-.039 1.837-.035.434-.106.825-.262 1.189l-.072.154a3.03 3.03 0 0 1-1.262 1.366l-.236.132c-.408.208-.848.294-1.344.334-.488.04-1.091.04-1.837.04H7.111c-.746 0-1.35 0-1.837-.04-.434-.035-.825-.105-1.189-.261l-.154-.073a3.03 3.03 0 0 1-1.366-1.262l-.132-.235a2.53 2.53 0 0 1-.335-1.344c-.04-.487-.039-1.091-.039-1.837V7.022c0-.029.005-.057.008-.086A2.48 2.48 0 0 1 1.609 5.487v-.902A2.526 2.526 0 0 1 4.134 2.06h11.732Zm.632 5.87a2.48 2.48 0 0 1-.632.083H4.134a2.48 2.48 0 0 1-.634-.083v4.959c0 .77 0 1.304.034 1.72.034.406.095.635.182.806l.076.137c.191.311.465.565.792.731l.141.061c.156.055.361.096.666.121.415.034.95.035 1.72.035h5.775c.77 0 1.305 0 1.72-.035.407-.033.636-.095.807-.182l.138-.077c.311-.191.565-.464.731-.791l.06-.142c.056-.155.097-.36.122-.665.034-.415.034-.95.034-1.72V7.93ZM4.134 3.5a1.086 1.086 0 0 0-1.085 1.085v.902c0 .599.486 1.085 1.085 1.085h11.732c.599 0 1.085-.486 1.085-1.085v-.902A1.086 1.086 0 0 0 15.866 3.5H4.134Z' /><path fill='currentColor' d='M12.796 12.566v-1.483H7.205v1.483h5.591Z' /></svg>
 }
+
+const RUNNING_CELLS: readonly (readonly [number, number])[] = [
+  [0, 0], [4, 0], [8, 0], [8, 4], [8, 8], [4, 8], [0, 8], [0, 4],
+]
+
+/** 复刻官方任务树 running StateDot：3x3 像素绕圈。 */
+export function RunningStateDot(): JSX.Element {
+  return (
+    <svg className="dsh-st-run-dot" width={10} height={10} viewBox="0 0 10 10" shapeRendering="crispEdges" aria-hidden="true">
+      {RUNNING_CELLS.map(([x, y], index) => (
+        <rect
+          key={`${x}-${y}`}
+          className="dsh-st-run-dot-cell"
+          x={x}
+          y={y}
+          width="2"
+          height="2"
+          style={{ animationDelay: `${(index - RUNNING_CELLS.length) * 125}ms` }}
+        />
+      ))}
+    </svg>
+  )
+}
