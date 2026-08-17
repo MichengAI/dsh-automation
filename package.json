@@ -1,6 +1,6 @@
 {
   "name": "@michengai/dsh-automation",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "在独立 DSH Session 中按计划执行编码任务，支持 Web 设置页与 Agent 双入口管理。",
   "type": "module",
   "main": "./lib/index.js",
