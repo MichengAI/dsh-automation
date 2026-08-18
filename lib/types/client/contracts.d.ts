@@ -6,6 +6,7 @@ export interface AutomationViewProps {
     readonly t: Translate;
     readonly runtime: AutomationRuntime;
     readonly closeSettings?: () => void;
+    readonly pickWorkspaceDirectory?: () => Promise<string | null>;
 }
 export interface ClientRpc {
     call(channel: string, endpoint: string, payload: unknown, signal?: AbortSignal): Promise<unknown>;
@@ -31,6 +32,17 @@ export interface ClientContext {
     };
     sessions?: {
         open(id: string): void;
+        refresh?: () => Promise<void>;
+        list?: {
+            getSnapshot(): {
+                ids?: readonly string[];
+                byId?: Record<string, unknown>;
+                current?: string | null;
+            };
+        };
+    };
+    workspaces?: {
+        pickDirectory(): Promise<string | null>;
     };
     locale: {
         register(namespace: string, dictionaries: {

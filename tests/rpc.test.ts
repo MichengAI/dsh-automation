@@ -5,12 +5,14 @@ import { registerAutomationTools } from '../src/tools.ts'
 
 test('工具注册覆盖六个管理入口，并校验计划字段组合', () => {
   const names: string[] = []
+  const descriptions = new Map<string, string>()
   const agent = {
     id: 'session-1',
     ctx: {
       tools: {
-        register(definition: { name: string }): () => void {
+        register(definition: { name: string; description?: string }): () => void {
           names.push(definition.name)
+          if (typeof definition.description === 'string') descriptions.set(definition.name, definition.description)
           return () => {}
         },
       },
@@ -21,6 +23,7 @@ test('工具注册覆盖六个管理入口，并校验计划字段组合', () =>
     'automation_create', 'automation_list', 'automation_update',
     'automation_runs', 'automation_run_now', 'automation_delete',
   ])
+  assert.match(descriptions.get('automation_create') ?? '', /定时任务/)
   dispose()
 })
 

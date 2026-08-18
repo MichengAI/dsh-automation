@@ -40,7 +40,7 @@ const EXAMPLES: readonly { readonly name: string; readonly scheduleKind: Schedul
   { name: '工作日早报', scheduleKind: 'weekly', time: '08:00', weekdays: [1, 2, 3, 4, 5] },
 ]
 
-export function AutomationView({ t, runtime, closeSettings }: AutomationViewProps): JSX.Element {
+export function AutomationView({ t, runtime, closeSettings, pickWorkspaceDirectory }: AutomationViewProps): JSX.Element {
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const [tab, setTab] = useState<Tab>('mine')
   const [query, setQuery] = useState('')
@@ -234,6 +234,7 @@ export function AutomationView({ t, runtime, closeSettings }: AutomationViewProp
           defaultModel={snapshot?.defaultModel ?? null}
           skills={snapshot?.skills ?? []}
           onAddWorkspace={async (path) => runtime.addWorkspace(path).then((value) => value.id)}
+          {...(pickWorkspaceDirectory === undefined ? {} : { pickWorkspaceDirectory })}
           editing={editingId !== undefined}
           {...(draft === undefined ? {} : { draft })}
           onClose={closeModal}
@@ -311,3 +312,4 @@ function RunRow({ run, t }: { readonly run: AutomationRunViewModel; readonly t: 
     </article>
   )
 }
+

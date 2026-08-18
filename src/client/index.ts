@@ -12,7 +12,7 @@ import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefi
 import { createAutomationRuntime } from './runtime.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
 import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
-import { AUTOMATION_SESSION_PREFIX, hasCodexUiSidebar, openScheduledSession, pickWrappableWorkspacesEntry, resolveOfficialTreeComponent } from './schedule-rail-model.js'
+import { AUTOMATION_SESSION_PREFIX, ensureOpenScheduledSession, hasCodexUiSidebar, pickWrappableWorkspacesEntry, resolveOfficialTreeComponent } from './schedule-rail-model.js'
 import { installStyles } from './styles.js'
 
 export const name = 'dsh-automation-client'
@@ -63,7 +63,8 @@ export function apply(ctx: ClientContext): void {
     label: () => t('tab'),
     icon: 'schedule',
   }, function ScheduledTasksSettings(props: { close?: () => void }) {
-    return createElement(AutomationView, { t, runtime, ...(props.close === undefined ? {} : { closeSettings: props.close }) })
+    const workspacesApi = readOptionalWorkspaces(ctx)
+    return createElement(AutomationView, { t, runtime, ...(props.close === undefined ? {} : { closeSettings: props.close }), ...(workspacesApi === undefined ? {} : { pickWorkspaceDirectory: () => workspacesApi.pickDirectory() }) })
   }))
   ctx.slots.inject('sidebar.schedule', () => ctx.slots.register({
     name: 'sidebar.schedule',
@@ -75,31 +76,38 @@ export function apply(ctx: ClientContext): void {
     return createElement(ScheduleRail, {
       t,
       runtime,
-      openSession: (id) => { openScheduledSession(id, (sessionId) => { ctx.sessions?.open(sessionId) }, props.openSession) },
+      openSession: createScheduledSessionOpener(ctx, runtime, props.openSession),
     })
   }))
   ctx.slots.inject('sidebar.workspaces', () => {
     let wrappedEntry: MutableSlotEntry | undefined
     let originalComp: ComponentType<any> | undefined
     let removeInsertedTab = (): void => undefined
-    let removeFilter = (): void => undefined
+    let wrapped = false
     let syncing = false
+    let retryTimer: number | undefined
+    const listenChannels = (listener: () => void) => ctx.slots.subscribe?.('sidebar.channels', listener) ?? (() => undefined)
+    const stopRetry = (): void => {
+      if (retryTimer !== undefined) {
+        window.clearInterval(retryTimer)
+        retryTimer = undefined
+      }
+    }
     const unwrap = (): void => {
+      stopRetry()
       removeInsertedTab()
       removeInsertedTab = (): void => undefined
-      removeFilter()
-      removeFilter = (): void => undefined
       if (wrappedEntry !== undefined && originalComp !== undefined) {
         try { wrappedEntry.component = originalComp } catch { /* ignore */ }
       }
       wrappedEntry = undefined
       originalComp = undefined
+      wrapped = false
     }
     const insertScheduleTab = (entry: unknown, openSession?: (id: string) => void): boolean => {
       const registry = findNativeTabRegistry(entry)
       if (registry === undefined) return false
       if (registry.getTabs().some(item => item.id === 'schedule')) return true
-      removeInsertedTab()
       removeInsertedTab = registry.insert({
         id: 'schedule',
         label: t('sidebar.tab'),
@@ -111,9 +119,7 @@ export function apply(ctx: ClientContext): void {
             : typeof props.open === 'function'
               ? props.open as (id: string) => void
               : openSession
-          const opener = (id: string): void => {
-            openScheduledSession(id, (sessionId) => { ctx.sessions?.open(sessionId) }, hostOpen)
-          }
+          const opener = createScheduledSessionOpener(ctx, runtime, hostOpen)
           return createElement(NativeScheduleSessionList, {
             t,
             runtime,
@@ -127,9 +133,27 @@ export function apply(ctx: ClientContext): void {
           })
         },
       })
-      removeFilter()
-      removeFilter = registry.addSessionFilter(id => !id.startsWith(AUTOMATION_SESSION_PREFIX))
       return true
+    }
+    const insertIntoKnownHosts = (): boolean => {
+      const entries = readSlotEntries(ctx, 'sidebar.workspaces')
+      for (const entry of entries) {
+        const record = entry as { component?: unknown }
+        if (insertScheduleTab(entry) || insertScheduleTab(record.component)) return true
+      }
+      return wrappedEntry !== undefined && insertScheduleTab(wrappedEntry)
+    }
+    const ensureScheduleTab = (): void => {
+      if (insertIntoKnownHosts()) {
+        stopRetry()
+        return
+      }
+      if (retryTimer !== undefined) return
+      let tries = 0
+      retryTimer = window.setInterval(() => {
+        tries += 1
+        if (insertIntoKnownHosts() || tries >= 20) stopRetry()
+      }, 250)
     }
     const sync = (): void => {
       if (syncing) return
@@ -143,21 +167,21 @@ export function apply(ctx: ClientContext): void {
         const occupant = pickWrappableWorkspacesEntry(entries) as MutableSlotEntry | undefined
         const current = occupant?.component
         if (current !== undefined && isForeignSidebarHost(current)) {
-          if (insertScheduleTab(occupant) || insertScheduleTab(current)) return
+          ensureScheduleTab()
           return
         }
         if (wrappedEntry?.component !== undefined && (wrappedEntry.component as HostComponent).__dshAutomationWrapped === true) {
-          insertScheduleTab(wrappedEntry)
+          ensureScheduleTab()
           return
         }
-        if (occupant?.component === undefined) return
+        if (occupant?.component === undefined || wrapped) return
         const resolved = resolveOfficialTreeComponent(occupant.component)
         if (resolved === undefined) return
         originalComp = resolved as ComponentType<any>
         const registry = createNativeTabRegistry(originalComp)
         attachNativeTabRegistry(occupant, registry)
         function AutomationNativeWorkspaceShell(innerProps: NativeSwitcherProps): JSX.Element | null {
-          const openSession = (id: string): void => { openScheduledSession(id, (sessionId) => { ctx.sessions?.open(sessionId) }, innerProps.openSession ?? innerProps.open) }
+          const openSession = createScheduledSessionOpener(ctx, runtime, innerProps.openSession ?? innerProps.open)
           return createElement(NativeScheduleShell, {
             t,
             runtime,
@@ -166,7 +190,7 @@ export function apply(ctx: ClientContext): void {
             tabRegistry: registry,
             ...(innerProps.wide === undefined ? {} : { wide: innerProps.wide }),
             hasChannels: () => slotHasEntries(ctx, 'sidebar.channels'),
-            subscribeChannels: (listener: () => void) => ctx.slots.subscribe?.('sidebar.channels', listener) ?? (() => undefined),
+            subscribeChannels: listenChannels,
             ...(innerProps.useSessions === undefined ? {} : { useSessions: innerProps.useSessions }),
             ...(innerProps.useWorkspaces === undefined ? {} : { useWorkspaces: innerProps.useWorkspaces }),
             ...(innerProps.renderSlot === undefined ? {} : { renderSlot: innerProps.renderSlot }),
@@ -181,7 +205,8 @@ export function apply(ctx: ClientContext): void {
         attachNativeTabRegistry(marked, registry)
         occupant.component = marked
         wrappedEntry = occupant
-        insertScheduleTab(occupant, (id) => { ctx.sessions?.open(id) })
+        wrapped = true
+        ensureScheduleTab()
       } catch (error) {
         console.warn('[dsh-automation] 包裹官方任务树失败', error)
       } finally {
@@ -190,6 +215,7 @@ export function apply(ctx: ClientContext): void {
     }
     sync()
     const unsub = typeof ctx.slots.subscribe === 'function' ? ctx.slots.subscribe('sidebar.workspaces', sync) : () => undefined
+    ensureScheduleTab()
     return () => { unsub(); unwrap() }
   })
   ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
@@ -200,6 +226,25 @@ export function apply(ctx: ClientContext): void {
   }, PrefillBridge))
 }
 
+function createScheduledSessionOpener(
+  ctx: ClientContext,
+  runtime: ReturnType<typeof createAutomationRuntime>,
+  hostOpen?: (sessionId: string) => void,
+): (sessionId: string) => void {
+  return (sessionId) => {
+    void ensureOpenScheduledSession({
+      id: sessionId,
+      adopt: (id) => runtime.adoptSession(id),
+      listed: (id) => {
+        const snap = ctx.sessions?.list?.getSnapshot()
+        return snap?.byId?.[id] !== undefined || (snap?.ids ?? []).some(item => item === id)
+      },
+      ...(ctx.sessions?.refresh === undefined ? {} : { refresh: () => ctx.sessions!.refresh!() }),
+      ...(ctx.sessions === undefined ? {} : { openRuntime: (id) => { ctx.sessions!.open(id) } }),
+      ...(hostOpen === undefined ? {} : { openHost: hostOpen }),
+    })
+  }
+}
 function PrefillBridge(props: { inputActions?: { setDraft(text: string): void } }): null {
   useEffect(() => {
     const applyPrefill = (text: string | null): void => {
@@ -228,4 +273,17 @@ function readSlotEntries(ctx: ClientContext, name: string): readonly unknown[] {
 
 function slotHasEntries(ctx: ClientContext, name: string): boolean {
   return readSlotEntries(ctx, name).length > 0
+}
+
+
+
+
+
+
+function readOptionalWorkspaces(ctx: ClientContext): ClientContext['workspaces'] | undefined {
+  try {
+    return ctx.workspaces
+  } catch {
+    return undefined
+  }
 }

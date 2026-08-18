@@ -22,6 +22,7 @@ export interface ScheduleRunLike {
 export interface NativeSessionLike {
     readonly id?: string;
     readonly title?: string;
+    readonly displayTitle?: string;
     readonly blank?: boolean;
     readonly origin?: string;
     readonly updatedAt?: number | string;
@@ -43,20 +44,37 @@ export declare function groupScheduledSessions(automations: readonly {
     readonly id: string;
     readonly name: string;
 }[], runs: readonly ScheduleRunLike[]): ScheduleRailGroup[];
-export declare function isNativeTaskSession(item: NativeSessionLike | undefined): boolean;
+export declare function collectScheduledSessionIds(runs: readonly {
+    readonly sessionId?: string | null;
+}[] | undefined): Set<string>;
+/** 任务树要藏的定时会话：前缀、仍挂在定时快照上，或标题是定时跑出来的时间戳。 */
+export declare function isAutomationSidebarSession(id: string, item?: NativeSessionLike, scheduledIds?: ReadonlySet<string>): boolean;
+export declare function isNativeTaskSession(item: NativeSessionLike | undefined, scheduledIds?: ReadonlySet<string>): boolean;
 export declare function groupNativeTaskSessions(sessions: {
     readonly ids?: readonly string[];
     readonly byId?: Record<string, NativeSessionLike>;
 }, workspaces: {
     readonly items?: readonly NativeWorkspaceLike[];
     readonly archivedSessionIds?: readonly string[];
-} | undefined, ungroupedLabel: string): {
+} | undefined, ungroupedLabel: string, scheduledIds?: ReadonlySet<string>): {
     readonly id: string;
     readonly label: string;
     readonly sessions: readonly NativeSessionLike[];
 }[];
 export declare function readNativeSidebarTab(raw: string | null): NativeSidebarTab;
-export declare function tabForSessionId(sessionId: string | null | undefined): NativeSidebarTab | undefined;
+/** 协作页签（频道/定时）以 registry 为准，不能因 sidebar.channels slot 未就绪就把点击打回任务。 */
+/** 只有当前会话变了才跟随切页签，避免点「定时」时被频道/任务会话打回去闪烁。 */
+export declare function shouldFollowSessionTab(previousCurrent: string | null | undefined, current: string | null | undefined): boolean;
+export declare function ownedSidebarTabIds(input: {
+    readonly extraTabIds: readonly string[];
+    readonly channelsReady: boolean;
+}): string[];
+export declare function resolveVisibleSidebarTab(input: {
+    readonly tab: string;
+    readonly channelsReady: boolean;
+    readonly extraTabIds: readonly string[];
+}): string;
+export declare function tabForSessionId(sessionId: string | null | undefined, scheduledIds?: ReadonlySet<string>): NativeSidebarTab | undefined;
 export declare function occupantLooksLikeCodexUi(value: unknown): boolean;
 export declare function slotOccupantName(item: unknown): string;
 export declare function hasCodexUiSidebar(entries: readonly unknown[] | undefined): boolean;
@@ -65,14 +83,24 @@ export interface SessionListState {
     readonly byId?: Record<string, NativeSessionLike>;
     readonly current?: string | null;
 }
-export declare function filterTaskSessionState<T extends SessionListState>(state: T | undefined): T;
+export declare function filterTaskSessionState<T extends SessionListState>(state: T | undefined, scheduledIds?: ReadonlySet<string>): T;
 export interface WorkspaceListState {
     readonly items?: readonly NativeWorkspaceLike[];
     readonly archivedSessionIds?: readonly string[];
 }
-export declare function openScheduledSession(id: string, openRuntime?: (sessionId: string) => void, openHost?: (sessionId: string) => void): void;
-export declare function isHiddenSidebarSessionId(id: string): boolean;
-export declare function filterWorkspaceListState<T extends WorkspaceListState>(state: T | undefined): T;
+export declare function openScheduledSession(id: string, openRuntime?: (sessionId: string) => void, openHost?: (sessionId: string) => void): boolean;
+export interface EnsureOpenScheduledSessionInput {
+    readonly id: string;
+    readonly adopt?: (sessionId: string) => Promise<void>;
+    readonly listed?: (sessionId: string) => boolean;
+    readonly refresh?: () => Promise<void>;
+    readonly openRuntime?: (sessionId: string) => void;
+    readonly openHost?: (sessionId: string) => void;
+}
+/** 先把会话挂回工作区并刷新客户端会话簿，再打开；避免侧栏能看见、点下去却 unknown session。 */
+export declare function ensureOpenScheduledSession(input: EnsureOpenScheduledSessionInput): Promise<boolean>;
+export declare function isHiddenSidebarSessionId(id: string, scheduledIds?: ReadonlySet<string>): boolean;
+export declare function filterWorkspaceListState<T extends WorkspaceListState>(state: T | undefined, scheduledIds?: ReadonlySet<string>): T;
 export type WrapperFlags = {
     __dshAutomationWrapped?: unknown;
     __dshAutomationOriginal?: unknown;
@@ -85,3 +113,14 @@ export declare function isMarkedWorkspaceWrapper(component: unknown): boolean;
 export declare function resolveOfficialTreeComponent(component: unknown): unknown;
 export declare function isAutomationWorkspaceWrapper(item: unknown): boolean;
 export declare function pickWrappableWorkspacesEntry(entries: readonly unknown[]): unknown;
+export type WorkspaceGroupMode = 'workspace' | 'list';
+export type WorkspaceListSort = 'manual' | 'time';
+export interface SearchableRailGroup {
+    readonly name: string;
+    readonly sessions: readonly {
+        readonly title?: string;
+        readonly label?: string;
+        readonly updatedAt?: string;
+    }[];
+}
+export declare function applyWorkspaceBrowserQuery<T extends SearchableRailGroup>(groups: readonly T[], query: string, sort: WorkspaceListSort, groupMode?: WorkspaceGroupMode): T[];

@@ -27,6 +27,7 @@ export interface ScheduleRunLike {
 export interface NativeSessionLike {
   readonly id?: string
   readonly title?: string
+  readonly displayTitle?: string
   readonly blank?: boolean
   readonly origin?: string
   readonly updatedAt?: number | string
@@ -100,12 +101,30 @@ export function groupScheduledSessions(
   }).filter(group => group.sessions.length > 0)
 }
 
-export function isNativeTaskSession(item: NativeSessionLike | undefined): boolean {
+export function collectScheduledSessionIds(runs: readonly { readonly sessionId?: string | null }[] | undefined): Set<string> {
+  const ids = new Set<string>()
+  for (const run of runs ?? []) {
+    const id = run.sessionId
+    if (typeof id === 'string' && id !== '') ids.add(id)
+  }
+  return ids
+}
+
+
+const AUTOMATION_TITLE_RE = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/
+
+/** 任务树要藏的定时会话：前缀、仍挂在定时快照上，或标题是定时跑出来的时间戳。 */
+export function isAutomationSidebarSession(id: string, item?: NativeSessionLike, scheduledIds: ReadonlySet<string> = new Set()): boolean {
+  if (id.startsWith(AUTOMATION_SESSION_PREFIX) || scheduledIds.has(id)) return true
+  const title = String(item?.title ?? item?.displayTitle ?? '')
+  return AUTOMATION_TITLE_RE.test(title)
+}
+export function isNativeTaskSession(item: NativeSessionLike | undefined, scheduledIds: ReadonlySet<string> = new Set()): boolean {
   if (item === undefined || item.blank === true) return false
   if (item.origin === 'im' || item.origin === 'subagent') return false
   const id = item.id ?? ''
   if (id.startsWith('im:')) return false
-  if (id.startsWith(AUTOMATION_SESSION_PREFIX)) return false
+  if (isAutomationSidebarSession(id, item, scheduledIds)) return false
   return true
 }
 
@@ -113,6 +132,7 @@ export function groupNativeTaskSessions(
   sessions: { readonly ids?: readonly string[]; readonly byId?: Record<string, NativeSessionLike> },
   workspaces: { readonly items?: readonly NativeWorkspaceLike[]; readonly archivedSessionIds?: readonly string[] } | undefined,
   ungroupedLabel: string,
+  scheduledIds: ReadonlySet<string> = new Set(),
 ): { readonly id: string; readonly label: string; readonly sessions: readonly NativeSessionLike[] }[] {
   const byId = sessions.byId ?? {}
   const archived = new Set(workspaces?.archivedSessionIds ?? [])
@@ -121,7 +141,7 @@ export function groupNativeTaskSessions(
   for (const workspace of workspaces?.items ?? []) {
     const items = (workspace.sessionIds ?? [])
       .map(id => byId[id])
-      .filter((item): item is NativeSessionLike => item !== undefined && item.id !== undefined && isNativeTaskSession(item) && !archived.has(item.id))
+      .filter((item): item is NativeSessionLike => item !== undefined && item.id !== undefined && isNativeTaskSession(item, scheduledIds) && !archived.has(item.id))
     for (const item of items) {
       if (item.id !== undefined) assigned.add(item.id)
     }
@@ -135,7 +155,7 @@ export function groupNativeTaskSessions(
   }
   const ungrouped = (sessions.ids ?? [])
     .map(id => byId[id])
-    .filter((item): item is NativeSessionLike => item !== undefined && item.id !== undefined && !assigned.has(item.id) && isNativeTaskSession(item) && !archived.has(item.id))
+    .filter((item): item is NativeSessionLike => item !== undefined && item.id !== undefined && !assigned.has(item.id) && isNativeTaskSession(item, scheduledIds) && !archived.has(item.id))
   if (ungrouped.length > 0) groups.push({ id: '', label: ungroupedLabel, sessions: ungrouped })
   return groups
 }
@@ -145,9 +165,41 @@ export function readNativeSidebarTab(raw: string | null): NativeSidebarTab {
   return 'tasks'
 }
 
-export function tabForSessionId(sessionId: string | null | undefined): NativeSidebarTab | undefined {
+
+/** 协作页签（频道/定时）以 registry 为准，不能因 sidebar.channels slot 未就绪就把点击打回任务。 */
+
+/** 只有当前会话变了才跟随切页签，避免点「定时」时被频道/任务会话打回去闪烁。 */
+export function shouldFollowSessionTab(previousCurrent: string | null | undefined, current: string | null | undefined): boolean {
+  const prev = previousCurrent ?? ''
+  const next = current ?? ''
+  return next !== '' && prev !== next
+}
+export function ownedSidebarTabIds(input: {
+  readonly extraTabIds: readonly string[]
+  readonly channelsReady: boolean
+}): string[] {
+  const ids: string[] = ['tasks']
+  for (const id of input.extraTabIds) {
+    if (id === '' || id === 'tasks' || id === 'schedule' || ids.includes(id)) continue
+    ids.push(id)
+  }
+  if (input.channelsReady && !ids.includes('channels')) ids.push('channels')
+  ids.push('schedule')
+  return ids
+}
+
+export function resolveVisibleSidebarTab(input: {
+  readonly tab: string
+  readonly channelsReady: boolean
+  readonly extraTabIds: readonly string[]
+}): string {
+  if (input.extraTabIds.includes(input.tab)) return input.tab
+  if (input.tab === 'channels' && !input.channelsReady) return 'tasks'
+  return input.tab
+}
+export function tabForSessionId(sessionId: string | null | undefined, scheduledIds?: ReadonlySet<string>): NativeSidebarTab | undefined {
   if (sessionId === undefined || sessionId === null || sessionId === '') return undefined
-  if (sessionId.startsWith(AUTOMATION_SESSION_PREFIX)) return 'schedule'
+  if (scheduledIds !== undefined ? scheduledIds.has(sessionId) : sessionId.startsWith(AUTOMATION_SESSION_PREFIX)) return 'schedule'
   if (sessionId.startsWith('im:')) return 'channels'
   return undefined
 }
@@ -186,18 +238,29 @@ export interface SessionListState {
   readonly current?: string | null
 }
 
-export function filterTaskSessionState<T extends SessionListState>(state: T | undefined): T {
+const taskFilterCache = new WeakMap<object, { key: string; result: object }>()
+const workspaceFilterCache = new WeakMap<object, { key: string; result: object }>()
+
+function scheduledCacheKey(scheduledIds: ReadonlySet<string>): string {
+  if (scheduledIds.size === 0) return ''
+  return [...scheduledIds].sort().join('\0')
+}
+
+export function filterTaskSessionState<T extends SessionListState>(state: T | undefined, scheduledIds: ReadonlySet<string> = new Set()): T {
   const src = (state ?? { ids: [], byId: {}, current: null }) as T
+  const key = scheduledCacheKey(scheduledIds)
+  if (typeof src === 'object' && src !== null) {
+    const hit = taskFilterCache.get(src)
+    if (hit !== undefined && hit.key === key) return hit.result as T
+  }
   const ids = (src.ids ?? []).filter((id) => {
     const value = String(id)
-    return !value.startsWith(AUTOMATION_SESSION_PREFIX) && !value.startsWith('im:')
+    return !value.startsWith('im:') && !isAutomationSidebarSession(value, src.byId?.[value], scheduledIds)
   })
-  const byId: Record<string, NativeSessionLike> = {}
-  for (const id of ids) {
-    const item = src.byId?.[id]
-    if (item !== undefined) byId[id] = item
-  }
-  return { ...src, ids, byId }
+  const unchanged = ids.length === (src.ids ?? []).length
+  const result = unchanged ? src : { ...src, ids, byId: Object.fromEntries(ids.map((id) => [id, src.byId?.[id]]).filter((entry) => entry[1] !== undefined)) }
+  if (typeof src === 'object' && src !== null) taskFilterCache.set(src, { key, result })
+  return result
 }
 
 export interface WorkspaceListState {
@@ -209,8 +272,8 @@ export function openScheduledSession(
   id: string,
   openRuntime?: (sessionId: string) => void,
   openHost?: (sessionId: string) => void,
-): void {
-  if (id === '') return
+): boolean {
+  if (id === '') return false
   const attempts = id.startsWith(AUTOMATION_SESSION_PREFIX) || id.startsWith('im:')
     ? [openRuntime, openHost]
     : [openHost, openRuntime]
@@ -218,24 +281,62 @@ export function openScheduledSession(
     if (typeof attempt !== 'function') continue
     try {
       attempt(id)
-      return
+      return true
     } catch {
       // 列表里有、宿主会话簿还没收录时，换下一个打开入口。
     }
   }
+  return false
 }
 
-export function isHiddenSidebarSessionId(id: string): boolean {
-  return id.startsWith(AUTOMATION_SESSION_PREFIX) || id.startsWith('im:')
+export interface EnsureOpenScheduledSessionInput {
+  readonly id: string
+  readonly adopt?: (sessionId: string) => Promise<void>
+  readonly listed?: (sessionId: string) => boolean
+  readonly refresh?: () => Promise<void>
+  readonly openRuntime?: (sessionId: string) => void
+  readonly openHost?: (sessionId: string) => void
 }
 
-export function filterWorkspaceListState<T extends WorkspaceListState>(state: T | undefined): T {
+/** 先把会话挂回工作区并刷新客户端会话簿，再打开；避免侧栏能看见、点下去却 unknown session。 */
+export async function ensureOpenScheduledSession(input: EnsureOpenScheduledSessionInput): Promise<boolean> {
+  const id = input.id.trim()
+  if (id === '') return false
+  await input.adopt?.(id).catch(() => undefined)
+  const listed = (): boolean => input.listed?.(id) === true
+  if (!listed() && input.refresh !== undefined) {
+    await input.refresh().catch(() => undefined)
+  }
+  if (openScheduledSession(id, input.openRuntime, input.openHost)) return true
+  if (input.refresh !== undefined) {
+    await input.refresh().catch(() => undefined)
+  }
+  return openScheduledSession(id, input.openRuntime, input.openHost)
+}
+
+export function isHiddenSidebarSessionId(id: string, scheduledIds: ReadonlySet<string> = new Set()): boolean {
+  return id.startsWith('im:') || isAutomationSidebarSession(id, undefined, scheduledIds)
+}
+
+export function filterWorkspaceListState<T extends WorkspaceListState>(state: T | undefined, scheduledIds: ReadonlySet<string> = new Set()): T {
   const src = (state ?? { items: [], archivedSessionIds: [] }) as T
-  const items = (src.items ?? []).map((workspace) => ({
-    ...workspace,
-    sessionIds: (workspace.sessionIds ?? []).filter(sid => !isHiddenSidebarSessionId(String(sid))),
-  }))
-  return { ...src, items }
+  const key = scheduledCacheKey(scheduledIds)
+  if (typeof src === 'object' && src !== null) {
+    const hit = workspaceFilterCache.get(src)
+    if (hit !== undefined && hit.key === key) return hit.result as T
+  }
+  let changed = false
+  const items = (src.items ?? []).map((workspace) => {
+    const sessionIds = (workspace.sessionIds ?? []).filter(sid => !isHiddenSidebarSessionId(String(sid), scheduledIds))
+    if (sessionIds.length !== (workspace.sessionIds ?? []).length) {
+      changed = true
+      return { ...workspace, sessionIds }
+    }
+    return workspace
+  })
+  const result = changed ? { ...src, items } : src
+  if (typeof src === 'object' && src !== null) workspaceFilterCache.set(src, { key, result })
+  return result
 }
 
 export type WrapperFlags = {
@@ -302,3 +403,52 @@ export function pickWrappableWorkspacesEntry(entries: readonly unknown[]): unkno
 
 
 
+
+
+
+
+
+
+export type WorkspaceGroupMode = 'workspace' | 'list'
+export type WorkspaceListSort = 'manual' | 'time'
+
+export interface SearchableRailGroup {
+  readonly name: string
+  readonly sessions: readonly { readonly title?: string; readonly label?: string; readonly updatedAt?: string }[]
+}
+
+export function applyWorkspaceBrowserQuery<T extends SearchableRailGroup>(
+  groups: readonly T[],
+  query: string,
+  sort: WorkspaceListSort,
+  groupMode: WorkspaceGroupMode = 'workspace',
+): T[] {
+  const needle = query.trim().toLocaleLowerCase()
+  const filtered = groups.map((group) => {
+    if (needle === '') return group
+    if (group.name.toLocaleLowerCase().includes(needle)) return group
+    const sessions = group.sessions.filter((session) => `${session.title ?? ''} ${session.label ?? ''}`.toLocaleLowerCase().includes(needle))
+    return { ...group, sessions }
+  }).filter((group) => group.sessions.length > 0 || (needle !== '' && group.name.toLocaleLowerCase().includes(needle)))
+  if (groupMode === 'list') {
+    const sessions = filtered.flatMap((group) => [...group.sessions])
+    if (sort === 'time') sessions.sort((left, right) => sessionTime(right) - sessionTime(left))
+    return sessions.length === 0 ? [] : [{ ...(filtered[0] as T), name: '', sessions }]
+  }
+  if (sort === 'manual') return filtered
+  return [...filtered].sort((left, right) => latestSessionTime(right) - latestSessionTime(left))
+}
+
+function sessionTime(session: { readonly updatedAt?: string }): number {
+  const ts = Date.parse(session.updatedAt ?? '')
+  return Number.isFinite(ts) ? ts : 0
+}
+
+function latestSessionTime(group: SearchableRailGroup): number {
+  let latest = 0
+  for (const session of group.sessions) {
+    const ts = sessionTime(session)
+    if (ts > latest) latest = ts
+  }
+  return latest
+}

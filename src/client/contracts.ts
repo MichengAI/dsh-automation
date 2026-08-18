@@ -8,6 +8,7 @@ export interface AutomationViewProps {
   readonly t: Translate
   readonly runtime: AutomationRuntime
   readonly closeSettings?: () => void
+  readonly pickWorkspaceDirectory?: () => Promise<string | null>
 }
 
 export interface ClientRpc {
@@ -29,7 +30,14 @@ export interface SlotRegisterOptions {
 export interface ClientContext {
   effect(factory: () => void | (() => void), label?: string): void
   connection: { readonly rpc: ClientRpc }
-  sessions?: { open(id: string): void }
+  sessions?: {
+    open(id: string): void
+    refresh?: () => Promise<void>
+    list?: {
+      getSnapshot(): { ids?: readonly string[]; byId?: Record<string, unknown>; current?: string | null }
+    }
+  }
+  workspaces?: { pickDirectory(): Promise<string | null> }
   locale: {
     register(
       namespace: string,
@@ -54,3 +62,5 @@ export interface NativeSwitcherProps {
   readonly useWorkspaces?: (select: (state: any) => any) => any
   readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode
 }
+
+

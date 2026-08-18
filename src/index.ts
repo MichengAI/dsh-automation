@@ -3,6 +3,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import z from '@deepseek-ai/schemastery'
+import { AUTOMATION_PROMPT_NAME, AUTOMATION_PROMPT_ORDER, AUTOMATION_PROMPT_TEXT } from './prompt.ts'
 import { registerAutomationRpc } from './rpc.ts'
 import { AutomationService } from './service.ts'
 import { registerAutomationTools } from './tools.ts'
@@ -31,11 +32,40 @@ const MUTATING_TOOLS = new Set([
   'automation_create', 'automation_update', 'automation_run_now', 'automation_delete',
 ])
 
+export type SessionApprovalPolicy = 'ask' | 'never'
+
+export interface ApprovalPolicyReader {
+  readonly config?: { readonly policy?: SessionApprovalPolicy }
+  overrideOf?(session: unknown): SessionApprovalPolicy | undefined
+}
+
+/**
+ * 读会话审批策略。官方三档对应：
+ * Read Only / Workspace Write → ask
+ * Full access → never
+ */
+export function sessionApprovalPolicy(
+  approval: ApprovalPolicyReader | undefined,
+  session: unknown,
+): SessionApprovalPolicy | undefined {
+  const override = approval?.overrideOf?.(session)
+  if (override === 'ask' || override === 'never') return override
+  const fallback = approval?.config?.policy
+  if (fallback === 'ask' || fallback === 'never') return fallback
+  return undefined
+}
+
+/**
+ * 只在官方 ask 策略下二次确认。never（Full access）再 ask，
+ * 会被映射成 “the user rejected tool”，且不会弹窗。
+ */
 export function needsHumanApproval(
   exec: { readonly name: string; readonly arguments?: unknown; readonly signal: AbortSignal },
   isMountedAgent: boolean,
+  policy?: SessionApprovalPolicy,
 ): boolean {
   if (!isMountedAgent || exec.signal.aborted || !MUTATING_TOOLS.has(exec.name)) return false
+  if (policy !== 'ask') return false
   if (exec.name !== 'automation_update') return true
   const args = typeof exec.arguments === 'object' && exec.arguments !== null
     ? exec.arguments as Record<string, unknown>
@@ -64,13 +94,14 @@ export async function apply(ctx: Context, rawConfig: Config): Promise<void> {
     let stopCreated = () => {}
     let stopDisposed = () => {}
     let stopApproval = () => {}
+    let stopPrompt = () => {}
     let removeRpc = async (): Promise<void> => {}
 
     const cleanup = async (): Promise<void> => {
       if (cleaned) return
       cleaned = true
       alive = false
-      for (const stop of [stopCreated, stopDisposed, stopApproval]) {
+      for (const stop of [stopCreated, stopDisposed, stopApproval, stopPrompt]) {
         try { stop() } catch (error: unknown) {
           ctx.logger.warn(`dsh-automation: lifecycle cleanup failed: ${String(error)}`)
         }
@@ -102,9 +133,21 @@ export async function apply(ctx: Context, rawConfig: Config): Promise<void> {
       for (const agent of ctx.agents.roots()) mountTools(agent)
       stopCreated = ctx.on('agent/created', ({ agent }: any) => { mountTools(agent) })
       stopDisposed = ctx.on('agent/disposed', ({ agent }: any) => { agentTools.delete(agent) })
+      const systemPrompt = ctx.get('systemPrompt') as { section?(input: { name: string; order: number; text: string }): () => void } | undefined
+      if (typeof systemPrompt?.section === 'function') {
+        stopPrompt = systemPrompt.section({
+          name: AUTOMATION_PROMPT_NAME,
+          order: AUTOMATION_PROMPT_ORDER,
+          text: AUTOMATION_PROMPT_TEXT,
+        })
+      }
       stopApproval = ctx.on('tools/pre-execute', async (exec: any, next: () => Promise<any>) => {
         const downstream = await next()
-        if (downstream.kind !== 'allow' || !needsHumanApproval(exec, agentTools.has(exec.agent))) return downstream
+        const approval = ctx.get('approval') as ApprovalPolicyReader | undefined
+        const policy = sessionApprovalPolicy(approval, exec.agent?.session)
+        if (downstream.kind !== 'allow' || !needsHumanApproval(exec, agentTools.has(exec.agent), policy)) {
+          return downstream
+        }
         return {
           kind: 'ask' as const,
           reason: humanApprovalReason(exec.name),

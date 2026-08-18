@@ -4,26 +4,30 @@ import type { Translate } from './contracts.js'
 import {
   ArchiveIcon,
   BranchIcon,
-  ChevronIcon,
   EllipsisIcon,
   FolderClosedIcon,
   FolderOpenIcon,
   PencilIcon,
   RunningStateDot,
-  TrashIcon,
 } from './icons.js'
 import {
+  nativeSessionHoverStyle,
   nativeSessionMenuStyle,
-  nextOpenSessionMenuId,
+  nextOpenSessionMenu,
+  pointerPoint,
   relativeTime,
   shouldCloseNativeSessionMenu,
+  type NativeSessionMenuState,
 } from './native-session-menu.js'
 import type { AutomationRuntime } from './runtime.js'
-import { formatRunStamp, groupScheduledSessions, type NativeSessionLike } from './schedule-rail-model.js'
+import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, type NativeSessionLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
+import { WorkspaceToolbar } from './workspace-toolbar.js'
 
 export {
   nativeSessionMenuStyle,
+  nextOpenSessionMenu,
   nextOpenSessionMenuId,
+  pointerPoint,
   relativeTime,
   resolveEventElement,
   shouldCloseNativeSessionMenu,
@@ -42,7 +46,7 @@ export function NativeScheduleSessionList(props: {
   readonly deleteSession?: (sessionId: string) => void | Promise<void>
   readonly forkSession?: (sessionId: string) => void | Promise<void>
 }): JSX.Element {
-  const { t, runtime, openSession, useSessions, useWorkspaces, renameSession, archiveSession, deleteSession, forkSession } = props
+  const { t, runtime, openSession, useSessions, useWorkspaces, renameSession, archiveSession, forkSession } = props
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const selectedId = useSessions ? useSessions((snap: { current?: string | null }) => snap?.current ?? null) : null
   const sessionById: Record<string, NativeSessionLike> = useSessions
@@ -50,7 +54,10 @@ export function NativeScheduleSessionList(props: {
     : EMPTY_SESSION_BY_ID
   const archivedIds: string[] = useWorkspaces ? useWorkspaces((snap: { archivedSessionIds?: string[] }) => snap?.archivedSessionIds ?? []) : []
   const [folded, setFolded] = useState<Record<string, boolean>>({})
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [openMenu, setOpenMenu] = useState<NativeSessionMenuState>(null)
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<WorkspaceListSort>('time')
+  const [groupMode, setGroupMode] = useState<WorkspaceGroupMode>('workspace')
   useEffect(() => {
     void runtime.refresh().catch(() => undefined)
     const timer = window.setInterval(() => { void runtime.refresh().catch(() => undefined) }, 15_000)
@@ -73,59 +80,38 @@ export function NativeScheduleSessionList(props: {
       }),
     })).filter((group) => group.sessions.length > 0)
   }, [archived, sessionById, state.snapshot])
+  const visibleGroups = useMemo(() => applyWorkspaceBrowserQuery(groups.map((group) => ({ ...group, name: group.name })), query, sort, groupMode), [groups, query, sort, groupMode])
   return (
     <div className='dsh-st-n'>
+      <WorkspaceToolbar t={t} query={query} sort={sort} groupMode={groupMode} onQueryChange={setQuery} onSortChange={setSort} onGroupModeChange={setGroupMode} />
       <div className='dsh-st-n-tree' role='tree'>
-        {state.phase === 'loading' && groups.length === 0 && <div className='dsh-st-n-empty'>{t('loading')}</div>}
-        {groups.length === 0 && state.phase !== 'loading' && <div className='dsh-st-n-empty'>{t('sidebar.empty')}</div>}
-        {groups.map((group) => {
+        {state.phase === 'loading' && visibleGroups.length === 0 && <div className='dsh-st-n-empty'>{t('loading')}</div>}
+        {visibleGroups.length === 0 && state.phase !== 'loading' && <div className='dsh-st-n-empty'>{t('sidebar.empty')}</div>}
+        {visibleGroups.map((group) => {
           const expanded = folded[group.id] !== true
           return (
             <div key={group.id} className='dsh-st-n-group'>
-              <div className='dsh-st-n-row' role='treeitem' aria-expanded={expanded} onClick={() => setFolded((current) => ({ ...current, [group.id]: expanded }))}>
+              {groupMode === 'workspace' && <div className='dsh-st-n-row' role='treeitem' aria-expanded={expanded} onClick={() => setFolded((current) => ({ ...current, [group.id]: expanded }))}>
                 <span className='dsh-st-n-slot dsh-st-n-folder'>{expanded ? <FolderOpenIcon width={16} height={16} /> : <FolderClosedIcon width={16} height={16} />}</span>
-                <span className='dsh-st-n-slot dsh-st-n-chevron'><span className={expanded ? 'dsh-st-n-arrow is-open' : 'dsh-st-n-arrow'}><ChevronIcon width={14} height={14} /></span></span>
                 <span className='dsh-st-n-title'>{group.name}</span>
-                <span className='dsh-st-n-acts'>
-                  <button
-                    type='button'
-                    className='dsh-st-n-ico'
-                    aria-label={t('session.deleteFolder')}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      setOpenMenuId(null)
-                      void (async () => {
-                        for (const session of group.sessions) {
-                          try { await deleteSession?.(session.id) } catch { /* ignore */ }
-                        }
-                        await runtime.forgetAutomationSessions(group.id)
-                      })()
-                    }}
-                  >
-                    <TrashIcon width={16} height={16} />
-                  </button>
-                </span>
-              </div>
-              {expanded && group.sessions.map((session) => (
+              </div>}
+              {(groupMode === 'list' || expanded) && group.sessions.map((session) => (
                 <NativeSessionRow
                   key={session.id}
                   t={t}
                   id={session.id}
                   title={session.title}
+                  hoverTitle={String(sessionById[session.id]?.displayTitle ?? sessionById[session.id]?.title ?? group.name)}
                   updatedAt={session.updatedAt}
                   running={session.running}
                   selected={selectedId === session.id}
-                  menuOpen={openMenuId === session.id}
-                  onToggleMenu={() => setOpenMenuId((current) => nextOpenSessionMenuId(current, session.id))}
-                  onCloseMenu={() => setOpenMenuId((current) => current === session.id ? null : current)}
+                  menuOpen={openMenu?.id === session.id}
+                  menuPoint={openMenu === null || openMenu.id !== session.id ? { x: 8, y: 8 } : { x: openMenu.x, y: openMenu.y }}
+                  onToggleMenu={(event) => setOpenMenu((current) => nextOpenSessionMenu(current, session.id, pointerPoint(event)))}
+                  onCloseMenu={() => setOpenMenu((current) => current?.id === session.id ? null : current)}
                   onOpen={() => {
-                    setOpenMenuId(null)
+                    setOpenMenu(null)
                     openSession?.(session.id)
-                    void runtime.adoptSession?.(session.id).catch(() => undefined)
-                  }}
-                  onDelete={async () => {
-                    try { await deleteSession?.(session.id) } catch { /* 宿主可能拒绝，侧栏仍摘掉 */ }
-                    await runtime.forgetSession(session.id)
                   }}
                   {...(renameSession === undefined ? {} : { renameSession })}
                   {...(archiveSession === undefined ? {} : { archiveSession })}
@@ -144,21 +130,26 @@ function NativeSessionRow(props: {
   readonly t: Translate
   readonly id: string
   readonly title: string
+  readonly hoverTitle?: string
   readonly updatedAt: string
   readonly running: boolean
   readonly selected: boolean
   readonly menuOpen: boolean
-  readonly onToggleMenu: () => void
+  readonly menuPoint: { readonly x: number; readonly y: number }
+  readonly onToggleMenu: (event: { readonly clientX?: number; readonly clientY?: number }) => void
   readonly onCloseMenu: () => void
   readonly onOpen: () => void
-  readonly onDelete: () => void | Promise<void>
   readonly renameSession?: (sessionId: string, title: string) => void | Promise<void>
   readonly archiveSession?: (sessionId: string) => void | Promise<void>
   readonly forkSession?: (sessionId: string) => void | Promise<void>
 }): JSX.Element {
-  const { t, id, title, updatedAt, running, selected, menuOpen, onToggleMenu, onCloseMenu, onOpen, onDelete, renameSession, archiveSession, forkSession } = props
+  const { t, id, title, hoverTitle, updatedAt, running, selected, menuOpen, menuPoint, onToggleMenu, onCloseMenu, onOpen, renameSession, archiveSession, forkSession } = props
   const rowRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+  const hoverRef = useRef<HTMLDivElement>(null)
+  const [hoverOpen, setHoverOpen] = useState(false)
+  const [hoverStyle, setHoverStyle] = useState<CSSProperties>({})
+  const hoverTimer = useRef<number | undefined>(undefined)
   const [renaming, setRenaming] = useState(false)
   const [draft, setDraft] = useState(title)
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
@@ -182,9 +173,9 @@ function NativeSessionRow(props: {
   useLayoutEffect(() => {
     if (!menuOpen) return
     const update = (): void => {
-      const box = rowRef.current?.getBoundingClientRect()
-      if (box === undefined) return
-      setMenuStyle(nativeSessionMenuStyle(box, window.innerWidth))
+      const el = menuRef.current
+      const size = el === null ? { width: 218, height: 176 } : { width: el.offsetWidth, height: el.offsetHeight }
+      setMenuStyle(nativeSessionMenuStyle(menuPoint, size, { width: window.innerWidth, height: window.innerHeight }))
     }
     update()
     window.addEventListener('resize', update)
@@ -193,8 +184,37 @@ function NativeSessionRow(props: {
       window.removeEventListener('resize', update)
       document.removeEventListener('scroll', update, true)
     }
-  }, [menuOpen])
+  }, [menuOpen, menuPoint])
+  useEffect(() => {
+    if (!hoverOpen || menuOpen) return
+    const update = (): void => {
+      const row = rowRef.current?.getBoundingClientRect()
+      const card = hoverRef.current
+      if (row === undefined) return
+      const size = card === null ? { width: 220, height: 96 } : { width: card.offsetWidth, height: card.offsetHeight }
+      setHoverStyle(nativeSessionHoverStyle({ right: row.right, top: row.top }, size, { width: window.innerWidth, height: window.innerHeight }))
+    }
+    update()
+    window.addEventListener('resize', update)
+    document.addEventListener('scroll', update, true)
+    return () => {
+      window.removeEventListener('resize', update)
+      document.removeEventListener('scroll', update, true)
+    }
+  }, [hoverOpen, menuOpen, title, updatedAt, running])
+  useEffect(() => () => {
+    if (hoverTimer.current !== undefined) window.clearTimeout(hoverTimer.current)
+  }, [])
   const run = (action: () => void | Promise<void>): void => { void Promise.resolve(action()).catch(() => undefined) }
+  const showHover = (): void => {
+    if (menuOpen) return
+    if (hoverTimer.current !== undefined) window.clearTimeout(hoverTimer.current)
+    hoverTimer.current = window.setTimeout(() => setHoverOpen(true), 500)
+  }
+  const hideHover = (): void => {
+    if (hoverTimer.current !== undefined) window.clearTimeout(hoverTimer.current)
+    setHoverOpen(false)
+  }
   const rowClass = 'dsh-st-n-sess' + (selected ? ' is-on' : '') + (menuOpen ? ' is-menu' : '')
   if (renaming) {
     return (
@@ -210,13 +230,12 @@ function NativeSessionRow(props: {
     { id: 'rename', label: t('session.rename'), icon: <PencilIcon width={16} height={16} />, go: () => { setRenaming(true) } },
     { id: 'fork', label: t('session.fork'), icon: <BranchIcon width={16} height={16} />, go: () => run(() => forkSession?.(id)) },
     { id: 'archive', label: t('session.archive'), icon: <ArchiveIcon width={16} height={16} />, go: () => run(() => archiveSession?.(id)) },
-    { id: 'delete', label: t('session.delete'), icon: <TrashIcon width={16} height={16} />, danger: true, go: () => run(() => onDelete()) },
   ]
   const menu = menuOpen && typeof document !== 'undefined'
     ? createPortal(
       <div ref={menuRef} className='dsh-st-n-menu is-float' data-n-menu={id} style={menuStyle} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}>
         {menuItems.map((item) => (
-          <button key={item.id} type='button' className={item.danger === true ? 'danger' : undefined} onClick={() => { onCloseMenu(); item.go() }}>
+          <button key={item.id} type='button' className={undefined} onClick={() => { onCloseMenu(); item.go() }}>
             <span className='dsh-st-n-mi'>{item.icon}</span>{item.label}
           </button>
         ))}
@@ -225,16 +244,30 @@ function NativeSessionRow(props: {
     )
     : null
   return (
-    <div className={rowClass} ref={rowRef} role='treeitem' tabIndex={0} aria-selected={selected} data-n-menu-root={id} onClick={onOpen} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); onToggleMenu() }}>
+    <div className={rowClass} ref={rowRef} role='treeitem' tabIndex={0} aria-selected={selected} data-n-menu-root={id} onClick={onOpen} onMouseEnter={showHover} onMouseLeave={hideHover} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); onToggleMenu(event) }}>
       <span className='dsh-st-n-slot'>{running ? <RunningStateDot /> : null}</span>
       <span className='dsh-st-n-title'>{title}</span>
       <span className='dsh-st-n-time'>{relativeTime(updatedAt)}</span>
       <span className='dsh-st-n-acts'>
-        <button type='button' className='dsh-st-n-ico' aria-label={title + ' 更多'} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onToggleMenu() }}>
+        <button type='button' className='dsh-st-n-ico' aria-label={title + ' 更多'} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); hideHover(); onToggleMenu(event) }}>
           <EllipsisIcon width={16} height={16} />
         </button>
       </span>
       {menu}
+      {hoverOpen && !menuOpen && typeof document !== 'undefined' && createPortal(
+        <div ref={hoverRef} className='dsh-st-n-hover' style={hoverStyle} onMouseEnter={showHover} onMouseLeave={hideHover}>
+          <div className='dsh-st-n-hover-title'>{(hoverTitle ?? title).trim() || title}</div>
+          <div className='dsh-st-n-hover-time'>{relativeTime(updatedAt)}</div>
+          <div className='dsh-st-n-hover-state'>
+            <span className={running ? 'dsh-st-n-hover-dot is-run' : 'dsh-st-n-hover-dot'} />
+            {running ? t('session.runningStatus') : t('session.idle')}
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   )
 }
+
+
+

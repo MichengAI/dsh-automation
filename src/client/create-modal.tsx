@@ -9,6 +9,7 @@ import {
   type AutomationFormState,
   type ScheduleKind,
 } from './helpers.js'
+import { adoptPickedWorkspace } from './create-modal-logic.js'
 import { FolderIcon, PlusIcon, ShieldIcon, SparkleIcon } from './icons.js'
 import { MenuHostProvider, MenuPanel, MenuPopup, MenuRow, MenuSelect, useMenuState } from './menu.js'
 
@@ -19,7 +20,7 @@ const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(
 const EFFORTS = ['none', 'low', 'medium', 'high'] as const
 
 export function CreateModal({
-  t, busy, workspaces, models, defaultModel, skills, draft, editing, onClose, onSubmit, onAddWorkspace,
+  t, busy, workspaces, models, defaultModel, skills, draft, editing, onClose, onSubmit, onAddWorkspace, pickWorkspaceDirectory,
 }: {
   readonly t: Translate
   readonly busy: boolean
@@ -32,11 +33,10 @@ export function CreateModal({
   readonly onClose: () => void
   readonly onSubmit: (form: AutomationFormState) => Promise<void>
   readonly onAddWorkspace?: (path: string) => Promise<string>
+  readonly pickWorkspaceDirectory?: () => Promise<string | null>
 }): JSX.Element {
   const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel), ...draft }))
   const [validationError, setValidationError] = useState<string>()
-  const [addingWorkspace, setAddingWorkspace] = useState(false)
-  const [workspacePath, setWorkspacePath] = useState('')
   const update = (patch: Partial<AutomationFormState>): void => {
     setForm(current => ({ ...current, ...patch }))
     setValidationError(undefined)
@@ -91,14 +91,7 @@ export function CreateModal({
     })
   }
   return (
-    <div
-      className="dsh-st-mask"
-      role="presentation"
-      onClick={(event) => {
-        if ((event.target as HTMLElement).closest('.dsh-st-select-menu') !== null) return
-        onClose()
-      }}
-    >
+    <div className="dsh-st-mask" role="presentation">
       <MenuHostProvider host={menuHost}>
       <form className="dsh-st-modal" onClick={event => event.stopPropagation()} onSubmit={handleSubmit}>
         <div className="dsh-st-modal-head">
@@ -200,12 +193,28 @@ export function CreateModal({
                       onClick={() => update({ workspaceId: item.id })}
                     />
                   ))}
+                  {pickWorkspaceDirectory !== undefined && onAddWorkspace !== undefined && (
+                    <>
                   <div className="dsh-st-menu-split" />
-                  <MenuRow
-                    icon={<PlusIcon width={14} height={14} />}
-                    label={t('form.addWorkspace')}
-                    onClick={() => { setWorkspacePath(''); setAddingWorkspace(true) }}
-                  />
+                    <MenuRow
+                      icon={<PlusIcon width={14} height={14} />}
+                      label={t('form.addWorkspace')}
+                      onClick={() => {
+                        void (async () => {
+                          try {
+                            const id = await adoptPickedWorkspace({
+                              pick: pickWorkspaceDirectory,
+                              add: onAddWorkspace,
+                            })
+                            if (id !== null) update({ workspaceId: id })
+                          } catch (caught) {
+                            setValidationError(caught instanceof Error ? caught.message : t('error.action'))
+                          }
+                        })()
+                      }}
+                    />
+                    </>
+                  )}
                 </MenuPanel>
                 <MenuPanel ghost up label={<><SparkleIcon width={14} height={14} />{t('form.skills')}</>}>
                   {skills.length === 0 && <div className="dsh-st-select-empty">{t('form.skillsEmpty')}</div>}
@@ -245,33 +254,7 @@ export function CreateModal({
           </div>
         </div>
 
-        {addingWorkspace && (
-          <div className="dsh-st-subdialog">
-            <strong>{t('form.addWorkspace')}</strong>
-            <label className="dsh-st-field">
-              {t('form.workspacePath')}
-              <input value={workspacePath} placeholder={t('form.workspacePathPlaceholder')} onChange={event => setWorkspacePath(event.target.value)} />
-            </label>
-            <div className="dsh-st-modal-actions">
-              <button type="button" className="dsh-st-btn" onClick={() => setAddingWorkspace(false)}>{t('form.cancel')}</button>
-              <button
-                type="button"
-                className="dsh-st-btn dsh-st-btn--primary"
-                disabled={busy || onAddWorkspace === undefined}
-                onClick={async () => {
-                  if (onAddWorkspace === undefined) return
-                  try {
-                    const id = await onAddWorkspace(workspacePath)
-                    update({ workspaceId: id })
-                    setAddingWorkspace(false)
-                  } catch (caught) {
-                    setValidationError(caught instanceof Error ? caught.message : t('error.action'))
-                  }
-                }}
-              >{t('modal.save')}</button>
-            </div>
-          </div>
-        )}
+
         {validationError !== undefined && <p className="dsh-st-error">{validationError}</p>}
         <div className="dsh-st-modal-actions">
           <button type="button" className="dsh-st-btn" onClick={onClose} disabled={busy}>{t('form.cancel')}</button>
@@ -407,5 +390,7 @@ function clampOnceAt(value: string): string {
   const offset = next.getTimezoneOffset() * 60_000
   return new Date(next.getTime() - offset).toISOString().slice(0, 16)
 }
+
+
 
 

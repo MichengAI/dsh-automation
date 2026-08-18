@@ -7,11 +7,11 @@ type SessionSelector = <S>(select: (state: {
     ids?: string[];
     byId?: Record<string, NativeSessionLike>;
     current?: string | null;
-}) => S) => S;
+}) => S, eq?: (a: S, b: S) => boolean) => S;
 type WorkspaceSelector = <S>(select: (state: {
     items?: NativeWorkspaceLike[];
     archivedSessionIds?: string[];
-}) => S) => S;
+}) => S, eq?: (a: S, b: S) => boolean) => S;
 export declare function ScheduleRail({ t, runtime, openSession, }: {
     readonly t: Translate;
     readonly runtime: AutomationRuntime;

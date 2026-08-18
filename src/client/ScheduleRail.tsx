@@ -1,33 +1,39 @@
-import { Component, createElement, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
+import { Component, createElement, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
 import type { Translate } from './contracts.js'
 import { ClockIcon, RunningStateDot } from './icons.js'
 import type { AutomationRuntime } from './runtime.js'
 import {
   filterTaskSessionState,
+  collectScheduledSessionIds,
   filterWorkspaceListState,
   groupNativeTaskSessions,
   groupScheduledSessions,
   NATIVE_SIDEBAR_TAB_KEY,
+  ownedSidebarTabIds,
   readNativeSidebarTab,
+  resolveVisibleSidebarTab,
+  shouldFollowSessionTab,
   tabForSessionId,
   type NativeSessionLike,
   type NativeSidebarTab,
   type NativeWorkspaceLike,
 } from './schedule-rail-model.js'
+import { NativeScheduleSessionList } from './native-session-list.js'
 import type { NativeSidebarTab as ExtraSidebarTab, NativeTabRegistry } from './native-tabs.js'
 
 const EMPTY_EXTRA_TABS: ExtraSidebarTab[] = []
+const noopSubscribe = (_listener: () => void): (() => void) => () => undefined
 
 type SessionSelector = <S>(select: (state: {
   ids?: string[]
   byId?: Record<string, NativeSessionLike>
   current?: string | null
-}) => S) => S
+}) => S, eq?: (a: S, b: S) => boolean) => S
 
 type WorkspaceSelector = <S>(select: (state: {
   items?: NativeWorkspaceLike[]
   archivedSessionIds?: string[]
-}) => S) => S
+}) => S, eq?: (a: S, b: S) => boolean) => S
 
 class OfficialTreeGuard extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
   override state = { failed: false }
@@ -128,38 +134,51 @@ export function NativeScheduleShell({
     catch { return 'tasks' }
   })
   const extraTabs = useSyncExternalStore(
-    tabRegistry?.subscribe ?? ((listener) => { listener(); return () => undefined }),
+    tabRegistry?.subscribe ?? noopSubscribe,
     () => tabRegistry?.getTabs() ?? EMPTY_EXTRA_TABS,
     () => EMPTY_EXTRA_TABS,
   )
   const channelsReady = useSyncExternalStore(
-    subscribeChannels ?? ((listener) => { listener(); return () => undefined }),
+    subscribeChannels ?? noopSubscribe,
     () => {
       try { return hasChannels?.() === true } catch { return false }
     },
     () => false,
   )
   const currentId = useSessions?.((state) => state?.current ?? null)
-  const useFilteredSessions = useCallback<SessionSelector>((selector) => {
+  const automationState = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
+  const scheduledIds = useMemo(() => collectScheduledSessionIds(automationState.snapshot?.runs), [automationState.snapshot])
+  const useFilteredSessions = useCallback<SessionSelector>((selector, eq) => {
     if (useSessions === undefined) return selector({ ids: [], byId: {}, current: null })
-    return useSessions(state => selector(filterTaskSessionState(state)))
-  }, [useSessions])
-  const useFilteredWorkspaces = useCallback<WorkspaceSelector>((selector) => {
+    return useSessions(state => selector(filterTaskSessionState(state, scheduledIds)), eq)
+  }, [useSessions, scheduledIds])
+  const useFilteredWorkspaces = useCallback<WorkspaceSelector>((selector, eq) => {
     if (useWorkspaces === undefined) return selector({ items: [], archivedSessionIds: [] })
-    return useWorkspaces(state => selector(filterWorkspaceListState(state)))
-  }, [useWorkspaces])
+    return useWorkspaces(state => selector(filterWorkspaceListState(state, scheduledIds)), eq)
+  }, [useWorkspaces, scheduledIds])
 
   useEffect(() => {
     try { window.localStorage.setItem(NATIVE_SIDEBAR_TAB_KEY, tab) }
     catch { /* 隐私模式或禁用存储时忽略 */ }
   }, [tab])
 
+  const previousCurrentId = useRef(currentId)
+  const tabFollowReady = useRef(false)
   useEffect(() => {
-    const next = tabForSessionId(currentId ?? undefined)
-    if (next === 'channels' && channelsReady) setTab('channels')
+    if (!tabFollowReady.current) {
+      tabFollowReady.current = true
+      previousCurrentId.current = currentId
+      return
+    }
+    const previous = previousCurrentId.current
+    previousCurrentId.current = currentId
+    if (!shouldFollowSessionTab(previous, currentId)) return
+    const next = tabForSessionId(currentId ?? undefined, scheduledIds)
+    const extraIds = extraTabs.map(item => item.id)
+    if (next === 'channels' && (channelsReady || extraIds.includes('channels'))) setTab('channels')
     const matched = extraTabs.find(item => currentId !== undefined && currentId !== null && item.matchSession?.(String(currentId)) === true)
-    if (matched !== undefined) setTab(matched.id)
-  }, [currentId, channelsReady, extraTabs])
+    if (matched !== undefined && matched.id !== 'schedule') setTab(matched.id)
+  }, [currentId, channelsReady, extraTabs, scheduledIds])
 
   const rawOfficialProps = { ...(hostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
   const filteredOfficialProps = {
@@ -178,31 +197,45 @@ export function NativeScheduleShell({
     )
   }
 
-  if (wide === false) return <>{renderOfficial(rawOfficialProps)}</>
+  if (wide === false) return <>{renderOfficial(filteredOfficialProps)}</>
 
-  const visibleTab = tab === 'channels' && !channelsReady ? 'tasks' : tab
+  const foreignTabs = extraTabs.filter(item => item.id !== 'schedule')
+  const visibleTab = resolveVisibleSidebarTab({
+    tab,
+    channelsReady,
+    extraTabIds: ownedSidebarTabIds({ extraTabIds: foreignTabs.map(item => item.id), channelsReady }),
+  })
+  const hostedSchedule = extraTabs.find(item => item.id === 'schedule')
+  const scheduleBody = hostedSchedule === undefined
+    ? <NativeScheduleSessionList t={t} runtime={runtime} {...(openSession === undefined ? {} : { openSession })} {...(useSessions === undefined ? {} : { useSessions })} {...(useWorkspaces === undefined ? {} : { useWorkspaces })} />
+    : hostedSchedule.render({ ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true }) as ReactNode
   return (
     <div className="dsh-st-shell-rail">
       <div className="dsh-st-shell-tabs" role="tablist" aria-label={t('sidebar.tabs')}>
         <button type="button" role="tab" aria-selected={visibleTab === 'tasks'} className={visibleTab === 'tasks' ? 'is-on' : undefined} onClick={() => setTab('tasks')}>
           {t('sidebar.tasksTab')}
         </button>
-        {extraTabs.map(item => (
+        {foreignTabs.map(item => (
           <button key={item.id} type="button" role="tab" aria-selected={visibleTab === item.id} className={visibleTab === item.id ? 'is-on' : undefined} onClick={() => setTab(item.id)}>
             {item.label}
           </button>
         ))}
-        {channelsReady && extraTabs.every(item => item.id !== 'channels') && (
+        {channelsReady && foreignTabs.every(item => item.id !== 'channels') && (
           <button type="button" role="tab" aria-selected={visibleTab === 'channels'} className={visibleTab === 'channels' ? 'is-on' : undefined} onClick={() => setTab('channels')}>
             {t('sidebar.channelsTab')}
           </button>
         )}
+        <button type="button" role="tab" aria-selected={visibleTab === 'schedule'} className={visibleTab === 'schedule' ? 'is-on' : undefined} onClick={() => setTab('schedule')}>
+          {t('sidebar.tab')}
+        </button>
       </div>
-      {extraTabs.find(item => item.id === visibleTab) !== undefined
-        ? <div className="dsh-st-shell-body">{extraTabs.find(item => item.id === visibleTab)?.render({ ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true }) as ReactNode}</div>
-        : visibleTab === 'channels'
-          ? <div className="dsh-st-shell-body">{renderSlot?.('sidebar.channels', { ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true })}</div>
-          : <div className="dsh-st-official-tree">{renderOfficial(filteredOfficialProps)}</div>}
+      {visibleTab === 'schedule'
+        ? <div className="dsh-st-shell-body">{scheduleBody}</div>
+        : foreignTabs.find(item => item.id === visibleTab) !== undefined
+          ? <div className="dsh-st-shell-body">{foreignTabs.find(item => item.id === visibleTab)?.render({ ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true }) as ReactNode}</div>
+          : visibleTab === 'channels'
+            ? <div className="dsh-st-shell-body">{renderSlot?.('sidebar.channels', { ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true, skin: 'native' })}</div>
+            : <div className="dsh-st-official-tree">{renderOfficial(filteredOfficialProps)}</div>}
     </div>
   )
 }
@@ -248,4 +281,6 @@ function NativeTaskRail({
     </div>
   )
 }
+
+
 

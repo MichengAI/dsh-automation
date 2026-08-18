@@ -2,6 +2,7 @@
 
 import { defineTool, type JsonValue, type ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type { AutomationService } from './service.ts'
+import { AUTOMATION_CREATE_DESCRIPTION } from './prompt.ts'
 import type { AutomationSchedule, PermissionPreset, Weekday } from './types.ts'
 
 interface ToolAgent {
@@ -106,7 +107,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
   try {
     register(defineTool({
       name: 'automation_create',
-      description: '为当前工作区创建一条独立自动化。每次触发都会开启全新 DSH Session，不会继承当前对话。必须使用显式 IANA 时区。最短间隔为 5 分钟。默认只读；只有需要改文件时才选择 workspace-write。',
+      description: AUTOMATION_CREATE_DESCRIPTION,
       parameters: {
         name: { type: 'string', required: true },
         prompt: { type: 'string', required: true, description: '每次独立运行都使用的自包含任务说明。' },
