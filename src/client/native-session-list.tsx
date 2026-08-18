@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
+import { createPortal } from 'react-dom'
 import type { Translate } from './contracts.js'
 import {
   ArchiveIcon,
@@ -11,22 +12,24 @@ import {
   RunningStateDot,
   TrashIcon,
 } from './icons.js'
+import {
+  nativeSessionMenuStyle,
+  nextOpenSessionMenuId,
+  relativeTime,
+  shouldCloseNativeSessionMenu,
+} from './native-session-menu.js'
 import type { AutomationRuntime } from './runtime.js'
 import { formatRunStamp, groupScheduledSessions, type NativeSessionLike } from './schedule-rail-model.js'
 
-const EMPTY_SESSION_BY_ID: Record<string, NativeSessionLike> = {}
+export {
+  nativeSessionMenuStyle,
+  nextOpenSessionMenuId,
+  relativeTime,
+  resolveEventElement,
+  shouldCloseNativeSessionMenu,
+} from './native-session-menu.js'
 
-export function relativeTime(value: string): string {
-  const ts = Date.parse(value || '')
-  if (!Number.isFinite(ts)) return ''
-  const delta = Math.max(0, Date.now() - ts)
-  const min = Math.floor(delta / 60000)
-  if (min < 1) return '刚刚'
-  if (min < 60) return String(min) + '分钟'
-  const hour = Math.floor(min / 60)
-  if (hour < 24) return String(hour) + '小时'
-  return String(Math.floor(hour / 24)) + '天'
-}
+const EMPTY_SESSION_BY_ID: Record<string, NativeSessionLike> = {}
 
 export function NativeScheduleSessionList(props: {
   readonly t: Translate
@@ -47,6 +50,7 @@ export function NativeScheduleSessionList(props: {
     : EMPTY_SESSION_BY_ID
   const archivedIds: string[] = useWorkspaces ? useWorkspaces((snap: { archivedSessionIds?: string[] }) => snap?.archivedSessionIds ?? []) : []
   const [folded, setFolded] = useState<Record<string, boolean>>({})
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   useEffect(() => {
     void runtime.refresh().catch(() => undefined)
     const timer = window.setInterval(() => { void runtime.refresh().catch(() => undefined) }, 15_000)
@@ -89,6 +93,7 @@ export function NativeScheduleSessionList(props: {
                     aria-label={t('session.deleteFolder')}
                     onClick={(event) => {
                       event.stopPropagation()
+                      setOpenMenuId(null)
                       void (async () => {
                         for (const session of group.sessions) {
                           try { await deleteSession?.(session.id) } catch { /* ignore */ }
@@ -110,7 +115,11 @@ export function NativeScheduleSessionList(props: {
                   updatedAt={session.updatedAt}
                   running={session.running}
                   selected={selectedId === session.id}
+                  menuOpen={openMenuId === session.id}
+                  onToggleMenu={() => setOpenMenuId((current) => nextOpenSessionMenuId(current, session.id))}
+                  onCloseMenu={() => setOpenMenuId((current) => current === session.id ? null : current)}
                   onOpen={() => {
+                    setOpenMenuId(null)
                     openSession?.(session.id)
                     void runtime.adoptSession?.(session.id).catch(() => undefined)
                   }}
@@ -138,32 +147,58 @@ function NativeSessionRow(props: {
   readonly updatedAt: string
   readonly running: boolean
   readonly selected: boolean
+  readonly menuOpen: boolean
+  readonly onToggleMenu: () => void
+  readonly onCloseMenu: () => void
   readonly onOpen: () => void
   readonly onDelete: () => void | Promise<void>
   readonly renameSession?: (sessionId: string, title: string) => void | Promise<void>
   readonly archiveSession?: (sessionId: string) => void | Promise<void>
   readonly forkSession?: (sessionId: string) => void | Promise<void>
 }): JSX.Element {
-  const { t, id, title, updatedAt, running, selected, onOpen, onDelete, renameSession, archiveSession, forkSession } = props
-  const [menu, setMenu] = useState(false)
+  const { t, id, title, updatedAt, running, selected, menuOpen, onToggleMenu, onCloseMenu, onOpen, onDelete, renameSession, archiveSession, forkSession } = props
+  const rowRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const [renaming, setRenaming] = useState(false)
   const [draft, setDraft] = useState(title)
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
   useEffect(() => { setDraft(title) }, [title])
   useEffect(() => {
-    if (!menu) return
+    if (!menuOpen) return
     const close = (event: MouseEvent): void => {
-      const target = event.target as Node | null
-      if (target !== null && (event.target as HTMLElement).closest('.dsh-st-n-sess.is-menu') !== null) return
-      setMenu(false)
+      if (!shouldCloseNativeSessionMenu(event.target, [rowRef.current, menuRef.current])) return
+      onCloseMenu()
+    }
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') onCloseMenu()
     }
     document.addEventListener('mousedown', close)
-    return () => { document.removeEventListener('mousedown', close) }
-  }, [menu])
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen, onCloseMenu])
+  useLayoutEffect(() => {
+    if (!menuOpen) return
+    const update = (): void => {
+      const box = rowRef.current?.getBoundingClientRect()
+      if (box === undefined) return
+      setMenuStyle(nativeSessionMenuStyle(box, window.innerWidth))
+    }
+    update()
+    window.addEventListener('resize', update)
+    document.addEventListener('scroll', update, true)
+    return () => {
+      window.removeEventListener('resize', update)
+      document.removeEventListener('scroll', update, true)
+    }
+  }, [menuOpen])
   const run = (action: () => void | Promise<void>): void => { void Promise.resolve(action()).catch(() => undefined) }
-  const rowClass = 'dsh-st-n-sess' + (selected ? ' is-on' : '') + (menu ? ' is-menu' : '')
+  const rowClass = 'dsh-st-n-sess' + (selected ? ' is-on' : '') + (menuOpen ? ' is-menu' : '')
   if (renaming) {
     return (
-      <div className={rowClass}>
+      <div className={rowClass} ref={rowRef}>
         <input className='dsh-st-n-rename' value={draft} autoFocus aria-label={t('session.rename')} onChange={(event) => setDraft(event.target.value)} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => {
           if (event.key === 'Enter') { event.preventDefault(); setRenaming(false); if (draft.trim() !== '' && draft.trim() !== title) run(() => renameSession?.(id, draft.trim())) }
           if (event.key === 'Escape') { event.preventDefault(); setRenaming(false); setDraft(title) }
@@ -177,31 +212,29 @@ function NativeSessionRow(props: {
     { id: 'archive', label: t('session.archive'), icon: <ArchiveIcon width={16} height={16} />, go: () => run(() => archiveSession?.(id)) },
     { id: 'delete', label: t('session.delete'), icon: <TrashIcon width={16} height={16} />, danger: true, go: () => run(() => onDelete()) },
   ]
+  const menu = menuOpen && typeof document !== 'undefined'
+    ? createPortal(
+      <div ref={menuRef} className='dsh-st-n-menu is-float' data-n-menu={id} style={menuStyle} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}>
+        {menuItems.map((item) => (
+          <button key={item.id} type='button' className={item.danger === true ? 'danger' : undefined} onClick={() => { onCloseMenu(); item.go() }}>
+            <span className='dsh-st-n-mi'>{item.icon}</span>{item.label}
+          </button>
+        ))}
+      </div>,
+      document.body,
+    )
+    : null
   return (
-    <div className={rowClass} role='treeitem' tabIndex={0} aria-selected={selected} onClick={onOpen} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); setMenu((open) => !open) }}>
+    <div className={rowClass} ref={rowRef} role='treeitem' tabIndex={0} aria-selected={selected} data-n-menu-root={id} onClick={onOpen} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); onToggleMenu() }}>
       <span className='dsh-st-n-slot'>{running ? <RunningStateDot /> : null}</span>
       <span className='dsh-st-n-title'>{title}</span>
       <span className='dsh-st-n-time'>{relativeTime(updatedAt)}</span>
       <span className='dsh-st-n-acts'>
-        <button type='button' className='dsh-st-n-ico' aria-label={title + ' 更多'} onClick={(event) => { event.stopPropagation(); setMenu((open) => !open) }}>
+        <button type='button' className='dsh-st-n-ico' aria-label={title + ' 更多'} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onToggleMenu() }}>
           <EllipsisIcon width={16} height={16} />
         </button>
       </span>
-      {menu && (
-        <div className='dsh-st-n-menu' onClick={(event) => event.stopPropagation()}>
-          {menuItems.map((item) => (
-            <button key={item.id} type='button' className={item.danger === true ? 'danger' : undefined} onClick={() => { setMenu(false); item.go() }}>
-              <span className='dsh-st-n-mi'>{item.icon}</span>{item.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {menu}
     </div>
   )
 }
-
-
-
-
-
-

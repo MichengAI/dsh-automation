@@ -17,7 +17,7 @@ import {
   resolveOfficialTreeComponent,
   tabForSessionId,
 } from '../src/client/schedule-rail-model.ts'
-import { relativeTime } from '../src/client/native-session-list.tsx'
+import { relativeTime, nextOpenSessionMenuId, shouldCloseNativeSessionMenu, nativeSessionMenuStyle } from '../src/client/native-session-menu.ts'
 
 test('schedule rail groups runs by task name', () => {
   const groups = groupScheduledSessions(
@@ -167,3 +167,32 @@ test('删除任务后仍保留会话文件夹', () => {
   assert.equal(groups[0]?.sessions.length, 1)
 })
 
+
+test('同一时间只允许一条定时会话菜单打开', () => {
+  assert.equal(nextOpenSessionMenuId(null, 'sess-a'), 'sess-a')
+  assert.equal(nextOpenSessionMenuId('sess-a', 'sess-a'), null)
+  assert.equal(nextOpenSessionMenuId('sess-a', 'sess-b'), 'sess-b')
+})
+
+test('点第二条会话标题或更多按钮时应关闭第一条菜单', () => {
+  const firstRow = {
+    nodeType: 1,
+    contains(other: { id?: string }): boolean { return other.id === 'first-btn' },
+  }
+  const firstBtn = { id: 'first-btn', nodeType: 1, parentElement: firstRow }
+  const secondTitleText = {
+    nodeType: 3,
+    parentElement: { id: 'second-title', nodeType: 1, parentElement: { nodeType: 1 } },
+  }
+  const secondBtn = { id: 'second-btn', nodeType: 1, parentElement: { nodeType: 1 } }
+  assert.equal(shouldCloseNativeSessionMenu(firstBtn, [firstRow]), false)
+  assert.equal(shouldCloseNativeSessionMenu(secondTitleText, [firstRow]), true)
+  assert.equal(shouldCloseNativeSessionMenu(secondBtn, [firstRow]), true)
+})
+
+test('菜单定位使用视口固定坐标，避免被侧栏裁切后叠在下一条上', () => {
+  const style = nativeSessionMenuStyle({ bottom: 120, right: 280 }, 1000)
+  assert.equal(style.position, 'fixed')
+  assert.equal(style.top, '124px')
+  assert.equal(style.right, '720px')
+})

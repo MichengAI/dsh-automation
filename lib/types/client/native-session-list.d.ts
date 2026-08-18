@@ -1,6 +1,6 @@
 import type { Translate } from './contracts.js';
 import type { AutomationRuntime } from './runtime.js';
-export declare function relativeTime(value: string): string;
+export { nativeSessionMenuStyle, nextOpenSessionMenuId, relativeTime, resolveEventElement, shouldCloseNativeSessionMenu, } from './native-session-menu.js';
 export declare function NativeScheduleSessionList(props: {
     readonly t: Translate;
     readonly runtime: AutomationRuntime;
