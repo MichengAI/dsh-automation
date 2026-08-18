@@ -18,6 +18,7 @@
   },
   "files": [
     "lib",
+    "assets",
     "docs",
     "cordis.patch.yml",
     "README.md",

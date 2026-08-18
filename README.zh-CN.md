@@ -1,34 +1,57 @@
-<h1 align="center">DSH Automation</h1>
-
 <p align="center">
-  <strong>在独立 Session 中按计划执行编码任务的 DeepSeek Harness Web 插件。</strong>
+  <img src="assets/branding/dsh-banner.png" alt="DSH Automation" width="100%">
 </p>
 
-<p align="center">
-  <a href="https://github.com/MichengAI/dsh-automation/issues">反馈问题</a>
-  · <a href="https://www.npmjs.com/package/@michengai/dsh-automation">在 npm 查看</a>
-  · <a href="README.md">English</a>
-</p>
+<div align="center">
 
-<p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="Apache License 2.0"></a>
-  <a href="https://www.npmjs.com/package/@michengai/dsh-automation"><img src="https://img.shields.io/npm/v/%40michengai/dsh-automation?label=npm" alt="npm 包"></a>
-  <img src="https://img.shields.io/badge/DSH-Web%20Plugin-10b981" alt="DSH Web Plugin">
-  <img src="https://img.shields.io/badge/Node.js-%E2%89%A522.19-339933?logo=nodedotjs&logoColor=white" alt="Node.js 22.19 或更高版本">
-</p>
+  # DSH Automation
 
-> DSH Automation 是社区维护的插件，并非 DeepSeek AI 官方产品。
+  **在独立 DSH Session 中按计划执行编码任务**
+
+  [English](README.md) · [Apache-2.0](LICENSE)
+
+  [![许可证：Apache-2.0](https://img.shields.io/badge/许可证-Apache--2.0-blue.svg)](LICENSE)
+  [![npm package](https://img.shields.io/npm/v/%40michengai%2Fdsh-automation.svg?label=npm%20package)](https://www.npmjs.com/package/@michengai/dsh-automation)
+  [![DSH Web Plugin](https://img.shields.io/badge/DSH%20Web-Plugin-0f766e.svg)](https://github.com/MichengAI/dsh-automation)
+  [![Node.js 22 or later](https://img.shields.io/badge/Node.js-22%20or%20later-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
+</div>
+
+> DSH Automation 是社区维护的 DeepSeek Harness（DSH）插件，并非 DeepSeek AI 官方产品。
 
 ## 功能概览
 
-- 在「设置 → 定时任务」集中管理规则和运行历史。
-- 支持从 Web 或 Agent 工具创建、暂停、恢复、立即运行和删除。
+- 在「设置 → 定时任务」里管理计划任务。
+- 支持 Web 设置页和 Agent 工具创建、暂停、恢复、立即运行和删除。
 - 每次到期都启动全新 root Agent 和 Session，不继承来源对话。
 - 计划类型包括不重复、间隔、每小时、每天、每周、每月和自定义间隔天数。
 - 新建弹窗可选择工作目录、模型、技能，以及 `read-only` / `workspace-write`。
-- 「通过对话创建」会关闭设置页，并在输入框填入：`我要创建一个定时任务，每【时间间隔】执行【具体任务】`。
+- 在任意对话里描述定时任务即可创建；Full access 直接执行，其他权限走官方授权卡。
 - 运行状态包含 `queued`、`running`、`succeeded`、`failed`、`skipped`、`cancelled`。
-- 侧栏提供「定时」页签：文件夹是任务名称，子会话是执行时间。原生下只包裹官方任务树，不替换搜索和工作区，也不依赖 `dsh-codex-ui`。
+- 侧栏提供「定时」页签：文件夹是任务名称，子会话是执行时间。原生下只包裹官方任务树，不依赖 `dsh-codex-ui`。
+
+## 界面预览
+
+工作区左侧「任务 / 频道 / 定时」分列。定时任务只出现在「定时」：
+
+![工作区定时侧栏](assets/screenshots/workspace-scheduled.png)
+
+打开「设置 → 定时任务」可搜索、新建、暂停和查看规则：
+
+![定时任务设置页](assets/screenshots/settings-tasks.png)
+
+在对话里描述任务。Agent 会调用 `automation_create`，并弹出官方授权：
+
+![通过对话创建定时任务](assets/screenshots/chat-create.png)
+
+![创建定时任务的官方授权](assets/screenshots/chat-approval.png)
+
+确认后规则会保存，并在对话里汇总：
+
+![定时任务创建成功](assets/screenshots/chat-created.png)
+
+执行记录留在设置页，可按天、周、月、任务或状态筛选：
+
+![执行记录](assets/screenshots/settings-runs.png)
 
 ## 前置条件
 
@@ -38,18 +61,18 @@
 
 ## 安装
 
-### 从 npm 安装
+`dsh plugin add` 会转发到 profile 目录里的 `pnpm add`。不写版本、不指定官方源时，本机镜像可能让你停在旧版。
 
-在任意 PowerShell 目录执行。请通过 `dsh plugin` 安装到 DSH profile：
+### 从 npm 安装
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
-dsh plugin --profile web add @michengai/dsh-automation
+dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https://registry.npmjs.org/
 dsh --profile web --dump-config
 ```
 
-安装或升级后重启 DSH Web，或重新加载当前 Web profile。若镜像未同步最新版本，可在安装命令末尾追加 `--registry=https://registry.npmjs.org/`。
+安装后重启 DSH Web，并在浏览器硬刷新。需要钉死某一版时，把 `@latest` 换成 `@0.1.3`。
 
 ### 从源码安装
 
@@ -68,7 +91,7 @@ dsh plugin --profile web add .
 dsh --profile web --dump-config
 ```
 
-完成后重启 DSH Web 或重新加载当前 Web profile。`dsh plugin ... add .` 会自动读取并应用 `cordis.patch.yml`；不要手工复制 `lib` 文件。
+完成后重启 DSH Web 并硬刷新浏览器。`dsh plugin ... add .` 会自动读取并应用 `cordis.patch.yml`；不要手工复制 `lib` 文件。
 
 ## 使用
 
@@ -77,7 +100,7 @@ dsh --profile web --dump-config
 | 目标 | 操作 | 范围 |
 | --- | --- | --- |
 | 创建规则 | 点击「新建定时任务」，填写名称、计划、任务说明、工作目录、模型、技能和权限。 | 当前 Host |
-| 通过对话创建 | 点击「通过对话创建」。设置页关闭，输入框填入模板提示词。 | 当前对话 |
+| 通过对话创建 | 在任意对话描述定时任务，或点击「通过对话创建」。 | 当前对话 |
 | 暂停或恢复 | 使用任务卡片上的开关。 | 单条规则 |
 | 立即运行 | 打开卡片菜单，选择「立即执行」。 | 单条规则 |
 | 删除 | 打开卡片菜单，选择「删除任务」。运行历史会保留。 | 仅定义 |
@@ -91,7 +114,7 @@ dsh --profile web --dump-config
 | --- | --- |
 | 权限 | 默认 `read-only`。改文件必须显式选择 `workspace-write`。 |
 | 完全访问 | 不提供无人值守 `danger-full-access`。 |
-| 审批 | 无人值守使用 fail-closed 的 `never`，不会等待一个不存在的人。 |
+| 审批 | 对话创建跟随当前会话策略。Full access（`never`）直接创建；Workspace Write / Read Only（`ask`）走官方授权卡。无人值守运行仍是 fail-closed 的 `never`。 |
 | 重试 | 已经开始的运行不会自动重试。 |
 | Host 重启 | 遗留的 `queued` / `running` 会变成 `failed(host_interrupted)`。 |
 | 重叠 | 同一规则同时最多一个 active run。冲突 occurrence 记为 `skipped(overlap)`。 |

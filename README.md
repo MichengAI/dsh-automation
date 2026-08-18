@@ -1,34 +1,57 @@
-<h1 align="center">DSH Automation</h1>
-
 <p align="center">
-  <strong>A DeepSeek Harness Web plugin for running standalone coding tasks on a schedule.</strong>
+  <img src="assets/branding/dsh-banner.png" alt="DSH Automation" width="100%">
 </p>
 
-<p align="center">
-  <a href="https://github.com/MichengAI/dsh-automation/issues">Report an issue</a>
-  · <a href="https://www.npmjs.com/package/@michengai/dsh-automation">View on npm</a>
-  · <a href="README.zh-CN.md">简体中文</a>
-</p>
+<div align="center">
 
-<p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="Apache License 2.0"></a>
-  <a href="https://www.npmjs.com/package/@michengai/dsh-automation"><img src="https://img.shields.io/npm/v/%40michengai/dsh-automation?label=npm" alt="npm package"></a>
-  <img src="https://img.shields.io/badge/DSH-Web%20Plugin-10b981" alt="DSH Web Plugin">
-  <img src="https://img.shields.io/badge/Node.js-%E2%89%A522.19-339933?logo=nodedotjs&logoColor=white" alt="Node.js 22.19 or later">
-</p>
+  # DSH Automation
 
-> DSH Automation is a community-maintained plugin, not an official DeepSeek AI product.
+  **Run standalone coding tasks on a schedule in DeepSeek Harness**
+
+  [简体中文](README.zh-CN.md) · [Apache-2.0](LICENSE)
+
+  [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+  [![npm package](https://img.shields.io/npm/v/%40michengai%2Fdsh-automation.svg?label=npm%20package)](https://www.npmjs.com/package/@michengai/dsh-automation)
+  [![DSH Web Plugin](https://img.shields.io/badge/DSH%20Web-Plugin-0f766e.svg)](https://github.com/MichengAI/dsh-automation)
+  [![Node.js 22 or later](https://img.shields.io/badge/Node.js-22%20or%20later-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
+</div>
+
+> DSH Automation is a community-maintained DeepSeek Harness (DSH) plugin, not an official DeepSeek AI product.
 
 ## Features
 
-- Manages scheduled tasks from **Settings → Scheduled Tasks**.
-- Creates, pauses, resumes, runs now, and deletes rules from the Web UI or Agent tools.
-- Starts each occurrence in a fresh root Agent and Session. Source-chat history is not inherited.
-- Supports once, interval, hourly, daily, weekly, monthly, and custom-every-N-days schedules.
-- Lets you pick workspace, model, skills, and `read-only` / `workspace-write` permission in the create dialog.
-- Fills a chat draft from **Create in chat**: `I want to create a scheduled task that runs every [interval] and does [the actual task]`.
-- Keeps durable run history with `queued`, `running`, `succeeded`, `failed`, `skipped`, and `cancelled`.
-- Adds a sidebar **Scheduled** tab. Folders are task names and child sessions are run times. On stock DSH it wraps the official workspace tree instead of replacing it, and it does not depend on `dsh-codex-ui`.
+- Manage scheduled tasks from **Settings → Scheduled Tasks**.
+- Create, pause, resume, run now, and delete rules from the Web UI or Agent tools.
+- Start each occurrence in a fresh root Agent and Session. Source-chat history is not inherited.
+- Support once, interval, hourly, daily, weekly, monthly, and custom-every-N-days schedules.
+- Pick workspace, model, skills, and `read-only` / `workspace-write` in the create dialog.
+- Create from chat: describe the schedule in any conversation, then confirm with the official approval card.
+- Keep durable run history: `queued`, `running`, `succeeded`, `failed`, `skipped`, `cancelled`.
+- Add a sidebar **Scheduled** tab. Folders are task names and child sessions are run times. On stock DSH it wraps the official workspace tree and does not depend on `dsh-codex-ui`.
+
+## Interface
+
+Scheduled tasks live in the workspace **Scheduled** tab, next to **Tasks** and **Channels**:
+
+![Scheduled sidebar](assets/screenshots/workspace-scheduled.png)
+
+Open **Settings → Scheduled Tasks** to search, create, pause, and inspect rules:
+
+![Scheduled tasks settings](assets/screenshots/settings-tasks.png)
+
+Describe the job in chat. The agent calls `automation_create` and asks through the official approval card:
+
+![Create a scheduled task from chat](assets/screenshots/chat-create.png)
+
+![Official approval for automation_create](assets/screenshots/chat-approval.png)
+
+After approval, the rule is saved and summarized in the conversation:
+
+![Scheduled task created](assets/screenshots/chat-created.png)
+
+Run history stays in Settings and can be filtered by day, week, month, task, or status:
+
+![Run history](assets/screenshots/settings-runs.png)
 
 ## Prerequisites
 
@@ -38,18 +61,18 @@
 
 ## Installation
 
-### Install from npm
+`dsh plugin add` forwards to `pnpm add` in the profile directory. If you omit a version or the official registry, a local mirror may leave you on an old build.
 
-Run this from any PowerShell directory. Install into the DSH profile through `dsh plugin`:
+### Install from npm
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
-dsh plugin --profile web add @michengai/dsh-automation
+dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https://registry.npmjs.org/
 dsh --profile web --dump-config
 ```
 
-Restart DSH Web or reload the active Web profile. If a package mirror is behind, append `--registry=https://registry.npmjs.org/`.
+Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.3` instead of `@latest` when needed.
 
 ### Install from source
 
@@ -68,7 +91,7 @@ dsh plugin --profile web add .
 dsh --profile web --dump-config
 ```
 
-Restart DSH Web or reload the active Web profile. Local installation reads and applies `cordis.patch.yml`; do not copy `lib` files manually.
+Restart DSH Web and hard-refresh the browser. Local installation reads and applies `cordis.patch.yml`; do not copy `lib` files manually.
 
 ## Usage
 
@@ -77,7 +100,7 @@ Open **Settings → Scheduled Tasks**, then use the panel as follows:
 | Goal | Action | Scope |
 | --- | --- | --- |
 | Create a rule | Select **New scheduled task**, then set name, schedule, prompt, workspace, model, skills, and permission. | Host-wide |
-| Create from chat | Select **Create in chat**. Settings close and the composer is filled with a template prompt. | Current conversation |
+| Create from chat | Describe the schedule in any conversation, or select **Create in chat**. | Current conversation |
 | Pause or resume | Use the switch on a task card. | One rule |
 | Run now | Open the card menu and select **Run now**. | One rule |
 | Delete | Open the card menu and select **Delete task**. Run history is kept. | Definition only |
@@ -91,7 +114,7 @@ Each dispatched run uses the saved prompt, workspace, model, and permission boun
 | --- | --- |
 | Permission | Default is `read-only`. File writes require an explicit `workspace-write` choice. |
 | Full access | Unattended `danger-full-access` is not offered. |
-| Approval | Unattended runs use fail-closed `never` and do not wait for a missing human. |
+| Approval | Chat create follows the session policy. Full access (`never`) proceeds; Workspace Write / Read Only (`ask`) shows the official card. Unattended runs stay fail-closed `never`. |
 | Retry | No automatic retry after a started run. |
 | Host restart | Leftover `queued` / `running` records become `failed(host_interrupted)`. |
 | Overlap | One active run per rule. A colliding occurrence is recorded as `skipped(overlap)`. |
