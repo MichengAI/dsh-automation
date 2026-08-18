@@ -7,6 +7,7 @@ import {
   formatRunStamp,
   groupNativeTaskSessions,
   groupScheduledSessions,
+  keepScheduledSessionLink,
   scheduledSessionTitle,
   sessionUpdatedAtIso,
   ensureOpenScheduledSession,
@@ -327,4 +328,15 @@ test('工作区搜索按名称过滤，筛选可按时间或名称排序', () =>
   assert.deepEqual(applyWorkspaceBrowserQuery(groups, '', 'manual').map((item) => item.name), ['报表', '审查'])
   assert.equal(applyWorkspaceBrowserQuery(groups, '', 'time', 'list').length, 1)
   assert.equal(applyWorkspaceBrowserQuery(groups, '', 'time', 'list')[0]?.sessions.length, 2)
+})
+
+
+test('定时页不展示已归档或宿主已不认识的会话', () => {
+  const archived = new Set(['gone-archived'])
+  const present = new Set(['still-live'])
+  assert.equal(keepScheduledSessionLink('still-live', archived, present), true)
+  assert.equal(keepScheduledSessionLink('gone-archived', archived, present), false)
+  assert.equal(keepScheduledSessionLink('physically-deleted', archived, present), false)
+  assert.equal(keepScheduledSessionLink('unknown-but-no-presence-map', archived), true)
+  assert.equal(keepScheduledSessionLink('', archived, present), false)
 })

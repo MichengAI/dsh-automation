@@ -152,3 +152,95 @@ test('创建和立即运行都限制在来源工作区', async () => {
 })
 
 
+
+
+test('forgetSession 会摘掉已删除 Session，但保留运行历史', async () => {
+  const definition = sampleDefinition()
+  const { service, runs } = await makeService({
+    definitions: [definition],
+    runs: [{
+      version: 1,
+      id: 'run_keep',
+      automationId: definition.id,
+      definitionRevision: 1,
+      occurrenceKey: 'k2',
+      trigger: 'schedule',
+      scheduledFor: '2026-08-16T00:30:00.000Z',
+      status: 'succeeded',
+      promptSnapshot: definition.prompt,
+      targetSnapshot: {
+        workspaceId: definition.workspaceId,
+        cwd: definition.cwd,
+        agentPreset: definition.agentPreset,
+        provider: null,
+        model: null,
+        permissionPreset: 'read-only',
+      },
+      sessionId: 'dead-session',
+      startedAt: '2026-08-16T00:30:00.000Z',
+      finishedAt: '2026-08-16T00:31:00.000Z',
+      summary: 'ok',
+      error: null,
+      unread: false,
+    }],
+  })
+  await service.forgetSession('dead-session')
+  const kept = runs.get('run_keep')
+  assert.equal(kept?.status, 'succeeded')
+  assert.equal(kept?.sessionId, null)
+})
+
+test('启动时对宿主已不存在的 Session 摘掉 run.sessionId', async () => {
+  const definition = sampleDefinition()
+  const definitions = new MemoryTable<AutomationDefinition>()
+  const runs = new MemoryTable<AutomationRun>()
+  await definitions.put(definition.id, definition)
+  await runs.put('run_ghost', {
+    version: 1,
+    id: 'run_ghost',
+    automationId: definition.id,
+    definitionRevision: 1,
+    occurrenceKey: 'k3',
+    trigger: 'schedule',
+    scheduledFor: '2026-08-16T00:30:00.000Z',
+    status: 'succeeded',
+    promptSnapshot: definition.prompt,
+    targetSnapshot: {
+      workspaceId: definition.workspaceId,
+      cwd: definition.cwd,
+      agentPreset: definition.agentPreset,
+      provider: null,
+      model: null,
+      permissionPreset: 'read-only',
+    },
+    sessionId: 'ghost',
+    startedAt: '2026-08-16T00:30:00.000Z',
+    finishedAt: '2026-08-16T00:31:00.000Z',
+    summary: 'ok',
+    error: null,
+    unread: false,
+  })
+  const ctx = {
+    logger: { warn() {} },
+    get(name: string) { return name === 'sessionPersistence' ? { async list() { return [{ id: 'other' }] } } : undefined },
+    sessions: { list() { return [] } },
+    storageDomain: {
+      async open() {
+        return {
+          name: 'dsh_automation',
+          table(name: string) { return name === 'definitions' ? definitions : runs },
+          async close() {},
+        }
+      },
+    },
+    agents: { get() { return { session: { header: {}, requestHeader: () => ({ config: {} }) }, ctx: {} } } },
+    workspaceRegistry: { async resolveByPath() { return { id: 'ws_1', title: 'demo', path: 'D:\\work\\demo' } } },
+    agentDefaultModel: { currentSelection: () => ({ provider: 'deepseek', model: 'v4' }) },
+    agentPresets: { composedPreset: () => 'standard' },
+  }
+  const service = await AutomationService.open(ctx as never, config())
+  Object.assign(service, { definitions, runs })
+  const ghost = runs.get('run_ghost')
+  assert.equal(ghost?.status, 'succeeded')
+  assert.equal(ghost?.sessionId, null)
+})

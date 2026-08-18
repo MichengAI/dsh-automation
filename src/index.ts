@@ -95,13 +95,14 @@ export async function apply(ctx: Context, rawConfig: Config): Promise<void> {
     let stopDisposed = () => {}
     let stopApproval = () => {}
     let stopPrompt = () => {}
+    let stopSessionGone = () => {}
     let removeRpc = async (): Promise<void> => {}
 
     const cleanup = async (): Promise<void> => {
       if (cleaned) return
       cleaned = true
       alive = false
-      for (const stop of [stopCreated, stopDisposed, stopApproval, stopPrompt]) {
+      for (const stop of [stopCreated, stopDisposed, stopApproval, stopPrompt, stopSessionGone]) {
         try { stop() } catch (error: unknown) {
           ctx.logger.warn(`dsh-automation: lifecycle cleanup failed: ${String(error)}`)
         }
@@ -133,6 +134,11 @@ export async function apply(ctx: Context, rawConfig: Config): Promise<void> {
       for (const agent of ctx.agents.roots()) mountTools(agent)
       stopCreated = ctx.on('agent/created', ({ agent }: any) => { mountTools(agent) })
       stopDisposed = ctx.on('agent/disposed', ({ agent }: any) => { agentTools.delete(agent) })
+      stopSessionGone = ctx.on('session/disposed', (session: { readonly id?: string }) => {
+        const id = String(session?.id ?? '')
+        if (id === '') return
+        void service.forgetSession(id)
+      })
       const systemPrompt = ctx.get('systemPrompt') as { section?(input: { name: string; order: number; text: string }): () => void } | undefined
       if (typeof systemPrompt?.section === 'function') {
         stopPrompt = systemPrompt.section({

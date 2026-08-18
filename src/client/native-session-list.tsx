@@ -20,7 +20,7 @@ import {
   type NativeSessionMenuState,
 } from './native-session-menu.js'
 import type { AutomationRuntime } from './runtime.js'
-import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, type NativeSessionLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
+import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, keepScheduledSessionLink, type NativeSessionLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
 import { WorkspaceToolbar } from './workspace-toolbar.js'
 
 export {
@@ -64,12 +64,20 @@ export function NativeScheduleSessionList(props: {
     return () => { window.clearInterval(timer) }
   }, [runtime])
   const archived = useMemo(() => new Set(archivedIds), [archivedIds])
+  const listedIds: readonly string[] | undefined = useSessions
+    ? useSessions((snap: { ids?: string[] }) => Array.isArray(snap?.ids) ? snap.ids : undefined)
+    : undefined
+  const presentIds = useMemo(() => {
+    if (listedIds !== undefined) return new Set(listedIds)
+    const keys = Object.keys(sessionById)
+    return keys.length > 0 ? new Set(keys) : undefined
+  }, [listedIds, sessionById])
   const groups = useMemo(() => {
     const snapshot = state.snapshot
     if (snapshot === undefined) return []
     return groupScheduledSessions(snapshot.automations, snapshot.runs).map((group) => ({
       ...group,
-      sessions: group.sessions.filter((session) => !archived.has(session.id)).map((session) => {
+      sessions: group.sessions.filter((session) => keepScheduledSessionLink(session.id, archived, presentIds)).map((session) => {
         const run = snapshot.runs.find((item) => item.sessionId === session.id)
         return {
           ...session,
@@ -79,7 +87,7 @@ export function NativeScheduleSessionList(props: {
         }
       }),
     })).filter((group) => group.sessions.length > 0)
-  }, [archived, sessionById, state.snapshot])
+  }, [archived, presentIds, sessionById, state.snapshot])
   const visibleGroups = useMemo(() => applyWorkspaceBrowserQuery(groups.map((group) => ({ ...group, name: group.name })), query, sort, groupMode), [groups, query, sort, groupMode])
   return (
     <div className='dsh-st-n'>

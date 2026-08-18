@@ -131,6 +131,7 @@ export class AutomationService {
       service.definitions = domain.table('definitions') as KvTable<string, AutomationDefinition>
       service.runs = domain.table('runs') as KvTable<string, AutomationRun>
       await service.recoverInterruptedRuns()
+      await service.reconcileMissingSessions()
       await service.pruneAllHistory()
       return service
     } catch (error) {
@@ -325,6 +326,35 @@ export class AutomationService {
         await this.runs.put(runId, { ...run, sessionId: null })
       }
     })
+  }
+
+
+  async reconcileMissingSessions(): Promise<void> {
+    const known = await this.knownSessionIds()
+    if (known === undefined) return
+    await this.serialize(async () => {
+      for (const [runId, run] of this.runs.entries()) {
+        if (typeof run.sessionId !== "string" || run.sessionId === "") continue
+        if (known.has(run.sessionId)) continue
+        await this.runs.put(runId, { ...run, sessionId: null })
+      }
+    })
+  }
+
+  private async knownSessionIds(): Promise<Set<string> | undefined> {
+    const live = this.ctx.sessions as { list?: () => readonly { readonly id: string }[] } | undefined
+    const persistence = this.ctx.get?.("sessionPersistence") as { list?: () => Promise<readonly { readonly id: string }[]> } | undefined
+    const canListLive = typeof live?.list === "function"
+    const canListStored = typeof persistence?.list === "function"
+    if (!canListLive && !canListStored) return undefined
+    const ids = new Set<string>()
+    if (canListLive && live?.list !== undefined) {
+      for (const session of live.list()) ids.add(String(session.id))
+    }
+    if (canListStored && persistence?.list !== undefined) {
+      for (const header of await persistence.list()) ids.add(String(header.id))
+    }
+    return ids
   }
 
   async forgetAutomationSessions(automationId: string): Promise<void> {

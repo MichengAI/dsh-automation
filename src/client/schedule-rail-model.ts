@@ -101,6 +101,17 @@ export function groupScheduledSessions(
   }).filter(group => group.sessions.length > 0)
 }
 
+/** 归档中的、以及宿主已经不认识的 Session，都不应再出现在定时页。 */
+export function keepScheduledSessionLink(
+  sessionId: string | undefined,
+  archived: ReadonlySet<string>,
+  presentIds?: ReadonlySet<string>,
+): boolean {
+  if (sessionId === undefined || sessionId === '') return false
+  if (archived.has(sessionId)) return false
+  if (presentIds === undefined) return true
+  return presentIds.has(sessionId)
+}
 export function collectScheduledSessionIds(runs: readonly { readonly sessionId?: string | null }[] | undefined): Set<string> {
   const ids = new Set<string>()
   for (const run of runs ?? []) {

@@ -72,7 +72,7 @@ dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https:/
 dsh --profile web --dump-config
 ```
 
-Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.4` instead of `@latest` when needed.
+Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.5` instead of `@latest` when needed.
 
 ### Install from source
 

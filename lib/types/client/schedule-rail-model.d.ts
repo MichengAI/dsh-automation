@@ -44,6 +44,8 @@ export declare function groupScheduledSessions(automations: readonly {
     readonly id: string;
     readonly name: string;
 }[], runs: readonly ScheduleRunLike[]): ScheduleRailGroup[];
+/** 归档中的、以及宿主已经不认识的 Session，都不应再出现在定时页。 */
+export declare function keepScheduledSessionLink(sessionId: string | undefined, archived: ReadonlySet<string>, presentIds?: ReadonlySet<string>): boolean;
 export declare function collectScheduledSessionIds(runs: readonly {
     readonly sessionId?: string | null;
 }[] | undefined): Set<string>;
