@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readFileSync } from 'node:fs'
 import {
   adoptPickedWorkspace,
   shouldConfirmFullAccess,
@@ -43,4 +44,13 @@ test('添加工作区选中目录后才登记，不接受手输路径', async ()
   })
   assert.equal(id, 'ws_picked')
   assert.deepEqual(added, ['D:\\work\\project'])
+})
+
+test('任务模型菜单直接展示官方式分组列表且浮层可点击', () => {
+  const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
+  const styles = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
+  assert.match(modal, /const modelGroups = Array\.from/)
+  assert.match(modal, /role="menuitemradio"/)
+  assert.doesNotMatch(modal, /form\.modelDefault|setPane\(|reasoningEffort: 'high'/)
+  assert.match(styles, /\.dsh-st-flyout-root \.dsh-st-select-menu,\.dsh-st-flyout-root \.dsh-st-model-select-menu\{pointer-events:auto\}/)
 })

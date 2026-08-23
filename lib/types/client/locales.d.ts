@@ -72,7 +72,7 @@ export declare const en: {
     readonly 'form.workspacePath': "Folder path";
     readonly 'form.workspacePathPlaceholder': "D:\\work\\project";
     readonly 'form.model': "Model";
-    readonly 'form.modelDefault': "Follow default model";
+    readonly 'form.modelSelect': "Select model";
     readonly 'form.effort': "Reasoning";
     readonly 'form.effort.none': "Default";
     readonly 'form.effort.low': "Low";
