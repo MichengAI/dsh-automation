@@ -2,7 +2,7 @@
 
 [简体中文](CHANGELOG.zh-CN.md)
 
-The five most recent published versions are listed below. This repository did not create Git tags for these releases, so each version links to its release commit.
+The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
 ## 0.1.14 — 2026-08-23
 
