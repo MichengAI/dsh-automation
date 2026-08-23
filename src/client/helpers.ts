@@ -99,7 +99,7 @@ export function defaultFormState(
     modelKey: defaultModel === undefined || defaultModel === null
       ? 'default'
       : `${defaultModel.provider}::${defaultModel.model}`,
-    reasoningEffort: 'high',
+    reasoningEffort: defaultModel?.reasoning?.defaultEffort ?? 'none',
     skills: [],
   }
 }
@@ -352,7 +352,7 @@ export function formFromAutomation(
     permission: item.permission,
     workspaceId: item.workspaceId ?? base.workspaceId,
     modelKey,
-    reasoningEffort: item.reasoningEffort ?? 'high',
+    reasoningEffort: item.reasoningEffort ?? 'none',
   }
   switch (schedule.kind) {
     case 'once':

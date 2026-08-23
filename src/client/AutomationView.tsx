@@ -40,7 +40,7 @@ const EXAMPLES: readonly { readonly name: string; readonly scheduleKind: Schedul
   { name: '工作日早报', scheduleKind: 'weekly', time: '08:00', weekdays: [1, 2, 3, 4, 5] },
 ]
 
-export function AutomationView({ t, permissionT, runtime, closeSettings, pickWorkspaceDirectory }: AutomationViewProps): JSX.Element {
+export function AutomationView({ t, permissionT, modelT, runtime, closeSettings, pickWorkspaceDirectory }: AutomationViewProps): JSX.Element {
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const [tab, setTab] = useState<Tab>('mine')
   const [query, setQuery] = useState('')
@@ -233,9 +233,11 @@ export function AutomationView({ t, permissionT, runtime, closeSettings, pickWor
           key={editingId ?? 'create'}
           t={t}
           permissionT={permissionT}
+          modelT={modelT}
           busy={busy}
           workspaces={workspaces}
           models={models}
+          modelFailures={snapshot?.modelFailures ?? []}
           defaultModel={snapshot?.defaultModel ?? null}
           skills={snapshot?.skills ?? []}
           permissions={permissions}

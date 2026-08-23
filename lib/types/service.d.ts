@@ -16,8 +16,23 @@ export interface WorkspaceOption {
 }
 export interface ModelOption {
     readonly provider: string;
+    readonly providerLabel: string;
     readonly model: string;
     readonly label: string;
+    readonly description?: string;
+    readonly reasoning?: {
+        readonly efforts: readonly {
+            readonly id: string;
+            readonly name: string;
+            readonly description?: string;
+        }[];
+        readonly defaultEffort?: string;
+    };
+}
+export interface ModelCatalogFailure {
+    readonly provider: string;
+    readonly providerLabel: string;
+    readonly message: string;
 }
 export interface CreateRequest {
     readonly name: string;
@@ -41,6 +56,7 @@ export interface AutomationSnapshot {
     readonly workspace: WorkspaceOption | null;
     readonly workspaces: readonly WorkspaceOption[];
     readonly models: readonly ModelOption[];
+    readonly modelFailures: readonly ModelCatalogFailure[];
     readonly defaultModel: ModelOption | null;
     readonly skills: readonly {
         readonly id: string;

@@ -55,6 +55,7 @@ export function MenuPopup({
   up,
   end,
   className,
+  ariaLabel,
   children,
   onClick,
 }: {
@@ -64,6 +65,7 @@ export function MenuPopup({
   readonly up?: boolean | undefined
   readonly end?: boolean | undefined
   readonly className: string
+  readonly ariaLabel?: string
   readonly children: ReactNode
   readonly onClick?: () => void
 }): JSX.Element | null {
@@ -90,6 +92,8 @@ export function MenuPopup({
     <div
       ref={menuRef}
       className={`${className}${host !== null ? ' is-float' : ''}`}
+      role="menu"
+      aria-label={ariaLabel}
       style={host !== null ? style : undefined}
       onMouseDown={event => event.stopPropagation()}
       onClick={event => {

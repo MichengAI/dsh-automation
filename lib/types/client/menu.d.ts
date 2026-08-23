@@ -10,13 +10,14 @@ declare function useMenuOpen(): {
     readonly root: React.RefObject<HTMLDivElement>;
     readonly menu: React.RefObject<HTMLDivElement>;
 };
-export declare function MenuPopup({ open, anchor, menuRef, up, end, className, children, onClick, }: {
+export declare function MenuPopup({ open, anchor, menuRef, up, end, className, ariaLabel, children, onClick, }: {
     readonly open: boolean;
     readonly anchor: RefObject<HTMLElement>;
     readonly menuRef: RefObject<HTMLDivElement>;
     readonly up?: boolean | undefined;
     readonly end?: boolean | undefined;
     readonly className: string;
+    readonly ariaLabel?: string;
     readonly children: ReactNode;
     readonly onClick?: () => void;
 }): JSX.Element | null;

@@ -125,7 +125,7 @@ test('编辑表单会从已有任务还原名称、计划和模型', () => {
     model: 'v4',
     createdAt: '2026-08-16T00:00:00.000Z',
     updatedAt: '2026-08-16T00:00:00.000Z',
-  }, workspaces, { provider: 'openai', model: 'gpt', label: 'GPT' })
+  }, workspaces, { provider: 'openai', providerLabel: 'OpenAI', model: 'gpt', label: 'GPT' })
   assert.equal(form.name, '每日回归')
   assert.equal(form.prompt, '检查失败用例')
   assert.equal(form.scheduleKind, 'weekly')
@@ -139,6 +139,22 @@ test('编辑表单会从已有任务还原名称、计划和模型', () => {
 
 test('模型名去掉供应商前缀，只保留展示名', () => {
   assert.equal(prettyModelName('deepseek-v4-pro'), 'DeepSeek-V4-Pro')
+})
+
+test('新建任务采用模型适配器声明的默认推理等级', () => {
+  const model = {
+    provider: 'deepseek-official',
+    providerLabel: 'DeepSeek',
+    model: 'deepseek-v4-pro',
+    label: 'DeepSeek-V4-Pro',
+    reasoning: {
+      defaultEffort: 'high',
+      efforts: [{ id: 'high', name: 'High' }],
+    },
+  }
+  const form = defaultFormState(new Date('2026-08-16T08:00:00+08:00'), workspaces, model, 'read-only')
+  assert.equal(form.modelKey, 'deepseek-official::deepseek-v4-pro')
+  assert.equal(form.reasoningEffort, 'high')
 })
 
 

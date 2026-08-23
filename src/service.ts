@@ -51,8 +51,24 @@ export interface WorkspaceOption {
 
 export interface ModelOption {
   readonly provider: string
+  readonly providerLabel: string
   readonly model: string
   readonly label: string
+  readonly description?: string
+  readonly reasoning?: {
+    readonly efforts: readonly {
+      readonly id: string
+      readonly name: string
+      readonly description?: string
+    }[]
+    readonly defaultEffort?: string
+  }
+}
+
+export interface ModelCatalogFailure {
+  readonly provider: string
+  readonly providerLabel: string
+  readonly message: string
 }
 
 export interface CreateRequest {
@@ -79,6 +95,7 @@ export interface AutomationSnapshot {
   readonly workspace: WorkspaceOption | null
   readonly workspaces: readonly WorkspaceOption[]
   readonly models: readonly ModelOption[]
+  readonly modelFailures: readonly ModelCatalogFailure[]
   readonly defaultModel: ModelOption | null
   readonly skills: readonly { readonly id: string; readonly name: string }[]
   readonly permissions: readonly PermissionOption[]
@@ -215,6 +232,7 @@ export class AutomationService {
           : { id: scoped.workspace.id, title: scoped.workspace.title ?? scoped.workspace.id, path: scoped.workspace.path },
         workspaces: options.workspaces,
         models: options.models,
+        modelFailures: options.modelFailures,
         defaultModel: options.defaultModel,
         skills: options.skills,
         permissions: this.permissionOptions(),
@@ -434,6 +452,7 @@ export class AutomationService {
   private async collectOptions(): Promise<{
     readonly workspaces: WorkspaceOption[]
     readonly models: ModelOption[]
+    readonly modelFailures: ModelCatalogFailure[]
     readonly defaultModel: ModelOption | null
     readonly skills: { readonly id: string; readonly name: string }[]
   }> {
@@ -461,6 +480,7 @@ export class AutomationService {
     return {
       workspaces,
       models: collected.models,
+      modelFailures: collected.failures,
       defaultModel: collected.defaultModel,
       skills,
     }
@@ -787,41 +807,84 @@ export class AutomationService {
 
 async function collectModelOptions(ctx: Context): Promise<{
   readonly models: ModelOption[]
+  readonly failures: ModelCatalogFailure[]
   readonly defaultModel: ModelOption | null
 }> {
   const found: ModelOption[] = []
+  const failures: ModelCatalogFailure[] = []
   const seen = new Set<string>()
-  const push = (provider: string, model: string, label?: string): void => {
+  const push = (item: ModelOption): void => {
+    const { provider, model } = item
     if (provider === '' || model === '') return
     const key = `${provider}::${model}`
     if (seen.has(key)) return
     seen.add(key)
-    found.push({ provider, model, label: label?.trim() || prettyModelLabel({}, provider, model) })
+    found.push(item)
   }
 
   const current = ctx.agentDefaultModel?.currentSelection?.() ?? null
-  if (current !== null) push(String(current.provider ?? ''), String(current.model ?? ''))
-
   const llm = (ctx as Context & { llm?: {
-    listProviders?: () => readonly { provider?: string }[]
-    listModels?: (provider: string) => Promise<readonly { id?: string; name?: string }[]>
+    listProviders?: () => readonly { id?: string; provider?: string; name?: string }[]
+    listModels?: (provider: string) => Promise<readonly { id?: string; name?: string; description?: string }[]>
+    resolveModelInfo?: (provider: string, model: string) => Promise<{
+      description?: string
+      reasoning?: {
+        efforts: readonly { id: string; name: string; description?: string }[]
+        defaultEffort?: string
+      }
+    }>
   } }).llm
   for (const item of llm?.listProviders?.() ?? []) {
-    const provider = String(item.provider ?? '')
+    const provider = String(item.id ?? item.provider ?? '')
     if (provider === '') continue
+    const providerLabel = String(item.name ?? provider)
     try {
-      for (const model of await llm?.listModels?.(provider) ?? []) {
-        push(provider, String(model.id ?? ''), model.name)
+      const models = await llm?.listModels?.(provider) ?? []
+      const entries = await Promise.all(models.map(async (model: { id?: string; name?: string; description?: string }): Promise<ModelOption | null> => {
+        const modelId = String(model.id ?? '')
+        if (modelId === '') return null
+        const resolved = llm?.resolveModelInfo === undefined
+          ? undefined
+          : await llm.resolveModelInfo(provider, modelId)
+        const reasoning = resolved?.reasoning === undefined
+          ? undefined
+          : {
+              efforts: resolved.reasoning.efforts.map((effort: { id: string; name: string; description?: string }) => ({
+                id: String(effort.id),
+                name: String(effort.name),
+                ...(effort.description === undefined ? {} : { description: String(effort.description) }),
+              })),
+              ...(resolved.reasoning.defaultEffort === undefined
+                ? {}
+                : { defaultEffort: String(resolved.reasoning.defaultEffort) }),
+            }
+        return {
+          provider,
+          providerLabel,
+          model: modelId,
+          label: model.name?.trim() || prettyModelLabel({}, provider, modelId),
+          ...(resolved?.description ?? model.description) === undefined
+            ? {}
+            : { description: String(resolved?.description ?? model.description) },
+          ...(reasoning === undefined ? {} : { reasoning }),
+        }
+      }))
+      for (const entry of entries) {
+        if (entry !== null) push(entry)
       }
-    } catch {
-      // 单个供应商目录失败时不影响其他已生效供应商。
+    } catch (error) {
+      failures.push({
+        provider,
+        providerLabel,
+        message: error instanceof Error ? error.message : String(error),
+      })
     }
   }
 
   const defaultModel = current === null
     ? found[0] ?? null
     : found.find(item => item.provider === current.provider && item.model === current.model) ?? found[0] ?? null
-  return { models: found, defaultModel }
+  return { models: found, failures, defaultModel }
 }
 
 function prettyModelLabel(_item: any, _provider: string, model: string): string {

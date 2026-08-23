@@ -3,9 +3,11 @@ import type { AutomationLocaleKey } from './locales.js';
 import type { AutomationRuntime } from './runtime.js';
 import type { PermissionTranslate } from './permissions.js';
 export type Translate = (key: AutomationLocaleKey, params?: Record<string, unknown>) => string;
+export type ModelTranslate = (key: string, params?: Record<string, unknown>) => string;
 export interface AutomationViewProps {
     readonly t: Translate;
     readonly permissionT: PermissionTranslate;
+    readonly modelT: ModelTranslate;
     readonly runtime: AutomationRuntime;
     readonly closeSettings?: () => void;
     readonly pickWorkspaceDirectory?: () => Promise<string | null>;
