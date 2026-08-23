@@ -25,7 +25,7 @@
 - Create, pause, resume, run now, and delete rules from the Web UI or Agent tools.
 - Start each occurrence in a fresh root Agent and Session. Source-chat history is not inherited.
 - Support once, interval, hourly, daily, weekly, monthly, and custom-every-N-days schedules.
-- Pick workspace, model, skills, and `read-only` / `workspace-write` in the create dialog.
+- Pick workspace, model, skills, and any permission preset exposed by the Host.
 - Create from chat: describe the schedule in any conversation, then confirm with the official approval card.
 - Keep durable run history: `queued`, `running`, `succeeded`, `failed`, `skipped`, `cancelled`.
 - Add a sidebar **Scheduled** tab. Folders are task names and child sessions are run times. On stock DSH it wraps the official workspace tree and does not depend on `dsh-codex-ui`.
@@ -124,8 +124,8 @@ Each dispatched run uses the saved prompt, workspace, model, and permission boun
 
 | Item | Behavior |
 | --- | --- |
-| Permission | Default is `read-only`. File writes require an explicit `workspace-write` choice. |
-| Full access | Unattended `danger-full-access` is not offered. |
+| Permission | Options and the default come directly from the Host `permissionPresets` service, including custom presets. |
+| Full access | The official `danger-full-access` option uses the same risk confirmation and orange warning as Chat. |
 | Approval | Chat create follows the session policy. Full access (`never`) proceeds; Workspace Write / Read Only (`ask`) shows the official card. Unattended runs stay fail-closed `never`. |
 | Retry | No automatic retry after a started run. |
 | Host restart | Leftover `queued` / `running` records become `failed(host_interrupted)`. |

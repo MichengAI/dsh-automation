@@ -7,7 +7,7 @@ export function shouldCloseCreateModal(reason: 'backdrop' | 'escape' | 'cancel')
 
 /** 只有从非完全访问切换到完全访问时才需要风险确认。 */
 export function shouldConfirmFullAccess(current: AutomationPermission, next: AutomationPermission): boolean {
-  return current !== 'full-access' && next === 'full-access'
+  return current !== next && next === 'danger-full-access'
 }
 
 /** 和 Chat 一样：先选目录，取消则不登记；没有手输路径这条路。 */

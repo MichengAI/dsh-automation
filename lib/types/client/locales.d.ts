@@ -134,16 +134,6 @@ export declare const en: {
     readonly 'form.days': "Weekdays";
     readonly 'form.timeZone': "Time zone";
     readonly 'form.permission': "Permission boundary";
-    readonly 'form.readOnly': "Read Only";
-    readonly 'form.readOnlyHint': "Inspect the workspace without changing files.";
-    readonly 'form.workspaceWrite': "Workspace Write";
-    readonly 'form.fullAccess': "Full access";
-    readonly 'form.workspaceWriteHint': "May change files in this workspace; past approvals are not reused.";
-    readonly 'access.confirm.title': "Enable Full access?";
-    readonly 'access.confirm.description': "Full access reduces confirmation steps and allows the Agent to directly perform more operations, including sensitive operations, file changes, or external commands. Use it only when you trust this task.";
-    readonly 'access.confirm.acknowledge': "I understand the risks and want to continue";
-    readonly 'access.confirm.cancel': "Cancel";
-    readonly 'access.confirm.enable': "Enable Full access";
     readonly 'form.cancel': "Cancel";
     readonly 'form.submit': "Create automation";
     readonly 'form.submitting': "Creating…";
@@ -171,9 +161,6 @@ export declare const en: {
     readonly 'card.nextRun': "Next";
     readonly 'card.lastRun': "Last";
     readonly 'card.never': "Not yet run";
-    readonly 'card.permission.read-only': "Read-only";
-    readonly 'card.permission.workspace-write': "Workspace write";
-    readonly 'card.permission.full-access': "Full access";
     readonly 'schedule.onceAt': "Once · {time}";
     readonly 'schedule.everyMinutes': "Every {count} minutes";
     readonly 'schedule.dailyAt': "Daily · {time}";

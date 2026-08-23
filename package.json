@@ -1,6 +1,6 @@
 {
   "name": "@michengai/dsh-automation",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "在独立 DSH Session 中按计划执行编码任务，支持 Web 设置页与 Agent 双入口管理。",
   "type": "module",
   "main": "./lib/index.js",
@@ -74,7 +74,7 @@
     "@deepseek-ai/dsh-client-ui-conversation": ">=0.1.0-rc.5 <0.2.0",
     "@deepseek-ai/dsh-client-ui-settings": ">=0.1.0-rc.5 <0.2.0",
     "@deepseek-ai/dsh-llm": ">=0.1.0-rc.5 <0.2.0",
-    "@deepseek-ai/dsh-sandbox-policy": ">=0.1.0-rc.5 <0.2.0",
+    "@deepseek-ai/dsh-permission-presets": ">=0.1.0-rc.5 <0.2.0",
     "@deepseek-ai/dsh-session": ">=0.1.0-rc.5 <0.2.0",
     "@deepseek-ai/dsh-storage-domain": ">=0.1.0-rc.5 <0.2.0",
     "@deepseek-ai/dsh-tools": ">=0.1.0-rc.5 <0.2.0",
@@ -110,4 +110,3 @@
     "registry": "https://registry.npmjs.org/"
   }
 }
-

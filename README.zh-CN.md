@@ -25,7 +25,7 @@
 - 支持 Web 设置页和 Agent 工具创建、暂停、恢复、立即运行和删除。
 - 每次到期都启动全新 root Agent 和 Session，不继承来源对话。
 - 计划类型包括不重复、间隔、每小时、每天、每周、每月和自定义间隔天数。
-- 新建弹窗可选择工作目录、模型、技能，以及 `read-only` / `workspace-write`。
+- 新建弹窗可选择工作目录、模型、技能，以及 Host 官方提供的权限预设。
 - 在任意对话里描述定时任务即可创建；Full access 直接执行，其他权限走官方授权卡。
 - 运行状态包含 `queued`、`running`、`succeeded`、`failed`、`skipped`、`cancelled`。
 - 侧栏提供「定时」页签：文件夹是任务名称，子会话是执行时间。原生下只包裹官方任务树，不依赖 `dsh-codex-ui`。
@@ -124,8 +124,8 @@ dsh --profile web --dump-config
 
 | 项目 | 行为 |
 | --- | --- |
-| 权限 | 默认 `read-only`。改文件必须显式选择 `workspace-write`。 |
-| 完全访问 | 不提供无人值守 `danger-full-access`。 |
+| 权限 | 列表和默认值直接来自 Host 官方 `permissionPresets` 服务；支持 Host 注册的自定义预设。 |
+| 完全访问 | 选择官方 `danger-full-access` 时显示与 Chat 一致的风险确认和橙色提示。 |
 | 审批 | 对话创建跟随当前会话策略。Full access（`never`）直接创建；Workspace Write / Read Only（`ask`）走官方授权卡。无人值守运行仍是 fail-closed 的 `never`。 |
 | 重试 | 已经开始的运行不会自动重试。 |
 | Host 重启 | 遗留的 `queued` / `running` 会变成 `failed(host_interrupted)`。 |

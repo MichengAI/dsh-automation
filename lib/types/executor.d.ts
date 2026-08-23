@@ -1,5 +1,6 @@
 /** 已认领 run 的独立 Agent 执行边界。 */
 import type { Context } from '@deepseek-ai/cordis';
+import type { PermissionPresetService } from './permission-presets.ts';
 import type { AutomationDefinition, AutomationRun } from './types.ts';
 interface SessionEventLike {
     readonly seq: number;
@@ -21,8 +22,8 @@ export interface ExecutorConfig {
     readonly sessionId: string;
     readonly signal?: AbortSignal;
 }
-/** 自动化权限名称与 DSH 沙箱事件名称不同，必须在写入会话前转换。 */
-export declare function sandboxModeForPermission(permission: AutomationDefinition['permissionPreset']): 'read-only' | 'workspace-write' | 'danger-full-access';
+/** 先应用官方预设的完整语义，再让无人值守审批 fail-closed。 */
+export declare function applyUnattendedPermission(presets: PermissionPresetService, session: unknown, permission: AutomationDefinition['permissionPreset']): void;
 export declare function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): {
     readonly text: string;
     readonly reason?: Record<string, any>;

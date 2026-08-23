@@ -14,7 +14,7 @@ const t = (key: string, params?: Record<string, unknown>): string => {
 const workspaces = [{ id: 'ws_1', title: 'demo', path: 'D:\\work\\demo' }]
 
 test('表单会拒绝空白任务和过去的一次性时间', () => {
-  const form = defaultFormState(new Date('2026-08-16T08:00:00+08:00'), workspaces)
+  const form = defaultFormState(new Date('2026-08-16T08:00:00+08:00'), workspaces, null, 'read-only')
   assert.throws(() => buildCreateInput(form, workspaces, [], new Date('2026-08-16T08:00:00+08:00')), AutomationFormError)
   const valid = buildCreateInput({
     ...form,
@@ -29,6 +29,8 @@ test('总览统计会统计未读失败并给出最近下次运行', () => {
   const overview = deriveOverview({
     scope: { cwd: 'D:\\work' },
     serverNow: '2026-08-16T01:00:00.000Z',
+    permissions: [],
+    defaultPermission: 'read-only',
     automations: [
       { id: 'a1', revision: 1, name: 'A', prompt: 'p', status: 'active', schedule: { kind: 'daily', time: '09:00' }, scheduleSummary: '', timeZone: 'Asia/Shanghai', permission: 'read-only', nextRunAt: '2026-08-16T02:00:00.000Z', createdAt: '', updatedAt: '' },
       { id: 'a2', revision: 1, name: 'B', prompt: 'p', status: 'paused', schedule: { kind: 'once', at: '2026-08-20T00:00:00.000Z' }, scheduleSummary: '', timeZone: 'UTC', permission: 'read-only', createdAt: '', updatedAt: '' },
@@ -50,7 +52,7 @@ test('RPC 结果必须失败关闭，运行时会在变更后刷新快照', asyn
   const runtime = createAutomationRuntime({
     async call(_channel, endpoint) {
       calls.push(endpoint)
-      if (endpoint === 'snapshot') return { ok: true, value: { scope: { cwd: 'D:\\work' }, automations: [], runs: [], serverNow: '2026-08-16T01:00:00.000Z' } }
+      if (endpoint === 'snapshot') return { ok: true, value: { scope: { cwd: 'D:\\work' }, permissions: [], defaultPermission: 'read-only', automations: [], runs: [], serverNow: '2026-08-16T01:00:00.000Z' } }
       return { ok: true, value: { id: 'ok' } }
     },
   })
@@ -80,6 +82,8 @@ test('RPC 结果必须失败关闭，运行时会在变更后刷新快照', asyn
 test('删除成功后即使刷新失败也要从列表里拿掉任务', async () => {
   const snapshot = {
     scope: { cwd: 'D:\\work' },
+    permissions: [],
+    defaultPermission: 'read-only',
     automations: [
       { id: 'keep', revision: 1, name: 'Keep', prompt: 'p', status: 'active', schedule: { kind: 'daily', time: '09:00' }, scheduleSummary: '', timeZone: 'Asia/Shanghai', permission: 'read-only', createdAt: '', updatedAt: '' },
       { id: 'gone', revision: 1, name: 'Gone', prompt: 'p', status: 'active', schedule: { kind: 'daily', time: '09:00' }, scheduleSummary: '', timeZone: 'Asia/Shanghai', permission: 'read-only', createdAt: '', updatedAt: '' },
@@ -140,7 +144,7 @@ test('模型名去掉供应商前缀，只保留展示名', () => {
 
 test('编辑一次性任务允许保留已经过去的时间', () => {
   const form = {
-    ...defaultFormState(new Date('2026-08-16T10:00:00+08:00'), workspaces),
+    ...defaultFormState(new Date('2026-08-16T10:00:00+08:00'), workspaces, null, 'read-only'),
     name: '补跑',
     prompt: '继续处理',
     scheduleKind: 'once' as const,

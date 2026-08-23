@@ -5,12 +5,12 @@ import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/dsh-agent-presets'
 import type { Context } from '@deepseek-ai/cordis'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { WorkspaceId } from '@deepseek-ai/dsh-workspace'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { automationSessionTitle } from './run-title.ts'
+import type { PermissionPresetService } from './permission-presets.ts'
 import type { AutomationDefinition, AutomationRun } from './types.ts'
 
 interface TextBlock { readonly type: string; readonly text?: string }
@@ -54,9 +54,14 @@ export interface ExecutorConfig {
   readonly signal?: AbortSignal
 }
 
-/** 自动化权限名称与 DSH 沙箱事件名称不同，必须在写入会话前转换。 */
-export function sandboxModeForPermission(permission: AutomationDefinition['permissionPreset']): 'read-only' | 'workspace-write' | 'danger-full-access' {
-  return permission === 'full-access' ? 'danger-full-access' : permission
+/** 先应用官方预设的完整语义，再让无人值守审批 fail-closed。 */
+export function applyUnattendedPermission(
+  presets: PermissionPresetService,
+  session: unknown,
+  permission: AutomationDefinition['permissionPreset'],
+): void {
+  presets.set(session, permission)
+  setApprovalPolicy(session, 'never')
 }
 
 export function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): {
@@ -145,8 +150,7 @@ export async function executeAutomationRun(
         installModelSelection(agentCtx, { current: selection, assembled: undefined })
         const agent = agentCtx.agent
         if (agent === undefined) throw new Error('automation setup has no scoped Agent')
-        setSandboxMode(agent.session, sandboxModeForPermission(target.permissionPreset))
-        setApprovalPolicy(agent.session, 'never')
+        applyUnattendedPermission(ctx.permissionPresets, agent.session, target.permissionPreset)
         agentCtx.tools.guard((exec: ToolExecution) => unattendedToolGuardReason(exec.name, exec.arguments))
       },
     }))

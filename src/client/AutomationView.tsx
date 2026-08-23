@@ -40,7 +40,7 @@ const EXAMPLES: readonly { readonly name: string; readonly scheduleKind: Schedul
   { name: '工作日早报', scheduleKind: 'weekly', time: '08:00', weekdays: [1, 2, 3, 4, 5] },
 ]
 
-export function AutomationView({ t, runtime, closeSettings, pickWorkspaceDirectory }: AutomationViewProps): JSX.Element {
+export function AutomationView({ t, permissionT, runtime, closeSettings, pickWorkspaceDirectory }: AutomationViewProps): JSX.Element {
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const [tab, setTab] = useState<Tab>('mine')
   const [query, setQuery] = useState('')
@@ -63,6 +63,8 @@ export function AutomationView({ t, runtime, closeSettings, pickWorkspaceDirecto
   const snapshot = state.snapshot
   const workspaces = snapshot?.workspaces ?? []
   const models = snapshot?.models ?? []
+  const permissions = snapshot?.permissions ?? []
+  const defaultPermission = snapshot?.defaultPermission ?? ''
   const automations = (snapshot?.automations ?? [])
     .filter(item => query.trim() === '' || `${item.name} ${item.prompt}`.toLowerCase().includes(query.trim().toLowerCase()))
     .slice()
@@ -97,6 +99,7 @@ export function AutomationView({ t, runtime, closeSettings, pickWorkspaceDirecto
   }
 
   const openCreate = (partial?: Partial<AutomationFormState>): void => {
+    if (defaultPermission === '' || permissions.length === 0) return
     setEditingId(undefined)
     setDraft(partial)
     setCreating(true)
@@ -104,7 +107,7 @@ export function AutomationView({ t, runtime, closeSettings, pickWorkspaceDirecto
 
   const openEdit = (item: AutomationViewModel): void => {
     setEditingId(item.id)
-    setDraft(formFromAutomation(item, workspaces, snapshot?.defaultModel ?? null))
+    setDraft(formFromAutomation(item, workspaces, snapshot?.defaultModel ?? null, snapshot?.defaultPermission ?? item.permission))
     setCreating(true)
   }
 
@@ -121,7 +124,7 @@ export function AutomationView({ t, runtime, closeSettings, pickWorkspaceDirecto
             setChatPrefill(t('chat.prompt'))
             closeSettings?.()
           }}><ChatIcon />{t('action.chatCreate')}</button>
-          <button type="button" className="dsh-st-btn dsh-st-btn--primary" onClick={() => openCreate()}><PlusIcon />{t('action.create')}</button>
+          <button type="button" className="dsh-st-btn dsh-st-btn--primary" disabled={defaultPermission === '' || permissions.length === 0} onClick={() => openCreate()}><PlusIcon />{t('action.create')}</button>
           <button type="button" className="dsh-st-icon" onClick={() => { void runtime.refresh() }} aria-label={t('section.refresh')}><RefreshIcon /></button>
         </div>
       </header>
@@ -140,6 +143,7 @@ export function AutomationView({ t, runtime, closeSettings, pickWorkspaceDirecto
               key={example.name}
               type="button"
               className="dsh-st-example"
+              disabled={defaultPermission === '' || permissions.length === 0}
               onClick={() => openCreate({
                 name: t(`examples.${index + 1}.title` as 'examples.1.title'),
                 prompt: t(`examples.${index + 1}.body` as 'examples.1.body'),
@@ -228,11 +232,14 @@ export function AutomationView({ t, runtime, closeSettings, pickWorkspaceDirecto
         <CreateModal
           key={editingId ?? 'create'}
           t={t}
+          permissionT={permissionT}
           busy={busy}
           workspaces={workspaces}
           models={models}
           defaultModel={snapshot?.defaultModel ?? null}
           skills={snapshot?.skills ?? []}
+          permissions={permissions}
+          defaultPermission={defaultPermission}
           onAddWorkspace={async (path) => runtime.addWorkspace(path).then((value) => value.id)}
           {...(pickWorkspaceDirectory === undefined ? {} : { pickWorkspaceDirectory })}
           editing={editingId !== undefined}

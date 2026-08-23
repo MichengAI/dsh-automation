@@ -1,5 +1,6 @@
 /** 持久化定义、occurrence 认领、时钟与执行调度。 */
 import type { Context } from '@deepseek-ai/cordis';
+import { type PermissionOption } from './permission-presets.ts';
 import type { AutomationDefinition, AutomationRun, AutomationSchedule, PermissionPreset, UpdateAutomationInput } from './types.ts';
 export declare const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
 export interface AutomationConfig {
@@ -45,6 +46,8 @@ export interface AutomationSnapshot {
         readonly id: string;
         readonly name: string;
     }[];
+    readonly permissions: readonly PermissionOption[];
+    readonly defaultPermission: string;
     readonly definitions: readonly AutomationDefinitionView[];
     readonly runs: readonly AutomationRun[];
 }
@@ -73,6 +76,9 @@ export declare class AutomationService {
     static open(ctx: Context, config: AutomationConfig): Promise<AutomationService>;
     start(): void;
     ownsSession(sessionId: string, events?: readonly SessionEventLike[]): boolean;
+    permissionNames(): readonly string[];
+    permissionOptions(): readonly PermissionOption[];
+    defaultPermission(): string;
     dispose(): Promise<void>;
     snapshot(scope: AutomationScope, signal?: AbortSignal): Promise<AutomationSnapshot>;
     create(scope: AutomationScope, request: CreateRequest, signal?: AbortSignal): Promise<AutomationDefinition>;
@@ -105,6 +111,10 @@ export declare class AutomationService {
     private armRetryTimer;
     private clearTimer;
     private serialize;
+    private permissionPresets;
+    private requirePermission;
+    /** 把旧版 full-access 及已移除的预设收敛到 Host 当前可用列表。 */
+    private migratePermissionPresets;
     private recoverInterruptedRuns;
     private pruneWorkspaceHistory;
     private pruneAllHistory;

@@ -20,6 +20,11 @@ import {
 } from './domain.ts'
 import { executeAutomationRun } from './executor.ts'
 import { latestDueOccurrence, nextOccurrence } from './recurrence.ts'
+import {
+  normalizePermissionPreset,
+  type PermissionOption,
+  type PermissionPresetService,
+} from './permission-presets.ts'
 import type {
   AutomationDefinition,
   AutomationRun,
@@ -76,6 +81,8 @@ export interface AutomationSnapshot {
   readonly models: readonly ModelOption[]
   readonly defaultModel: ModelOption | null
   readonly skills: readonly { readonly id: string; readonly name: string }[]
+  readonly permissions: readonly PermissionOption[]
+  readonly defaultPermission: string
   readonly definitions: readonly AutomationDefinitionView[]
   readonly runs: readonly AutomationRun[]
 }
@@ -130,6 +137,7 @@ export class AutomationService {
       const service = new AutomationService(ctx, domain, config)
       service.definitions = domain.table('definitions') as KvTable<string, AutomationDefinition>
       service.runs = domain.table('runs') as KvTable<string, AutomationRun>
+      await service.migratePermissionPresets()
       await service.recoverInterruptedRuns()
       await service.reconcileMissingSessions()
       await service.pruneAllHistory()
@@ -155,6 +163,22 @@ export class AutomationService {
       return typeof source === 'object' && source !== null
         && (source as { readonly kind?: unknown }).kind === 'automation'
     })
+  }
+
+  permissionNames(): readonly string[] {
+    return this.permissionPresets().names
+  }
+
+  permissionOptions(): readonly PermissionOption[] {
+    const presets = this.permissionPresets()
+    return presets.names.map(name => presets.optionOf(name))
+  }
+
+  defaultPermission(): string {
+    const presets = this.permissionPresets()
+    const value = normalizePermissionPreset(presets.defaultPreset, presets.names)
+    if (value === undefined) throw new Error('Host 的默认权限预设不在官方权限列表中。')
+    return value
   }
 
   async dispose(): Promise<void> {
@@ -193,6 +217,8 @@ export class AutomationService {
         models: options.models,
         defaultModel: options.defaultModel,
         skills: options.skills,
+        permissions: this.permissionOptions(),
+        defaultPermission: this.defaultPermission(),
         definitions: definitions.map(definition => ({
           ...definition,
           nextRunAt: definition.status === 'active'
@@ -225,7 +251,7 @@ export class AutomationService {
         provider: target.provider,
         model: target.model,
         ...(request.reasoningEffort === undefined ? {} : { reasoningEffort: request.reasoningEffort }),
-        permissionPreset: request.permissionPreset ?? 'read-only',
+        permissionPreset: this.requirePermission(request.permissionPreset),
         createdBy: { kind: scope.creatorKind, sessionId: scope.sessionId },
         now,
       })
@@ -247,14 +273,17 @@ export class AutomationService {
       throwIfCancelled(signal)
       const now = toIso()
       const { status, ...fields } = input
+      const normalizedFields = fields.permissionPreset === undefined
+        ? fields
+        : { ...fields, permissionPreset: this.requirePermission(fields.permissionPreset) }
       if (fields.schedule?.kind === 'once'
         && nextOccurrence(fields.schedule, now) === null) {
         throw new Error('一次性自动化必须安排在未来时间。')
       }
       const statusChanged = status !== undefined && status !== current.status
-      const value = Object.keys(fields).length === 0 && !statusChanged
+      const value = Object.keys(normalizedFields).length === 0 && !statusChanged
         ? current
-        : updateDefinition(current, { ...fields, ...(status === undefined ? {} : { status }), now })
+        : updateDefinition(current, { ...normalizedFields, ...(status === undefined ? {} : { status }), now })
       if (value !== current) await this.definitions.put(id, value)
       return value
     }, signal)
@@ -678,6 +707,37 @@ export class AutomationService {
     })
     this.operationTail = result.then(() => {}, () => {})
     return result
+  }
+
+  private permissionPresets(): PermissionPresetService {
+    return (this.ctx as Context & { permissionPresets: PermissionPresetService }).permissionPresets
+  }
+
+  private requirePermission(input?: PermissionPreset): PermissionPreset {
+    const presets = this.permissionPresets()
+    if (input === undefined) return this.defaultPermission()
+    const value = normalizePermissionPreset(input, presets.names)
+    if (value === undefined) throw new Error(`unknown permission preset '${input}'`)
+    return value
+  }
+
+  /** 把旧版 full-access 及已移除的预设收敛到 Host 当前可用列表。 */
+  private async migratePermissionPresets(): Promise<void> {
+    const presets = this.permissionPresets()
+    const fallback = this.defaultPermission()
+    for (const [id, definition] of this.definitions.entries()) {
+      const permissionPreset = normalizePermissionPreset(definition.permissionPreset, presets.names) ?? fallback
+      if (permissionPreset === definition.permissionPreset) continue
+      await this.definitions.put(id, { ...definition, permissionPreset })
+    }
+    for (const [id, run] of this.runs.entries()) {
+      const permissionPreset = normalizePermissionPreset(run.targetSnapshot.permissionPreset, presets.names) ?? fallback
+      if (permissionPreset === run.targetSnapshot.permissionPreset) continue
+      await this.runs.put(id, {
+        ...run,
+        targetSnapshot: { ...run.targetSnapshot, permissionPreset },
+      })
+    }
   }
 
   private async recoverInterruptedRuns(): Promise<void> {

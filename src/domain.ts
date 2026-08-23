@@ -35,7 +35,8 @@ export const automationScheduleSchema = z.discriminatedUnion('kind', [
   }),
 ])
 
-const permissionPreset = z.enum(['read-only', 'workspace-write', 'full-access'])
+// 自定义权限预设也允许持久化；有效性在服务层按 Host 当前列表校验。
+const permissionPreset = nonBlank
 const creator = z.object({ kind: z.enum(['agent', 'web']), sessionId: nonBlank })
 const targetSnapshot = z.object({
   workspaceId: nonBlank,

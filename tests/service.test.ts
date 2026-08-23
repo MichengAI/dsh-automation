@@ -4,6 +4,13 @@ import { createDefinition } from '../src/domain.ts'
 import { AutomationService, type AutomationConfig } from '../src/service.ts'
 import type { AutomationDefinition, AutomationRun } from '../src/types.ts'
 
+const permissionPresets = {
+  names: ['read-only', 'workspace-write', 'danger-full-access'],
+  defaultPreset: 'workspace-write',
+  optionOf: (value: string) => ({ value, name: value }),
+  set() {},
+}
+
 class MemoryTable<V> {
   private readonly values = new Map<string, V>()
   get(key: string): V | undefined { return this.values.get(key) }
@@ -47,6 +54,7 @@ function makeService(initial: {
     ctx: {},
   }
   const ctx = {
+    permissionPresets,
     logger: { warn() {} },
     storageDomain: {
       async open() {
@@ -151,6 +159,30 @@ test('创建和立即运行都限制在来源工作区', async () => {
   )
 })
 
+test('权限列表、默认值和校验均来自 Host 官方服务', async () => {
+  const { service } = await makeService()
+  const snapshot = await service.snapshot({ sessionId: 'session_1', creatorKind: 'web', hostWide: true })
+  assert.deepEqual(snapshot.permissions.map(item => item.value), permissionPresets.names)
+  assert.equal(snapshot.defaultPermission, 'workspace-write')
+  const created = await service.create({ sessionId: 'session_1', creatorKind: 'web' }, {
+    name: '官方默认权限',
+    prompt: '检查状态',
+    schedule: { kind: 'once', at: '2099-01-01T10:00:00.000Z', timeZone: 'UTC' },
+  })
+  assert.equal(created.permissionPreset, 'workspace-write')
+  await assert.rejects(() => service.update(
+    { sessionId: 'session_1', creatorKind: 'web' },
+    created.id,
+    { permissionPreset: 'not-official' },
+  ), /unknown permission preset/)
+})
+
+test('启动时把旧 full-access 迁移成官方 danger-full-access', async () => {
+  const legacy = sampleDefinition({ permissionPreset: 'full-access' })
+  const { definitions } = await makeService({ definitions: [legacy] })
+  assert.equal(definitions.get(legacy.id)?.permissionPreset, 'danger-full-access')
+})
+
 
 
 
@@ -221,6 +253,7 @@ test('启动时对宿主已不存在的 Session 摘掉 run.sessionId', async () 
     unread: false,
   })
   const ctx = {
+    permissionPresets,
     logger: { warn() {} },
     get(name: string) { return name === 'sessionPersistence' ? { async list() { return [{ id: 'other' }] } } : undefined },
     sessions: { list() { return [] } },

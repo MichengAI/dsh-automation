@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Translate } from './contracts.js'
+import type { PermissionOption } from './protocol.js'
+import { permissionLabel, type PermissionTranslate } from './permissions.js'
 import {
   AutomationFormError,
   defaultFormState,
@@ -21,14 +23,17 @@ const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(
 const EFFORTS = ['none', 'low', 'medium', 'high'] as const
 
 export function CreateModal({
-  t, busy, workspaces, models, defaultModel, skills, draft, editing, onClose, onSubmit, onAddWorkspace, pickWorkspaceDirectory,
+  t, permissionT, busy, workspaces, models, defaultModel, skills, permissions, defaultPermission, draft, editing, onClose, onSubmit, onAddWorkspace, pickWorkspaceDirectory,
 }: {
   readonly t: Translate
+  readonly permissionT: PermissionTranslate
   readonly busy: boolean
   readonly workspaces: readonly { id: string; title: string; path: string }[]
   readonly models: readonly { provider: string; model: string; label: string }[]
   readonly defaultModel: { provider: string; model: string; label: string } | null
   readonly skills: readonly { id: string; name: string }[]
+  readonly permissions: readonly PermissionOption[]
+  readonly defaultPermission: string
   readonly draft?: Partial<AutomationFormState>
   readonly editing?: boolean
   readonly onClose: () => void
@@ -36,9 +41,9 @@ export function CreateModal({
   readonly onAddWorkspace?: (path: string) => Promise<string>
   readonly pickWorkspaceDirectory?: () => Promise<string | null>
 }): JSX.Element {
-  const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel), ...draft }))
+  const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel, defaultPermission), ...draft }))
   const [validationError, setValidationError] = useState<string>()
-  const [confirmingFullAccess, setConfirmingFullAccess] = useState(false)
+  const [confirmingPermission, setConfirmingPermission] = useState<string>()
   const [fullAccessAcknowledged, setFullAccessAcknowledged] = useState(false)
   const update = (patch: Partial<AutomationFormState>): void => {
     setForm(current => ({ ...current, ...patch }))
@@ -47,18 +52,19 @@ export function CreateModal({
   const choosePermission = (permission: AutomationFormState['permission']): void => {
     if (shouldConfirmFullAccess(form.permission, permission)) {
       setFullAccessAcknowledged(false)
-      setConfirmingFullAccess(true)
+      setConfirmingPermission(permission)
       return
     }
     update({ permission })
   }
   const cancelFullAccessConfirmation = (): void => {
     setFullAccessAcknowledged(false)
-    setConfirmingFullAccess(false)
+    setConfirmingPermission(undefined)
   }
   const confirmFullAccess = (): void => {
     if (!fullAccessAcknowledged) return
-    update({ permission: 'full-access' })
+    if (confirmingPermission === undefined) return
+    update({ permission: confirmingPermission })
     cancelFullAccessConfirmation()
   }
 
@@ -252,11 +258,11 @@ export function CreateModal({
                   up
                   icon={<ShieldIcon width={14} height={14} />}
                   value={form.permission}
-                  options={[
-                    { value: 'read-only', label: t('form.readOnly'), icon: <ShieldIcon width={14} height={14} /> },
-                    { value: 'workspace-write', label: t('form.workspaceWrite'), icon: <ShieldIcon width={14} height={14} /> },
-                    { value: 'full-access', label: t('form.fullAccess'), icon: <ShieldIcon width={14} height={14} /> },
-                  ]}
+                  options={permissions.map(option => ({
+                    value: option.value,
+                    label: permissionLabel(option, permissionT),
+                    icon: <ShieldIcon width={14} height={14} />,
+                  }))}
                   onChange={choosePermission}
                 />
               </div>
@@ -283,12 +289,12 @@ export function CreateModal({
       </form>
       <div className="dsh-st-flyout-root" ref={setMenuHost} />
       <RiskConfirmation
-        open={confirmingFullAccess}
-        title={t('access.confirm.title')}
-        description={t('access.confirm.description')}
-        acknowledgeLabel={t('access.confirm.acknowledge')}
-        cancelLabel={t('access.confirm.cancel')}
-        confirmLabel={t('access.confirm.enable')}
+        open={confirmingPermission !== undefined}
+        title={permissionT('confirm.title')}
+        description={permissionT('confirm.description')}
+        acknowledgeLabel={permissionT('confirm.acknowledge')}
+        cancelLabel={permissionT('confirm.cancel')}
+        confirmLabel={permissionT('confirm.enable')}
         acknowledged={fullAccessAcknowledged}
         onAcknowledgedChange={setFullAccessAcknowledged}
         onCancel={cancelFullAccessConfirmation}

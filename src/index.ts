@@ -11,7 +11,7 @@ import { registerAutomationTools } from './tools.ts'
 export const name = 'dsh-automation'
 export const inject = [
   'storageDomain', 'agents', 'sessions', 'workspaceRegistry', 'agentDefaultModel',
-  'agentPresets', 'tools', 'connection', 'llm',
+  'agentPresets', 'permissionPresets', 'tools', 'connection', 'llm',
 ]
 
 export interface Config {
@@ -39,11 +39,7 @@ export interface ApprovalPolicyReader {
   overrideOf?(session: unknown): SessionApprovalPolicy | undefined
 }
 
-/**
- * 读会话审批策略。官方三档对应：
- * Read Only / Workspace Write → ask
- * Full access → never
- */
+/** 读取当前会话实际审批策略；自定义权限预设也以 Host 投影结果为准。 */
 export function sessionApprovalPolicy(
   approval: ApprovalPolicyReader | undefined,
   session: unknown,
@@ -56,7 +52,7 @@ export function sessionApprovalPolicy(
 }
 
 /**
- * 只在官方 ask 策略下二次确认。never（Full access）再 ask，
+ * 只在实际 ask 策略下二次确认。never 策略再 ask，
  * 会被映射成 “the user rejected tool”，且不会弹窗。
  */
 export function needsHumanApproval(

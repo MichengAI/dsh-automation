@@ -1,7 +1,8 @@
 export type AutomationStatus = 'active' | 'paused'
 export type AutomationRunStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped' | 'cancelled'
 export type Weekday = 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA' | 'SU'
-export type PermissionPreset = 'read-only' | 'workspace-write' | 'full-access'
+/** 权限预设名称由 Host 的 permissionPresets 服务动态提供。 */
+export type PermissionPreset = string
 
 export interface OnceSchedule {
   readonly kind: 'once'

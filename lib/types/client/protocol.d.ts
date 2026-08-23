@@ -1,7 +1,12 @@
 /** Web 客户端与 Host RPC 共享的 JSON 契约。 */
 export type AutomationStatus = 'active' | 'paused';
 export type AutomationRunStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped' | 'cancelled' | 'interrupted';
-export type AutomationPermission = 'read-only' | 'workspace-write' | 'full-access';
+export type AutomationPermission = string;
+export interface PermissionOption {
+    readonly value: string;
+    readonly name: string;
+    readonly description?: string;
+}
 export type AutomationSchedule = {
     readonly kind: 'once';
     readonly at: string;
@@ -93,6 +98,8 @@ export interface AutomationSnapshot {
         readonly id: string;
         readonly name: string;
     }[];
+    readonly permissions: readonly PermissionOption[];
+    readonly defaultPermission: string;
     readonly automations: readonly AutomationViewModel[];
     readonly runs: readonly AutomationRunViewModel[];
     readonly serverNow: string;

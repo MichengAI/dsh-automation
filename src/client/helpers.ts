@@ -80,6 +80,7 @@ export function defaultFormState(
   now = new Date(),
   workspaces: readonly WorkspaceOption[] = [],
   defaultModel?: ModelOption | null,
+  defaultPermission = '',
 ): AutomationFormState {
   return {
     name: '',
@@ -93,7 +94,7 @@ export function defaultFormState(
     monthDay: '1',
     customDays: '2',
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai',
-    permission: 'read-only',
+    permission: defaultPermission,
     workspaceId: workspaces[0]?.id ?? '',
     modelKey: defaultModel === undefined || defaultModel === null
       ? 'default'
@@ -339,8 +340,9 @@ export function formFromAutomation(
   item: import('./protocol.js').AutomationViewModel,
   workspaces: readonly WorkspaceOption[] = [],
   defaultModel?: ModelOption | null,
+  defaultPermission = item.permission,
 ): AutomationFormState {
-  const base = defaultFormState(new Date(), workspaces, defaultModel)
+  const base = defaultFormState(new Date(), workspaces, defaultModel, defaultPermission)
   const schedule = item.schedule
   const modelKey = item.provider && item.model ? `${item.provider}::${item.model}` : 'default'
   const common = {

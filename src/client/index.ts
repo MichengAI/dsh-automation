@@ -53,6 +53,7 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => installStyles(), 'dsh-automation: styles')
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-automation: locale')
   const t = ctx.locale.bind(NS)
+  const permissionT = ctx.locale.bind('permission.access')
   const runtime = createAutomationRuntime(ctx.connection.rpc)
   ctx.effect(() => installSettingsNavIcon(() => [t('tab'), 'Scheduled tasks', '定时任务']), 'dsh-automation: settings icon')
   ctx.slots.inject('settings.section', () => ctx.slots.register({
@@ -64,7 +65,7 @@ export function apply(ctx: ClientContext): void {
     icon: 'schedule',
   }, function ScheduledTasksSettings(props: { close?: () => void }) {
     const workspacesApi = readOptionalWorkspaces(ctx)
-    return createElement(AutomationView, { t, runtime, ...(props.close === undefined ? {} : { closeSettings: props.close }), ...(workspacesApi === undefined ? {} : { pickWorkspaceDirectory: () => workspacesApi.pickDirectory() }) })
+    return createElement(AutomationView, { t, permissionT, runtime, ...(props.close === undefined ? {} : { closeSettings: props.close }), ...(workspacesApi === undefined ? {} : { pickWorkspaceDirectory: () => workspacesApi.pickDirectory() }) })
   }))
   ctx.slots.inject('sidebar.schedule', () => ctx.slots.register({
     name: 'sidebar.schedule',

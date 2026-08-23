@@ -6,24 +6,29 @@ import { registerAutomationTools } from '../src/tools.ts'
 test('工具注册覆盖六个管理入口，并校验计划字段组合', () => {
   const names: string[] = []
   const descriptions = new Map<string, string>()
+  const definitions = new Map<string, any>()
   const agent = {
     id: 'session-1',
     ctx: {
       tools: {
         register(definition: { name: string; description?: string }): () => void {
           names.push(definition.name)
+          definitions.set(definition.name, definition)
           if (typeof definition.description === 'string') descriptions.set(definition.name, definition.description)
           return () => {}
         },
       },
     },
   }
-  const dispose = registerAutomationTools({} as never, agent)
+  const dispose = registerAutomationTools({ permissionNames: () => ['read-only', 'workspace-write', 'danger-full-access'] } as never, agent)
   assert.deepEqual(names, [
     'automation_create', 'automation_list', 'automation_update',
     'automation_runs', 'automation_run_now', 'automation_delete',
   ])
   assert.match(descriptions.get('automation_create') ?? '', /定时任务/)
+  assert.deepEqual(definitions.get('automation_create')?.parameters?.permission?.enum, [
+    'read-only', 'workspace-write', 'danger-full-access',
+  ])
   dispose()
 })
 

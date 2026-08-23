@@ -102,6 +102,7 @@ function scheduleFromArgs(args: ScheduleArgs, now: string): AutomationSchedule {
 
 export function registerAutomationTools(service: AutomationService, agent: ToolAgent): () => void {
   const scope = { sessionId: agent.id, creatorKind: 'agent' as const }
+  const permissionNames = [...service.permissionNames()]
   const disposers: Array<() => void> = []
   const register = (definition: unknown): void => { disposers.push(agent.ctx.tools.register(definition)) }
   try {
@@ -117,7 +118,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         every_minutes: { type: 'integer', description: '间隔计划的分钟数，最小 5。' },
         time: { type: 'string', description: '每天或每周计划的本地 HH:mm。' },
         weekdays: { type: 'array', items: { type: 'string', enum: WEEKDAYS } },
-        permission: { type: 'string', enum: ['read-only', 'workspace-write', 'full-access'] },
+        permission: { type: 'string', enum: permissionNames },
       },
       output: JSON_OUTPUT,
       async execute(args: CreateArgs, exec: ToolRunContext) {
@@ -175,7 +176,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         every_minutes: { type: 'integer' },
         time: { type: 'string' },
         weekdays: { type: 'array', items: { type: 'string', enum: WEEKDAYS } },
-        permission: { type: 'string', enum: ['read-only', 'workspace-write', 'full-access'] },
+        permission: { type: 'string', enum: permissionNames },
       },
       output: JSON_OUTPUT,
       async execute(args: UpdateArgs, exec: ToolRunContext) {
@@ -262,4 +263,3 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
   }
   return () => { for (const dispose of disposers.reverse()) dispose() }
 }
-

@@ -40,6 +40,7 @@ test('包保持可安装的 DSH bundle 与 Web client 契约', async () => {
   assert.ok(manifest.files?.includes('cordis.patch.yml'))
   assert.equal(manifest.scripts?.prepare, undefined)
   assert.equal(manifest.peerDependencies?.react, '^18.2.0')
+  assert.equal(manifest.peerDependencies?.['@deepseek-ai/dsh-permission-presets'], '>=0.1.0-rc.5 <0.2.0')
   assert.deepEqual(manifest.peerDependenciesMeta?.react, { optional: true })
 
   const patch = await readFile(new URL('cordis.patch.yml', root), 'utf8')

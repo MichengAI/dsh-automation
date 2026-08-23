@@ -6,6 +6,7 @@ declare module '@deepseek-ai/cordis' {
     readonly agents: any
     readonly agentDefaultModel: any
     readonly agentPresets: any
+    readonly permissionPresets: import('../permission-presets.ts').PermissionPresetService
     readonly sessions: any
     readonly sessionTitle?: { rename(session: unknown, title: string): unknown }
     readonly workspaceRegistry: any
@@ -40,6 +41,7 @@ declare module '@deepseek-ai/dsh-agent' {
 
 declare module '@deepseek-ai/dsh-agent-default-model' {}
 declare module '@deepseek-ai/dsh-agent-presets' {}
+declare module '@deepseek-ai/dsh-permission-presets' {}
 declare module '@deepseek-ai/dsh-client-connection' {}
 
 declare module '@deepseek-ai/dsh-llm' {
@@ -47,10 +49,6 @@ declare module '@deepseek-ai/dsh-llm' {
     content: readonly { type: 'text'; text: string }[]
     source: unknown
   }): unknown
-}
-
-declare module '@deepseek-ai/dsh-sandbox-policy' {
-  export function setSandboxMode(session: unknown, mode: 'read-only' | 'workspace-write' | 'danger-full-access'): void
 }
 
 declare module '@deepseek-ai/dsh-client-ui-primitives' {
