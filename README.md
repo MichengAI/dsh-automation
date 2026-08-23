@@ -1,58 +1,81 @@
 <p align="center">
-  <img src="assets/readme/hero-en.svg" width="100%" alt="DSH Automation schedules isolated coding tasks in DeepSeek Harness and keeps durable run history">
+  <img src="assets/branding/dsh-banner.png" alt="DSH Automation" width="100%">
 </p>
 
 <div align="center">
 
-  **Schedule standalone coding work from the Web UI or any DSH conversation.**
+  # DSH Automation
 
-  [简体中文](README.zh-CN.md) · [Documentation](docs/00-交接入口/00-阅读导航.md) · [Apache-2.0](LICENSE)
+  **Run standalone coding tasks on a schedule in DeepSeek Harness**
 
-  [![npm version](https://img.shields.io/npm/v/%40michengai%2Fdsh-automation.svg?label=npm)](https://www.npmjs.com/package/@michengai/dsh-automation)
-  [![npm downloads](https://img.shields.io/npm/dt/%40michengai%2Fdsh-automation.svg?label=downloads)](https://www.npmjs.com/package/@michengai/dsh-automation)
-  [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-2563eb.svg)](LICENSE)
+  [简体中文](README.zh-CN.md) · [Apache-2.0](LICENSE)
+
+  [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+  [![npm package](https://img.shields.io/npm/v/%40michengai%2Fdsh-automation.svg?label=npm%20package)](https://www.npmjs.com/package/@michengai/dsh-automation)
+  [![npm downloads](https://img.shields.io/npm/dt/%40michengai%2Fdsh-automation.svg?label=npm%20downloads)](https://www.npmjs.com/package/@michengai/dsh-automation)
+  [![DSH Web Plugin](https://img.shields.io/badge/DSH%20Web-Plugin-0f766e.svg)](https://github.com/MichengAI/dsh-automation)
+  [![Node.js 22 or later](https://img.shields.io/badge/Node.js-22%20or%20later-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
 </div>
 
-> DSH Automation is a community-maintained DeepSeek Harness plugin, not an official DeepSeek AI product.
+> DSH Automation is a community-maintained DeepSeek Harness (DSH) plugin, not an official DeepSeek AI product.
 
-DSH Automation adds a durable scheduler to DeepSeek Harness. A rule saves the task prompt, schedule, workspace, model, skills, and Host permission preset. When it is due, the plugin starts a fresh root Agent and Session instead of inheriting the source conversation.
+## Features
 
-## See it in action
+- Manage scheduled tasks from **Settings → Scheduled Tasks**.
+- Create, pause, resume, run now, and delete rules from the Web UI or Agent tools.
+- Start each occurrence in a fresh root Agent and Session. Source-chat history is not inherited.
+- Support once, interval, hourly, daily, weekly, monthly, and custom-every-N-days schedules.
+- Pick workspace, model, skills, and any permission preset exposed by the Host.
+- Create from chat: describe the schedule in any conversation, then confirm with the official approval card.
+- Keep durable run history: `queued`, `running`, `succeeded`, `failed`, `skipped`, `cancelled`.
+- Add a sidebar **Scheduled** tab. Folders are task names and child sessions are run times. On stock DSH it wraps the official workspace tree and does not depend on `dsh-codex-ui`.
 
-Create, search, pause, run, and inspect scheduled rules from **Settings → Scheduled Tasks**:
+## Interface
+
+Scheduled tasks live in the workspace **Scheduled** tab, next to **Tasks** and **Channels**:
+
+![Scheduled sidebar](assets/screenshots/workspace-scheduled.png)
+
+Open **Settings → Scheduled Tasks** to search, create, pause, and inspect rules:
 
 ![Scheduled tasks settings](assets/screenshots/settings-tasks.png)
 
-- **Flexible schedules** — once, interval, hourly, daily, weekly, monthly, or every N days.
-- **Clean execution** — every occurrence gets its own root Agent and Session.
-- **Host-native controls** — use the Host workspace, model, skills, permission presets, and approval UI.
-- **Durable history** — keep `queued`, `running`, `succeeded`, `failed`, `skipped`, and `cancelled` results.
+Describe the job in chat. The agent calls `automation_create` and asks through the official approval card:
 
-<details>
-<summary><strong>See the complete chat-to-schedule flow</strong></summary>
-
-Describe the job in a conversation:
-
-![Describe a scheduled task in chat](assets/screenshots/chat-create.png)
-
-When the session policy requires approval, DSH shows its official approval card:
+![Create a scheduled task from chat](assets/screenshots/chat-create.png)
 
 ![Official approval for automation_create](assets/screenshots/chat-approval.png)
 
-After approval, the saved rule is summarized in the conversation:
+After approval, the rule is saved and summarized in the conversation:
 
 ![Scheduled task created](assets/screenshots/chat-created.png)
 
-</details>
+Run history stays in Settings and can be filtered by day, week, month, task, or status:
 
-## Install
+![Run history](assets/screenshots/settings-runs.png)
 
-### From npm
+## DSH product ecosystem
 
-Prerequisites:
+This product can be installed independently or used through the desktop app or Web suite. They share the same DSH core but serve different ways of working; on stock DSH, this product does not depend on Codex UI:
+
+| Product | Relationship to this product |
+| --- | --- |
+| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | The host runtime that provides models, sessions, tools, and the plugin system |
+| [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop) | A ready-to-install desktop product with this product and the other five feature products built in |
+| [DSH Codex Suite](https://github.com/MichengAI/dsh-codex-ui/tree/main/packages/dsh-codex-suite) | A one-click suite for existing DSH Web environments that installs this product and the other five feature products |
+| Six feature products | [Codex UI](https://github.com/MichengAI/dsh-codex-ui) · [IM Connect](https://github.com/MichengAI/dsh-im-connect) · [Automation](https://github.com/MichengAI/dsh-automation) · [Skills Manager](https://github.com/MichengAI/dsh-skills-manager) · [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) · [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) |
+
+## Prerequisites
 
 - A working DeepSeek Harness Web installation with `dsh` available in PowerShell.
-- A target DSH profile. The examples below use `web`.
+- Examples use the `web` profile; replace it with the target profile.
+- Source installation and development require Node.js 22.19+. npm installation does not require running `npm install` in an arbitrary directory.
+
+## Installation
+
+`dsh plugin add` forwards to `pnpm add` in the profile directory. If you omit a version or the official registry, a local mirror may leave you on an old build.
+
+### Install from npm
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -61,14 +84,11 @@ dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https:/
 dsh --profile web --dump-config
 ```
 
-Restart DSH Web, then hard-refresh the browser. To pin a release, replace `@latest` with a concrete version such as `@x.y.z`.
+Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.5` instead of `@latest` when needed.
 
-> `dsh plugin add` forwards to `pnpm add` in the profile directory. Explicitly using `@latest` and the npm registry avoids stale local mirrors.
+### Install from source
 
-<details>
-<summary><strong>Install from source</strong></summary>
-
-Source installation and development require Node.js `22.19.x` or `24+`.
+Use this for debugging or unpublished changes. The cloned directory becomes the plugin source path:
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -77,83 +97,75 @@ Set-Location D:\Repository\deepseek-harness-plugin
 git clone https://github.com/MichengAI/dsh-automation.git
 Set-Location .\dsh-automation
 pnpm install
-pnpm check
+pnpm test
+pnpm build
 dsh plugin --profile web add .
 dsh --profile web --dump-config
 ```
 
-Restart DSH Web and hard-refresh the browser. Local installation applies `cordis.patch.yml`; do not copy files from `lib` manually.
+Restart DSH Web and hard-refresh the browser. Local installation reads and applies `cordis.patch.yml`; do not copy `lib` files manually.
 
-</details>
+## Usage
 
-## How it works
-
-1. **Define intent** in Settings or describe the schedule in a conversation.
-2. **Confirm the boundary** using the Host model, skills, workspace, permission preset, and approval flow.
-3. **Dispatch once** when the rule is due. One rule can have at most one active run.
-4. **Start clean** in a fresh root Agent and Session with the saved prompt and configuration.
-5. **Record the outcome** in durable history without automatically retrying a started run.
-
-Scheduled runs appear in the workspace **Scheduled** tab. Folders are rule names; child sessions are individual run times:
-
-![Scheduled sidebar](assets/screenshots/workspace-scheduled.png)
-
-## Use
+Open **Settings → Scheduled Tasks**, then use the panel as follows:
 
 | Goal | Action | Scope |
 | --- | --- | --- |
-| Create a rule | Select **New scheduled task**, then set the name, schedule, prompt, workspace, model, skills, and permission. | Host-wide |
+| Create a rule | Select **New scheduled task**, then set name, schedule, prompt, workspace, model, skills, and permission. | Host-wide |
 | Create from chat | Describe the schedule in any conversation, or select **Create in chat**. | Current conversation |
 | Pause or resume | Use the switch on a task card. | One rule |
-| Run now | Open the task menu and select **Run now**. | One rule |
-| Delete | Open the task menu and select **Delete task**. Existing run history is retained. | Definition only |
-| Inspect runs | Open **Run history**, then filter by date, task, or status. | Host-wide |
+| Run now | Open the card menu and select **Run now**. | One rule |
+| Delete | Open the card menu and select **Delete task**. Run history is kept. | Definition only |
+| Inspect runs | Open **Run history**, then filter by day, week, month, task, or status. | Host-wide |
 
-Run history remains available in Settings:
-
-![Filterable scheduled-task run history](assets/screenshots/settings-runs.png)
+Each dispatched run uses the saved prompt, workspace, model, and permission boundary. It does not reuse approvals from the source chat.
 
 ## Safety boundary
 
-A schedule stores future intent; it is not a cached permission grant.
-
 | Item | Behavior |
 | --- | --- |
-| Permission | Options and the default come from the Host `permissionPresets` service, including custom presets. |
-| Full access | `danger-full-access` uses the same risk confirmation and orange warning as Chat. |
-| Approval | Chat creation follows the session policy. Full access (`never`) proceeds; Workspace Write / Read Only (`ask`) uses the official card. Unattended runs remain fail-closed `never`. |
-| Retry | A started run is not automatically retried. |
-| Host restart | Leftover `queued` or `running` records become `failed(host_interrupted)`. |
-| Overlap | A rule has at most one active run. A colliding occurrence becomes `skipped(overlap)`. |
+| Permission | Options and the default come directly from the Host `permissionPresets` service, including custom presets. |
+| Full access | The official `danger-full-access` option uses the same risk confirmation and orange warning as Chat. |
+| Approval | Chat create follows the session policy. Full access (`never`) proceeds; Workspace Write / Read Only (`ask`) shows the official card. Unattended runs stay fail-closed `never`. |
+| Retry | No automatic retry after a started run. |
+| Host restart | Leftover `queued` / `running` records become `failed(host_interrupted)`. |
+| Overlap | One active run per rule. A colliding occurrence is recorded as `skipped(overlap)`. |
 
-## DSH ecosystem
-
-DSH Automation can be installed independently or through the desktop and Web suites. All options share the same DSH core; on stock DSH, this plugin does not depend on Codex UI.
-
-| Product | Relationship |
-| --- | --- |
-| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | Host runtime for models, sessions, tools, and plugins |
-| [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop) | Ready-to-install desktop product with all six feature products built in |
-| [DSH Codex Suite](https://github.com/MichengAI/dsh-codex-ui/tree/main/packages/dsh-codex-suite) | One-click suite for an existing DSH Web environment |
-| Feature products | [Codex UI](https://github.com/MichengAI/dsh-codex-ui) · [IM Connect](https://github.com/MichengAI/dsh-im-connect) · **Automation** · [Skills Manager](https://github.com/MichengAI/dsh-skills-manager) · [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) · [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) |
+A schedule stores future intent. It is not a cached permission grant.
 
 ## Development
 
-Source files live in `src`; builds are written to `lib`:
+Current sources live in `src` and build into `lib`:
 
-- [`src/index.ts`](src/index.ts) — Host plugin, Agent tools, and RPC.
-- [`src/service.ts`](src/service.ts) — durable definitions, scheduler clock, and run admission.
-- [`src/client/index.ts`](src/client/index.ts) — Settings UI and chat prefill.
-- `tests/*.test.ts` — domain, recurrence, service, client, and package-contract tests.
+- [src\index.ts](src/index.ts): Host plugin, tools, and RPC.
+- [src\service.ts](src/service.ts): Durable definitions, clock, and run admission.
+- [src\client\index.ts](src/client/index.ts): Settings page and chat prefill.
+- `tests\*.test.ts`: Domain, recurrence, service, client, and package-contract tests.
+
+After changing files, run tests, rebuild, and reinstall from the local directory:
 
 ```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
 pnpm check
+dsh plugin --profile web add .
 ```
 
-`pnpm check` runs type checking, tests, and the production build. Changes to execution code must preserve at-most-once dispatch, Agent-tool workspace scoping, and fail-closed unattended approval.
+Keep the at-most-once dispatch policy, workspace scoping for Agent tools, and fail-closed unattended approval when changing execution code.
 
-## Documentation and license
+## Verification
 
-Start with the [documentation entry](docs/00-交接入口/00-阅读导航.md) for project status, architecture, boundaries, and iteration notes. Additional product notices are in [NOTICE](NOTICE).
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+pnpm test
+pnpm build
+```
 
-Licensed under the [Apache License 2.0](LICENSE).
+`pnpm check` runs typecheck, tests, and build together.
+
+## Project docs and license
+
+Start from the [documentation entry](docs/00-交接入口/00-阅读导航.md) for project status, architecture, and the current iteration. Product notes live in NOTICE.
+
+This project uses [Apache License 2.0](LICENSE).
