@@ -1,5 +1,5 @@
 /** 仅 loopback 的 Web 客户端 RPC 适配器。 */
-import type { AutomationService } from './service.ts';
+import { type AutomationService } from './service.ts';
 interface RpcContext {
     readonly connection: {
         readonly rpc: {

@@ -1,12 +1,14 @@
 /** 已认领 run 的独立 Agent 执行边界。 */
 import type { Context } from '@deepseek-ai/cordis';
-import type { PermissionPresetService } from './permission-presets.ts';
+import { type PermissionPresetService } from './permission-presets.ts';
 import type { AutomationDefinition, AutomationRun } from './types.ts';
 interface SessionEventLike {
     readonly seq: number;
     readonly type: string;
     readonly data: Record<string, any>;
 }
+/** 对不保证及时响应 AbortSignal 的宿主任务设置第二道退出上限。 */
+export declare function settlesWithin(promise: Promise<unknown>, timeoutMs: number): Promise<boolean>;
 export declare function unattendedToolGuardReason(name: string, args: unknown): string | undefined;
 export interface RunCompletion {
     readonly sessionId?: string;

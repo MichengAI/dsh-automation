@@ -12,7 +12,6 @@ export interface AutomationViewProps {
   readonly modelT: ModelTranslate
   readonly runtime: AutomationRuntime
   readonly closeSettings?: () => void
-  readonly pickWorkspaceDirectory?: () => Promise<string | null>
 }
 
 export interface ClientRpc {
@@ -41,7 +40,6 @@ export interface ClientContext {
       getSnapshot(): { ids?: readonly string[]; byId?: Record<string, unknown>; current?: string | null }
     }
   }
-  workspaces?: { pickDirectory(): Promise<string | null> }
   locale: {
     register(
       namespace: string,

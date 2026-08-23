@@ -8,6 +8,10 @@ const permissionPresets = {
   names: ['read-only', 'workspace-write', 'danger-full-access'],
   defaultPreset: 'workspace-write',
   optionOf: (value: string) => ({ value, name: value }),
+  resolve: (value: string) => ({
+    sandbox: value === 'danger-full-access' ? 'danger-full-access' as const : value === 'read-only' ? 'read-only' as const : 'workspace-write' as const,
+    approval: value === 'danger-full-access' ? 'never' as const : 'ask' as const,
+  }),
   set() {},
 }
 
@@ -41,7 +45,7 @@ function config(overrides: Partial<AutomationConfig> = {}): AutomationConfig {
 function makeService(initial: {
   definitions?: AutomationDefinition[]
   runs?: AutomationRun[]
-} = {}, overrides: Partial<AutomationConfig> = {}) {
+} = {}, overrides: Partial<AutomationConfig> = {}, ctxOverrides: Record<string, unknown> = {}) {
   const definitions = new MemoryTable<AutomationDefinition>()
   const runs = new MemoryTable<AutomationRun>()
   for (const item of initial.definitions ?? []) void definitions.put(item.id, item)
@@ -69,12 +73,18 @@ function makeService(initial: {
       get() { return agent },
     },
     workspaceRegistry: {
-      async resolveByPath() {
-        return { id: 'ws_1', title: 'demo', path: 'D:\\work\\demo' }
+      get(id: unknown) {
+        return String(id) === 'ws_1' ? { id: 'ws_1', title: 'demo', path: 'D:\\work\\demo' } : undefined
+      },
+      async resolveByPath(path: string) {
+        return path === 'D:\\work\\demo'
+          ? { id: 'ws_1', title: 'demo', path: 'D:\\work\\demo' }
+          : undefined
       },
     },
     agentDefaultModel: { currentSelection: () => ({ provider: 'deepseek', model: 'v4' }) },
     agentPresets: { composedPreset: () => 'standard' },
+    ...ctxOverrides,
   }
   return AutomationService.open(ctx as never, config(overrides)).then(async (service) => {
     Object.assign(service as any, { definitions, runs })
@@ -162,7 +172,7 @@ test('创建和立即运行都限制在来源工作区', async () => {
 test('权限列表、默认值和校验均来自 Host 官方服务', async () => {
   const { service } = await makeService()
   const snapshot = await service.snapshot({ sessionId: 'session_1', creatorKind: 'web', hostWide: true })
-  assert.deepEqual(snapshot.permissions.map(item => item.value), permissionPresets.names)
+  assert.deepEqual(snapshot.permissions.map(item => item.value), ['read-only', 'workspace-write'])
   assert.equal(snapshot.defaultPermission, 'workspace-write')
   const created = await service.create({ sessionId: 'session_1', creatorKind: 'web' }, {
     name: '官方默认权限',
@@ -177,10 +187,70 @@ test('权限列表、默认值和校验均来自 Host 官方服务', async () =>
   ), /unknown permission preset/)
 })
 
-test('启动时把旧 full-access 迁移成官方 danger-full-access', async () => {
+test('启动时把旧 full-access 降为安全权限并暂停', async () => {
   const legacy = sampleDefinition({ permissionPreset: 'full-access' })
   const { definitions } = await makeService({ definitions: [legacy] })
-  assert.equal(definitions.get(legacy.id)?.permissionPreset, 'danger-full-access')
+  assert.equal(definitions.get(legacy.id)?.permissionPreset, 'workspace-write')
+  assert.equal(definitions.get(legacy.id)?.status, 'paused')
+})
+
+test('服务端拒绝无人值守完全访问权限', async () => {
+  const { service } = await makeService()
+  await assert.rejects(() => service.create({ sessionId: 'session_1', creatorKind: 'web' }, {
+    name: '危险任务',
+    prompt: '修改任意文件',
+    schedule: { kind: 'once', at: '2099-01-01T10:00:00.000Z', timeZone: 'UTC' },
+    permissionPreset: 'danger-full-access',
+  }), /不允许使用完全文件系统访问/)
+})
+
+test('编辑已到期 once 的非计划字段时允许保留原时间', async () => {
+  const definition = sampleDefinition()
+  const { service } = await makeService({ definitions: [definition] })
+  const updated = await service.update(
+    { sessionId: 'session_1', creatorKind: 'web', hostWide: true },
+    definition.id,
+    { name: '改名后', schedule: definition.schedule },
+  )
+  assert.equal(updated.name, '改名后')
+  await assert.rejects(() => service.update(
+    { sessionId: 'session_1', creatorKind: 'web', hostWide: true },
+    definition.id,
+    { schedule: { kind: 'once', at: '2026-08-17T01:00:00.000Z', timeZone: 'UTC' } },
+  ), /必须安排在未来/)
+})
+
+test('更新工作区时必须由 id 和路径解析到同一个注册目录', async () => {
+  const definition = sampleDefinition()
+  const { service } = await makeService({ definitions: [definition] })
+  await assert.rejects(() => service.update(
+    { sessionId: 'session_1', creatorKind: 'web', hostWide: true },
+    definition.id,
+    { workspaceId: 'ws_1', cwd: 'D:\\other' },
+  ), /同一个已注册目录/)
+})
+
+test('连续 snapshot 在短 TTL 内复用模型和技能目录结果', async () => {
+  let listModelsCalls = 0
+  let resolveCalls = 0
+  const { service } = await makeService({}, {}, {
+    llm: {
+      listProviders: () => [{ id: 'deepseek', name: 'DeepSeek' }],
+      async listModels() {
+        listModelsCalls += 1
+        return [{ id: 'v4', name: 'V4' }]
+      },
+      async resolveModelInfo() {
+        resolveCalls += 1
+        return {}
+      },
+    },
+  })
+  const scope = { sessionId: 'session_1', creatorKind: 'web' as const, hostWide: true }
+  await service.snapshot(scope)
+  await service.snapshot(scope)
+  assert.equal(listModelsCalls, 1)
+  assert.equal(resolveCalls, 1)
 })
 
 

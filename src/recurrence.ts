@@ -42,7 +42,7 @@ export function assertValidSchedule(schedule: AutomationSchedule): void {
       throw new Error('weekly.weekdays must not contain duplicates')
     }
     for (const weekday of schedule.weekdays) {
-      if (!(weekday in WEEKDAY_NUMBERS)) throw new Error(`invalid weekday '${weekday}'`)
+      if (!Object.hasOwn(WEEKDAY_NUMBERS, weekday)) throw new Error(`invalid weekday '${weekday}'`)
     }
   }
 }
@@ -103,10 +103,14 @@ export function latestDueOccurrence(schedule: AutomationSchedule, now: string): 
       { zone: 'utc' },
     ).toISO()
   }
-  const lookbackDays = schedule.kind === 'hourly' ? 2 : schedule.kind === 'daily' ? 2 : schedule.kind === 'monthly' ? 40 : 8
+  // latestDueOccurrence 只需要最近一个到期点。hourly 的最近点最多一小时前；
+  // 若沿用 2 天窗口，前向 limit 会截掉真正的最新点。
+  const lookbackMs = schedule.kind === 'hourly'
+    ? 2 * 60 * 60_000
+    : (schedule.kind === 'daily' ? 2 : schedule.kind === 'monthly' ? 40 : 8) * 86_400_000
   const values = occurrencesBetween(
     schedule,
-    DateTime.fromMillis(nowMs - lookbackDays * 86_400_000, { zone: 'utc' }).toISO()!,
+    DateTime.fromMillis(nowMs - lookbackMs, { zone: 'utc' }).toISO()!,
     DateTime.fromMillis(nowMs, { zone: 'utc' }).toISO()!,
     16,
   )

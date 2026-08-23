@@ -11,10 +11,9 @@ import {
   type AutomationFormState,
   type ScheduleKind,
 } from './helpers.js'
-import { adoptPickedWorkspace, shouldConfirmFullAccess } from './create-modal-logic.js'
-import { FolderIcon, PlusIcon, ShieldIcon, SparkleIcon } from './icons.js'
+import { FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
 import { MenuHostProvider, MenuPanel, MenuPopup, MenuRow, MenuSelect, useMenuState } from './menu.js'
-import { IconCheckOutline16, IconChevronDownOutline14, RiskConfirmation } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconCheckOutline16, IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom']
@@ -22,7 +21,7 @@ const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2,
 const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
 
 export function CreateModal({
-  t, permissionT, modelT, busy, workspaces, models, modelFailures, defaultModel, skills, permissions, defaultPermission, draft, editing, onClose, onSubmit, onAddWorkspace, pickWorkspaceDirectory,
+  t, permissionT, modelT, busy, workspaces, models, modelFailures, defaultModel, skills, permissions, defaultPermission, draft, editing, onClose, onSubmit,
 }: {
   readonly t: Translate
   readonly permissionT: PermissionTranslate
@@ -39,34 +38,15 @@ export function CreateModal({
   readonly editing?: boolean
   readonly onClose: () => void
   readonly onSubmit: (form: AutomationFormState) => Promise<void>
-  readonly onAddWorkspace?: (path: string) => Promise<string>
-  readonly pickWorkspaceDirectory?: () => Promise<string | null>
 }): JSX.Element {
   const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel, defaultPermission), ...draft }))
   const [validationError, setValidationError] = useState<string>()
-  const [confirmingPermission, setConfirmingPermission] = useState<string>()
-  const [fullAccessAcknowledged, setFullAccessAcknowledged] = useState(false)
   const update = (patch: Partial<AutomationFormState>): void => {
     setForm(current => ({ ...current, ...patch }))
     setValidationError(undefined)
   }
   const choosePermission = (permission: AutomationFormState['permission']): void => {
-    if (shouldConfirmFullAccess(form.permission, permission)) {
-      setFullAccessAcknowledged(false)
-      setConfirmingPermission(permission)
-      return
-    }
     update({ permission })
-  }
-  const cancelFullAccessConfirmation = (): void => {
-    setFullAccessAcknowledged(false)
-    setConfirmingPermission(undefined)
-  }
-  const confirmFullAccess = (): void => {
-    if (!fullAccessAcknowledged) return
-    if (confirmingPermission === undefined) return
-    update({ permission: confirmingPermission })
-    cancelFullAccessConfirmation()
   }
 
   useEffect(() => {
@@ -221,28 +201,6 @@ export function CreateModal({
                       onClick={() => update({ workspaceId: item.id })}
                     />
                   ))}
-                  {pickWorkspaceDirectory !== undefined && onAddWorkspace !== undefined && (
-                    <>
-                  <div className="dsh-st-menu-split" />
-                    <MenuRow
-                      icon={<PlusIcon width={14} height={14} />}
-                      label={t('form.addWorkspace')}
-                      onClick={() => {
-                        void (async () => {
-                          try {
-                            const id = await adoptPickedWorkspace({
-                              pick: pickWorkspaceDirectory,
-                              add: onAddWorkspace,
-                            })
-                            if (id !== null) update({ workspaceId: id })
-                          } catch (caught) {
-                            setValidationError(caught instanceof Error ? caught.message : t('error.action'))
-                          }
-                        })()
-                      }}
-                    />
-                    </>
-                  )}
                 </MenuPanel>
                 <MenuPanel ghost up label={<><SparkleIcon width={14} height={14} />{t('form.skills')}</>}>
                   {skills.length === 0 && <div className="dsh-st-select-empty">{t('form.skillsEmpty')}</div>}
@@ -290,18 +248,6 @@ export function CreateModal({
         </div>
       </form>
       <div className="dsh-st-flyout-root" ref={setMenuHost} />
-      <RiskConfirmation
-        open={confirmingPermission !== undefined}
-        title={permissionT('confirm.title')}
-        description={permissionT('confirm.description')}
-        acknowledgeLabel={permissionT('confirm.acknowledge')}
-        cancelLabel={permissionT('confirm.cancel')}
-        confirmLabel={permissionT('confirm.enable')}
-        acknowledged={fullAccessAcknowledged}
-        onAcknowledgedChange={setFullAccessAcknowledged}
-        onCancel={cancelFullAccessConfirmation}
-        onConfirm={confirmFullAccess}
-      />
       </MenuHostProvider>
     </div>
   )

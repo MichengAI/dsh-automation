@@ -10,7 +10,7 @@ import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { WorkspaceId } from '@deepseek-ai/dsh-workspace'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { automationSessionTitle } from './run-title.ts'
-import type { PermissionPresetService } from './permission-presets.ts'
+import { isUnattendedPermissionSafe, type PermissionPresetService } from './permission-presets.ts'
 import type { AutomationDefinition, AutomationRun } from './types.ts'
 
 interface TextBlock { readonly type: string; readonly text?: string }
@@ -29,6 +29,20 @@ const UNATTENDED_TOOL_ALLOWLIST = new Set([
   'skill',
   'session_search', 'session_trace', 'session_event_read', 'session_event_search', 'session_event_trace',
 ])
+const CANCEL_CONVERGENCE_TIMEOUT_MS = 10_000
+
+/** 对不保证及时响应 AbortSignal 的宿主任务设置第二道退出上限。 */
+export async function settlesWithin(promise: Promise<unknown>, timeoutMs: number): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      promise.then(() => true, () => false),
+      new Promise<false>((resolve) => { timer = setTimeout(() => resolve(false), timeoutMs) }),
+    ])
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
+  }
+}
 
 export function unattendedToolGuardReason(name: string, args: unknown): string | undefined {
   if ((name === 'bash' || name === 'pwsh')
@@ -60,6 +74,9 @@ export function applyUnattendedPermission(
   session: unknown,
   permission: AutomationDefinition['permissionPreset'],
 ): void {
+  if (!isUnattendedPermissionSafe(permission, presets)) {
+    throw new Error('无人值守自动化拒绝完全文件系统访问权限。')
+  }
   presets.set(session, permission)
   setApprovalPolicy(session, 'never')
 }
@@ -193,7 +210,16 @@ export async function executeAutomationRun(
     })
     await Promise.race([idle, deadline, cancellation])
     removeCancellationListener()
-    if (timedOut || aborted) await handle.agent.whenIdle()
+    if ((timedOut || aborted) && !await settlesWithin(idle, CANCEL_CONVERGENCE_TIMEOUT_MS)) {
+      return {
+        sessionId: String(sessionId),
+        status: aborted ? 'cancelled' : 'failed',
+        error: {
+          code: 'cancel_convergence_timeout',
+          message: '自动化取消后未能在安全时限内停止。',
+        },
+      }
+    }
     if (timeout !== undefined) clearTimeout(timeout)
     await ctx.sessions.flush(handle.agent.session)
     const outcome = summarizeRun(handle.agent.session.events, firstSeq)
@@ -235,7 +261,9 @@ export async function executeAutomationRun(
   } finally {
     removeCancellationListener()
     if (timeout !== undefined) clearTimeout(timeout)
-    await handle?.dispose().catch(() => {})
+    if (handle !== undefined) {
+      await settlesWithin(handle.dispose().catch(() => {}), CANCEL_CONVERGENCE_TIMEOUT_MS)
+    }
   }
 }
 

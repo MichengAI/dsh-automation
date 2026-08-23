@@ -2,7 +2,7 @@ import type { ModelTranslate, Translate } from './contracts.js';
 import type { ModelCatalogFailure, ModelOption, PermissionOption } from './protocol.js';
 import { type PermissionTranslate } from './permissions.js';
 import { type AutomationFormState } from './helpers.js';
-export declare function CreateModal({ t, permissionT, modelT, busy, workspaces, models, modelFailures, defaultModel, skills, permissions, defaultPermission, draft, editing, onClose, onSubmit, onAddWorkspace, pickWorkspaceDirectory, }: {
+export declare function CreateModal({ t, permissionT, modelT, busy, workspaces, models, modelFailures, defaultModel, skills, permissions, defaultPermission, draft, editing, onClose, onSubmit, }: {
     readonly t: Translate;
     readonly permissionT: PermissionTranslate;
     readonly modelT: ModelTranslate;
@@ -25,6 +25,4 @@ export declare function CreateModal({ t, permissionT, modelT, busy, workspaces, 
     readonly editing?: boolean;
     readonly onClose: () => void;
     readonly onSubmit: (form: AutomationFormState) => Promise<void>;
-    readonly onAddWorkspace?: (path: string) => Promise<string>;
-    readonly pickWorkspaceDirectory?: () => Promise<string | null>;
 }): JSX.Element;

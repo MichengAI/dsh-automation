@@ -71,6 +71,10 @@ export interface AutomationDefinitionView extends AutomationDefinition {
     readonly nextRunAt: string | null;
     readonly lastRun: AutomationRun | null;
 }
+/** 可安全返回给 RPC/工具调用方的输入、状态或权限错误。 */
+export declare class AutomationRequestError extends Error {
+    readonly name = "AutomationRequestError";
+}
 interface SessionEventLike {
     readonly type: string;
     readonly data: unknown;
@@ -87,6 +91,7 @@ export declare class AutomationService {
     private requested;
     private started;
     private stopping;
+    private optionCatalogCache;
     private readonly active;
     private constructor();
     static open(ctx: Context, config: AutomationConfig): Promise<AutomationService>;
@@ -112,7 +117,7 @@ export declare class AutomationService {
     private knownSessionIds;
     forgetAutomationSessions(automationId: string): Promise<void>;
     adoptSession(sessionId: string): Promise<void>;
-    addWorkspace(path: string): Promise<WorkspaceOption>;
+    private resolveUpdateWorkspace;
     private collectOptions;
     private resolveCreateTarget;
     private resolveScope;

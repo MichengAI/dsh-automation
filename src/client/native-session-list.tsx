@@ -58,11 +58,6 @@ export function NativeScheduleSessionList(props: {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<WorkspaceListSort>('time')
   const [groupMode, setGroupMode] = useState<WorkspaceGroupMode>('workspace')
-  useEffect(() => {
-    void runtime.refresh().catch(() => undefined)
-    const timer = window.setInterval(() => { void runtime.refresh().catch(() => undefined) }, 15_000)
-    return () => { window.clearInterval(timer) }
-  }, [runtime])
   const archived = useMemo(() => new Set(archivedIds), [archivedIds])
   const listedIds: readonly string[] | undefined = useSessions
     ? useSessions((snap: { ids?: string[] }) => Array.isArray(snap?.ids) ? snap.ids : undefined)

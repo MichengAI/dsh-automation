@@ -58,12 +58,6 @@ export function ScheduleRail({
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const [folded, setFolded] = useState<Record<string, boolean>>({})
 
-  useEffect(() => {
-    void runtime.refresh().catch(() => undefined)
-    const timer = window.setInterval(() => { void runtime.refresh().catch(() => undefined) }, 15_000)
-    return () => { window.clearInterval(timer) }
-  }, [runtime])
-
   const groups = useMemo(() => {
     const snapshot = state.snapshot
     if (snapshot === undefined) return []

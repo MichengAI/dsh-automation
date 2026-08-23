@@ -46,6 +46,14 @@ test('每小时计划按分钟对齐', () => {
   assert.equal(nextOccurrence(schedule, '2026-08-16T10:15:00.000Z'), '2026-08-16T11:15:00.000Z')
 })
 
+test('每小时 latestDue 必须取满载窗口中的最近到期点', () => {
+  const schedule = { kind: 'hourly' as const, minute: 15, timeZone: 'UTC' }
+  assert.equal(
+    latestDueOccurrence(schedule, '2026-08-23T10:30:00.000Z'),
+    '2026-08-23T10:15:00.000Z',
+  )
+})
+
 test('每月计划跳过不存在的日期', () => {
   const schedule = { kind: 'monthly' as const, day: 31, time: '09:00', timeZone: 'UTC' }
   const next = nextOccurrence(schedule, '2026-01-31T10:00:00.000Z')

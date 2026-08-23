@@ -19,8 +19,9 @@ import {
   updateDefinition,
 } from './domain.ts'
 import { executeAutomationRun } from './executor.ts'
-import { latestDueOccurrence, nextOccurrence } from './recurrence.ts'
+import { latestDueOccurrence, nextOccurrence, normalizeSchedule } from './recurrence.ts'
 import {
+  isUnattendedPermissionSafe,
   normalizePermissionPreset,
   type PermissionOption,
   type PermissionPresetService,
@@ -34,6 +35,7 @@ import type {
 } from './types.ts'
 
 const MAX_TIMER_DELAY_MS = 2_147_483_647
+const OPTION_CACHE_TTL_MS = 30_000
 export const AUTOMATION_SESSION_PREFIX = 'dsh-automation-session-'
 
 export interface AutomationConfig {
@@ -109,6 +111,11 @@ export interface AutomationDefinitionView extends AutomationDefinition {
   readonly lastRun: AutomationRun | null
 }
 
+/** 可安全返回给 RPC/工具调用方的输入、状态或权限错误。 */
+export class AutomationRequestError extends Error {
+  override readonly name = 'AutomationRequestError'
+}
+
 interface SessionEventLike {
   readonly type: string
   readonly data: unknown
@@ -123,7 +130,7 @@ function toIso(ms = Date.now()): string {
 }
 
 function throwIfCancelled(signal?: AbortSignal): void {
-  if (signal?.aborted === true) throw new Error('自动化请求已取消。')
+  if (signal?.aborted === true) throw new AutomationRequestError('自动化请求已取消。')
 }
 
 function compareRuns(left: AutomationRun, right: AutomationRun): number {
@@ -140,6 +147,13 @@ export class AutomationService {
   private requested = false
   private started = false
   private stopping = false
+  private optionCatalogCache: {
+    readonly expiresAt: number
+    readonly models: ModelOption[]
+    readonly modelFailures: ModelCatalogFailure[]
+    readonly defaultModel: ModelOption | null
+    readonly skills: { readonly id: string; readonly name: string }[]
+  } | undefined
   private readonly active = new Map<string, { readonly abort: AbortController; readonly promise: Promise<void> }>()
 
   private constructor(
@@ -183,27 +197,31 @@ export class AutomationService {
   }
 
   permissionNames(): readonly string[] {
-    return this.permissionPresets().names
+    const presets = this.permissionPresets()
+    return presets.names.filter(name => isUnattendedPermissionSafe(name, presets))
   }
 
   permissionOptions(): readonly PermissionOption[] {
     const presets = this.permissionPresets()
-    return presets.names.map(name => presets.optionOf(name))
+    return this.permissionNames().map(name => presets.optionOf(name))
   }
 
   defaultPermission(): string {
     const presets = this.permissionPresets()
     const value = normalizePermissionPreset(presets.defaultPreset, presets.names)
-    if (value === undefined) throw new Error('Host 的默认权限预设不在官方权限列表中。')
-    return value
+    if (value !== undefined && isUnattendedPermissionSafe(value, presets)) return value
+    const fallback = this.permissionNames()[0]
+    if (fallback === undefined) throw new Error('Host 没有可用于无人值守任务的安全权限预设。')
+    return fallback
   }
 
   async dispose(): Promise<void> {
     this.stopping = true
     this.clearTimer()
+    const pendingOperations = this.operationTail
     const handles = [...this.active.values()]
     for (const handle of handles) handle.abort.abort()
-    await Promise.allSettled(handles.map(handle => handle.promise))
+    await Promise.allSettled([pendingOperations, ...handles.map(handle => handle.promise)])
     this.active.clear()
     await this.domain.close()
   }
@@ -253,26 +271,36 @@ export class AutomationService {
     const definition = await this.serialize(async () => {
       throwIfCancelled(signal)
       const now = toIso()
-      if (request.schedule.kind === 'once'
-        && nextOccurrence(request.schedule, now) === null) {
-        throw new Error('一次性自动化必须安排在未来时间。')
+      try {
+        if (request.schedule.kind === 'once'
+          && nextOccurrence(request.schedule, now) === null) {
+          throw new AutomationRequestError('一次性自动化必须安排在未来时间。')
+        }
+      } catch (error) {
+        if (error instanceof AutomationRequestError) throw error
+        throw new AutomationRequestError(asMessage(error))
       }
       const target = await this.resolveCreateTarget(scope, request)
-      const value = createDefinition({
-        id: `automation_${randomUUID()}`,
-        name: request.name,
-        prompt: request.prompt,
-        schedule: request.schedule,
-        workspaceId: target.workspaceId,
-        cwd: target.cwd,
-        agentPreset: target.agentPreset,
-        provider: target.provider,
-        model: target.model,
-        ...(request.reasoningEffort === undefined ? {} : { reasoningEffort: request.reasoningEffort }),
-        permissionPreset: this.requirePermission(request.permissionPreset),
-        createdBy: { kind: scope.creatorKind, sessionId: scope.sessionId },
-        now,
-      })
+      let value: AutomationDefinition
+      try {
+        value = createDefinition({
+          id: `automation_${randomUUID()}`,
+          name: request.name,
+          prompt: request.prompt,
+          schedule: request.schedule,
+          workspaceId: target.workspaceId,
+          cwd: target.cwd,
+          agentPreset: target.agentPreset,
+          provider: target.provider,
+          model: target.model,
+          ...(request.reasoningEffort === undefined ? {} : { reasoningEffort: request.reasoningEffort }),
+          permissionPreset: this.requirePermission(request.permissionPreset),
+          createdBy: { kind: scope.creatorKind, sessionId: scope.sessionId },
+          now,
+        })
+      } catch (error) {
+        throw new AutomationRequestError(asMessage(error))
+      }
       await this.definitions.put(value.id, value)
       return value
     }, signal)
@@ -291,17 +319,33 @@ export class AutomationService {
       throwIfCancelled(signal)
       const now = toIso()
       const { status, ...fields } = input
-      const normalizedFields = fields.permissionPreset === undefined
+      let normalizedFields = fields.permissionPreset === undefined
         ? fields
         : { ...fields, permissionPreset: this.requirePermission(fields.permissionPreset) }
-      if (fields.schedule?.kind === 'once'
-        && nextOccurrence(fields.schedule, now) === null) {
-        throw new Error('一次性自动化必须安排在未来时间。')
+      if (fields.workspaceId !== undefined || fields.cwd !== undefined) {
+        const target = await this.resolveUpdateWorkspace(current, fields.workspaceId, fields.cwd)
+        normalizedFields = { ...normalizedFields, workspaceId: target.id, cwd: target.path }
+      }
+      try {
+        const scheduleChanged = fields.schedule !== undefined
+          && JSON.stringify(normalizeSchedule(fields.schedule)) !== JSON.stringify(current.schedule)
+        if (scheduleChanged && fields.schedule?.kind === 'once'
+          && nextOccurrence(fields.schedule, now) === null) {
+          throw new AutomationRequestError('一次性自动化必须安排在未来时间。')
+        }
+      } catch (error) {
+        if (error instanceof AutomationRequestError) throw error
+        throw new AutomationRequestError(asMessage(error))
       }
       const statusChanged = status !== undefined && status !== current.status
-      const value = Object.keys(normalizedFields).length === 0 && !statusChanged
-        ? current
-        : updateDefinition(current, { ...normalizedFields, ...(status === undefined ? {} : { status }), now })
+      let value: AutomationDefinition
+      try {
+        value = Object.keys(normalizedFields).length === 0 && !statusChanged
+          ? current
+          : updateDefinition(current, { ...normalizedFields, ...(status === undefined ? {} : { status }), now })
+      } catch (error) {
+        throw new AutomationRequestError(asMessage(error))
+      }
       if (value !== current) await this.definitions.put(id, value)
       return value
     }, signal)
@@ -337,7 +381,7 @@ export class AutomationService {
         candidate.automationId === id
         && (candidate.status === 'queued' || candidate.status === 'running')
       ))
-      if (alreadyActive) throw new Error('该自动化已有排队或运行中的任务。')
+      if (alreadyActive) throw new AutomationRequestError('该自动化已有排队或运行中的任务。')
       const value = createManualRun(definition, toIso())
       await this.runs.put(value.id, value)
       return value
@@ -349,18 +393,15 @@ export class AutomationService {
   async markRead(scope: AutomationScope, runId: string, signal?: AbortSignal): Promise<AutomationRun> {
     return this.serialize(async () => {
       const run = this.runs.get(runId)
-      if (run === undefined) throw new Error(`unknown automation run '${runId}'`)
+      if (run === undefined) throw new AutomationRequestError(`unknown automation run '${runId}'`)
       throwIfCancelled(signal)
       if (scope.hostWide !== true) {
         const { workspace } = await this.resolveScope(scope)
         if (run.targetSnapshot.workspaceId !== workspace.id) {
-          throw new Error('该运行记录属于其他工作区。')
+          throw new AutomationRequestError('该运行记录属于其他工作区。')
         }
       }
-      if (!run.unread) return run
-      const next = { ...run, unread: false }
-      await this.runs.put(runId, next)
-      return next
+      return this.runs.update(runId, current => current.unread ? { ...current, unread: false } : current)
     }, signal)
   }
 
@@ -425,28 +466,25 @@ export class AutomationService {
     await workspace.attachSession(SessionId(id))
   }
 
-  async addWorkspace(path: string): Promise<WorkspaceOption> {
-    const cwd = path.trim()
-    if (cwd === '') throw new Error('请输入工作区目录。')
-    if (!existsSync(cwd)) throw new Error('目录不存在。')
+  private async resolveUpdateWorkspace(
+    current: AutomationDefinition,
+    workspaceId?: string,
+    cwd?: string,
+  ): Promise<{ readonly id: string; readonly path: string }> {
+    const requestedId = workspaceId?.trim() || current.workspaceId
+    const requestedPath = cwd?.trim() || current.cwd
     const registry = this.ctx.workspaceRegistry as {
-      create?: (input: { path: string }) => Promise<any> | any
-      register?: (input: string) => Promise<any> | any
-      add?: (input: string) => Promise<any> | any
-      resolveByPath?: (input: string) => Promise<any> | any
+      get?: (id: unknown) => any
+      resolveByPath?: (path: string) => Promise<any> | any
     }
-    const created = await (registry.create?.({ path: cwd })
-      ?? registry.register?.(cwd)
-      ?? registry.add?.(cwd)
-      ?? registry.resolveByPath?.(cwd))
-    if (created === undefined || created === null) throw new Error('无法添加工作区。')
-    const id = String(created.id ?? created.workspaceId ?? '')
-    if (id === '') throw new Error('无法添加工作区。')
-    return {
-      id,
-      title: String(created.title ?? created.name ?? cwd),
-      path: String(created.path ?? cwd),
+    const byId = registry.get?.(WorkspaceId(requestedId))
+    const byPath = await registry.resolveByPath?.(requestedPath)
+    if (byId === undefined || byPath === undefined
+      || String(byId.id) !== String(byPath.id)
+      || String(byId.path) !== String(byPath.path)) {
+      throw new AutomationRequestError('更新后的工作区必须是同一个已注册目录。')
     }
+    return { id: String(byId.id), path: String(byId.path) }
   }
 
   private async collectOptions(): Promise<{
@@ -475,14 +513,25 @@ export class AutomationService {
         path: String(item.path ?? item.cwd ?? ''),
       }))
       .filter(item => item.id !== '' && item.path !== '')
-    const collected = await collectModelOptions(this.ctx)
-    const skills = collectSkillOptions()
+    const now = Date.now()
+    let catalog = this.optionCatalogCache
+    if (catalog === undefined || catalog.expiresAt <= now) {
+      const collected = await collectModelOptions(this.ctx)
+      catalog = {
+        expiresAt: now + OPTION_CACHE_TTL_MS,
+        models: collected.models,
+        modelFailures: collected.failures,
+        defaultModel: collected.defaultModel,
+        skills: collectSkillOptions(),
+      }
+      this.optionCatalogCache = catalog
+    }
     return {
       workspaces,
-      models: collected.models,
-      modelFailures: collected.failures,
-      defaultModel: collected.defaultModel,
-      skills,
+      models: catalog.models,
+      modelFailures: catalog.modelFailures,
+      defaultModel: catalog.defaultModel,
+      skills: catalog.skills,
     }
   }
 
@@ -498,7 +547,7 @@ export class AutomationService {
         ? this.ctx.workspaceRegistry.get?.(workspaceId)
           ?? await this.ctx.workspaceRegistry.resolveByPath?.(cwd)
         : await this.ctx.workspaceRegistry.resolveByPath?.(cwd)
-      if (workspace === undefined) throw new Error('所选工作区不存在或目录未注册。')
+      if (workspace === undefined) throw new AutomationRequestError('所选工作区不存在或目录未注册。')
       workspaceId = String(workspace.id)
       cwd = String(workspace.path)
     } else {
@@ -517,23 +566,23 @@ export class AutomationService {
 
   private async resolveScope(scope: AutomationScope) {
     const agent = this.ctx.agents.get(SessionId(scope.sessionId))
-    if (agent === undefined) throw new Error('自动化界面或工具需要一个存活的来源 Session。')
+    if (agent === undefined) throw new AutomationRequestError('自动化界面或工具需要一个存活的来源 Session。')
     const cwd = agent.session.header.cwd
-    if (cwd === undefined) throw new Error('来源 Session 没有工作区目录。')
+    if (cwd === undefined) throw new AutomationRequestError('来源 Session 没有工作区目录。')
     const workspace = await this.ctx.workspaceRegistry.resolveByPath(cwd)
-    if (workspace === undefined) throw new Error('来源 Session 目录尚未注册为 DSH 工作区。')
+    if (workspace === undefined) throw new AutomationRequestError('来源 Session 目录尚未注册为 DSH 工作区。')
     if (this.ctx.agents.get(SessionId(scope.sessionId)) !== agent) {
-      throw new Error('自动化界面或工具需要一个存活的来源 Session。')
+      throw new AutomationRequestError('自动化界面或工具需要一个存活的来源 Session。')
     }
     return { agent, workspace }
   }
 
   private async ownedDefinition(scope: AutomationScope, id: string): Promise<AutomationDefinition> {
     const definition = this.definitions.get(id)
-    if (definition === undefined) throw new Error(`unknown automation '${id}'`)
+    if (definition === undefined) throw new AutomationRequestError(`unknown automation '${id}'`)
     if (scope.hostWide === true) return definition
     const { workspace } = await this.resolveScope(scope)
-    if (definition.workspaceId !== workspace.id) throw new Error('该自动化属于其他工作区。')
+    if (definition.workspaceId !== workspace.id) throw new AutomationRequestError('该自动化属于其他工作区。')
     return definition
   }
 
@@ -563,9 +612,15 @@ export class AutomationService {
   private async pumpOnce(): Promise<void> {
     if (this.stopping) return
     const now = toIso()
+    const runsByAutomation = new Map<string, AutomationRun[]>()
+    for (const [, run] of this.runs.entries()) {
+      const related = runsByAutomation.get(run.automationId) ?? []
+      related.push(run)
+      runsByAutomation.set(run.automationId, related)
+    }
     for (const [, definition] of this.definitions.entries()) {
       if (definition.status !== 'active') continue
-      await this.claimLatestDue(definition, now)
+      await this.claimLatestDue(definition, now, runsByAutomation.get(definition.id) ?? [])
     }
     if (this.stopping) return
     await this.startQueuedRuns()
@@ -573,11 +628,13 @@ export class AutomationService {
     this.armNextTimer(now)
   }
 
-  private async claimLatestDue(definition: AutomationDefinition, now: string): Promise<void> {
+  private async claimLatestDue(
+    definition: AutomationDefinition,
+    now: string,
+    related: readonly AutomationRun[],
+  ): Promise<void> {
     const scheduledFor = latestDueOccurrence(definition.schedule, now)
     if (scheduledFor === null || Date.parse(scheduledFor) <= Date.parse(definition.updatedAt)) return
-    const related = [...this.runs.entries()].map(([, run]) => run)
-      .filter(run => run.automationId === definition.id)
     if (related.some(run => run.trigger === 'schedule' && run.scheduledFor === scheduledFor)) return
     const candidate = createScheduledRun(definition, scheduledFor)
     if (this.runs.get(candidate.id) !== undefined) return
@@ -670,15 +727,15 @@ export class AutomationService {
     })
     const finishedAt = toIso()
     const boundSessionId = completion.sessionId ?? running.sessionId
-    await this.runs.put(run.id, {
-      ...running,
+    await this.runs.update(run.id, current => ({
+      ...current,
       status: completion.status,
       sessionId: completion.sessionId ?? null,
       finishedAt,
       summary: completion.summary ?? null,
       error: completion.error ?? null,
       unread: true,
-    })
+    }))
     if (typeof boundSessionId === 'string' && boundSessionId !== '') {
       await this.adoptSession(boundSessionId).catch(() => undefined)
     }
@@ -737,7 +794,10 @@ export class AutomationService {
     const presets = this.permissionPresets()
     if (input === undefined) return this.defaultPermission()
     const value = normalizePermissionPreset(input, presets.names)
-    if (value === undefined) throw new Error(`unknown permission preset '${input}'`)
+    if (value === undefined) throw new AutomationRequestError(`unknown permission preset '${input}'`)
+    if (!isUnattendedPermissionSafe(value, presets)) {
+      throw new AutomationRequestError('无人值守自动化不允许使用完全文件系统访问权限。')
+    }
     return value
   }
 
@@ -746,12 +806,25 @@ export class AutomationService {
     const presets = this.permissionPresets()
     const fallback = this.defaultPermission()
     for (const [id, definition] of this.definitions.entries()) {
-      const permissionPreset = normalizePermissionPreset(definition.permissionPreset, presets.names) ?? fallback
-      if (permissionPreset === definition.permissionPreset) continue
-      await this.definitions.put(id, { ...definition, permissionPreset })
+      const normalized = normalizePermissionPreset(definition.permissionPreset, presets.names)
+      const unsafe = normalized !== undefined && !isUnattendedPermissionSafe(normalized, presets)
+      const permissionPreset = normalized !== undefined && !unsafe ? normalized : fallback
+      if (permissionPreset === definition.permissionPreset && !unsafe) continue
+      await this.definitions.put(id, {
+        ...definition,
+        permissionPreset,
+        ...(unsafe ? {
+          status: 'paused' as const,
+          revision: definition.revision + 1,
+          updatedAt: toIso(),
+        } : {}),
+      })
     }
     for (const [id, run] of this.runs.entries()) {
-      const permissionPreset = normalizePermissionPreset(run.targetSnapshot.permissionPreset, presets.names) ?? fallback
+      const normalized = normalizePermissionPreset(run.targetSnapshot.permissionPreset, presets.names)
+      const permissionPreset = normalized !== undefined && isUnattendedPermissionSafe(normalized, presets)
+        ? normalized
+        : fallback
       if (permissionPreset === run.targetSnapshot.permissionPreset) continue
       await this.runs.put(id, {
         ...run,

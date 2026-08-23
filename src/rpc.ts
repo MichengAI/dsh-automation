@@ -1,9 +1,13 @@
 /** 仅 loopback 的 Web 客户端 RPC 适配器。 */
 
-import type { AutomationService } from './service.ts'
+import { AutomationRequestError, type AutomationService } from './service.ts'
 import type { AutomationSchedule as DomainSchedule, Weekday } from './types.ts'
 
 const WEEKDAYS: readonly Weekday[] = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
+
+class RpcRequestError extends Error {
+  override readonly name = 'RpcRequestError'
+}
 
 interface RpcContext {
   readonly connection: {
@@ -19,13 +23,14 @@ interface RpcContext {
 
 function record(value: unknown, label: string): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    throw new Error(`${label} must be an object`)
+    throw new RpcRequestError(`${label} must be an object`)
   }
   return value as Record<string, unknown>
 }
 
-function string(value: unknown, label: string): string {
-  if (typeof value !== 'string' || value.trim() === '') throw new Error(`${label} must be a non-empty string`)
+function string(value: unknown, label: string, maxLength?: number): string {
+  if (typeof value !== 'string' || value.trim() === '') throw new RpcRequestError(`${label} must be a non-empty string`)
+  if (maxLength !== undefined && value.length > maxLength) throw new RpcRequestError(`${label} must be at most ${maxLength} characters`)
   return value
 }
 
@@ -34,7 +39,7 @@ function optionalString(value: unknown, label: string): string | undefined {
 }
 
 function integer(value: unknown, label: string): number {
-  if (typeof value !== 'number' || !Number.isSafeInteger(value)) throw new Error(`${label} must be an integer`)
+  if (typeof value !== 'number' || !Number.isSafeInteger(value)) throw new RpcRequestError(`${label} must be an integer`)
   return value
 }
 
@@ -56,11 +61,11 @@ function toDomainSchedule(raw: unknown, timeZone: string): DomainSchedule {
     case 'daily':
       return { kind, time: string(schedule.time, 'schedule.time'), timeZone }
     case 'weekly': {
-      if (!Array.isArray(schedule.weekdays)) throw new Error('schedule.weekdays must be an array')
+      if (!Array.isArray(schedule.weekdays)) throw new RpcRequestError('schedule.weekdays must be an array')
       const weekdays = schedule.weekdays.map((value) => {
         const number = integer(value, 'schedule.weekdays[]')
         const weekday = WEEKDAYS[number - 1]
-        if (weekday === undefined) throw new Error('schedule.weekdays must contain numbers from 1 to 7')
+        if (weekday === undefined) throw new RpcRequestError('schedule.weekdays must contain numbers from 1 to 7')
         return weekday
       })
       return { kind, time: string(schedule.time, 'schedule.time'), weekdays, timeZone }
@@ -72,7 +77,7 @@ function toDomainSchedule(raw: unknown, timeZone: string): DomainSchedule {
     case 'custom':
       return { kind, everyDays: integer(schedule.everyDays, 'schedule.everyDays'), time: string(schedule.time, 'schedule.time'), timeZone }
     default:
-      throw new Error('schedule.kind must be once, interval, daily, weekly, hourly, monthly, or custom')
+      throw new RpcRequestError('schedule.kind must be once, interval, daily, weekly, hourly, monthly, or custom')
   }
 }
 
@@ -95,12 +100,12 @@ function errorResult(
     }
   }
   const message = error instanceof Error ? error.message : String(error)
-  const badRequest = /must|required|unknown automation|another workspace|未来|已有排队|not registered|requires a live|没有工作区|已取消|至少需要/.test(message)
+  const badRequest = error instanceof RpcRequestError || error instanceof AutomationRequestError
   return {
     ok: false,
     error: {
       code: badRequest ? 'bad-request' : 'internal',
-      message,
+      message: badRequest ? message : '自动化服务暂时无法完成请求。',
       details: badRequest ? { issues: [] } : {},
     },
   }
@@ -183,8 +188,8 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
           const input = record(payload.input, 'input')
           const timeZone = string(input.timeZone, 'input.timeZone')
           const created = await service.create(scopeOf(payload), {
-            name: string(input.name, 'input.name'),
-            prompt: string(input.prompt, 'input.prompt'),
+            name: string(input.name, 'input.name', 200),
+            prompt: string(input.prompt, 'input.prompt', 100_000),
             schedule: toDomainSchedule(input.schedule, timeZone),
             permissionPreset: string(input.permission, 'input.permission'),
             ...(input.workspaceId === undefined ? {} : { workspaceId: string(input.workspaceId, 'input.workspaceId') }),
@@ -202,7 +207,7 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
             return { ok: true, value: await service.delete(scopeOf(payload), id, signal) }
           }
           if (mutation !== 'pause' && mutation !== 'resume') {
-            throw new Error('mutation must be pause, resume, or delete')
+            throw new RpcRequestError('mutation must be pause, resume, or delete')
           }
           const value = await service.update(scopeOf(payload), id, {
             status: mutation === 'pause' ? 'paused' : 'active',
@@ -214,8 +219,8 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
           const input = record(payload.input, 'input')
           const timeZone = string(input.timeZone, 'input.timeZone')
           const value = await service.update(scopeOf(payload), id, {
-            name: string(input.name, 'input.name'),
-            prompt: string(input.prompt, 'input.prompt'),
+            name: string(input.name, 'input.name', 200),
+            prompt: string(input.prompt, 'input.prompt', 100_000),
             schedule: toDomainSchedule(input.schedule, timeZone),
             permissionPreset: string(input.permission, 'input.permission'),
             ...(input.workspaceId === undefined ? {} : { workspaceId: string(input.workspaceId, 'input.workspaceId') }),
@@ -246,12 +251,8 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
           await service.forgetAutomationSessions(string(payload.automationId, 'automationId'))
           return { ok: true, value: { automationId: string(payload.automationId, 'automationId') } }
         }
-        case 'add-workspace': {
-          const workspace = await service.addWorkspace(string(payload.path, 'path'))
-          return { ok: true, value: { id: workspace.id, title: workspace.title, path: workspace.path } }
-        }
         default:
-          throw new Error(`unknown automation endpoint '${endpoint}'`)
+          throw new RpcRequestError(`unknown automation endpoint '${endpoint}'`)
       }
     } catch (error) {
       return errorResult(error, signal.aborted)

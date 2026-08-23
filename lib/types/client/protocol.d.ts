@@ -157,10 +157,6 @@ export interface MarkReadRequest {
     readonly sessionId?: string;
     readonly runId: string;
 }
-export interface AddWorkspaceRequest {
-    readonly sessionId?: string;
-    readonly path: string;
-}
 export interface RpcErrorValue {
     readonly code: string;
     readonly message: string;

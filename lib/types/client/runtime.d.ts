@@ -19,9 +19,6 @@ export interface AutomationRuntime {
     updateAutomation(automationId: string, input: CreateAutomationInput): Promise<void>;
     runNow(automationId: string): Promise<void>;
     markRunRead(runId: string): Promise<void>;
-    addWorkspace(path: string): Promise<{
-        id: string;
-    }>;
     adoptSession(sessionId: string): Promise<void>;
     forgetSession(sessionId: string): Promise<void>;
     forgetAutomationSessions(automationId: string): Promise<void>;

@@ -288,19 +288,13 @@ export function groupHistory(
     const at = new Date(run.finishedAt ?? run.startedAt ?? run.scheduledFor)
     if (Number.isNaN(at.getTime())) continue
     let key: string
-    let label: string
     if (range === 'month') {
       key = `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}`
-      label = t('history.month', { month: `${at.getFullYear()}/${at.getMonth() + 1}` })
     } else if (range === 'week') {
       const start = startOfWeek(at)
-      key = start.toISOString().slice(0, 10)
-      label = t('history.week', { date: `${start.getMonth() + 1}/${start.getDate()}` })
+      key = localDayKey(start)
     } else {
       key = localDayKey(at)
-      const today = localDayKey(now)
-      const yesterday = localDayKey(new Date(now.getTime() - 86_400_000))
-      label = key === today ? t('history.today') : key === yesterday ? t('history.yesterday') : t('history.date', { date: `${at.getMonth() + 1}/${at.getDate()}` })
     }
     const existing = buckets.get(key) ?? []
     existing.push(run)

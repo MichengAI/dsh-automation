@@ -33,20 +33,30 @@ type HostComponent = ComponentType<any> & {
 const SETTINGS_CLOCK_SVG = '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true" data-dsh-schedule-icon="1"><path fill="currentColor" d="M8 1.15A6.85 6.85 0 1 0 8 14.85 6.85 6.85 0 0 0 8 1.15Zm0 1.4a5.45 5.45 0 1 1 0 10.9 5.45 5.45 0 0 1 0-10.9Z"/><path fill="currentColor" d="M8.62 4.35H7.28v4.2l3.02 1.78.67-1.13-2.35-1.39V4.35Z"/></svg>'
 
 function installSettingsNavIcon(labels: () => readonly string[]): () => void {
-  const apply = (): void => {
-    const wanted = new Set(labels().map(item => item.trim()).filter(item => item !== ''))
-    const buttons = document.querySelectorAll('button')
-    for (const button of buttons) {
-      const text = (button.textContent ?? '').replace(/\s+/g, ' ').trim()
-      if (!wanted.has(text)) continue
-      const svg = button.querySelector('svg')
-      if (svg === null || svg.getAttribute('data-dsh-schedule-icon') === '1') continue
-      svg.outerHTML = SETTINGS_CLOCK_SVG
-    }
+  const wanted = new Set(labels().map(item => item.trim()).filter(item => item !== ''))
+  const applyButton = (button: HTMLButtonElement): void => {
+    const text = (button.textContent ?? '').replace(/\s+/g, ' ').trim()
+    if (!wanted.has(text)) return
+    const svg = button.querySelector('svg')
+    if (svg === null || svg.getAttribute('data-dsh-schedule-icon') === '1') return
+    svg.outerHTML = SETTINGS_CLOCK_SVG
   }
-  apply()
-  const observer = new MutationObserver(apply)
-  observer.observe(document.documentElement, { childList: true, subtree: true })
+  const scan = (root: ParentNode): void => {
+    if (root instanceof HTMLButtonElement) applyButton(root)
+    for (const button of root.querySelectorAll?.('button') ?? []) applyButton(button as HTMLButtonElement)
+  }
+  scan(document)
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement
+      const owner = target?.closest('button')
+      if (owner instanceof HTMLButtonElement) applyButton(owner)
+      for (const node of mutation.addedNodes) {
+        if (node instanceof Element) scan(node)
+      }
+    }
+  })
+  observer.observe(document.documentElement, { childList: true, characterData: true, subtree: true })
   return () => { observer.disconnect() }
 }
 export function apply(ctx: ClientContext): void {
@@ -65,8 +75,7 @@ export function apply(ctx: ClientContext): void {
     label: () => t('tab'),
     icon: 'schedule',
   }, function ScheduledTasksSettings(props: { close?: () => void }) {
-    const workspacesApi = readOptionalWorkspaces(ctx)
-    return createElement(AutomationView, { t, permissionT, modelT, runtime, ...(props.close === undefined ? {} : { closeSettings: props.close }), ...(workspacesApi === undefined ? {} : { pickWorkspaceDirectory: () => workspacesApi.pickDirectory() }) })
+    return createElement(AutomationView, { t, permissionT, modelT, runtime, ...(props.close === undefined ? {} : { closeSettings: props.close }) })
   }))
   ctx.slots.inject('sidebar.schedule', () => ctx.slots.register({
     name: 'sidebar.schedule',
@@ -275,17 +284,4 @@ function readSlotEntries(ctx: ClientContext, name: string): readonly unknown[] {
 
 function slotHasEntries(ctx: ClientContext, name: string): boolean {
   return readSlotEntries(ctx, name).length > 0
-}
-
-
-
-
-
-
-function readOptionalWorkspaces(ctx: ClientContext): ClientContext['workspaces'] | undefined {
-  try {
-    return ctx.workspaces
-  } catch {
-    return undefined
-  }
 }

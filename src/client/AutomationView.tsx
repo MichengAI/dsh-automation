@@ -29,7 +29,6 @@ import { setChatPrefill } from './prefill.js'
 import { isTransportError } from './runtime.js'
 import type { AutomationRunStatus, AutomationRunViewModel, AutomationViewModel } from './protocol.js'
 
-const POLL_INTERVAL_MS = 15_000
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 
 type Tab = 'mine' | 'runs'
@@ -40,7 +39,7 @@ const EXAMPLES: readonly { readonly name: string; readonly scheduleKind: Schedul
   { name: '工作日早报', scheduleKind: 'weekly', time: '08:00', weekdays: [1, 2, 3, 4, 5] },
 ]
 
-export function AutomationView({ t, permissionT, modelT, runtime, closeSettings, pickWorkspaceDirectory }: AutomationViewProps): JSX.Element {
+export function AutomationView({ t, permissionT, modelT, runtime, closeSettings }: AutomationViewProps): JSX.Element {
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const [tab, setTab] = useState<Tab>('mine')
   const [query, setQuery] = useState('')
@@ -53,12 +52,6 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
   const [historyTask, setHistoryTask] = useState('all')
   const [historyStatus, setHistoryStatus] = useState<'all' | AutomationRunStatus>('all')
   const now = useMemo(() => new Date(state.snapshot?.serverNow ?? Date.now()), [state.snapshot?.serverNow, state.refreshedAt])
-
-  useEffect(() => {
-    void runtime.refresh().catch(() => undefined)
-    const timer = window.setInterval(() => { void runtime.refresh().catch(() => undefined) }, POLL_INTERVAL_MS)
-    return () => { window.clearInterval(timer) }
-  }, [runtime])
 
   const snapshot = state.snapshot
   const workspaces = snapshot?.workspaces ?? []
@@ -242,8 +235,6 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
           skills={snapshot?.skills ?? []}
           permissions={permissions}
           defaultPermission={defaultPermission}
-          onAddWorkspace={async (path) => runtime.addWorkspace(path).then((value) => value.id)}
-          {...(pickWorkspaceDirectory === undefined ? {} : { pickWorkspaceDirectory })}
           editing={editingId !== undefined}
           {...(draft === undefined ? {} : { draft })}
           onClose={closeModal}

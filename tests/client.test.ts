@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, insertSkillGesture, prettyModelName, skillGestureToken } from '../src/client/helpers.ts'
+import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, insertSkillGesture, prettyModelName, skillGestureToken } from '../src/client/helpers.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
 import { createAutomationRuntime } from '../src/client/runtime.ts'
 
@@ -77,6 +77,23 @@ test('RPC 结果必须失败关闭，运行时会在变更后刷新快照', asyn
     cwd: 'D:\\work\\demo',
   })
   assert.deepEqual(calls, ['create', 'snapshot', 'update', 'snapshot'])
+})
+
+test('多个客户端订阅共享一个初始刷新和轮询器', async () => {
+  let snapshots = 0
+  const runtime = createAutomationRuntime({
+    async call(_channel, endpoint) {
+      if (endpoint !== 'snapshot') throw new Error(`unexpected ${endpoint}`)
+      snapshots += 1
+      return { ok: true, value: { scope: { cwd: 'D:\\work' }, permissions: [], defaultPermission: 'read-only', automations: [], runs: [], serverNow: '2026-08-16T01:00:00.000Z' } }
+    },
+  })
+  const stopA = runtime.source.subscribe(() => {})
+  const stopB = runtime.source.subscribe(() => {})
+  await new Promise(resolve => setTimeout(resolve, 0))
+  stopA()
+  stopB()
+  assert.equal(snapshots, 1)
 })
 
 test('删除成功后即使刷新失败也要从列表里拿掉任务', async () => {
@@ -169,6 +186,21 @@ test('编辑一次性任务允许保留已经过去的时间', () => {
   assert.throws(() => buildCreateInput(form, workspaces, [], new Date('2026-08-16T10:00:00+08:00')), AutomationFormError)
   const updated = buildCreateInput(form, workspaces, [], new Date('2026-08-16T10:00:00+08:00'), { allowPastOnce: true })
   assert.equal(updated.schedule.kind, 'once')
+})
+
+test('UTC+ 时区的周分组使用本地周一而不是前一天 UTC 日期', () => {
+  const previous = process.env.TZ
+  process.env.TZ = 'Asia/Shanghai'
+  try {
+    const groups = groupHistory([{
+      id: 'r-week', automationId: 'a1', automationName: 'A', status: 'succeeded', trigger: 'schedule',
+      scheduledFor: '2026-08-16T16:30:00.000Z', unread: false,
+    }], 'week', new Date('2026-08-23T00:00:00+08:00'), t)
+    assert.equal(groups[0]?.key, '2026-08-17')
+  } finally {
+    if (previous === undefined) delete process.env.TZ
+    else process.env.TZ = previous
+  }
 })
 
 import { automationSessionTitle } from '../src/run-title.ts'

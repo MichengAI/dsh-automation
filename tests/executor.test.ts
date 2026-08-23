@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { applyUnattendedPermission, pinAutomationSessionTitle, summarizeRun, unattendedToolGuardReason } from '../src/executor.ts'
+import { applyUnattendedPermission, pinAutomationSessionTitle, settlesWithin, summarizeRun, unattendedToolGuardReason } from '../src/executor.ts'
 
 test('无人值守运行通过官方服务应用完整权限预设', () => {
   const selected: string[] = []
@@ -8,15 +8,31 @@ test('无人值守运行通过官方服务应用完整权限预设', () => {
     names: ['read-only', 'workspace-write', 'danger-full-access'],
     defaultPreset: 'workspace-write',
     optionOf: value => ({ value, name: value }),
+    resolve: value => ({ sandbox: value === 'read-only' ? 'read-only' : 'workspace-write', approval: 'ask' }),
     set: (_session, value) => { selected.push(value) },
-  }, {}, 'danger-full-access')
-  assert.deepEqual(selected, ['danger-full-access'])
+  }, {}, 'workspace-write')
+  assert.deepEqual(selected, ['workspace-write'])
+})
+
+test('执行器二次拒绝完全文件系统访问权限', () => {
+  assert.throws(() => applyUnattendedPermission({
+    names: ['workspace-write', 'danger-full-access'],
+    defaultPreset: 'workspace-write',
+    optionOf: value => ({ value, name: value }),
+    resolve: value => ({ sandbox: value === 'danger-full-access' ? 'danger-full-access' : 'workspace-write', approval: value === 'danger-full-access' ? 'never' : 'ask' }),
+    set() { throw new Error('不应调用 set') },
+  }, {}, 'danger-full-access'), /拒绝完全文件系统访问/)
 })
 
 test('无人值守守卫拒绝未知工具和后台 shell', () => {
   assert.equal(unattendedToolGuardReason('read', {}), undefined)
   assert.equal(unattendedToolGuardReason('automation_create', {}), "工具 'automation_create' 不在无人值守自动化允许列表中。")
   assert.match(unattendedToolGuardReason('bash', { run_in_background: true }) ?? '', /后台进程/)
+})
+
+test('取消收敛等待有独立硬超时', async () => {
+  assert.equal(await settlesWithin(Promise.resolve(), 10), true)
+  assert.equal(await settlesWithin(new Promise(() => {}), 5), false)
 })
 
 test('运行摘要只取本 run 区间内的最后一条助手文本和 turn 结束原因', () => {

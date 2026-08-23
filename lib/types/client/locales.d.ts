@@ -68,7 +68,6 @@ export declare const en: {
     readonly 'tabs.runs': "Run history";
     readonly 'sort.created': "Newest first";
     readonly 'form.workspace': "Workspace";
-    readonly 'form.addWorkspace': "Add workspace...";
     readonly 'form.workspacePath': "Folder path";
     readonly 'form.workspacePathPlaceholder': "D:\\work\\project";
     readonly 'form.model': "Model";

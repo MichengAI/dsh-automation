@@ -3,7 +3,6 @@ import type {
   AutomationSnapshot,
   CreateAutomationInput,
   CreateRequest,
-  AddWorkspaceRequest,
   MarkReadRequest,
   MutateRequest,
   RunNowRequest,
@@ -12,6 +11,7 @@ import type {
 import { unwrapRpcResult } from './protocol.js'
 
 const CHANNEL = '/dsh-automation'
+const POLL_INTERVAL_MS = 15_000
 
 export function isTransportError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
@@ -37,7 +37,6 @@ export interface AutomationRuntime {
   updateAutomation(automationId: string, input: CreateAutomationInput): Promise<void>
   runNow(automationId: string): Promise<void>
   markRunRead(runId: string): Promise<void>
-  addWorkspace(path: string): Promise<{ id: string }>
   adoptSession(sessionId: string): Promise<void>
   forgetSession(sessionId: string): Promise<void>
   forgetAutomationSessions(automationId: string): Promise<void>
@@ -46,6 +45,7 @@ export interface AutomationRuntime {
 export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
   let state: AutomationClientState = { phase: 'idle' }
   let refreshPromise: Promise<void> | undefined
+  let pollTimer: ReturnType<typeof setInterval> | undefined
   const listeners = new Set<() => void>()
   const publish = (next: AutomationClientState): void => {
     state = next
@@ -55,7 +55,17 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     getSnapshot: () => state,
     subscribe: (listener) => {
       listeners.add(listener)
-      return () => { listeners.delete(listener) }
+      if (listeners.size === 1) {
+        queueMicrotask(() => { if (listeners.size > 0) void refresh().catch(() => undefined) })
+        pollTimer = setInterval(() => { void refresh().catch(() => undefined) }, POLL_INTERVAL_MS)
+      }
+      return () => {
+        listeners.delete(listener)
+        if (listeners.size === 0 && pollTimer !== undefined) {
+          clearInterval(pollTimer)
+          pollTimer = undefined
+        }
+      }
     },
   }
 
@@ -161,12 +171,6 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
         ...snapshot,
         runs: snapshot.runs.map((run) => { if (run.automationId !== automationId) return run; const { sessionId: _ignored, ...rest } = run; return rest }),
       }))
-    },
-    async addWorkspace(path) {
-      const payload: AddWorkspaceRequest = { sessionId: 'settings', path }
-      const value = unwrapRpcResult<{ id: string }>(await rpc.call(CHANNEL, 'add-workspace', payload))
-      await refresh()
-      return value
     },
   }
 }
