@@ -10,6 +10,9 @@ class RpcRequestError extends Error {
 }
 
 interface RpcContext {
+  readonly logger: {
+    warn(message: string): void
+  }
   readonly connection: {
     readonly rpc: {
       handle(
@@ -19,6 +22,10 @@ interface RpcContext {
       ): () => Promise<void>
     }
   }
+}
+
+function isBadRequest(error: unknown): boolean {
+  return error instanceof RpcRequestError || error instanceof AutomationRequestError
 }
 
 function record(value: unknown, label: string): Record<string, unknown> {
@@ -100,7 +107,7 @@ function errorResult(
     }
   }
   const message = error instanceof Error ? error.message : String(error)
-  const badRequest = error instanceof RpcRequestError || error instanceof AutomationRequestError
+  const badRequest = isBadRequest(error)
   return {
     ok: false,
     error: {
@@ -255,6 +262,10 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
           throw new RpcRequestError(`unknown automation endpoint '${endpoint}'`)
       }
     } catch (error) {
+      if (!signal.aborted && !isBadRequest(error)) {
+        const detail = error instanceof Error ? error.stack ?? error.message : String(error)
+        ctx.logger.warn(`dsh-automation: RPC '${endpoint}' failed: ${detail}`)
+      }
       return errorResult(error, signal.aborted)
     }
   }, { authority: 'loopback' })

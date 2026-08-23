@@ -35,6 +35,7 @@ test('工具注册覆盖六个管理入口，并校验计划字段组合', () =>
 test('RPC 适配器只接受已知端点并返回失败关闭信封', async () => {
   let handler: ((endpoint: string, payload: unknown, signal: AbortSignal) => Promise<unknown>) | undefined
   const ctx = {
+    logger: { warn() {} },
     connection: {
       rpc: {
         handle(_channel: string, next: typeof handler) {
@@ -52,7 +53,9 @@ test('RPC 适配器只接受已知端点并返回失败关闭信封', async () =
 
 test('RPC 限制任务字段长度并隐藏内部异常文案', async () => {
   let handler: ((endpoint: string, payload: unknown, signal: AbortSignal) => Promise<any>) | undefined
+  const warnings: string[] = []
   const ctx = {
+    logger: { warn(message: string) { warnings.push(message) } },
     connection: { rpc: { handle(_channel: string, next: typeof handler) { handler = next; return async () => {} } } },
   }
   registerAutomationRpc(ctx as never, {
@@ -74,6 +77,8 @@ test('RPC 限制任务字段长度并隐藏内部异常文案', async () => {
   }, signal)
   assert.equal(internal.error.code, 'internal')
   assert.equal(internal.error.message, '自动化服务暂时无法完成请求。')
+  assert.equal(warnings.length, 1)
+  assert.match(warnings[0] ?? '', /RPC 'create' failed:.*storage path C:\\secret\\domain\.db/s)
 })
 
 
