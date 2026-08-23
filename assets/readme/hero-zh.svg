@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">DSH Automation</title>
+  <desc id="desc">克制的调度日志，展示一条计划规则如何创建全新 Agent 会话并留下持久结果。</desc>
+
+  <rect width="1200" height="360" fill="#F4F5F2"/>
+  <rect x="0" y="0" width="12" height="360" fill="#2F6BFF"/>
+
+  <g id="identity" transform="translate(64 46)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+    <text x="0" y="0" fill="#59606C" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="650" letter-spacing="1.2">DEEPSEEK HARNESS 社区插件</text>
+    <text x="0" y="76" fill="#111318" font-size="66" font-weight="760" letter-spacing="-2.4">DSH Automation</text>
+    <text x="0" y="124" fill="#22262D" font-size="28" font-weight="600">按计划执行编码任务，每次都从干净会话开始。</text>
+    <text x="0" y="166" fill="#59606C" font-size="19">规则同时保存工作区、模型、技能与权限边界。</text>
+
+    <line x1="0" y1="204" x2="586" y2="204" stroke="#C8CCD1"/>
+
+    <g transform="translate(0 232)">
+      <text x="0" y="0" fill="#111318" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700">计划</text>
+      <text x="118" y="0" fill="#59606C" font-size="17">一次 · 每小时 · 每天 · 每周 · 每月</text>
+      <text x="0" y="36" fill="#111318" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700">边界</text>
+      <text x="118" y="36" fill="#59606C" font-size="17">工作区 · 模型 · 技能 · 权限</text>
+    </g>
+  </g>
+
+  <g id="run-ledger" transform="translate(704 36)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+    <line x1="0" y1="0" x2="0" y2="288" stroke="#C8CCD1"/>
+    <text x="32" y="14" fill="#111318" font-size="16" font-weight="750" letter-spacing="1">运行日志</text>
+    <text x="428" y="14" text-anchor="end" fill="#7A808A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14">UTC+08:00</text>
+    <line x1="32" y1="34" x2="428" y2="34" stroke="#B8BDC4"/>
+
+    <g transform="translate(32 62)">
+      <text x="0" y="0" fill="#7A808A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15">09:00:00</text>
+      <text x="112" y="0" fill="#111318" font-size="15" font-weight="700">规则</text>
+      <text x="208" y="0" fill="#22262D" font-size="18">工作日 / 每天</text>
+      <line x1="0" y1="25" x2="396" y2="25" stroke="#D7DADF"/>
+    </g>
+
+    <g transform="translate(32 124)">
+      <text x="0" y="0" fill="#7A808A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15">09:00:01</text>
+      <text x="112" y="0" fill="#111318" font-size="15" font-weight="700">会话</text>
+      <text x="208" y="0" fill="#22262D" font-size="18">全新 root Agent</text>
+      <line x1="0" y1="25" x2="396" y2="25" stroke="#D7DADF"/>
+    </g>
+
+    <g transform="translate(32 186)">
+      <text x="0" y="0" fill="#7A808A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15">09:01:42</text>
+      <text x="112" y="0" fill="#111318" font-size="15" font-weight="700">结果</text>
+      <text x="208" y="0" fill="#2F6BFF" font-size="16" font-weight="750">已成功</text>
+      <line x1="0" y1="25" x2="396" y2="25" stroke="#D7DADF"/>
+    </g>
+
+    <g transform="translate(32 247)" font-size="14">
+      <text x="0" y="0" fill="#59606C">至多一次</text>
+      <text x="96" y="0" fill="#59606C">/</text>
+      <text x="122" y="0" fill="#59606C">持久运行记录</text>
+    </g>
+  </g>
+
+  <line x1="64" y1="326" x2="1132" y2="326" stroke="#C8CCD1"/>
+  <text x="64" y="346" fill="#7A808A" font-family="'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="13">定义 → 派发 → 隔离 → 记录</text>
+  <text x="1132" y="346" text-anchor="end" fill="#7A808A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13">APACHE-2.0</text>
+</svg>

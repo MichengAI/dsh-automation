@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">DSH Automation</title>
+  <desc id="desc">A restrained scheduling ledger showing a rule creating a fresh Agent session and a durable result.</desc>
+
+  <rect width="1200" height="360" fill="#F4F5F2"/>
+  <rect x="0" y="0" width="12" height="360" fill="#2F6BFF"/>
+
+  <g id="identity" transform="translate(64 46)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <text x="0" y="0" fill="#59606C" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="650" letter-spacing="1.2">COMMUNITY PLUGIN FOR DEEPSEEK HARNESS</text>
+    <text x="0" y="76" fill="#111318" font-size="66" font-weight="760" letter-spacing="-2.4">DSH Automation</text>
+    <text x="0" y="124" fill="#22262D" font-size="28" font-weight="600">Scheduled coding work. Every run starts clean.</text>
+    <text x="0" y="166" fill="#59606C" font-size="19">Save the workspace, model, skills, and permission boundary with the rule.</text>
+
+    <line x1="0" y1="204" x2="586" y2="204" stroke="#C8CCD1"/>
+
+    <g transform="translate(0 232)">
+      <text x="0" y="0" fill="#111318" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700">SCHEDULE</text>
+      <text x="118" y="0" fill="#59606C" font-size="17">once · hourly · daily · weekly · monthly</text>
+      <text x="0" y="36" fill="#111318" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700">BOUNDARY</text>
+      <text x="118" y="36" fill="#59606C" font-size="17">workspace · model · skills · permission</text>
+    </g>
+  </g>
+
+  <g id="run-ledger" transform="translate(704 36)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <line x1="0" y1="0" x2="0" y2="288" stroke="#C8CCD1"/>
+    <text x="32" y="14" fill="#111318" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="750" letter-spacing="1">RUN LEDGER</text>
+    <text x="428" y="14" text-anchor="end" fill="#7A808A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14">UTC+08:00</text>
+    <line x1="32" y1="34" x2="428" y2="34" stroke="#B8BDC4"/>
+
+    <g transform="translate(32 62)">
+      <text x="0" y="0" fill="#7A808A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15">09:00:00</text>
+      <text x="112" y="0" fill="#111318" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700">RULE</text>
+      <text x="208" y="0" fill="#22262D" font-size="18">weekday / daily</text>
+      <line x1="0" y1="25" x2="396" y2="25" stroke="#D7DADF"/>
+    </g>
+
+    <g transform="translate(32 124)">
+      <text x="0" y="0" fill="#7A808A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15">09:00:01</text>
+      <text x="112" y="0" fill="#111318" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700">SESSION</text>
+      <text x="208" y="0" fill="#22262D" font-size="18">fresh root Agent</text>
+      <line x1="0" y1="25" x2="396" y2="25" stroke="#D7DADF"/>
+    </g>
+
+    <g transform="translate(32 186)">
+      <text x="0" y="0" fill="#7A808A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15">09:01:42</text>
+      <text x="112" y="0" fill="#111318" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" font-weight="700">RESULT</text>
+      <text x="208" y="0" fill="#2F6BFF" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" font-weight="750">SUCCEEDED</text>
+      <line x1="0" y1="25" x2="396" y2="25" stroke="#D7DADF"/>
+    </g>
+
+    <g transform="translate(32 247)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14">
+      <text x="0" y="0" fill="#59606C">AT-MOST-ONCE</text>
+      <text x="142" y="0" fill="#59606C">/</text>
+      <text x="166" y="0" fill="#59606C">DURABLE HISTORY</text>
+    </g>
+  </g>
+
+  <line x1="64" y1="326" x2="1132" y2="326" stroke="#C8CCD1"/>
+  <text x="64" y="346" fill="#7A808A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13">DEFINE → DISPATCH → ISOLATE → RECORD</text>
+  <text x="1132" y="346" text-anchor="end" fill="#7A808A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13">APACHE-2.0</text>
+</svg>
