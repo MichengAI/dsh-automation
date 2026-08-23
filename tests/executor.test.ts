@@ -8,20 +8,9 @@ test('无人值守运行通过官方服务应用完整权限预设', () => {
     names: ['read-only', 'workspace-write', 'danger-full-access'],
     defaultPreset: 'workspace-write',
     optionOf: value => ({ value, name: value }),
-    resolve: value => ({ sandbox: value === 'read-only' ? 'read-only' : 'workspace-write', approval: 'ask' }),
     set: (_session, value) => { selected.push(value) },
-  }, {}, 'workspace-write')
-  assert.deepEqual(selected, ['workspace-write'])
-})
-
-test('执行器二次拒绝完全文件系统访问权限', () => {
-  assert.throws(() => applyUnattendedPermission({
-    names: ['workspace-write', 'danger-full-access'],
-    defaultPreset: 'workspace-write',
-    optionOf: value => ({ value, name: value }),
-    resolve: value => ({ sandbox: value === 'danger-full-access' ? 'danger-full-access' : 'workspace-write', approval: value === 'danger-full-access' ? 'never' : 'ask' }),
-    set() { throw new Error('不应调用 set') },
-  }, {}, 'danger-full-access'), /拒绝完全文件系统访问/)
+  }, {}, 'danger-full-access')
+  assert.deepEqual(selected, ['danger-full-access'])
 })
 
 test('无人值守守卫拒绝未知工具和后台 shell', () => {

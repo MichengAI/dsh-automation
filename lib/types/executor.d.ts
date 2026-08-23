@@ -1,6 +1,6 @@
 /** 已认领 run 的独立 Agent 执行边界。 */
 import type { Context } from '@deepseek-ai/cordis';
-import { type PermissionPresetService } from './permission-presets.ts';
+import type { PermissionPresetService } from './permission-presets.ts';
 import type { AutomationDefinition, AutomationRun } from './types.ts';
 interface SessionEventLike {
     readonly seq: number;

@@ -55,6 +55,19 @@ declare module '@deepseek-ai/dsh-client-ui-primitives' {
   export function IconCheckOutline16(props: { readonly className?: string }): JSX.Element
   export function IconChevronDownOutline14(props: { readonly className?: string }): JSX.Element
   export function IconChevronRightOutline14(props: { readonly className?: string }): JSX.Element
+  export function RiskConfirmation(props: {
+    readonly open: boolean
+    readonly title: string
+    readonly description: string
+    readonly acknowledgeLabel: string
+    readonly cancelLabel: string
+    readonly confirmLabel: string
+    readonly acknowledged: boolean
+    readonly disabled?: boolean
+    readonly onAcknowledgedChange: (acknowledged: boolean) => void
+    readonly onCancel: () => void
+    readonly onConfirm: () => void
+  }): JSX.Element
 }
 
 declare module '@deepseek-ai/dsh-session' {

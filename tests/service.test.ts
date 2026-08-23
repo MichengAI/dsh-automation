@@ -8,10 +8,6 @@ const permissionPresets = {
   names: ['read-only', 'workspace-write', 'danger-full-access'],
   defaultPreset: 'workspace-write',
   optionOf: (value: string) => ({ value, name: value }),
-  resolve: (value: string) => ({
-    sandbox: value === 'danger-full-access' ? 'danger-full-access' as const : value === 'read-only' ? 'read-only' as const : 'workspace-write' as const,
-    approval: value === 'danger-full-access' ? 'never' as const : 'ask' as const,
-  }),
   set() {},
 }
 
@@ -172,7 +168,7 @@ test('创建和立即运行都限制在来源工作区', async () => {
 test('权限列表、默认值和校验均来自 Host 官方服务', async () => {
   const { service } = await makeService()
   const snapshot = await service.snapshot({ sessionId: 'session_1', creatorKind: 'web', hostWide: true })
-  assert.deepEqual(snapshot.permissions.map(item => item.value), ['read-only', 'workspace-write'])
+  assert.deepEqual(snapshot.permissions.map(item => item.value), permissionPresets.names)
   assert.equal(snapshot.defaultPermission, 'workspace-write')
   const created = await service.create({ sessionId: 'session_1', creatorKind: 'web' }, {
     name: '官方默认权限',
@@ -187,21 +183,21 @@ test('权限列表、默认值和校验均来自 Host 官方服务', async () =>
   ), /unknown permission preset/)
 })
 
-test('启动时把旧 full-access 降为安全权限并暂停', async () => {
+test('启动时把旧 full-access 迁移成官方 danger-full-access', async () => {
   const legacy = sampleDefinition({ permissionPreset: 'full-access' })
   const { definitions } = await makeService({ definitions: [legacy] })
-  assert.equal(definitions.get(legacy.id)?.permissionPreset, 'workspace-write')
-  assert.equal(definitions.get(legacy.id)?.status, 'paused')
+  assert.equal(definitions.get(legacy.id)?.permissionPreset, 'danger-full-access')
 })
 
-test('服务端拒绝无人值守完全访问权限', async () => {
+test('服务端接受 Host 官方完全访问权限', async () => {
   const { service } = await makeService()
-  await assert.rejects(() => service.create({ sessionId: 'session_1', creatorKind: 'web' }, {
+  const created = await service.create({ sessionId: 'session_1', creatorKind: 'web' }, {
     name: '危险任务',
     prompt: '修改任意文件',
     schedule: { kind: 'once', at: '2099-01-01T10:00:00.000Z', timeZone: 'UTC' },
     permissionPreset: 'danger-full-access',
-  }), /不允许使用完全文件系统访问/)
+  })
+  assert.equal(created.permissionPreset, 'danger-full-access')
 })
 
 test('编辑已到期 once 的非计划字段时允许保留原时间', async () => {

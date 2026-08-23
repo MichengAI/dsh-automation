@@ -11,9 +11,10 @@ import {
   type AutomationFormState,
   type ScheduleKind,
 } from './helpers.js'
+import { shouldConfirmFullAccess } from './create-modal-logic.js'
 import { FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
 import { MenuHostProvider, MenuPanel, MenuPopup, MenuRow, MenuSelect, useMenuState } from './menu.js'
-import { IconCheckOutline16, IconChevronDownOutline14 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconCheckOutline16, IconChevronDownOutline14, RiskConfirmation } from '@deepseek-ai/dsh-client-ui-primitives'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom']
@@ -41,12 +42,28 @@ export function CreateModal({
 }): JSX.Element {
   const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel, defaultPermission), ...draft }))
   const [validationError, setValidationError] = useState<string>()
+  const [confirmingPermission, setConfirmingPermission] = useState<string>()
+  const [fullAccessAcknowledged, setFullAccessAcknowledged] = useState(false)
   const update = (patch: Partial<AutomationFormState>): void => {
     setForm(current => ({ ...current, ...patch }))
     setValidationError(undefined)
   }
   const choosePermission = (permission: AutomationFormState['permission']): void => {
+    if (shouldConfirmFullAccess(form.permission, permission)) {
+      setFullAccessAcknowledged(false)
+      setConfirmingPermission(permission)
+      return
+    }
     update({ permission })
+  }
+  const cancelFullAccessConfirmation = (): void => {
+    setFullAccessAcknowledged(false)
+    setConfirmingPermission(undefined)
+  }
+  const confirmFullAccess = (): void => {
+    if (!fullAccessAcknowledged || confirmingPermission === undefined) return
+    update({ permission: confirmingPermission })
+    cancelFullAccessConfirmation()
   }
 
   useEffect(() => {
@@ -248,6 +265,18 @@ export function CreateModal({
         </div>
       </form>
       <div className="dsh-st-flyout-root" ref={setMenuHost} />
+      <RiskConfirmation
+        open={confirmingPermission !== undefined}
+        title={permissionT('confirm.title')}
+        description={permissionT('confirm.description')}
+        acknowledgeLabel={permissionT('confirm.acknowledge')}
+        cancelLabel={permissionT('confirm.cancel')}
+        confirmLabel={permissionT('confirm.enable')}
+        acknowledged={fullAccessAcknowledged}
+        onAcknowledgedChange={setFullAccessAcknowledged}
+        onCancel={cancelFullAccessConfirmation}
+        onConfirm={confirmFullAccess}
+      />
       </MenuHostProvider>
     </div>
   )

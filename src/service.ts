@@ -21,7 +21,6 @@ import {
 import { executeAutomationRun } from './executor.ts'
 import { latestDueOccurrence, nextOccurrence, normalizeSchedule } from './recurrence.ts'
 import {
-  isUnattendedPermissionSafe,
   normalizePermissionPreset,
   type PermissionOption,
   type PermissionPresetService,
@@ -197,22 +196,19 @@ export class AutomationService {
   }
 
   permissionNames(): readonly string[] {
-    const presets = this.permissionPresets()
-    return presets.names.filter(name => isUnattendedPermissionSafe(name, presets))
+    return this.permissionPresets().names
   }
 
   permissionOptions(): readonly PermissionOption[] {
     const presets = this.permissionPresets()
-    return this.permissionNames().map(name => presets.optionOf(name))
+    return presets.names.map(name => presets.optionOf(name))
   }
 
   defaultPermission(): string {
     const presets = this.permissionPresets()
     const value = normalizePermissionPreset(presets.defaultPreset, presets.names)
-    if (value !== undefined && isUnattendedPermissionSafe(value, presets)) return value
-    const fallback = this.permissionNames()[0]
-    if (fallback === undefined) throw new Error('Host 没有可用于无人值守任务的安全权限预设。')
-    return fallback
+    if (value === undefined) throw new Error('Host 的默认权限预设不在官方权限列表中。')
+    return value
   }
 
   async dispose(): Promise<void> {
@@ -795,9 +791,6 @@ export class AutomationService {
     if (input === undefined) return this.defaultPermission()
     const value = normalizePermissionPreset(input, presets.names)
     if (value === undefined) throw new AutomationRequestError(`unknown permission preset '${input}'`)
-    if (!isUnattendedPermissionSafe(value, presets)) {
-      throw new AutomationRequestError('无人值守自动化不允许使用完全文件系统访问权限。')
-    }
     return value
   }
 
@@ -806,25 +799,12 @@ export class AutomationService {
     const presets = this.permissionPresets()
     const fallback = this.defaultPermission()
     for (const [id, definition] of this.definitions.entries()) {
-      const normalized = normalizePermissionPreset(definition.permissionPreset, presets.names)
-      const unsafe = normalized !== undefined && !isUnattendedPermissionSafe(normalized, presets)
-      const permissionPreset = normalized !== undefined && !unsafe ? normalized : fallback
-      if (permissionPreset === definition.permissionPreset && !unsafe) continue
-      await this.definitions.put(id, {
-        ...definition,
-        permissionPreset,
-        ...(unsafe ? {
-          status: 'paused' as const,
-          revision: definition.revision + 1,
-          updatedAt: toIso(),
-        } : {}),
-      })
+      const permissionPreset = normalizePermissionPreset(definition.permissionPreset, presets.names) ?? fallback
+      if (permissionPreset === definition.permissionPreset) continue
+      await this.definitions.put(id, { ...definition, permissionPreset })
     }
     for (const [id, run] of this.runs.entries()) {
-      const normalized = normalizePermissionPreset(run.targetSnapshot.permissionPreset, presets.names)
-      const permissionPreset = normalized !== undefined && isUnattendedPermissionSafe(normalized, presets)
-        ? normalized
-        : fallback
+      const permissionPreset = normalizePermissionPreset(run.targetSnapshot.permissionPreset, presets.names) ?? fallback
       if (permissionPreset === run.targetSnapshot.permissionPreset) continue
       await this.runs.put(id, {
         ...run,

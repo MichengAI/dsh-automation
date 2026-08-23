@@ -10,7 +10,7 @@ import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { WorkspaceId } from '@deepseek-ai/dsh-workspace'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { automationSessionTitle } from './run-title.ts'
-import { isUnattendedPermissionSafe, type PermissionPresetService } from './permission-presets.ts'
+import type { PermissionPresetService } from './permission-presets.ts'
 import type { AutomationDefinition, AutomationRun } from './types.ts'
 
 interface TextBlock { readonly type: string; readonly text?: string }
@@ -74,9 +74,6 @@ export function applyUnattendedPermission(
   session: unknown,
   permission: AutomationDefinition['permissionPreset'],
 ): void {
-  if (!isUnattendedPermissionSafe(permission, presets)) {
-    throw new Error('无人值守自动化拒绝完全文件系统访问权限。')
-  }
   presets.set(session, permission)
   setApprovalPolicy(session, 'never')
 }

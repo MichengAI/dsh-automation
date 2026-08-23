@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
+  shouldConfirmFullAccess,
   shouldCloseCreateModal,
 } from '../src/client/create-modal-logic.ts'
 
@@ -9,6 +10,13 @@ test('新建弹窗点遮罩不能关闭，只能取消或 ESC', () => {
   assert.equal(shouldCloseCreateModal('backdrop'), false)
   assert.equal(shouldCloseCreateModal('escape'), true)
   assert.equal(shouldCloseCreateModal('cancel'), true)
+})
+
+test('权限选择与 Chat 一致，切换到完全访问时要求风险确认', () => {
+  assert.equal(shouldConfirmFullAccess('read-only', 'danger-full-access'), true)
+  assert.equal(shouldConfirmFullAccess('workspace-write', 'danger-full-access'), true)
+  assert.equal(shouldConfirmFullAccess('danger-full-access', 'danger-full-access'), false)
+  assert.equal(shouldConfirmFullAccess('danger-full-access', 'read-only'), false)
 })
 
 test('任务模型菜单复刻官方两层模型与推理等级菜单且浮层可点击', () => {
