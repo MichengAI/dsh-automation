@@ -9,9 +9,10 @@ import {
   type AutomationFormState,
   type ScheduleKind,
 } from './helpers.js'
-import { adoptPickedWorkspace } from './create-modal-logic.js'
+import { adoptPickedWorkspace, shouldConfirmFullAccess } from './create-modal-logic.js'
 import { FolderIcon, PlusIcon, ShieldIcon, SparkleIcon } from './icons.js'
 import { MenuHostProvider, MenuPanel, MenuPopup, MenuRow, MenuSelect, useMenuState } from './menu.js'
+import { RiskConfirmation } from '@deepseek-ai/dsh-client-ui-primitives'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom']
@@ -37,9 +38,28 @@ export function CreateModal({
 }): JSX.Element {
   const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel), ...draft }))
   const [validationError, setValidationError] = useState<string>()
+  const [confirmingFullAccess, setConfirmingFullAccess] = useState(false)
+  const [fullAccessAcknowledged, setFullAccessAcknowledged] = useState(false)
   const update = (patch: Partial<AutomationFormState>): void => {
     setForm(current => ({ ...current, ...patch }))
     setValidationError(undefined)
+  }
+  const choosePermission = (permission: AutomationFormState['permission']): void => {
+    if (shouldConfirmFullAccess(form.permission, permission)) {
+      setFullAccessAcknowledged(false)
+      setConfirmingFullAccess(true)
+      return
+    }
+    update({ permission })
+  }
+  const cancelFullAccessConfirmation = (): void => {
+    setFullAccessAcknowledged(false)
+    setConfirmingFullAccess(false)
+  }
+  const confirmFullAccess = (): void => {
+    if (!fullAccessAcknowledged) return
+    update({ permission: 'full-access' })
+    cancelFullAccessConfirmation()
   }
 
   useEffect(() => {
@@ -237,7 +257,7 @@ export function CreateModal({
                     { value: 'workspace-write', label: t('form.workspaceWrite'), icon: <ShieldIcon width={14} height={14} /> },
                     { value: 'full-access', label: t('form.fullAccess'), icon: <ShieldIcon width={14} height={14} /> },
                   ]}
-                  onChange={value => update({ permission: value })}
+                  onChange={choosePermission}
                 />
               </div>
               <div className="dsh-st-composer-right">
@@ -262,6 +282,18 @@ export function CreateModal({
         </div>
       </form>
       <div className="dsh-st-flyout-root" ref={setMenuHost} />
+      <RiskConfirmation
+        open={confirmingFullAccess}
+        title={t('access.confirm.title')}
+        description={t('access.confirm.description')}
+        acknowledgeLabel={t('access.confirm.acknowledge')}
+        cancelLabel={t('access.confirm.cancel')}
+        confirmLabel={t('access.confirm.enable')}
+        acknowledged={fullAccessAcknowledged}
+        onAcknowledgedChange={setFullAccessAcknowledged}
+        onCancel={cancelFullAccessConfirmation}
+        onConfirm={confirmFullAccess}
+      />
       </MenuHostProvider>
     </div>
   )

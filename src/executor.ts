@@ -54,6 +54,11 @@ export interface ExecutorConfig {
   readonly signal?: AbortSignal
 }
 
+/** 自动化权限名称与 DSH 沙箱事件名称不同，必须在写入会话前转换。 */
+export function sandboxModeForPermission(permission: AutomationDefinition['permissionPreset']): 'read-only' | 'workspace-write' | 'danger-full-access' {
+  return permission === 'full-access' ? 'danger-full-access' : permission
+}
+
 export function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): {
   readonly text: string
   readonly reason?: Record<string, any>
@@ -140,7 +145,7 @@ export async function executeAutomationRun(
         installModelSelection(agentCtx, { current: selection, assembled: undefined })
         const agent = agentCtx.agent
         if (agent === undefined) throw new Error('automation setup has no scoped Agent')
-        if (target.permissionPreset !== 'full-access') setSandboxMode(agent.session, target.permissionPreset)
+        setSandboxMode(agent.session, sandboxModeForPermission(target.permissionPreset))
         setApprovalPolicy(agent.session, 'never')
         agentCtx.tools.guard((exec: ToolExecution) => unattendedToolGuardReason(exec.name, exec.arguments))
       },

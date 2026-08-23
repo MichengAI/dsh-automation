@@ -21,6 +21,8 @@ export interface ExecutorConfig {
     readonly sessionId: string;
     readonly signal?: AbortSignal;
 }
+/** 自动化权限名称与 DSH 沙箱事件名称不同，必须在写入会话前转换。 */
+export declare function sandboxModeForPermission(permission: AutomationDefinition['permissionPreset']): 'read-only' | 'workspace-write' | 'danger-full-access';
 export declare function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): {
     readonly text: string;
     readonly reason?: Record<string, any>;

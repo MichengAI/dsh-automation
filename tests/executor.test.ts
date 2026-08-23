@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { pinAutomationSessionTitle, summarizeRun, unattendedToolGuardReason } from '../src/executor.ts'
+import { pinAutomationSessionTitle, sandboxModeForPermission, summarizeRun, unattendedToolGuardReason } from '../src/executor.ts'
+
+test('完全访问权限应写入 Chat 识别的沙箱模式', () => {
+  assert.equal(sandboxModeForPermission('read-only'), 'read-only')
+  assert.equal(sandboxModeForPermission('workspace-write'), 'workspace-write')
+  assert.equal(sandboxModeForPermission('full-access'), 'danger-full-access')
+})
 
 test('无人值守守卫拒绝未知工具和后台 shell', () => {
   assert.equal(unattendedToolGuardReason('read', {}), undefined)
