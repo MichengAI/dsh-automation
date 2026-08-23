@@ -12,7 +12,7 @@ import {
   type ScheduleKind,
 } from './helpers.js'
 import { adoptPickedWorkspace, shouldConfirmFullAccess } from './create-modal-logic.js'
-import { FolderIcon, PlusIcon, ShieldIcon, SparkleIcon } from './icons.js'
+import { CheckOutlineIcon, FolderIcon, PlusIcon, ShieldIcon, SparkleIcon } from './icons.js'
 import { MenuHostProvider, MenuPanel, MenuPopup, MenuRow, MenuSelect, useMenuState } from './menu.js'
 import { RiskConfirmation } from '@deepseek-ai/dsh-client-ui-primitives'
 
@@ -321,6 +321,12 @@ function ModelPicker({
   const modelLabel = selected === undefined ? t('form.modelDefault') : selected.label
   const effortLabel = t(`form.effort.${effort}` as 'form.effort.high')
   const trigger = effort === 'none' ? modelLabel : `${modelLabel} ${effortLabel}`
+  const modelGroups = Array.from(models.reduce((groups, item) => {
+    const group = groups.get(item.provider) ?? []
+    group.push(item)
+    groups.set(item.provider, group)
+    return groups
+  }, new Map<string, { provider: string; model: string; label: string }[]>()))
 
   const open = (next: 'root' | 'model' | 'effort'): void => {
     setPane(next)
@@ -328,10 +334,10 @@ function ModelPicker({
   }
 
   return (
-    <div className={`dsh-st-select is-pill${menu.open ? " is-open" : ""}`} ref={menu.root}>
+    <div className={`dsh-st-model-select${menu.open ? " is-open" : ""}`} ref={menu.root}>
       <button
         type="button"
-        className="dsh-st-select-btn"
+        className="dsh-st-model-select-trigger"
         onMouseDown={event => event.stopPropagation()}
         onClick={() => {
           if (menu.open) {
@@ -344,7 +350,7 @@ function ModelPicker({
         <span>{trigger}</span>
         <em />
       </button>
-      <MenuPopup open={menu.open} anchor={menu.root} menuRef={menu.menu} up end className="dsh-st-select-menu is-composer is-up is-end">
+      <MenuPopup open={menu.open} anchor={menu.root} menuRef={menu.menu} up end className="dsh-st-model-select-menu is-up is-end">
           {pane === 'root' && (
             <>
               <MenuRow kv label={t('form.model')} hint={modelLabel} chevron onClick={() => setPane('model')} />
@@ -353,22 +359,38 @@ function ModelPicker({
           )}
           {pane === 'model' && (
             <>
-              <MenuRow
-                label={t('form.modelDefault')}
-                active={modelKey === 'default'}
+              <button
+                type="button"
+                role="menuitemradio"
+                aria-checked={modelKey === 'default'}
+                className="dsh-st-model-option"
                 onClick={() => { onModelKey('default'); menu.setOpen(false) }}
-              />
-              {models.map(item => {
-                const value = `${item.provider}::${item.model}`
-                return (
-                  <MenuRow
-                    key={value}
-                    label={item.label}
-                    active={value === modelKey}
-                    onClick={() => { onModelKey(value); menu.setOpen(false) }}
-                  />
-                )
-              })}
+              >
+                <span className="dsh-st-model-option-copy"><span className="dsh-st-model-name">{t('form.modelDefault')}</span></span>
+                <span className="dsh-st-model-check">{modelKey === 'default' && <CheckOutlineIcon width={16} height={16} />}</span>
+              </button>
+              {modelGroups.map(([provider, group]) => (
+                <section key={provider} role="group" aria-label={provider} className="dsh-st-model-group">
+                  <div className="dsh-st-model-group-title">{provider}</div>
+                  {group.map(item => {
+                    const value = `${item.provider}::${item.model}`
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={value === modelKey}
+                        className="dsh-st-model-option"
+                        title={item.label}
+                        onClick={() => { onModelKey(value); menu.setOpen(false) }}
+                      >
+                        <span className="dsh-st-model-option-copy"><span className="dsh-st-model-name">{item.label}</span></span>
+                        <span className="dsh-st-model-check">{value === modelKey && <CheckOutlineIcon width={16} height={16} />}</span>
+                      </button>
+                    )
+                  })}
+                </section>
+              ))}
             </>
           )}
           {pane === 'effort' && EFFORTS.map(item => (
