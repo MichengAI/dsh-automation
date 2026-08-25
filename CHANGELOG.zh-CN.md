@@ -4,6 +4,14 @@
 
 以下记录最近发布的五个版本。Git 标签与 GitHub Release 现已和这些条目同步；历史条目继续保留原始发布提交链接。
 
+## 0.1.15 — 2026-08-26
+
+- 恢复定时任务输入区内置权限预设的中文显示，不再暴露缺失的 `preset.*` 翻译键。
+- 完全访问风险确认继续使用宿主管理的权限翻译域，显示名称则改用本插件自己的中英文词典。
+- 将中英文 README 的更新日志入口从底部移到顶部导航。
+
+发布包：[`@michengai/dsh-automation@0.1.15`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.15)。
+
 ## 0.1.14 — 2026-08-23
 
 - 新增中英文更新日志，展示最近五个发布版本。
@@ -28,9 +36,3 @@
 - 加强自动化安全检查和调度行为。
 
 发布提交：[`1692ca6`](https://github.com/MichengAI/dsh-automation/commit/1692ca6)。
-
-## 0.1.10 — 2026-08-23
-
-- 使定时任务模型选择器与聊天模型选择器保持一致。
-
-发布提交：[`f9d39ee`](https://github.com/MichengAI/dsh-automation/commit/f9d39ee)。
