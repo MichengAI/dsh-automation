@@ -4,6 +4,13 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.17 — 2026-08-26
+
+- Removed the redundant full-width divider below the scheduled-task tabs while retaining the active-tab underline.
+- Matched the sorting control to Qianwen with a filled pill trigger, compact four-option menu, smaller arrow, and neutral selected state.
+
+Published package: [`@michengai/dsh-automation@0.1.17`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.17).
+
 ## 0.1.16 — 2026-08-26
 
 - Added an Edit action to each scheduled-task card menu, reusing the existing task editor.
@@ -32,9 +39,3 @@ Published package: [`@michengai/dsh-automation@0.1.14`](https://www.npmjs.com/pa
 - Logged internal RPC failures instead of leaving automation failures silent.
 
 Release commit: [`6f04ae9`](https://github.com/MichengAI/dsh-automation/commit/6f04ae9).
-
-## 0.1.12 — 2026-08-23
-
-- Aligned automation permission behavior with interactive chat.
-
-Release commit: [`d116209`](https://github.com/MichengAI/dsh-automation/commit/d116209).

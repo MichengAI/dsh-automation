@@ -363,7 +363,7 @@ function SortMenu({
     <div className="dsh-st-sort" ref={root}>
       <button type="button" className={`dsh-st-sort-btn${open ? ' is-open' : ''}`} aria-label={t('sort.by')} aria-expanded={open} onClick={() => setOpen(value => !value)}>
         {selectedLabel}
-        <ChevronIcon className="dsh-st-sort-chevron" />
+        <ChevronIcon width={10} height={10} className="dsh-st-sort-chevron" />
       </button>
       {open && (
         <div className="dsh-st-sort-menu">
@@ -391,7 +391,7 @@ function SortRow({
   readonly onSelect: () => void
 }): JSX.Element {
   return (
-    <button type="button" aria-pressed={selected} className={selected ? 'is-on' : undefined} onClick={onSelect}>
+    <button type="button" aria-pressed={selected} className={selected ? 'is-selected' : undefined} onClick={onSelect}>
       <span>{label}</span>
       {selected ? <CheckOutlineIcon width={16} height={16} /> : <span className="dsh-st-sort-tick" />}
     </button>

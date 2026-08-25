@@ -4,6 +4,13 @@
 
 以下记录最近发布的五个版本。Git 标签与 GitHub Release 现已和这些条目同步；历史条目继续保留原始发布提交链接。
 
+## 0.1.17 — 2026-08-26
+
+- 移除定时任务标签栏下方多余的整行分隔线，同时保留当前标签的短下划线。
+- 参照千问重做排序控件，采用填充胶囊按钮、紧凑四选项菜单、更小的箭头和中性的选中状态。
+
+发布包：[`@michengai/dsh-automation@0.1.17`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.17)。
+
 ## 0.1.16 — 2026-08-26
 
 - 在每个定时任务卡片菜单中增加“编辑任务”，复用现有任务编辑器。
@@ -32,9 +39,3 @@
 - 记录内部 RPC 失败，避免自动化执行错误被静默吞掉。
 
 发布提交：[`6f04ae9`](https://github.com/MichengAI/dsh-automation/commit/6f04ae9)。
-
-## 0.1.12 — 2026-08-23
-
-- 使自动化权限行为与交互式聊天保持一致。
-
-发布提交：[`d116209`](https://github.com/MichengAI/dsh-automation/commit/d116209)。
