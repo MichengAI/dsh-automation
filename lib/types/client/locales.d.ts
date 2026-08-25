@@ -33,7 +33,8 @@ export declare const en: {
     readonly 'examples.3.chip': "Weekdays 08:00";
     readonly 'chat.hint': "In any conversation, describe the recurring work and ask the Agent to call automation_create.";
     readonly 'chat.prompt': "I want to create a scheduled task that runs every [interval] and does [the actual task]";
-    readonly 'menu.run': "Run now";
+    readonly 'menu.run': "Run task";
+    readonly 'menu.edit': "Edit task";
     readonly 'menu.delete': "Delete task";
     readonly 'session.rename': "Rename";
     readonly 'session.fork': "Fork session";
@@ -170,6 +171,7 @@ export declare const en: {
     readonly 'card.pause': "Pause";
     readonly 'card.resume': "Resume";
     readonly 'card.runNow': "Run now";
+    readonly 'card.more': "More actions";
     readonly 'card.delete': "Delete";
     readonly 'card.confirmDelete': "Delete this automation?";
     readonly 'card.confirmDeleteHint': "Run history is kept for audit.";

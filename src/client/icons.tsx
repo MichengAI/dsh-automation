@@ -23,7 +23,7 @@ export function RefreshIcon(props: IconProps): JSX.Element {
 }
 
 export function PlayIcon(props: IconProps): JSX.Element {
-  return <IconFrame {...props}><path d="m9 7 8 5-8 5V7Z" /></IconFrame>
+  return <svg viewBox='0 0 16 16' width={16} height={16} fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' {...props}><path d='M4.6 3.4 11.7 8l-7.1 4.6V3.4Z' fill='currentColor' stroke='currentColor' strokeWidth='1.6' strokeLinejoin='round' /></svg>
 }
 
 export function PauseIcon(props: IconProps): JSX.Element {
