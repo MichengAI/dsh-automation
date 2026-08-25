@@ -27,7 +27,15 @@ const CSS_TEXT = `
 .dsh-st-tabs{display:flex;align-items:center;gap:16px;margin:4px 0 16px;border-bottom:1px solid var(--dsw-alias-border-l2)}
 .dsh-st-tabs>button{padding:8px 0;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
 .dsh-st-tabs>button.is-on{border-bottom-color:currentColor;color:var(--dsw-alias-label-primary);font-weight:650}
-.dsh-st-sort{margin-left:auto;color:var(--dsw-alias-label-tertiary);font-size:12px}
+.dsh-st-sort{position:relative;margin-left:auto}
+.dsh-st-sort-btn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:0;border-radius:999px;background:rgba(255,255,255,.06);color:inherit;font-size:12px;cursor:pointer}
+.dsh-st-sort-btn:hover,.dsh-st-sort-btn.is-open{background:rgba(255,255,255,.14)}
+.dsh-st-sort-chevron{transition:transform .16s ease;transform:rotate(90deg)}
+.dsh-st-sort-btn.is-open .dsh-st-sort-chevron{transform:rotate(-90deg)}
+.dsh-st-sort-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:180px;padding:8px 6px;border:1px solid var(--dsw-alias-border-inverted,rgba(255,255,255,.12));border-radius:12px;background:var(--dsw-specific-menu,#1c2128);box-shadow:var(--dsw-shadow-lv3,0 8px 24px rgba(0,0,0,.36))}
+.dsh-st-sort-menu button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:36px;padding:6px 10px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary,inherit);font:14px/20px inherit;cursor:pointer;text-align:left}
+.dsh-st-sort-menu button:hover,.dsh-st-sort-menu button.is-on{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06))}
+.dsh-st-sort-tick{width:16px;height:16px;flex:none}
 .dsh-st-filters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto}
 .dsh-st-filters>button,.dsh-st-filters>select{height:28px;padding:0 10px;border:0;border-radius:999px;background:rgba(255,255,255,.06);color:inherit;font-size:12px}
 .dsh-st-filters>button.is-on{background:rgba(255,255,255,.14)}
@@ -155,6 +163,5 @@ export function installStyles(): () => void {
   document.head.append(style)
   return () => { style.remove() }
 }
-
 
 

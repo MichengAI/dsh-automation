@@ -68,7 +68,11 @@ export const en = {
   'banner.wake': 'Scheduled tasks run only while this computer stays awake.',
   'tabs.mine': 'My tasks',
   'tabs.runs': 'Run history',
-  'sort.created': 'Newest first',
+  'sort.by': 'Sort',
+  'sort.created.asc': 'Created time ascending',
+  'sort.created.desc': 'Created time descending',
+  'sort.planned.asc': 'Execution time ascending',
+  'sort.planned.desc': 'Execution time descending',
   'form.workspace': 'Workspace',
   'form.workspacePath': 'Folder path',
   'form.workspacePathPlaceholder': 'D:\\work\\project',
@@ -267,7 +271,11 @@ export const zh: Record<AutomationLocaleKey, string> = {
   'banner.wake': '定时任务仅在电脑保持唤醒时运行',
   'tabs.mine': '我的定时任务',
   'tabs.runs': '执行记录',
-  'sort.created': '按创建时间倒序',
+  'sort.by': '排序',
+  'sort.created.asc': '按创建时间升序',
+  'sort.created.desc': '按创建时间倒序',
+  'sort.planned.asc': '按执行时间升序',
+  'sort.planned.desc': '按执行时间倒序',
   'form.workspace': '工作目录',
   'form.workspacePath': '目录路径',
   'form.workspacePathPlaceholder': 'D:\\work\\project',
@@ -395,6 +403,5 @@ export const zh: Record<AutomationLocaleKey, string> = {
   'time.inHour': '{count} 小时后',
   'time.inDay': '{count} 天后',
 }
-
 
 

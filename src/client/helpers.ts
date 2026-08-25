@@ -3,6 +3,7 @@ import type {
   AutomationSchedule,
   AutomationRunStatus,
   AutomationSnapshot,
+  AutomationViewModel,
   CreateAutomationInput,
   ModelOption,
   WorkspaceOption,
@@ -271,10 +272,45 @@ export function clockTime(iso: string): string {
 
 export type HistoryRange = 'day' | 'week' | 'month'
 
+export type AutomationSortKey = 'created' | 'planned'
+export type AutomationSortDirection = 'asc' | 'desc'
+
 export interface HistoryGroup {
   readonly key: string
   readonly label: string
   readonly items: readonly import('./protocol.js').AutomationRunViewModel[]
+}
+
+function sortStamp(value: string): number {
+  const parsed = Date.parse(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+/** 设置页任务列表排序：计划时间 = nextRunAt，无计划的任务固定排最后。 */
+export function sortAutomations(
+  items: readonly AutomationViewModel[],
+  key: AutomationSortKey,
+  direction: AutomationSortDirection,
+): AutomationViewModel[] {
+  const factor = direction === 'asc' ? 1 : -1
+  return items.slice().sort((left, right) => {
+    if (key === 'planned') {
+      const leftNext = left.nextRunAt
+      const rightNext = right.nextRunAt
+      if (leftNext === undefined || rightNext === undefined) {
+        if (leftNext === undefined && rightNext === undefined) {
+          return left.name.localeCompare(right.name) || left.id.localeCompare(right.id)
+        }
+        return leftNext === undefined ? 1 : -1
+      }
+      const primary = sortStamp(leftNext) - sortStamp(rightNext)
+      if (primary !== 0) return primary * factor
+      return left.name.localeCompare(right.name) || left.id.localeCompare(right.id)
+    }
+    const primary = sortStamp(left.createdAt) - sortStamp(right.createdAt)
+    if (primary !== 0) return primary * factor
+    return left.id.localeCompare(right.id)
+  })
 }
 
 export function groupHistory(
@@ -382,5 +418,4 @@ export function prettyModelName(model: string): string {
     return part.slice(0, 1).toUpperCase() + part.slice(1)
   }).join('-')
 }
-
 

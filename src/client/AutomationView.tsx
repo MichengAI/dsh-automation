@@ -10,12 +10,17 @@ import {
   formatWithin,
   formFromAutomation,
   groupHistory,
+  sortAutomations,
   type AutomationFormState,
+  type AutomationSortDirection,
+  type AutomationSortKey,
   type HistoryRange,
   type ScheduleKind,
 } from './helpers.js'
 import {
   ChatIcon,
+  CheckOutlineIcon,
+  ChevronIcon,
   ClockIcon,
   InfoIcon,
   MoreIcon,
@@ -52,6 +57,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
   const [historyRange, setHistoryRange] = useState<HistoryRange>('day')
   const [historyTask, setHistoryTask] = useState('all')
   const [historyStatus, setHistoryStatus] = useState<'all' | AutomationRunStatus>('all')
+  const [sortKey, setSortKey] = useState<AutomationSortKey>('created')
+  const [sortDirection, setSortDirection] = useState<AutomationSortDirection>('desc')
   const now = useMemo(() => new Date(state.snapshot?.serverNow ?? Date.now()), [state.snapshot?.serverNow, state.refreshedAt])
 
   const snapshot = state.snapshot
@@ -59,10 +66,11 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
   const models = snapshot?.models ?? []
   const permissions = snapshot?.permissions ?? []
   const defaultPermission = snapshot?.defaultPermission ?? ''
-  const automations = (snapshot?.automations ?? [])
-    .filter(item => query.trim() === '' || `${item.name} ${item.prompt}`.toLowerCase().includes(query.trim().toLowerCase()))
-    .slice()
-    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+  const automations = sortAutomations(
+    (snapshot?.automations ?? []).filter(item => query.trim() === '' || `${item.name} ${item.prompt}`.toLowerCase().includes(query.trim().toLowerCase())),
+    sortKey,
+    sortDirection,
+  )
 
   const runs = (snapshot?.runs ?? []).filter((run) => {
     if (historyTask !== 'all' && run.automationId !== historyTask) return false
@@ -167,7 +175,17 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
       <div className="dsh-st-tabs">
         <button type="button" className={tab === 'mine' ? 'is-on' : ''} onClick={() => setTab('mine')}>{t('tabs.mine')}</button>
         <button type="button" className={tab === 'runs' ? 'is-on' : ''} onClick={() => setTab('runs')}>{t('tabs.runs')}</button>
-        {tab === 'mine' && <span className="dsh-st-sort">{t('sort.created')}</span>}
+        {tab === 'mine' && (
+          <SortMenu
+            t={t}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSelect={(key, direction) => {
+              setSortKey(key)
+              setSortDirection(direction)
+            }}
+          />
+        )}
         {tab === 'runs' && (
           <div className="dsh-st-filters">
             {(['day', 'week', 'month'] as const).map(range => (
@@ -301,6 +319,85 @@ function TaskCard({
   )
 }
 
+function SortMenu({
+  t,
+  sortKey,
+  sortDirection,
+  onSelect,
+}: {
+  readonly t: Translate
+  readonly sortKey: AutomationSortKey
+  readonly sortDirection: AutomationSortDirection
+  readonly onSelect: (key: AutomationSortKey, direction: AutomationSortDirection) => void
+}): JSX.Element {
+  const [open, setOpen] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const close = (event: MouseEvent): void => {
+      if (root.current !== null && !root.current.contains(event.target as Node)) setOpen(false)
+    }
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
+
+  const options: readonly {
+    readonly key: AutomationSortKey
+    readonly direction: AutomationSortDirection
+    readonly label: string
+  }[] = [
+    { key: 'created', direction: 'desc', label: t('sort.created.desc') },
+    { key: 'created', direction: 'asc', label: t('sort.created.asc') },
+    { key: 'planned', direction: 'asc', label: t('sort.planned.asc') },
+    { key: 'planned', direction: 'desc', label: t('sort.planned.desc') },
+  ]
+  const selectedLabel = options.find(option => option.key === sortKey && option.direction === sortDirection)?.label ?? t('sort.by')
+  return (
+    <div className="dsh-st-sort" ref={root}>
+      <button type="button" className={`dsh-st-sort-btn${open ? ' is-open' : ''}`} aria-label={t('sort.by')} aria-expanded={open} onClick={() => setOpen(value => !value)}>
+        {selectedLabel}
+        <ChevronIcon className="dsh-st-sort-chevron" />
+      </button>
+      {open && (
+        <div className="dsh-st-sort-menu">
+          {options.map(option => (
+            <SortRow
+              key={`${option.key}-${option.direction}`}
+              label={option.label}
+              selected={sortKey === option.key && sortDirection === option.direction}
+              onSelect={() => { setOpen(false); onSelect(option.key, option.direction) }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SortRow({
+  label,
+  selected,
+  onSelect,
+}: {
+  readonly label: string
+  readonly selected: boolean
+  readonly onSelect: () => void
+}): JSX.Element {
+  return (
+    <button type="button" aria-pressed={selected} className={selected ? 'is-on' : undefined} onClick={onSelect}>
+      <span>{label}</span>
+      {selected ? <CheckOutlineIcon width={16} height={16} /> : <span className="dsh-st-sort-tick" />}
+    </button>
+  )
+}
+
 function RunRow({ run, t }: { readonly run: AutomationRunViewModel; readonly t: Translate }): JSX.Element {
   const duration = formatDuration(run.startedAt, run.finishedAt)
   return (
@@ -314,4 +411,3 @@ function RunRow({ run, t }: { readonly run: AutomationRunViewModel; readonly t: 
     </article>
   )
 }
-
