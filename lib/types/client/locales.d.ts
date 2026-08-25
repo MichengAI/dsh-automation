@@ -70,8 +70,8 @@ export declare const en: {
     readonly 'sort.by': "Sort";
     readonly 'sort.created.asc': "Created time ascending";
     readonly 'sort.created.desc': "Created time descending";
-    readonly 'sort.planned.asc': "Execution time ascending";
-    readonly 'sort.planned.desc': "Execution time descending";
+    readonly 'sort.planned.asc': "Planned time ascending";
+    readonly 'sort.planned.desc': "Planned time descending";
     readonly 'form.workspace': "Workspace";
     readonly 'form.workspacePath': "Folder path";
     readonly 'form.workspacePathPlaceholder': "D:\\work\\project";

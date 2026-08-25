@@ -31,7 +31,7 @@ function automationView(id: string, name: string, createdAt: string, nextRunAt?:
   }
 }
 
-test('任务排序支持创建时间/执行时间与正倒序', () => {
+test('任务排序支持创建时间/计划时间与正倒序', () => {
   const items = [
     automationView('a1', 'B', '2026-08-01T00:00:00.000Z', '2026-08-10T00:00:00.000Z'),
     automationView('a2', 'A', '2026-08-02T00:00:00.000Z', '2026-08-09T00:00:00.000Z'),
