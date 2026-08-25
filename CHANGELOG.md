@@ -4,6 +4,14 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.16 — 2026-08-26
+
+- Added an Edit action to each scheduled-task card menu, reusing the existing task editor.
+- Added a compact sorting dropdown for created time and planned time in ascending or descending order.
+- Kept tasks without a next planned run at the end of the list and preserved created-time descending as the default.
+
+Published package: [`@michengai/dsh-automation@0.1.16`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.16).
+
 ## 0.1.15 — 2026-08-26
 
 - Restored localized built-in permission labels in the scheduled-task composer instead of exposing missing `preset.*` translation keys.
@@ -30,9 +38,3 @@ Release commit: [`6f04ae9`](https://github.com/MichengAI/dsh-automation/commit/6
 - Aligned automation permission behavior with interactive chat.
 
 Release commit: [`d116209`](https://github.com/MichengAI/dsh-automation/commit/d116209).
-
-## 0.1.11 — 2026-08-23
-
-- Hardened automation safety checks and scheduling behavior.
-
-Release commit: [`1692ca6`](https://github.com/MichengAI/dsh-automation/commit/1692ca6).
