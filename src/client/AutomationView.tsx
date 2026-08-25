@@ -19,6 +19,7 @@ import {
   ClockIcon,
   InfoIcon,
   MoreIcon,
+  PencilIcon,
   PlayIcon,
   PlusIcon,
   RefreshIcon,
@@ -281,11 +282,12 @@ function TaskCard({
     <article className="dsh-st-card" ref={root} onClick={onEdit}>
       <div className="dsh-st-card-head">
         <button type="button" className={`dsh-st-switch ${item.status === 'active' ? 'is-on' : ''}`} role="switch" aria-checked={item.status === 'active'} disabled={busy} onClick={(event) => { event.stopPropagation(); onToggle() }} />
-        <button type="button" className="dsh-st-more" onClick={(event) => { event.stopPropagation(); setMenu(value => !value) }} aria-label={t('card.delete')}><MoreIcon /></button>
+        <button type="button" className="dsh-st-more" onClick={(event) => { event.stopPropagation(); setMenu(value => !value) }} aria-label={t('card.more')}><MoreIcon /></button>
         {menu && (
           <div className="dsh-st-menu" onClick={event => event.stopPropagation()}>
-            <button type="button" disabled={busy} onClick={() => { setMenu(false); onRun() }}><PlayIcon />{t('menu.run')}</button>
-            <button type="button" className="is-danger" disabled={busy} onClick={() => { setMenu(false); onDelete() }}><TrashIcon />{t('menu.delete')}</button>
+            <button type="button" disabled={busy} onClick={() => { setMenu(false); onRun() }}><PlayIcon width={16} height={16} />{t('menu.run')}</button>
+            <button type="button" disabled={busy} onClick={() => { setMenu(false); onEdit() }}><PencilIcon width={16} height={16} />{t('menu.edit')}</button>
+            <button type="button" className="is-danger" disabled={busy} onClick={() => { setMenu(false); onDelete() }}><TrashIcon width={16} height={16} />{t('menu.delete')}</button>
           </div>
         )}
       </div>
