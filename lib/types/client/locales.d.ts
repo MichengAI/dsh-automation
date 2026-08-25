@@ -134,6 +134,9 @@ export declare const en: {
     readonly 'form.days': "Weekdays";
     readonly 'form.timeZone': "Time zone";
     readonly 'form.permission': "Permission boundary";
+    readonly 'permission.readOnly': "Read Only";
+    readonly 'permission.workspaceWrite': "Workspace Write";
+    readonly 'permission.fullAccess': "Full access";
     readonly 'form.cancel': "Cancel";
     readonly 'form.submit': "Create automation";
     readonly 'form.submitting': "Creating…";

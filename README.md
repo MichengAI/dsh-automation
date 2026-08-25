@@ -8,7 +8,7 @@
 
   **Run standalone coding tasks on a schedule in DeepSeek Harness**
 
-  [简体中文](README.zh-CN.md) · [Apache-2.0](LICENSE)
+  [简体中文](README.zh-CN.md) · [Changelog](CHANGELOG.md) · [Apache-2.0](LICENSE)
 
   [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
   [![npm package](https://img.shields.io/npm/v/%40michengai%2Fdsh-automation.svg?label=npm%20package)](https://www.npmjs.com/package/@michengai/dsh-automation)
@@ -169,7 +169,3 @@ pnpm build
 Start from the [documentation entry](docs/00-交接入口/00-阅读导航.md) for project status, architecture, and the current iteration. Product notes live in NOTICE.
 
 This project uses [Apache License 2.0](LICENSE).
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for the five most recent releases.

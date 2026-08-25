@@ -8,7 +8,7 @@
 
   **在独立 DSH Session 中按计划执行编码任务**
 
-  [English](README.md) · [Apache-2.0](LICENSE)
+  [English](README.md) · [更新日志](CHANGELOG.zh-CN.md) · [Apache-2.0](LICENSE)
 
   [![许可证：Apache-2.0](https://img.shields.io/badge/许可证-Apache--2.0-blue.svg)](LICENSE)
   [![npm package](https://img.shields.io/npm/v/%40michengai%2Fdsh-automation.svg?label=npm%20package)](https://www.npmjs.com/package/@michengai/dsh-automation)
@@ -169,7 +169,3 @@ pnpm build
 项目状态、使用边界、技术架构和迭代记录从[文档交接入口](docs/00-交接入口/00-阅读导航.md)开始。补充说明见 NOTICE。
 
 本项目采用 [Apache License 2.0](LICENSE)。
-
-## 更新日志
-
-最近五个发布版本见 [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。

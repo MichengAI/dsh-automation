@@ -13,6 +13,6 @@ test('权限只接受 Host 官方列表并迁移旧完全访问名称', () => {
 
 test('内置权限使用官方文案，自定义权限保留 Host 名称', () => {
   const t = (key: string): string => `official:${key}`
-  assert.equal(permissionLabel({ value: 'read-only', name: 'Read Only' }, t), 'official:preset.readOnly')
+  assert.equal(permissionLabel({ value: 'read-only', name: 'Read Only' }, t), 'official:permission.readOnly')
   assert.equal(permissionLabel({ value: 'review', name: '安全审阅' }, t), '安全审阅')
 })
