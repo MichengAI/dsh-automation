@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, insertSkillGesture, prettyModelName, skillGestureToken } from '../src/client/helpers.ts'
+import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, insertSkillGesture, prettyModelName, skillGestureToken, sortAutomations } from '../src/client/helpers.ts'
+import type { AutomationViewModel } from '../src/client/protocol.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
 import { createAutomationRuntime } from '../src/client/runtime.ts'
 
@@ -12,6 +13,44 @@ const t = (key: string, params?: Record<string, unknown>): string => {
 }
 
 const workspaces = [{ id: 'ws_1', title: 'demo', path: 'D:\\work\\demo' }]
+
+function automationView(id: string, name: string, createdAt: string, nextRunAt?: string): AutomationViewModel {
+  return {
+    id,
+    name,
+    createdAt,
+    ...(nextRunAt === undefined ? {} : { nextRunAt }),
+    revision: 1,
+    prompt: 'p',
+    status: 'active',
+    schedule: { kind: 'daily', time: '09:00' },
+    scheduleSummary: 'daily',
+    timeZone: 'Asia/Shanghai',
+    permission: 'read-only',
+    updatedAt: createdAt,
+  }
+}
+
+test('任务排序支持创建时间/标题/计划时间与正倒序', () => {
+  const items = [
+    automationView('a1', 'B', '2026-08-01T00:00:00.000Z', '2026-08-10T00:00:00.000Z'),
+    automationView('a2', 'A', '2026-08-02T00:00:00.000Z', '2026-08-09T00:00:00.000Z'),
+    automationView('a3', 'C', '2026-08-03T00:00:00.000Z'),
+  ]
+  assert.deepEqual(sortAutomations(items, 'created', 'desc').map(item => item.id), ['a3', 'a2', 'a1'])
+  assert.deepEqual(sortAutomations(items, 'created', 'asc').map(item => item.id), ['a1', 'a2', 'a3'])
+  assert.deepEqual(sortAutomations(items, 'title', 'asc').map(item => item.id), ['a2', 'a1', 'a3'])
+  assert.deepEqual(sortAutomations(items, 'title', 'desc').map(item => item.id), ['a3', 'a1', 'a2'])
+  assert.deepEqual(sortAutomations(items, 'planned', 'asc').map(item => item.id), ['a2', 'a1', 'a3'])
+  assert.deepEqual(sortAutomations(items, 'planned', 'desc').map(item => item.id), ['a1', 'a2', 'a3'])
+})
+
+test('任务排序不修改原数组', () => {
+  const items = [automationView('a1', 'A', '2026-08-01T00:00:00.000Z')]
+  sortAutomations(items, 'title', 'desc')
+  assert.equal(items.length, 1)
+  assert.equal(items[0]?.id, 'a1')
+})
 
 test('表单会拒绝空白任务和过去的一次性时间', () => {
   const form = defaultFormState(new Date('2026-08-16T08:00:00+08:00'), workspaces, null, 'read-only')

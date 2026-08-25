@@ -23,7 +23,7 @@ export function RefreshIcon(props: IconProps): JSX.Element {
 }
 
 export function PlayIcon(props: IconProps): JSX.Element {
-  return <IconFrame {...props}><path d="m9 7 8 5-8 5V7Z" /></IconFrame>
+  return <svg viewBox='0 0 16 16' width={16} height={16} fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' {...props}><path d='M4.6 3.4 11.7 8l-7.1 4.6V3.4Z' fill='currentColor' stroke='currentColor' strokeWidth='1.6' strokeLinejoin='round' /></svg>
 }
 
 export function PauseIcon(props: IconProps): JSX.Element {
@@ -111,7 +111,7 @@ export function TreeCornerIcon(props: IconProps): JSX.Element {
 }
 
 export function ChevronIcon(props: IconProps): JSX.Element {
-  return <svg viewBox='0 0 14 14' width={props.width || 14} height={props.height || 14} fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'><path fill='currentColor' d='M4.25 2.828v8.344c0 .49.592.735.939.389l4.172-4.172a.55.55 0 0 0 0-.778L5.189 2.439c-.347-.347-.939-.101-.939.389Z' /></svg>
+  return <svg viewBox='0 0 14 14' width={props.width || 14} height={props.height || 14} fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' {...props}><path fill='currentColor' d='M4.25 2.828v8.344c0 .49.592.735.939.389l4.172-4.172a.55.55 0 0 0 0-.778L5.189 2.439c-.347-.347-.939-.101-.939.389Z' /></svg>
 }
 
 export function EllipsisIcon(props: IconProps): JSX.Element {

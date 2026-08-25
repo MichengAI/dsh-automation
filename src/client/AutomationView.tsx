@@ -10,12 +10,17 @@ import {
   formatWithin,
   formFromAutomation,
   groupHistory,
+  sortAutomations,
   type AutomationFormState,
+  type AutomationSortDirection,
+  type AutomationSortKey,
   type HistoryRange,
   type ScheduleKind,
 } from './helpers.js'
 import {
   ChatIcon,
+  CheckOutlineIcon,
+  ChevronIcon,
   ClockIcon,
   InfoIcon,
   MoreIcon,
@@ -51,6 +56,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
   const [historyRange, setHistoryRange] = useState<HistoryRange>('day')
   const [historyTask, setHistoryTask] = useState('all')
   const [historyStatus, setHistoryStatus] = useState<'all' | AutomationRunStatus>('all')
+  const [sortKey, setSortKey] = useState<AutomationSortKey>('planned')
+  const [sortDirection, setSortDirection] = useState<AutomationSortDirection>('asc')
   const now = useMemo(() => new Date(state.snapshot?.serverNow ?? Date.now()), [state.snapshot?.serverNow, state.refreshedAt])
 
   const snapshot = state.snapshot
@@ -58,10 +65,11 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
   const models = snapshot?.models ?? []
   const permissions = snapshot?.permissions ?? []
   const defaultPermission = snapshot?.defaultPermission ?? ''
-  const automations = (snapshot?.automations ?? [])
-    .filter(item => query.trim() === '' || `${item.name} ${item.prompt}`.toLowerCase().includes(query.trim().toLowerCase()))
-    .slice()
-    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+  const automations = sortAutomations(
+    (snapshot?.automations ?? []).filter(item => query.trim() === '' || `${item.name} ${item.prompt}`.toLowerCase().includes(query.trim().toLowerCase())),
+    sortKey,
+    sortDirection,
+  )
 
   const runs = (snapshot?.runs ?? []).filter((run) => {
     if (historyTask !== 'all' && run.automationId !== historyTask) return false
@@ -166,7 +174,17 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
       <div className="dsh-st-tabs">
         <button type="button" className={tab === 'mine' ? 'is-on' : ''} onClick={() => setTab('mine')}>{t('tabs.mine')}</button>
         <button type="button" className={tab === 'runs' ? 'is-on' : ''} onClick={() => setTab('runs')}>{t('tabs.runs')}</button>
-        {tab === 'mine' && <span className="dsh-st-sort">{t('sort.created')}</span>}
+        {tab === 'mine' && (
+          <SortMenu
+            t={t}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSelect={(key, direction) => {
+              setSortKey(key)
+              setSortDirection(direction)
+            }}
+          />
+        )}
         {tab === 'runs' && (
           <div className="dsh-st-filters">
             {(['day', 'week', 'month'] as const).map(range => (
@@ -296,6 +314,77 @@ function TaskCard({
         <span>{item.nextRunAt === undefined ? t('stats.noneScheduled') : t('history.nextApprox', { when: formatWithin(item.nextRunAt, now, t) })}</span>
       </div>
     </article>
+  )
+}
+
+function SortMenu({
+  t,
+  sortKey,
+  sortDirection,
+  onSelect,
+}: {
+  readonly t: Translate
+  readonly sortKey: AutomationSortKey
+  readonly sortDirection: AutomationSortDirection
+  readonly onSelect: (key: AutomationSortKey, direction: AutomationSortDirection) => void
+}): JSX.Element {
+  const [open, setOpen] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const close = (event: MouseEvent): void => {
+      if (root.current !== null && !root.current.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => { document.removeEventListener('mousedown', close) }
+  }, [open])
+
+  const fields: readonly { readonly key: AutomationSortKey; readonly label: string }[] = [
+    { key: 'title', label: t('sort.key.title') },
+    { key: 'created', label: t('sort.key.created') },
+    { key: 'planned', label: t('sort.key.planned') },
+  ]
+  return (
+    <div className="dsh-st-sort" ref={root}>
+      <button type="button" className={`dsh-st-sort-btn${open ? ' is-open' : ''}`} aria-label={t('sort.by')} aria-expanded={open} onClick={() => setOpen(value => !value)}>
+        {t('sort.by')}
+        <ChevronIcon className="dsh-st-sort-chevron" />
+      </button>
+      {open && (
+        <div className="dsh-st-sort-menu" role="menu">
+          <div className="dsh-st-sort-label">{t('sort.field')}</div>
+          {fields.map(field => (
+            <SortRow
+              key={field.key}
+              label={field.label}
+              selected={sortKey === field.key}
+              onSelect={() => { setOpen(false); onSelect(field.key, sortDirection) }}
+            />
+          ))}
+          <div className="dsh-st-sort-split" />
+          <div className="dsh-st-sort-label">{t('sort.direction')}</div>
+          <SortRow label={t('sort.direction.asc')} selected={sortDirection === 'asc'} onSelect={() => { setOpen(false); onSelect(sortKey, 'asc') }} />
+          <SortRow label={t('sort.direction.desc')} selected={sortDirection === 'desc'} onSelect={() => { setOpen(false); onSelect(sortKey, 'desc') }} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SortRow({
+  label,
+  selected,
+  onSelect,
+}: {
+  readonly label: string
+  readonly selected: boolean
+  readonly onSelect: () => void
+}): JSX.Element {
+  return (
+    <button type="button" role="menuitemradio" aria-checked={selected} className={selected ? 'is-on' : undefined} onClick={onSelect}>
+      <span>{label}</span>
+      {selected ? <CheckOutlineIcon width={16} height={16} /> : <span className="dsh-st-sort-tick" />}
+    </button>
   )
 }
 

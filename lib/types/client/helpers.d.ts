@@ -1,5 +1,5 @@
 import type { Translate } from './contracts.js';
-import type { AutomationSchedule, AutomationSnapshot, CreateAutomationInput, ModelOption, WorkspaceOption } from './protocol.js';
+import type { AutomationSchedule, AutomationSnapshot, AutomationViewModel, CreateAutomationInput, ModelOption, WorkspaceOption } from './protocol.js';
 export type ScheduleKind = 'once' | 'interval' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
 export interface AutomationFormState {
     readonly name: string;
@@ -57,11 +57,15 @@ export declare function formatWithin(iso: string, now: Date, t: Translate): stri
 export declare function formatDuration(startedAt?: string, finishedAt?: string): string | undefined;
 export declare function clockTime(iso: string): string;
 export type HistoryRange = 'day' | 'week' | 'month';
+export type AutomationSortKey = 'created' | 'planned' | 'title';
+export type AutomationSortDirection = 'asc' | 'desc';
 export interface HistoryGroup {
     readonly key: string;
     readonly label: string;
     readonly items: readonly import('./protocol.js').AutomationRunViewModel[];
 }
+/** 设置页任务列表排序：计划时间 = nextRunAt，无计划的任务固定排最后。 */
+export declare function sortAutomations(items: readonly AutomationViewModel[], key: AutomationSortKey, direction: AutomationSortDirection): AutomationViewModel[];
 export declare function groupHistory(runs: readonly import('./protocol.js').AutomationRunViewModel[], range: HistoryRange, now: Date, t: Translate): HistoryGroup[];
 export declare function formFromAutomation(item: import('./protocol.js').AutomationViewModel, workspaces?: readonly WorkspaceOption[], defaultModel?: ModelOption | null, defaultPermission?: string): AutomationFormState;
 export declare function prettyModelName(model: string): string;

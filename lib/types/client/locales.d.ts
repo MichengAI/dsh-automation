@@ -66,7 +66,14 @@ export declare const en: {
     readonly 'banner.wake': "Scheduled tasks run only while this computer stays awake.";
     readonly 'tabs.mine': "My tasks";
     readonly 'tabs.runs': "Run history";
-    readonly 'sort.created': "Newest first";
+    readonly 'sort.by': "Sort";
+    readonly 'sort.field': "Sort field";
+    readonly 'sort.direction': "Sort direction";
+    readonly 'sort.key.created': "Created time";
+    readonly 'sort.key.planned': "Planned time";
+    readonly 'sort.key.title': "Title";
+    readonly 'sort.direction.asc': "Ascending";
+    readonly 'sort.direction.desc': "Descending";
     readonly 'form.workspace': "Workspace";
     readonly 'form.workspacePath': "Folder path";
     readonly 'form.workspacePathPlaceholder': "D:\\work\\project";
