@@ -193,16 +193,30 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
                 {t(`history.range.${range}`)}
               </button>
             ))}
-            <select value={historyTask} onChange={event => setHistoryTask(event.target.value)}>
-              <option value="all">{t('history.allTasks')}</option>
-              {(snapshot?.automations ?? []).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
-            <select value={historyStatus} onChange={event => setHistoryStatus(event.target.value as 'all' | AutomationRunStatus)}>
-              <option value="all">{t('history.allStatus')}</option>
-              {(['succeeded', 'failed', 'running', 'queued', 'skipped', 'cancelled'] as const).map(status => (
-                <option key={status} value={status}>{t(`status.${status}`)}</option>
-              ))}
-            </select>
+            <DropdownMenu
+              ariaLabel={t('history.allTasks')}
+              options={[
+                { key: 'all', label: t('history.allTasks'), selected: historyTask === 'all', onSelect: () => setHistoryTask('all') },
+                ...(snapshot?.automations ?? []).map(item => ({
+                  key: item.id,
+                  label: item.name,
+                  selected: historyTask === item.id,
+                  onSelect: () => setHistoryTask(item.id),
+                })),
+              ]}
+            />
+            <DropdownMenu
+              ariaLabel={t('history.allStatus')}
+              options={[
+                { key: 'all', label: t('history.allStatus'), selected: historyStatus === 'all', onSelect: () => setHistoryStatus('all') },
+                ...(['succeeded', 'failed', 'running', 'queued', 'skipped', 'cancelled'] as const).map(status => ({
+                  key: status,
+                  label: t(`status.${status}`),
+                  selected: historyStatus === status,
+                  onSelect: () => setHistoryStatus(status),
+                })),
+              ]}
+            />
           </div>
         )}
       </div>
@@ -330,6 +344,36 @@ function SortMenu({
   readonly sortDirection: AutomationSortDirection
   readonly onSelect: (key: AutomationSortKey, direction: AutomationSortDirection) => void
 }): JSX.Element {
+  return (
+    <DropdownMenu
+      className="dsh-st-sort"
+      ariaLabel={t('sort.by')}
+      options={[
+        { key: 'created-desc', label: t('sort.created.desc'), selected: sortKey === 'created' && sortDirection === 'desc', onSelect: () => onSelect('created', 'desc') },
+        { key: 'created-asc', label: t('sort.created.asc'), selected: sortKey === 'created' && sortDirection === 'asc', onSelect: () => onSelect('created', 'asc') },
+        { key: 'planned-asc', label: t('sort.planned.asc'), selected: sortKey === 'planned' && sortDirection === 'asc', onSelect: () => onSelect('planned', 'asc') },
+        { key: 'planned-desc', label: t('sort.planned.desc'), selected: sortKey === 'planned' && sortDirection === 'desc', onSelect: () => onSelect('planned', 'desc') },
+      ]}
+    />
+  )
+}
+
+interface DropdownMenuOption {
+  readonly key: string
+  readonly label: string
+  readonly selected: boolean
+  readonly onSelect: () => void
+}
+
+function DropdownMenu({
+  ariaLabel,
+  className,
+  options,
+}: {
+  readonly ariaLabel: string
+  readonly className?: string
+  readonly options: readonly DropdownMenuOption[]
+}): JSX.Element {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -348,31 +392,21 @@ function SortMenu({
     }
   }, [open])
 
-  const options: readonly {
-    readonly key: AutomationSortKey
-    readonly direction: AutomationSortDirection
-    readonly label: string
-  }[] = [
-    { key: 'created', direction: 'desc', label: t('sort.created.desc') },
-    { key: 'created', direction: 'asc', label: t('sort.created.asc') },
-    { key: 'planned', direction: 'asc', label: t('sort.planned.asc') },
-    { key: 'planned', direction: 'desc', label: t('sort.planned.desc') },
-  ]
-  const selectedLabel = options.find(option => option.key === sortKey && option.direction === sortDirection)?.label ?? t('sort.by')
+  const selectedLabel = options.find(option => option.selected)?.label ?? options[0]?.label ?? ariaLabel
   return (
-    <div className="dsh-st-sort" ref={root}>
-      <button type="button" className={`dsh-st-sort-btn${open ? ' is-open' : ''}`} aria-label={t('sort.by')} aria-expanded={open} onClick={() => setOpen(value => !value)}>
-        {selectedLabel}
-        <ChevronIcon width={10} height={10} className="dsh-st-sort-chevron" />
+    <div className={`dsh-st-dropdown${className === undefined ? '' : ` ${className}`}`} ref={root}>
+      <button type="button" className={`dsh-st-dropdown-btn${open ? ' is-open' : ''}`} aria-label={ariaLabel} aria-expanded={open} onClick={() => setOpen(value => !value)}>
+        <span className="dsh-st-dropdown-label">{selectedLabel}</span>
+        <ChevronIcon width={10} height={10} className="dsh-st-dropdown-chevron" />
       </button>
       {open && (
-        <div className="dsh-st-sort-menu">
+        <div className="dsh-st-dropdown-menu">
           {options.map(option => (
-            <SortRow
-              key={`${option.key}-${option.direction}`}
+            <DropdownRow
+              key={option.key}
               label={option.label}
-              selected={sortKey === option.key && sortDirection === option.direction}
-              onSelect={() => { setOpen(false); onSelect(option.key, option.direction) }}
+              selected={option.selected}
+              onSelect={() => { setOpen(false); option.onSelect() }}
             />
           ))}
         </div>
@@ -381,7 +415,7 @@ function SortMenu({
   )
 }
 
-function SortRow({
+function DropdownRow({
   label,
   selected,
   onSelect,

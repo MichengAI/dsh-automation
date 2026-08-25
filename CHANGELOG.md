@@ -4,6 +4,13 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.18 — 2026-08-26
+
+- Replaced the native task and status filters in run history with the same styled dropdown used for task sorting.
+- Added consistent selected states, long-label truncation, scrolling, outside-click dismissal, and Escape handling for those filters.
+
+Published package: [`@michengai/dsh-automation@0.1.18`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.18).
+
 ## 0.1.17 — 2026-08-26
 
 - Removed the redundant full-width divider below the scheduled-task tabs while retaining the active-tab underline.
@@ -33,9 +40,3 @@ Published package: [`@michengai/dsh-automation@0.1.15`](https://www.npmjs.com/pa
 - Linked the release history from both README editions and included it in the npm package.
 
 Published package: [`@michengai/dsh-automation@0.1.14`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.14).
-
-## 0.1.13 — 2026-08-23
-
-- Logged internal RPC failures instead of leaving automation failures silent.
-
-Release commit: [`6f04ae9`](https://github.com/MichengAI/dsh-automation/commit/6f04ae9).

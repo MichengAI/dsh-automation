@@ -27,17 +27,20 @@ const CSS_TEXT = `
 .dsh-st-tabs{display:flex;align-items:center;gap:16px;margin:4px 0 16px}
 .dsh-st-tabs>button{padding:8px 0;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}
 .dsh-st-tabs>button.is-on{border-bottom-color:currentColor;color:var(--dsw-alias-label-primary);font-weight:650}
-.dsh-st-sort{position:relative;margin-left:auto}
-.dsh-st-sort-btn{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:0;border-radius:999px;background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,.14));color:var(--dsw-alias-label-primary,inherit);font:13px/20px inherit;cursor:pointer}
-.dsh-st-sort-btn:hover,.dsh-st-sort-btn.is-open{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.18))}
-.dsh-st-sort-chevron{transition:transform .16s ease;transform:rotate(90deg)}
-.dsh-st-sort-btn.is-open .dsh-st-sort-chevron{transform:rotate(-90deg)}
-.dsh-st-sort-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;width:180px;padding:6px;border:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,.12));border-radius:12px;background:var(--dsw-alias-bg-layer-3,#303033);box-shadow:var(--dsw-shadow-lv3,0 8px 24px rgba(0,0,0,.32))}
-.dsh-st-sort-menu button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:36px;padding:6px 10px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary,inherit);font:13px/20px inherit;cursor:pointer;text-align:left}
-.dsh-st-sort-menu button:hover,.dsh-st-sort-menu button.is-selected{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.08));color:var(--dsw-alias-label-primary,inherit)}
+.dsh-st-dropdown{position:relative;min-width:0}
+.dsh-st-sort{margin-left:auto}
+.dsh-st-dropdown-btn{display:inline-flex;align-items:center;gap:4px;max-width:220px;height:28px;padding:0 10px;border:0;border-radius:999px;background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,.14));color:var(--dsw-alias-label-primary,inherit);font:13px/20px inherit;cursor:pointer;white-space:nowrap}
+.dsh-st-dropdown-btn:hover,.dsh-st-dropdown-btn.is-open{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.18))}
+.dsh-st-dropdown-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsh-st-dropdown-chevron{flex:none;transition:transform .16s ease;transform:rotate(90deg)}
+.dsh-st-dropdown-btn.is-open .dsh-st-dropdown-chevron{transform:rotate(-90deg)}
+.dsh-st-dropdown-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;width:180px;max-height:260px;overflow:auto;padding:6px;border:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,.12));border-radius:12px;background:var(--dsw-alias-bg-layer-3,#303033);box-shadow:var(--dsw-shadow-lv3,0 8px 24px rgba(0,0,0,.32))}
+.dsh-st-dropdown-menu button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:36px;padding:6px 10px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary,inherit);font:13px/20px inherit;cursor:pointer;text-align:left}
+.dsh-st-dropdown-menu button>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsh-st-dropdown-menu button:hover,.dsh-st-dropdown-menu button.is-selected{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.08));color:var(--dsw-alias-label-primary,inherit)}
 .dsh-st-sort-tick{width:16px;height:16px;flex:none}
 .dsh-st-filters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto}
-.dsh-st-filters>button,.dsh-st-filters>select{height:28px;padding:0 10px;border:0;border-radius:999px;background:rgba(255,255,255,.06);color:inherit;font-size:12px}
+.dsh-st-filters>button{height:28px;padding:0 10px;border:0;border-radius:999px;background:rgba(255,255,255,.06);color:inherit;font-size:12px}
 .dsh-st-filters>button.is-on{background:rgba(255,255,255,.14)}
 .dsh-st-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .dsh-st-card,.dsh-st-empty{position:relative;padding:16px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-2,rgba(255,255,255,.03))}
@@ -163,4 +166,3 @@ export function installStyles(): () => void {
   document.head.append(style)
   return () => { style.remove() }
 }
-

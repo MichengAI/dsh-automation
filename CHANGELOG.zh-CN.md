@@ -4,6 +4,13 @@
 
 以下记录最近发布的五个版本。Git 标签与 GitHub Release 现已和这些条目同步；历史条目继续保留原始发布提交链接。
 
+## 0.1.18 — 2026-08-26
+
+- 将执行记录中的“全部任务”和“全部状态”从原生下拉框替换为与任务排序一致的自定义样式菜单。
+- 为这些筛选菜单增加统一的选中状态、长名称省略、滚动、点击外部关闭和 Escape 关闭行为。
+
+发布包：[`@michengai/dsh-automation@0.1.18`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.18)。
+
 ## 0.1.17 — 2026-08-26
 
 - 移除定时任务标签栏下方多余的整行分隔线，同时保留当前标签的短下划线。
@@ -33,9 +40,3 @@
 - 在中英文 README 中加入更新日志入口，并将日志纳入 npm 包。
 
 发布包：[`@michengai/dsh-automation@0.1.14`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.14)。
-
-## 0.1.13 — 2026-08-23
-
-- 记录内部 RPC 失败，避免自动化执行错误被静默吞掉。
-
-发布提交：[`6f04ae9`](https://github.com/MichengAI/dsh-automation/commit/6f04ae9)。
