@@ -31,7 +31,7 @@ function automationView(id: string, name: string, createdAt: string, nextRunAt?:
   }
 }
 
-test('任务排序支持创建时间/标题/计划时间与正倒序', () => {
+test('任务排序支持创建时间/执行时间与正倒序', () => {
   const items = [
     automationView('a1', 'B', '2026-08-01T00:00:00.000Z', '2026-08-10T00:00:00.000Z'),
     automationView('a2', 'A', '2026-08-02T00:00:00.000Z', '2026-08-09T00:00:00.000Z'),
@@ -39,15 +39,13 @@ test('任务排序支持创建时间/标题/计划时间与正倒序', () => {
   ]
   assert.deepEqual(sortAutomations(items, 'created', 'desc').map(item => item.id), ['a3', 'a2', 'a1'])
   assert.deepEqual(sortAutomations(items, 'created', 'asc').map(item => item.id), ['a1', 'a2', 'a3'])
-  assert.deepEqual(sortAutomations(items, 'title', 'asc').map(item => item.id), ['a2', 'a1', 'a3'])
-  assert.deepEqual(sortAutomations(items, 'title', 'desc').map(item => item.id), ['a3', 'a1', 'a2'])
   assert.deepEqual(sortAutomations(items, 'planned', 'asc').map(item => item.id), ['a2', 'a1', 'a3'])
   assert.deepEqual(sortAutomations(items, 'planned', 'desc').map(item => item.id), ['a1', 'a2', 'a3'])
 })
 
 test('任务排序不修改原数组', () => {
   const items = [automationView('a1', 'A', '2026-08-01T00:00:00.000Z')]
-  sortAutomations(items, 'title', 'desc')
+  sortAutomations(items, 'created', 'desc')
   assert.equal(items.length, 1)
   assert.equal(items[0]?.id, 'a1')
 })
@@ -260,5 +258,4 @@ test('技能点选写入 /name，已存在则不重复', () => {
   const mid = insertSkillGesture('请执行', '/web-search', 3)
   assert.equal(mid.text, '请执行 /web-search ')
 })
-
 

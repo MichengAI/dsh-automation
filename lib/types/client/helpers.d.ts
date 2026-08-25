@@ -57,7 +57,7 @@ export declare function formatWithin(iso: string, now: Date, t: Translate): stri
 export declare function formatDuration(startedAt?: string, finishedAt?: string): string | undefined;
 export declare function clockTime(iso: string): string;
 export type HistoryRange = 'day' | 'week' | 'month';
-export type AutomationSortKey = 'created' | 'planned' | 'title';
+export type AutomationSortKey = 'created' | 'planned';
 export type AutomationSortDirection = 'asc' | 'desc';
 export interface HistoryGroup {
     readonly key: string;

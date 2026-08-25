@@ -33,8 +33,6 @@ const CSS_TEXT = `
 .dsh-st-sort-chevron{transition:transform .16s ease;transform:rotate(90deg)}
 .dsh-st-sort-btn.is-open .dsh-st-sort-chevron{transform:rotate(-90deg)}
 .dsh-st-sort-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:180px;padding:8px 6px;border:1px solid var(--dsw-alias-border-inverted,rgba(255,255,255,.12));border-radius:12px;background:var(--dsw-specific-menu,#1c2128);box-shadow:var(--dsw-shadow-lv3,0 8px 24px rgba(0,0,0,.36))}
-.dsh-st-sort-label{padding:6px 10px 4px;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary,#81858C)}
-.dsh-st-sort-split{height:1px;margin:6px 8px;background:var(--dsw-alias-border-l2,rgba(255,255,255,.1))}
 .dsh-st-sort-menu button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:36px;padding:6px 10px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary,inherit);font:14px/20px inherit;cursor:pointer;text-align:left}
 .dsh-st-sort-menu button:hover,.dsh-st-sort-menu button.is-on{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06))}
 .dsh-st-sort-tick{width:16px;height:16px;flex:none}
@@ -53,6 +51,7 @@ const CSS_TEXT = `
 .dsh-st-more{width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer}
 .dsh-st-menu{position:absolute;top:40px;right:12px;z-index:3;min-width:148px;padding:6px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-base);box-shadow:0 10px 30px rgba(0,0,0,.28)}
 .dsh-st-menu button{display:flex;width:100%;align-items:center;gap:8px;padding:8px 10px;border:0;border-radius:8px;background:transparent;color:inherit;cursor:pointer}
+.dsh-st-menu button svg{flex:none}
 .dsh-st-menu button:hover{background:rgba(255,255,255,.06)}
 .dsh-st-menu .is-danger{color:#ff6b6b}
 .dsh-st-timeline{display:flex;flex-direction:column;gap:22px;padding-left:10px}
@@ -164,6 +163,5 @@ export function installStyles(): () => void {
   document.head.append(style)
   return () => { style.remove() }
 }
-
 
 

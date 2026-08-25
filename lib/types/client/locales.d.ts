@@ -33,7 +33,8 @@ export declare const en: {
     readonly 'examples.3.chip': "Weekdays 08:00";
     readonly 'chat.hint': "In any conversation, describe the recurring work and ask the Agent to call automation_create.";
     readonly 'chat.prompt': "I want to create a scheduled task that runs every [interval] and does [the actual task]";
-    readonly 'menu.run': "Run now";
+    readonly 'menu.run': "Run task";
+    readonly 'menu.edit': "Edit task";
     readonly 'menu.delete': "Delete task";
     readonly 'session.rename': "Rename";
     readonly 'session.fork': "Fork session";
@@ -67,13 +68,10 @@ export declare const en: {
     readonly 'tabs.mine': "My tasks";
     readonly 'tabs.runs': "Run history";
     readonly 'sort.by': "Sort";
-    readonly 'sort.field': "Sort field";
-    readonly 'sort.direction': "Sort direction";
-    readonly 'sort.key.created': "Created time";
-    readonly 'sort.key.planned': "Planned time";
-    readonly 'sort.key.title': "Title";
-    readonly 'sort.direction.asc': "Ascending";
-    readonly 'sort.direction.desc': "Descending";
+    readonly 'sort.created.asc': "Created time ascending";
+    readonly 'sort.created.desc': "Created time descending";
+    readonly 'sort.planned.asc': "Execution time ascending";
+    readonly 'sort.planned.desc': "Execution time descending";
     readonly 'form.workspace': "Workspace";
     readonly 'form.workspacePath': "Folder path";
     readonly 'form.workspacePathPlaceholder': "D:\\work\\project";
@@ -140,6 +138,9 @@ export declare const en: {
     readonly 'form.days': "Weekdays";
     readonly 'form.timeZone': "Time zone";
     readonly 'form.permission': "Permission boundary";
+    readonly 'permission.readOnly': "Read Only";
+    readonly 'permission.workspaceWrite': "Workspace Write";
+    readonly 'permission.fullAccess': "Full access";
     readonly 'form.cancel': "Cancel";
     readonly 'form.submit': "Create automation";
     readonly 'form.submitting': "Creating…";
@@ -174,6 +175,7 @@ export declare const en: {
     readonly 'card.pause': "Pause";
     readonly 'card.resume': "Resume";
     readonly 'card.runNow': "Run now";
+    readonly 'card.more': "More actions";
     readonly 'card.delete': "Delete";
     readonly 'card.confirmDelete': "Delete this automation?";
     readonly 'card.confirmDeleteHint': "Run history is kept for audit.";

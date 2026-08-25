@@ -272,7 +272,7 @@ export function clockTime(iso: string): string {
 
 export type HistoryRange = 'day' | 'week' | 'month'
 
-export type AutomationSortKey = 'created' | 'planned' | 'title'
+export type AutomationSortKey = 'created' | 'planned'
 export type AutomationSortDirection = 'asc' | 'desc'
 
 export interface HistoryGroup {
@@ -307,9 +307,7 @@ export function sortAutomations(
       if (primary !== 0) return primary * factor
       return left.name.localeCompare(right.name) || left.id.localeCompare(right.id)
     }
-    const primary = key === 'title'
-      ? left.name.localeCompare(right.name)
-      : sortStamp(left.createdAt) - sortStamp(right.createdAt)
+    const primary = sortStamp(left.createdAt) - sortStamp(right.createdAt)
     if (primary !== 0) return primary * factor
     return left.id.localeCompare(right.id)
   })
@@ -420,5 +418,4 @@ export function prettyModelName(model: string): string {
     return part.slice(0, 1).toUpperCase() + part.slice(1)
   }).join('-')
 }
-
 

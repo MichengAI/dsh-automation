@@ -24,6 +24,7 @@ import {
   ClockIcon,
   InfoIcon,
   MoreIcon,
+  PencilIcon,
   PlayIcon,
   PlusIcon,
   RefreshIcon,
@@ -56,8 +57,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
   const [historyRange, setHistoryRange] = useState<HistoryRange>('day')
   const [historyTask, setHistoryTask] = useState('all')
   const [historyStatus, setHistoryStatus] = useState<'all' | AutomationRunStatus>('all')
-  const [sortKey, setSortKey] = useState<AutomationSortKey>('planned')
-  const [sortDirection, setSortDirection] = useState<AutomationSortDirection>('asc')
+  const [sortKey, setSortKey] = useState<AutomationSortKey>('created')
+  const [sortDirection, setSortDirection] = useState<AutomationSortDirection>('desc')
   const now = useMemo(() => new Date(state.snapshot?.serverNow ?? Date.now()), [state.snapshot?.serverNow, state.refreshedAt])
 
   const snapshot = state.snapshot
@@ -299,11 +300,12 @@ function TaskCard({
     <article className="dsh-st-card" ref={root} onClick={onEdit}>
       <div className="dsh-st-card-head">
         <button type="button" className={`dsh-st-switch ${item.status === 'active' ? 'is-on' : ''}`} role="switch" aria-checked={item.status === 'active'} disabled={busy} onClick={(event) => { event.stopPropagation(); onToggle() }} />
-        <button type="button" className="dsh-st-more" onClick={(event) => { event.stopPropagation(); setMenu(value => !value) }} aria-label={t('card.delete')}><MoreIcon /></button>
+        <button type="button" className="dsh-st-more" onClick={(event) => { event.stopPropagation(); setMenu(value => !value) }} aria-label={t('card.more')}><MoreIcon /></button>
         {menu && (
           <div className="dsh-st-menu" onClick={event => event.stopPropagation()}>
-            <button type="button" disabled={busy} onClick={() => { setMenu(false); onRun() }}><PlayIcon />{t('menu.run')}</button>
-            <button type="button" className="is-danger" disabled={busy} onClick={() => { setMenu(false); onDelete() }}><TrashIcon />{t('menu.delete')}</button>
+            <button type="button" disabled={busy} onClick={() => { setMenu(false); onRun() }}><PlayIcon width={16} height={16} />{t('menu.run')}</button>
+            <button type="button" disabled={busy} onClick={() => { setMenu(false); onEdit() }}><PencilIcon width={16} height={16} />{t('menu.edit')}</button>
+            <button type="button" className="is-danger" disabled={busy} onClick={() => { setMenu(false); onDelete() }}><TrashIcon width={16} height={16} />{t('menu.delete')}</button>
           </div>
         )}
       </div>
@@ -335,36 +337,44 @@ function SortMenu({
     const close = (event: MouseEvent): void => {
       if (root.current !== null && !root.current.contains(event.target as Node)) setOpen(false)
     }
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setOpen(false)
+    }
     document.addEventListener('mousedown', close)
-    return () => { document.removeEventListener('mousedown', close) }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
   }, [open])
 
-  const fields: readonly { readonly key: AutomationSortKey; readonly label: string }[] = [
-    { key: 'title', label: t('sort.key.title') },
-    { key: 'created', label: t('sort.key.created') },
-    { key: 'planned', label: t('sort.key.planned') },
+  const options: readonly {
+    readonly key: AutomationSortKey
+    readonly direction: AutomationSortDirection
+    readonly label: string
+  }[] = [
+    { key: 'created', direction: 'desc', label: t('sort.created.desc') },
+    { key: 'created', direction: 'asc', label: t('sort.created.asc') },
+    { key: 'planned', direction: 'asc', label: t('sort.planned.asc') },
+    { key: 'planned', direction: 'desc', label: t('sort.planned.desc') },
   ]
+  const selectedLabel = options.find(option => option.key === sortKey && option.direction === sortDirection)?.label ?? t('sort.by')
   return (
     <div className="dsh-st-sort" ref={root}>
       <button type="button" className={`dsh-st-sort-btn${open ? ' is-open' : ''}`} aria-label={t('sort.by')} aria-expanded={open} onClick={() => setOpen(value => !value)}>
-        {t('sort.by')}
+        {selectedLabel}
         <ChevronIcon className="dsh-st-sort-chevron" />
       </button>
       {open && (
-        <div className="dsh-st-sort-menu" role="menu">
-          <div className="dsh-st-sort-label">{t('sort.field')}</div>
-          {fields.map(field => (
+        <div className="dsh-st-sort-menu">
+          {options.map(option => (
             <SortRow
-              key={field.key}
-              label={field.label}
-              selected={sortKey === field.key}
-              onSelect={() => { setOpen(false); onSelect(field.key, sortDirection) }}
+              key={`${option.key}-${option.direction}`}
+              label={option.label}
+              selected={sortKey === option.key && sortDirection === option.direction}
+              onSelect={() => { setOpen(false); onSelect(option.key, option.direction) }}
             />
           ))}
-          <div className="dsh-st-sort-split" />
-          <div className="dsh-st-sort-label">{t('sort.direction')}</div>
-          <SortRow label={t('sort.direction.asc')} selected={sortDirection === 'asc'} onSelect={() => { setOpen(false); onSelect(sortKey, 'asc') }} />
-          <SortRow label={t('sort.direction.desc')} selected={sortDirection === 'desc'} onSelect={() => { setOpen(false); onSelect(sortKey, 'desc') }} />
         </div>
       )}
     </div>
@@ -381,7 +391,7 @@ function SortRow({
   readonly onSelect: () => void
 }): JSX.Element {
   return (
-    <button type="button" role="menuitemradio" aria-checked={selected} className={selected ? 'is-on' : undefined} onClick={onSelect}>
+    <button type="button" aria-pressed={selected} className={selected ? 'is-on' : undefined} onClick={onSelect}>
       <span>{label}</span>
       {selected ? <CheckOutlineIcon width={16} height={16} /> : <span className="dsh-st-sort-tick" />}
     </button>
@@ -401,4 +411,3 @@ function RunRow({ run, t }: { readonly run: AutomationRunViewModel; readonly t: 
     </article>
   )
 }
-

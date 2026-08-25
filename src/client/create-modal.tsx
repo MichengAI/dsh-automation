@@ -237,7 +237,7 @@ export function CreateModal({
                   value={form.permission}
                   options={permissions.map(option => ({
                     value: option.value,
-                    label: permissionLabel(option, permissionT),
+                    label: permissionLabel(option, t),
                     icon: <ShieldIcon width={14} height={14} />,
                   }))}
                   onChange={choosePermission}
