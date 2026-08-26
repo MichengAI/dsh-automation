@@ -5,6 +5,8 @@ export declare const en: {
     readonly 'sidebar.tabs': "Workspace views";
     readonly 'sidebar.tasksTab': "Tasks";
     readonly 'sidebar.channelsTab': "Channels";
+    readonly 'sidebar.views': "Scheduled views";
+    readonly 'sidebar.viewOverview': "Task overview";
     readonly 'sidebar.empty': "No scheduled runs yet.";
     readonly 'sidebar.tasksEmpty': "No web tasks yet.";
     readonly 'sidebar.ungrouped': "Ungrouped";
@@ -72,6 +74,7 @@ export declare const en: {
     readonly 'sort.created.desc': "Created time descending";
     readonly 'sort.planned.asc': "Planned time ascending";
     readonly 'sort.planned.desc': "Planned time descending";
+    readonly 'sort.default.saved': "Default";
     readonly 'form.workspace': "Workspace";
     readonly 'form.workspacePath': "Folder path";
     readonly 'form.workspacePathPlaceholder': "D:\\work\\project";
@@ -108,6 +111,7 @@ export declare const en: {
     readonly 'empty.body': "Save a self-contained task, a schedule, and a permission boundary. Every run starts in a new Session.";
     readonly 'empty.action': "Create the first automation";
     readonly 'runs.empty': "No runs yet. Run one now, or wait for the next scheduled occurrence.";
+    readonly 'overview.empty': "No scheduled tasks yet. Create one in Settings.";
     readonly 'form.title': "Create automation";
     readonly 'form.subtitle': "Write a complete, standalone task. Scheduled runs do not inherit this conversation.";
     readonly 'form.name': "Name";

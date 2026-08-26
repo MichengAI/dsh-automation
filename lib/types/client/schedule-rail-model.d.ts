@@ -44,6 +44,21 @@ export declare function groupScheduledSessions(automations: readonly {
     readonly id: string;
     readonly name: string;
 }[], runs: readonly ScheduleRunLike[]): ScheduleRailGroup[];
+export interface OverviewAutomationLike {
+    readonly id: string;
+    readonly name: string;
+    readonly status: string;
+    readonly nextRunAt?: string;
+}
+export interface TaskOverviewRow {
+    readonly id: string;
+    readonly name: string;
+    readonly status: string;
+    readonly nextRunAt?: string;
+    readonly lastSessionId?: string;
+}
+/** 任务总览：每个定义一行；最近一次留有会话的运行决定该行是否可点开。 */
+export declare function deriveTaskOverviewRows(automations: readonly OverviewAutomationLike[], runs: readonly ScheduleRunLike[]): TaskOverviewRow[];
 /** 归档中的、以及宿主已经不认识的 Session，都不应再出现在定时页。 */
 export declare function keepScheduledSessionLink(sessionId: string | undefined, archived: ReadonlySet<string>, presentIds?: ReadonlySet<string>): boolean;
 export declare function collectScheduledSessionIds(runs: readonly {

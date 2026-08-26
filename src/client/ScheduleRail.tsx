@@ -19,6 +19,7 @@ import {
   type NativeWorkspaceLike,
 } from './schedule-rail-model.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
+import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import type { NativeSidebarTab as ExtraSidebarTab, NativeTabRegistry } from './native-tabs.js'
 
 const EMPTY_EXTRA_TABS: ExtraSidebarTab[] = []
@@ -57,40 +58,54 @@ export function ScheduleRail({
 }): JSX.Element {
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const [folded, setFolded] = useState<Record<string, boolean>>({})
+  const [view, setView] = useState<ScheduleView>('runs')
+  const snapshot = state.snapshot
 
   const groups = useMemo(() => {
-    const snapshot = state.snapshot
     if (snapshot === undefined) return []
     return groupScheduledSessions(snapshot.automations, snapshot.runs)
-  }, [state.snapshot])
+  }, [snapshot])
 
   return (
     <div className="dsh-st-rail">
-      {state.phase === 'loading' && groups.length === 0 && <div className="dsh-st-rail-empty">{t('loading')}</div>}
-      {groups.length === 0 && state.phase !== 'loading' && <div className="dsh-st-rail-empty">{t('sidebar.empty')}</div>}
-      {groups.map(group => (
-        <section key={group.id} className="dsh-st-rail-group">
-          <button
-            type="button"
-            className="dsh-st-rail-head"
-            onClick={() => setFolded(current => ({ ...current, [group.id]: !current[group.id] }))}
-          >
-            <span className="dsh-st-rail-folder"><ClockIcon width={16} height={16} /></span>
-            <span className="dsh-st-rail-title">{group.name}</span>
-          </button>
-          {folded[group.id] !== true && group.sessions.map(session => (
-            <button
-              key={session.id}
-              type="button"
-              className="dsh-st-rail-session"
-              onClick={() => openSession?.(session.id)}
-            >
-              <span>{session.label}</span>
-              {session.running && <RunningStateDot />}
-            </button>
-          ))}
-        </section>
-      ))}
+      <ScheduleViewSwitch t={t} view={view} onChange={setView} />
+      {view === 'overview'
+        ? snapshot === undefined
+          ? <div className="dsh-st-rail-empty">{state.phase === 'loading' ? t('loading') : t('overview.empty')}</div>
+          : <ScheduleOverview
+              t={t}
+              automations={snapshot.automations}
+              runs={snapshot.runs}
+              {...(openSession === undefined ? {} : { openSession })}
+              {...(snapshot.serverNow === undefined ? {} : { serverNow: snapshot.serverNow })}
+            />
+        : <>
+            {state.phase === 'loading' && groups.length === 0 && <div className="dsh-st-rail-empty">{t('loading')}</div>}
+            {groups.length === 0 && state.phase !== 'loading' && <div className="dsh-st-rail-empty">{t('sidebar.empty')}</div>}
+            {groups.map(group => (
+              <section key={group.id} className="dsh-st-rail-group">
+                <button
+                  type="button"
+                  className="dsh-st-rail-head"
+                  onClick={() => setFolded(current => ({ ...current, [group.id]: !current[group.id] }))}
+                >
+                  <span className="dsh-st-rail-folder"><ClockIcon width={16} height={16} /></span>
+                  <span className="dsh-st-rail-title">{group.name}</span>
+                </button>
+                {folded[group.id] !== true && group.sessions.map(session => (
+                  <button
+                    key={session.id}
+                    type="button"
+                    className="dsh-st-rail-session"
+                    onClick={() => openSession?.(session.id)}
+                  >
+                    <span>{session.label}</span>
+                    {session.running && <RunningStateDot />}
+                  </button>
+                ))}
+              </section>
+            ))}
+          </>}
     </div>
   )
 }

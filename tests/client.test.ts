@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, insertSkillGesture, prettyModelName, skillGestureToken, sortAutomations } from '../src/client/helpers.ts'
+import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, insertSkillGesture, prettyModelName, readSortDefault, skillGestureToken, sortAutomations, writeSortDefault } from '../src/client/helpers.ts'
 import type { AutomationViewModel } from '../src/client/protocol.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
 import { createAutomationRuntime } from '../src/client/runtime.ts'
@@ -48,6 +48,24 @@ test('任务排序不修改原数组', () => {
   sortAutomations(items, 'created', 'desc')
   assert.equal(items.length, 1)
   assert.equal(items[0]?.id, 'a1')
+})
+
+test('默认排序偏好读写并拒绝损坏或非法值', () => {
+  const values = new Map<string, string>()
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => { values.set(key, value) },
+  }
+  assert.equal(readSortDefault(storage, 'key'), undefined)
+  writeSortDefault(storage, 'key', 'planned', 'asc')
+  assert.deepEqual(readSortDefault(storage, 'key'), { key: 'planned', direction: 'asc' })
+  values.set('key', 'not-json')
+  assert.equal(readSortDefault(storage, 'key'), undefined)
+  values.set('key', JSON.stringify({ key: 'bogus', direction: 'asc' }))
+  assert.equal(readSortDefault(storage, 'key'), undefined)
+  values.set('key', JSON.stringify({ key: 'planned', direction: 'up' }))
+  assert.equal(readSortDefault(storage, 'key'), undefined)
+  assert.equal(readSortDefault(undefined, 'key'), undefined)
 })
 
 test('表单会拒绝空白任务和过去的一次性时间', () => {

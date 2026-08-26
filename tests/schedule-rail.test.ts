@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   AUTOMATION_SESSION_PREFIX,
   collectScheduledSessionIds,
+  deriveTaskOverviewRows,
   isAutomationSidebarSession,
   formatRunStamp,
   groupNativeTaskSessions,
@@ -68,6 +69,25 @@ test('schedule rail groups runs by task name', () => {
   assert.equal(groups[0]?.sessions[0]?.running, true)
   assert.ok((groups[0]?.sessions[0]?.label ?? '').includes('auto-report'))
   assert.ok(formatRunStamp('2026-08-16T02:30:00.000Z').includes('2026-08-16'))
+})
+
+test('任务总览包含从未运行的任务，并用最近会话作为可点开入口', () => {
+  const rows = deriveTaskOverviewRows(
+    [
+      { id: 'a1', name: 'ran', status: 'active', nextRunAt: '2026-08-20T09:00:00+08:00' },
+      { id: 'a2', name: 'never', status: 'paused' },
+    ],
+    [
+      { automationId: 'a1', sessionId: AUTOMATION_SESSION_PREFIX + 'old', status: 'succeeded', startedAt: '2026-08-15T01:00:00.000Z', scheduledFor: '2026-08-15T01:00:00.000Z' },
+      { automationId: 'a1', sessionId: AUTOMATION_SESSION_PREFIX + 'new', status: 'succeeded', startedAt: '2026-08-16T01:00:00.000Z', scheduledFor: '2026-08-16T01:00:00.000Z' },
+      { automationId: 'a2', status: 'queued', scheduledFor: '2026-08-16T03:00:00.000Z' },
+    ],
+  )
+  assert.equal(rows.length, 2)
+  assert.equal(rows[0]?.lastSessionId, AUTOMATION_SESSION_PREFIX + 'new')
+  assert.equal(rows[0]?.nextRunAt, '2026-08-20T09:00:00+08:00')
+  assert.equal(rows[1]?.lastSessionId, undefined)
+  assert.equal(rows[1]?.nextRunAt, undefined)
 })
 
 test('任务树按前缀和定时标题隐藏自动化会话', () => {
