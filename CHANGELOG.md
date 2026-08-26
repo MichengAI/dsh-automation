@@ -4,6 +4,15 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.19 — 2026-08-26
+
+- Preserved time-zone and interval-anchor data while editing scheduled tasks, and made overdue recurrence recovery cadence-aware.
+- Prevented stale concurrent updates from overwriting run history; safely reconciled deleted or missing scheduled sessions.
+- Added a confirmation step before deleting a task, validated workspace ID and path agreement, and exposed interrupted runs in history filters.
+- Aligned Agent creation and update with all supported schedule types, including hourly, monthly, and custom plans.
+
+Published package: [`@michengai/dsh-automation@0.1.19`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.19).
+
 ## 0.1.18 — 2026-08-26
 
 - Replaced the native task and status filters in run history with the same styled dropdown used for task sorting.
