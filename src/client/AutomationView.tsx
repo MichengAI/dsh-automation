@@ -11,17 +11,18 @@ import {
   formFromAutomation,
   groupHistory,
   HISTORY_STATUS_OPTIONS,
+  readSortDefault,
   sortAutomations,
+  SETTINGS_SORT_DEFAULT_KEY,
   type AutomationFormState,
   type AutomationSortDirection,
   type AutomationSortKey,
   type HistoryRange,
   type ScheduleKind,
+  type SortPreferenceStorage,
 } from './helpers.js'
 import {
   ChatIcon,
-  CheckOutlineIcon,
-  ChevronIcon,
   ClockIcon,
   InfoIcon,
   MoreIcon,
@@ -33,11 +34,14 @@ import {
 } from './icons.js'
 import { CreateModal } from './create-modal.js'
 import { DeleteConfirmation } from './delete-confirmation.js'
+import { DropdownMenu } from './dropdown-menu.js'
 import { setChatPrefill } from './prefill.js'
 import { isTransportError } from './runtime.js'
+import { SortMenu } from './sort-menu.js'
 import type { AutomationRunStatus, AutomationRunViewModel, AutomationViewModel } from './protocol.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
+const SORT_STORAGE: SortPreferenceStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage
 
 type Tab = 'mine' | 'runs'
 
@@ -60,8 +64,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
   const [historyRange, setHistoryRange] = useState<HistoryRange>('day')
   const [historyTask, setHistoryTask] = useState('all')
   const [historyStatus, setHistoryStatus] = useState<'all' | AutomationRunStatus>('all')
-  const [sortKey, setSortKey] = useState<AutomationSortKey>('created')
-  const [sortDirection, setSortDirection] = useState<AutomationSortDirection>('desc')
+  const [sortKey, setSortKey] = useState<AutomationSortKey>(() => readSortDefault(SORT_STORAGE, SETTINGS_SORT_DEFAULT_KEY)?.key ?? 'created')
+  const [sortDirection, setSortDirection] = useState<AutomationSortDirection>(() => readSortDefault(SORT_STORAGE, SETTINGS_SORT_DEFAULT_KEY)?.direction ?? 'desc')
   const now = useMemo(() => new Date(state.snapshot?.serverNow ?? Date.now()), [state.snapshot?.serverNow, state.refreshedAt])
 
   const snapshot = state.snapshot
@@ -179,15 +183,19 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
         <button type="button" className={tab === 'mine' ? 'is-on' : ''} onClick={() => setTab('mine')}>{t('tabs.mine')}</button>
         <button type="button" className={tab === 'runs' ? 'is-on' : ''} onClick={() => setTab('runs')}>{t('tabs.runs')}</button>
         {tab === 'mine' && (
-          <SortMenu
-            t={t}
-            sortKey={sortKey}
-            sortDirection={sortDirection}
-            onSelect={(key, direction) => {
-              setSortKey(key)
-              setSortDirection(direction)
-            }}
-          />
+          <div className="dsh-st-sort-wrap">
+            <SortMenu
+              t={t}
+              {...(SORT_STORAGE === undefined ? {} : { storage: SORT_STORAGE })}
+              storageKey={SETTINGS_SORT_DEFAULT_KEY}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSelect={(key, direction) => {
+                setSortKey(key)
+                setSortDirection(direction)
+              }}
+            />
+          </div>
         )}
         {tab === 'runs' && (
           <div className="dsh-st-filters">
@@ -347,105 +355,6 @@ function TaskCard({
         <span>{item.nextRunAt === undefined ? t('stats.noneScheduled') : t('history.nextApprox', { when: formatWithin(item.nextRunAt, now, t) })}</span>
       </div>
     </article>
-  )
-}
-
-function SortMenu({
-  t,
-  sortKey,
-  sortDirection,
-  onSelect,
-}: {
-  readonly t: Translate
-  readonly sortKey: AutomationSortKey
-  readonly sortDirection: AutomationSortDirection
-  readonly onSelect: (key: AutomationSortKey, direction: AutomationSortDirection) => void
-}): JSX.Element {
-  return (
-    <DropdownMenu
-      className="dsh-st-sort"
-      ariaLabel={t('sort.by')}
-      options={[
-        { key: 'created-desc', label: t('sort.created.desc'), selected: sortKey === 'created' && sortDirection === 'desc', onSelect: () => onSelect('created', 'desc') },
-        { key: 'created-asc', label: t('sort.created.asc'), selected: sortKey === 'created' && sortDirection === 'asc', onSelect: () => onSelect('created', 'asc') },
-        { key: 'planned-asc', label: t('sort.planned.asc'), selected: sortKey === 'planned' && sortDirection === 'asc', onSelect: () => onSelect('planned', 'asc') },
-        { key: 'planned-desc', label: t('sort.planned.desc'), selected: sortKey === 'planned' && sortDirection === 'desc', onSelect: () => onSelect('planned', 'desc') },
-      ]}
-    />
-  )
-}
-
-interface DropdownMenuOption {
-  readonly key: string
-  readonly label: string
-  readonly selected: boolean
-  readonly onSelect: () => void
-}
-
-function DropdownMenu({
-  ariaLabel,
-  className,
-  options,
-}: {
-  readonly ariaLabel: string
-  readonly className?: string
-  readonly options: readonly DropdownMenuOption[]
-}): JSX.Element {
-  const [open, setOpen] = useState(false)
-  const root = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open) return
-    const close = (event: MouseEvent): void => {
-      if (root.current !== null && !root.current.contains(event.target as Node)) setOpen(false)
-    }
-    const closeOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('mousedown', close)
-    document.addEventListener('keydown', closeOnEscape)
-    return () => {
-      document.removeEventListener('mousedown', close)
-      document.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [open])
-
-  const selectedLabel = options.find(option => option.selected)?.label ?? options[0]?.label ?? ariaLabel
-  return (
-    <div className={`dsh-st-dropdown${className === undefined ? '' : ` ${className}`}`} ref={root}>
-      <button type="button" className={`dsh-st-dropdown-btn${open ? ' is-open' : ''}`} aria-label={ariaLabel} aria-expanded={open} onClick={() => setOpen(value => !value)}>
-        <span className="dsh-st-dropdown-label">{selectedLabel}</span>
-        <ChevronIcon width={10} height={10} className="dsh-st-dropdown-chevron" />
-      </button>
-      {open && (
-        <div className="dsh-st-dropdown-menu">
-          {options.map(option => (
-            <DropdownRow
-              key={option.key}
-              label={option.label}
-              selected={option.selected}
-              onSelect={() => { setOpen(false); option.onSelect() }}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function DropdownRow({
-  label,
-  selected,
-  onSelect,
-}: {
-  readonly label: string
-  readonly selected: boolean
-  readonly onSelect: () => void
-}): JSX.Element {
-  return (
-    <button type="button" aria-pressed={selected} className={selected ? 'is-selected' : undefined} onClick={onSelect}>
-      <span>{label}</span>
-      {selected ? <CheckOutlineIcon width={16} height={16} /> : <span className="dsh-st-sort-tick" />}
-    </button>
   )
 }
 

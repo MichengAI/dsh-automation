@@ -324,6 +324,41 @@ export function sortAutomations(
   })
 }
 
+export interface SortPreferenceStorage {
+  getItem(key: string): string | null
+  setItem(key: string, value: string): void
+}
+
+export const SETTINGS_SORT_DEFAULT_KEY = 'dsh-automation.sort-default.settings'
+export const OVERVIEW_SORT_DEFAULT_KEY = 'dsh-automation.sort-default.overview'
+
+/** 读取已保存的默认排序；缺失、损坏或无存储时返回 undefined，由调用方用自身默认值。 */
+export function readSortDefault(
+  storage: SortPreferenceStorage | undefined,
+  storageKey: string,
+): { readonly key: AutomationSortKey; readonly direction: AutomationSortDirection } | undefined {
+  if (storage === undefined) return undefined
+  try {
+    const raw = storage.getItem(storageKey)
+    if (raw === null) return undefined
+    const parsed = JSON.parse(raw) as { readonly key?: unknown; readonly direction?: unknown }
+    if (parsed.key !== 'created' && parsed.key !== 'planned') return undefined
+    if (parsed.direction !== 'asc' && parsed.direction !== 'desc') return undefined
+    return { key: parsed.key, direction: parsed.direction }
+  } catch {
+    return undefined
+  }
+}
+
+export function writeSortDefault(
+  storage: SortPreferenceStorage,
+  storageKey: string,
+  key: AutomationSortKey,
+  direction: AutomationSortDirection,
+): void {
+  storage.setItem(storageKey, JSON.stringify({ key, direction }))
+}
+
 export function groupHistory(
   runs: readonly import('./protocol.js').AutomationRunViewModel[],
   range: HistoryRange,

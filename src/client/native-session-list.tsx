@@ -21,6 +21,7 @@ import {
 } from './native-session-menu.js'
 import type { AutomationRuntime } from './runtime.js'
 import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, keepScheduledSessionLink, type NativeSessionLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
+import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import { WorkspaceToolbar } from './workspace-toolbar.js'
 
 export {
@@ -58,6 +59,7 @@ export function NativeScheduleSessionList(props: {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<WorkspaceListSort>('time')
   const [groupMode, setGroupMode] = useState<WorkspaceGroupMode>('workspace')
+  const [view, setView] = useState<ScheduleView>('runs')
   const archived = useMemo(() => new Set(archivedIds), [archivedIds])
   const listedIds: readonly string[] | undefined = useSessions
     ? useSessions((snap: { ids?: string[] }) => Array.isArray(snap?.ids) ? snap.ids : undefined)
@@ -86,45 +88,60 @@ export function NativeScheduleSessionList(props: {
   const visibleGroups = useMemo(() => applyWorkspaceBrowserQuery(groups.map((group) => ({ ...group, name: group.name })), query, sort, groupMode), [groups, query, sort, groupMode])
   return (
     <div className='dsh-st-n'>
-      <WorkspaceToolbar t={t} query={query} sort={sort} groupMode={groupMode} onQueryChange={setQuery} onSortChange={setSort} onGroupModeChange={setGroupMode} />
-      <div className='dsh-st-n-tree' role='tree'>
-        {state.phase === 'loading' && visibleGroups.length === 0 && <div className='dsh-st-n-empty'>{t('loading')}</div>}
-        {visibleGroups.length === 0 && state.phase !== 'loading' && <div className='dsh-st-n-empty'>{t('sidebar.empty')}</div>}
-        {visibleGroups.map((group) => {
-          const expanded = folded[group.id] !== true
-          return (
-            <div key={group.id} className='dsh-st-n-group'>
-              {groupMode === 'workspace' && <div className='dsh-st-n-row' role='treeitem' aria-expanded={expanded} onClick={() => setFolded((current) => ({ ...current, [group.id]: expanded }))}>
-                <span className='dsh-st-n-slot dsh-st-n-folder'>{expanded ? <FolderOpenIcon width={16} height={16} /> : <FolderClosedIcon width={16} height={16} />}</span>
-                <span className='dsh-st-n-title'>{group.name}</span>
-              </div>}
-              {(groupMode === 'list' || expanded) && group.sessions.map((session) => (
-                <NativeSessionRow
-                  key={session.id}
-                  t={t}
-                  id={session.id}
-                  title={session.title}
-                  hoverTitle={String(sessionById[session.id]?.displayTitle ?? sessionById[session.id]?.title ?? group.name)}
-                  updatedAt={session.updatedAt}
-                  running={session.running}
-                  selected={selectedId === session.id}
-                  menuOpen={openMenu?.id === session.id}
-                  menuPoint={openMenu === null || openMenu.id !== session.id ? { x: 8, y: 8 } : { x: openMenu.x, y: openMenu.y }}
-                  onToggleMenu={(event) => setOpenMenu((current) => nextOpenSessionMenu(current, session.id, pointerPoint(event)))}
-                  onCloseMenu={() => setOpenMenu((current) => current?.id === session.id ? null : current)}
-                  onOpen={() => {
-                    setOpenMenu(null)
-                    openSession?.(session.id)
-                  }}
-                  {...(renameSession === undefined ? {} : { renameSession })}
-                  {...(archiveSession === undefined ? {} : { archiveSession })}
-                  {...(forkSession === undefined ? {} : { forkSession })}
-                />
-              ))}
+      <ScheduleViewSwitch t={t} view={view} onChange={setView} />
+      {view === 'overview'
+        ? state.snapshot === undefined
+          ? <div className='dsh-st-n-empty'>{state.phase === 'loading' ? t('loading') : t('overview.empty')}</div>
+          : <ScheduleOverview
+              t={t}
+              automations={state.snapshot.automations}
+              runs={state.snapshot.runs}
+              {...(openSession === undefined ? {} : { openSession })}
+              {...(state.snapshot.serverNow === undefined ? {} : { serverNow: state.snapshot.serverNow })}
+              archived={archived}
+              {...(presentIds === undefined ? {} : { presentIds })}
+            />
+        : <>
+            <WorkspaceToolbar t={t} query={query} sort={sort} groupMode={groupMode} onQueryChange={setQuery} onSortChange={setSort} onGroupModeChange={setGroupMode} />
+            <div className='dsh-st-n-tree' role='tree'>
+              {state.phase === 'loading' && visibleGroups.length === 0 && <div className='dsh-st-n-empty'>{t('loading')}</div>}
+              {visibleGroups.length === 0 && state.phase !== 'loading' && <div className='dsh-st-n-empty'>{t('sidebar.empty')}</div>}
+              {visibleGroups.map((group) => {
+                const expanded = folded[group.id] !== true
+                return (
+                  <div key={group.id} className='dsh-st-n-group'>
+                    {groupMode === 'workspace' && <div className='dsh-st-n-row' role='treeitem' aria-expanded={expanded} onClick={() => setFolded((current) => ({ ...current, [group.id]: expanded }))}>
+                      <span className='dsh-st-n-slot dsh-st-n-folder'>{expanded ? <FolderOpenIcon width={16} height={16} /> : <FolderClosedIcon width={16} height={16} />}</span>
+                      <span className='dsh-st-n-title'>{group.name}</span>
+                    </div>}
+                    {(groupMode === 'list' || expanded) && group.sessions.map((session) => (
+                      <NativeSessionRow
+                        key={session.id}
+                        t={t}
+                        id={session.id}
+                        title={session.title}
+                        hoverTitle={String(sessionById[session.id]?.displayTitle ?? sessionById[session.id]?.title ?? group.name)}
+                        updatedAt={session.updatedAt}
+                        running={session.running}
+                        selected={selectedId === session.id}
+                        menuOpen={openMenu?.id === session.id}
+                        menuPoint={openMenu === null || openMenu.id !== session.id ? { x: 8, y: 8 } : { x: openMenu.x, y: openMenu.y }}
+                        onToggleMenu={(event) => setOpenMenu((current) => nextOpenSessionMenu(current, session.id, pointerPoint(event)))}
+                        onCloseMenu={() => setOpenMenu((current) => current?.id === session.id ? null : current)}
+                        onOpen={() => {
+                          setOpenMenu(null)
+                          openSession?.(session.id)
+                        }}
+                        {...(renameSession === undefined ? {} : { renameSession })}
+                        {...(archiveSession === undefined ? {} : { archiveSession })}
+                        {...(forkSession === undefined ? {} : { forkSession })}
+                      />
+                    ))}
+                  </div>
+                )
+              })}
             </div>
-          )
-        })}
-      </div>
+          </>}
     </div>
   )
 }
