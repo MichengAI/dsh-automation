@@ -4,6 +4,15 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.20 — 2026-08-27
+
+- Merged [PR #4](https://github.com/MichengAI/dsh-automation/pull/4) by [@louishzwang](https://github.com/louishzwang), adding a read-only task overview beside execution history and persistent default sorting by created or planned time.
+- Refined the native and Codex-style schedule sidebars with compact task cards, matching toolbar rhythm and typography, symmetric card gutters, and an icon-only sorting trigger.
+- Added official-style scheduled-session folders that preserve existing session actions, keep stable group ordering, highlight only expanded folders containing the current session, and open the exact task settings directly.
+- Added optional whole-group archiving with a confirmation step when Archive Manager is installed, while keeping long lists independently scrollable so the Settings footer remains available.
+
+Published package: [`@michengai/dsh-automation@0.1.20`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.20).
+
 ## 0.1.19 — 2026-08-26
 
 - Preserved time-zone and interval-anchor data while editing scheduled tasks, and made overdue recurrence recovery cadence-aware.
