@@ -107,7 +107,7 @@ export function latestDueOccurrence(schedule: AutomationSchedule, now: string): 
   // 若沿用 2 天窗口，前向 limit 会截掉真正的最新点。
   const lookbackMs = schedule.kind === 'hourly'
     ? 2 * 60 * 60_000
-    : (schedule.kind === 'daily' ? 2 : schedule.kind === 'monthly' ? 40 : 8) * 86_400_000
+    : latestDueLookbackDays(schedule) * 86_400_000
   const values = occurrencesBetween(
     schedule,
     DateTime.fromMillis(nowMs - lookbackMs, { zone: 'utc' }).toISO()!,
@@ -115,6 +115,25 @@ export function latestDueOccurrence(schedule: AutomationSchedule, now: string): 
     16,
   )
   return values.at(-1) ?? null
+}
+
+function latestDueLookbackDays(
+  schedule: Exclude<AutomationSchedule, { kind: 'once' | 'interval' | 'hourly' }>,
+): number {
+  switch (schedule.kind) {
+    case 'daily':
+      return 3
+    case 'weekly':
+      // A selected wall-clock time can be absent during a DST transition,
+      // making the gap between two valid weekly occurrences almost 14 days.
+      return 15
+    case 'monthly':
+      // Invalid month days and DST gaps can both skip a nominal month.
+      return 70
+    case 'custom':
+      // Cover one invalid local occurrence in addition to the current cadence.
+      return schedule.everyDays * 2 + 2
+  }
 }
 
 export function occurrencesBetween(

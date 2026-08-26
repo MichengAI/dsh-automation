@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import type { Translate } from './contracts.js'
 
 /** 把点击目标收成元素节点，避免标题文本节点没有 closest 导致关闭逻辑中断。 */
 export function resolveEventElement(target: unknown): object | null {
@@ -100,15 +101,15 @@ export function nativeSessionHoverStyle(
   }
 }
 
-export function relativeTime(value: string): string {
+export function relativeTime(value: string, t: Translate, now = Date.now()): string {
   const ts = Date.parse(value || '')
   if (!Number.isFinite(ts)) return ''
-  const delta = Math.max(0, Date.now() - ts)
+  const delta = Math.max(0, now - ts)
   const min = Math.floor(delta / 60000)
-  if (min < 1) return '刚刚'
-  if (min < 60) return String(min) + '分钟前'
+  if (min < 1) return t('time.now')
+  if (min < 60) return t('time.minuteAgo', { count: min })
   const hour = Math.floor(min / 60)
-  if (hour < 24) return String(hour) + '小时前'
-  return String(Math.floor(hour / 24)) + '天前'
+  if (hour < 24) return t('time.hourAgo', { count: hour })
+  return t('time.dayAgo', { count: Math.floor(hour / 24) })
 }
 

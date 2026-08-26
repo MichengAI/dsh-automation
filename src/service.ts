@@ -361,7 +361,11 @@ export class AutomationService {
       for (const [runId, run] of this.runs.entries()) {
         if (run.automationId !== current.id) continue
         if (run.automationName === current.name) continue
-        await this.runs.put(runId, { ...run, automationName: current.name })
+        await this.runs.update(runId, latest => (
+          latest.automationId === current.id && latest.automationName !== current.name
+            ? { ...latest, automationName: current.name }
+            : latest
+        ))
       }
       return this.definitions.delete(id)
     }, signal)
@@ -407,7 +411,7 @@ export class AutomationService {
     await this.serialize(async () => {
       for (const [runId, run] of this.runs.entries()) {
         if (run.sessionId !== id) continue
-        await this.runs.put(runId, { ...run, sessionId: null })
+        await this.runs.update(runId, latest => latest.sessionId === id ? { ...latest, sessionId: null } : latest)
       }
     })
   }
@@ -420,7 +424,10 @@ export class AutomationService {
       for (const [runId, run] of this.runs.entries()) {
         if (typeof run.sessionId !== "string" || run.sessionId === "") continue
         if (known.has(run.sessionId)) continue
-        await this.runs.put(runId, { ...run, sessionId: null })
+        const missingSessionId = run.sessionId
+        await this.runs.update(runId, latest => latest.sessionId === missingSessionId
+          ? { ...latest, sessionId: null }
+          : latest)
       }
     })
   }
@@ -447,7 +454,9 @@ export class AutomationService {
     await this.serialize(async () => {
       for (const [runId, run] of this.runs.entries()) {
         if (run.automationId !== id || run.sessionId === null) continue
-        await this.runs.put(runId, { ...run, sessionId: null })
+        await this.runs.update(runId, latest => latest.automationId === id && latest.sessionId !== null
+          ? { ...latest, sessionId: null }
+          : latest)
       }
     })
   }

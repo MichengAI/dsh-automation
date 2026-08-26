@@ -17,6 +17,7 @@ export interface AutomationFormState {
   readonly scheduleKind: ScheduleKind
   readonly onceAt: string
   readonly everyMinutes: string
+  readonly intervalAnchor: string
   readonly time: string
   readonly weekdays: readonly number[]
   readonly hourlyMinute: string
@@ -89,6 +90,7 @@ export function defaultFormState(
     scheduleKind: 'daily',
     onceAt: localDateTimeValue(now),
     everyMinutes: '60',
+    intervalAnchor: '',
     time: '09:00',
     weekdays: [1, 2, 3, 4, 5],
     hourlyMinute: '00',
@@ -134,7 +136,12 @@ export function buildCreateInput(
       if (!Number.isInteger(everyMinutes) || everyMinutes < 5 || everyMinutes > 43_200) {
         throw new AutomationFormError('form.error.interval')
       }
-      schedule = { kind: 'interval', everyMinutes, anchor: now.toISOString(), timeZone: form.timeZone }
+      schedule = {
+        kind: 'interval',
+        everyMinutes,
+        anchor: form.intervalAnchor.trim() || now.toISOString(),
+        timeZone: form.timeZone,
+      }
       break
     }
     case 'daily':
@@ -383,12 +390,18 @@ export function formFromAutomation(
     workspaceId: item.workspaceId ?? base.workspaceId,
     modelKey,
     reasoningEffort: item.reasoningEffort ?? 'none',
+    timeZone: item.timeZone || schedule.timeZone || base.timeZone,
   }
   switch (schedule.kind) {
     case 'once':
       return { ...common, scheduleKind: 'once', onceAt: toLocalInput(schedule.at) }
     case 'interval':
-      return { ...common, scheduleKind: 'interval', everyMinutes: String(schedule.everyMinutes) }
+      return {
+        ...common,
+        scheduleKind: 'interval',
+        everyMinutes: String(schedule.everyMinutes),
+        intervalAnchor: schedule.anchor ?? '',
+      }
     case 'hourly':
       return { ...common, scheduleKind: 'hourly', hourlyMinute: String(schedule.minute).padStart(2, '0') }
     case 'daily':
@@ -418,4 +431,3 @@ export function prettyModelName(model: string): string {
     return part.slice(0, 1).toUpperCase() + part.slice(1)
   }).join('-')
 }
-

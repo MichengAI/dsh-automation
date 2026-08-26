@@ -27,6 +27,7 @@ import {
   tabForSessionId,
 } from '../src/client/schedule-rail-model.ts'
 import { relativeTime, nextOpenSessionMenuId, nextOpenSessionMenu, shouldCloseNativeSessionMenu, nativeSessionMenuStyle, nativeSessionHoverStyle, pointerPoint, clampMenuPoint, } from '../src/client/native-session-menu.ts'
+import { en, zh } from '../src/client/locales.ts'
 
 
 test('当前会话没变时不要抢用户点的定时页签', () => {
@@ -196,7 +197,12 @@ test('walks nested wrap chain back to official tree', () => {
 })
 
 test('native session relative time matches official labels', () => {
-  assert.equal(relativeTime(new Date().toISOString()), '刚刚')
+  const translate = (dictionary: Record<string, string>) => (key: string, params?: Record<string, unknown>) => (
+    (dictionary[key] ?? key).replace('{count}', String(params?.count ?? ''))
+  )
+  const now = Date.parse('2026-08-26T12:00:00.000Z')
+  assert.equal(relativeTime('2026-08-26T11:59:30.000Z', translate(zh) as never, now), '刚刚')
+  assert.equal(relativeTime('2026-08-26T11:55:00.000Z', translate(en) as never, now), '5m ago')
 })
 
 test('scheduled sessions open through the runtime, not the filtered host tree', () => {

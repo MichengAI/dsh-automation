@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import type { Translate } from './contracts.js';
 /** 把点击目标收成元素节点，避免标题文本节点没有 closest 导致关闭逻辑中断。 */
 export declare function resolveEventElement(target: unknown): object | null;
 /** 点击不在当前行或当前菜单内时，应关闭已打开的菜单。 */
@@ -49,4 +50,4 @@ export declare function nativeSessionHoverStyle(row: {
     readonly width: number;
     readonly height: number;
 }): CSSProperties;
-export declare function relativeTime(value: string): string;
+export declare function relativeTime(value: string, t: Translate, now?: number): string;

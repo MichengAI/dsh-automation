@@ -7,6 +7,7 @@ export interface AutomationFormState {
     readonly scheduleKind: ScheduleKind;
     readonly onceAt: string;
     readonly everyMinutes: string;
+    readonly intervalAnchor: string;
     readonly time: string;
     readonly weekdays: readonly number[];
     readonly hourlyMinute: string;

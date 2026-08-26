@@ -250,7 +250,7 @@ function NativeSessionRow(props: {
     <div className={rowClass} ref={rowRef} role='treeitem' tabIndex={0} aria-selected={selected} data-n-menu-root={id} onClick={onOpen} onMouseEnter={showHover} onMouseLeave={hideHover} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); onToggleMenu(event) }}>
       <span className='dsh-st-n-slot'>{running ? <RunningStateDot /> : null}</span>
       <span className='dsh-st-n-title'>{title}</span>
-      <span className='dsh-st-n-time'>{relativeTime(updatedAt)}</span>
+      <span className='dsh-st-n-time'>{relativeTime(updatedAt, t)}</span>
       <span className='dsh-st-n-acts'>
         <button type='button' className='dsh-st-n-ico' aria-label={title + ' 更多'} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); hideHover(); onToggleMenu(event) }}>
           <EllipsisIcon width={16} height={16} />
@@ -260,7 +260,7 @@ function NativeSessionRow(props: {
       {hoverOpen && !menuOpen && typeof document !== 'undefined' && createPortal(
         <div ref={hoverRef} className='dsh-st-n-hover' style={hoverStyle} onMouseEnter={showHover} onMouseLeave={hideHover}>
           <div className='dsh-st-n-hover-title'>{(hoverTitle ?? title).trim() || title}</div>
-          <div className='dsh-st-n-hover-time'>{relativeTime(updatedAt)}</div>
+          <div className='dsh-st-n-hover-time'>{relativeTime(updatedAt, t)}</div>
           <div className='dsh-st-n-hover-state'>
             <span className={running ? 'dsh-st-n-hover-dot is-run' : 'dsh-st-n-hover-dot'} />
             {running ? t('session.runningStatus') : t('session.idle')}

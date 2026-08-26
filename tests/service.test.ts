@@ -13,13 +13,19 @@ const permissionPresets = {
 
 class MemoryTable<V> {
   private readonly values = new Map<string, V>()
+  beforeMutation?: (kind: 'put' | 'update', key: string) => Promise<void>
   get(key: string): V | undefined { return this.values.get(key) }
   entries(): IterableIterator<[string, V]> { return this.values.entries() }
   keys(): IterableIterator<string> { return this.values.keys() }
   get size(): number { return this.values.size }
-  async put(key: string, value: V): Promise<void> { this.values.set(key, value) }
+  setNow(key: string, value: V): void { this.values.set(key, value) }
+  async put(key: string, value: V): Promise<void> {
+    await this.beforeMutation?.('put', key)
+    this.values.set(key, value)
+  }
   async delete(key: string): Promise<boolean> { return this.values.delete(key) }
   async update(key: string, transform: (current: V) => V): Promise<V> {
+    await this.beforeMutation?.('update', key)
     const current = this.values.get(key)
     if (current === undefined) throw new Error(`missing ${key}`)
     const next = transform(current)
@@ -286,6 +292,125 @@ test('forgetSession 会摘掉已删除 Session，但保留运行历史', async (
   const kept = runs.get('run_keep')
   assert.equal(kept?.status, 'succeeded')
   assert.equal(kept?.sessionId, null)
+})
+
+test('forgetSession 与运行完成并发时不会把终态覆盖回 running', async () => {
+  const definition = sampleDefinition()
+  const running: AutomationRun = {
+    version: 1,
+    id: 'run_race_forget',
+    automationId: definition.id,
+    definitionRevision: 1,
+    occurrenceKey: 'race-forget',
+    trigger: 'schedule',
+    scheduledFor: '2026-08-16T00:30:00.000Z',
+    status: 'running',
+    promptSnapshot: definition.prompt,
+    targetSnapshot: {
+      workspaceId: definition.workspaceId,
+      cwd: definition.cwd,
+      agentPreset: definition.agentPreset,
+      provider: null,
+      model: null,
+      permissionPreset: 'read-only',
+    },
+    sessionId: 'dead-session',
+    startedAt: '2026-08-16T00:30:00.000Z',
+    finishedAt: null,
+    summary: null,
+    error: null,
+    unread: false,
+  }
+  const { service, runs } = await makeService({ definitions: [definition], runs: [running] })
+  runs.setNow(running.id, running)
+  let release!: () => void
+  let mutationStarted!: () => void
+  const gate = new Promise<void>(resolve => { release = resolve })
+  const started = new Promise<void>(resolve => { mutationStarted = resolve })
+  let blocked = false
+  runs.beforeMutation = async (_kind, key) => {
+    if (key !== running.id || blocked) return
+    blocked = true
+    mutationStarted()
+    await gate
+  }
+
+  const forgetting = service.forgetSession('dead-session')
+  await started
+  runs.setNow(running.id, {
+    ...running,
+    status: 'succeeded',
+    finishedAt: '2026-08-16T00:31:00.000Z',
+    summary: 'ok',
+    unread: true,
+  })
+  release()
+  await forgetting
+
+  const completed = runs.get(running.id)
+  assert.equal(completed?.status, 'succeeded')
+  assert.equal(completed?.summary, 'ok')
+  assert.equal(completed?.sessionId, null)
+})
+
+test('删除定义与运行完成并发时只更新历史任务名', async () => {
+  const definition = sampleDefinition({ name: '当前任务名' })
+  const running: AutomationRun = {
+    version: 1,
+    id: 'run_race_delete',
+    automationId: definition.id,
+    automationName: '旧任务名',
+    definitionRevision: 1,
+    occurrenceKey: 'race-delete',
+    trigger: 'schedule',
+    scheduledFor: '2026-08-16T00:30:00.000Z',
+    status: 'running',
+    promptSnapshot: definition.prompt,
+    targetSnapshot: {
+      workspaceId: definition.workspaceId,
+      cwd: definition.cwd,
+      agentPreset: definition.agentPreset,
+      provider: null,
+      model: null,
+      permissionPreset: 'read-only',
+    },
+    sessionId: 'live-session',
+    startedAt: '2026-08-16T00:30:00.000Z',
+    finishedAt: null,
+    summary: null,
+    error: null,
+    unread: false,
+  }
+  const { service, runs } = await makeService({ definitions: [definition], runs: [running] })
+  runs.setNow(running.id, running)
+  let release!: () => void
+  let mutationStarted!: () => void
+  const gate = new Promise<void>(resolve => { release = resolve })
+  const started = new Promise<void>(resolve => { mutationStarted = resolve })
+  let blocked = false
+  runs.beforeMutation = async (_kind, key) => {
+    if (key !== running.id || blocked) return
+    blocked = true
+    mutationStarted()
+    await gate
+  }
+
+  const deleting = service.delete({ sessionId: 'session_1', creatorKind: 'web', hostWide: true }, definition.id)
+  await started
+  runs.setNow(running.id, {
+    ...running,
+    status: 'succeeded',
+    finishedAt: '2026-08-16T00:31:00.000Z',
+    summary: 'ok',
+    unread: true,
+  })
+  release()
+  await deleting
+
+  const completed = runs.get(running.id)
+  assert.equal(completed?.status, 'succeeded')
+  assert.equal(completed?.summary, 'ok')
+  assert.equal(completed?.automationName, '当前任务名')
 })
 
 test('启动时对宿主已不存在的 Session 摘掉 run.sessionId', async () => {

@@ -188,6 +188,34 @@ test('编辑表单会从已有任务还原名称、计划和模型', () => {
   assert.equal(form.permission, 'workspace-write')
   assert.equal(form.workspaceId, 'ws_1')
   assert.equal(form.modelKey, 'deepseek::v4')
+  assert.equal(form.timeZone, 'Asia/Shanghai')
+})
+
+test('编辑间隔任务会保留原始时区和 anchor', () => {
+  const anchor = '2026-08-16T00:00:00.000Z'
+  const form = formFromAutomation({
+    id: 'interval-1',
+    revision: 3,
+    name: '间隔检查',
+    prompt: '检查状态',
+    status: 'active',
+    schedule: { kind: 'interval', everyMinutes: 30, anchor, timeZone: 'America/New_York' },
+    scheduleSummary: '',
+    timeZone: 'America/New_York',
+    permission: 'read-only',
+    workspaceId: 'ws_1',
+    createdAt: '2026-08-16T00:00:00.000Z',
+    updatedAt: '2026-08-16T00:00:00.000Z',
+  }, workspaces, null, 'read-only')
+
+  const updated = buildCreateInput(form, workspaces, [], new Date('2026-08-20T00:00:00.000Z'), { allowPastOnce: true })
+  assert.equal(updated.timeZone, 'America/New_York')
+  assert.deepEqual(updated.schedule, {
+    kind: 'interval',
+    everyMinutes: 30,
+    anchor,
+    timeZone: 'America/New_York',
+  })
 })
 
 
@@ -258,4 +286,3 @@ test('技能点选写入 /name，已存在则不重复', () => {
   const mid = insertSkillGesture('请执行', '/web-search', 3)
   assert.equal(mid.text, '请执行 /web-search ')
 })
-
