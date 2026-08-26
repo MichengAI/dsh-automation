@@ -1,5 +1,6 @@
 import type { Translate } from './contracts.js';
 import type { AutomationRuntime } from './runtime.js';
+import type { AutomationTaskSettingsRequest } from './task-settings-request.js';
 export { nativeSessionMenuStyle, nextOpenSessionMenu, nextOpenSessionMenuId, pointerPoint, relativeTime, resolveEventElement, shouldCloseNativeSessionMenu, } from './native-session-menu.js';
 export declare function NativeScheduleSessionList(props: {
     readonly t: Translate;
@@ -11,4 +12,5 @@ export declare function NativeScheduleSessionList(props: {
     readonly archiveSession?: (sessionId: string) => void | Promise<void>;
     readonly deleteSession?: (sessionId: string) => void | Promise<void>;
     readonly forkSession?: (sessionId: string) => void | Promise<void>;
+    readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void;
 }): JSX.Element;

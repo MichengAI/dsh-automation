@@ -41,6 +41,15 @@ export declare const en: {
     readonly 'session.rename': "Rename";
     readonly 'session.fork': "Fork session";
     readonly 'session.archive': "Archive session";
+    readonly 'session.groupActions': "Actions for {name}";
+    readonly 'session.taskSettings': "Task settings";
+    readonly 'session.archiveGroup': "Archive all conversations";
+    readonly 'session.archiveGroupConfirm': "Archive all";
+    readonly 'session.archiveGroupDescription': "Archive all {count} conversations for “{name}”. You can restore them later in Settings → Archived.";
+    readonly 'session.archiveGroupPending': "Archiving conversations…";
+    readonly 'session.archiveGroupFailed': "Some conversations could not be archived: {message}";
+    readonly 'session.archiveGroupClose': "Close";
+    readonly 'session.archiveGroupCancel': "Cancel";
     readonly 'session.idle': "Idle";
     readonly 'session.runningStatus': "Running";
     readonly 'session.delete': "Remove from Scheduled";
@@ -194,6 +203,7 @@ export declare const en: {
     readonly 'error.title': "Automations could not be loaded";
     readonly 'error.retry': "Try again";
     readonly 'error.action': "The action failed. Please try again.";
+    readonly 'error.taskMissing': "This scheduled task no longer exists.";
     readonly 'error.offline': "Could not reach the local automation service. Check that DSH is still running and try again.";
     readonly 'time.now': "now";
     readonly 'time.minuteAgo': "{count}m ago";

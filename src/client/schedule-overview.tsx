@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react'
 import type { Translate } from './contracts.js'
 import {
+  CalendarIcon,
+  CheckIcon,
+  ChevronIcon,
+  PauseIcon,
+} from './icons.js'
+import {
   formatWithin,
+  formatSchedule,
   readSortDefault,
   sortAutomations,
   OVERVIEW_SORT_DEFAULT_KEY,
@@ -66,13 +73,20 @@ export function ScheduleOverview({
       return row
     })
   }, [archived, automations, presentIds, runs, sortDirection, sortKey])
+  const scheduleSummaries = useMemo(() => new Map(automations.map(item => [item.id, formatSchedule(item.schedule, t)])), [automations, t])
 
   return (
     <div className="dsh-st-overview">
-      <div className="dsh-st-overview-toolbar">
+      <div className="dsh-st-overview-head">
+        <div className="dsh-st-overview-title">
+          <strong>{t('sidebar.viewOverview')}</strong>
+          <span aria-label={`${rows.length}`}>{rows.length}</span>
+        </div>
         <SortMenu
           t={t}
           compact
+          iconOnly
+          className="dsh-st-overview-sort"
           {...(SORT_STORAGE === undefined ? {} : { storage: SORT_STORAGE })}
           storageKey={OVERVIEW_SORT_DEFAULT_KEY}
           sortKey={sortKey}
@@ -85,7 +99,7 @@ export function ScheduleOverview({
       </div>
       {rows.length === 0
         ? <div className="dsh-st-rail-empty">{t('overview.empty')}</div>
-        : rows.map(row => <OverviewRow key={row.id} t={t} row={row} now={now} {...(openSession === undefined ? {} : { openSession })} />)}
+        : rows.map(row => <OverviewRow key={row.id} t={t} row={row} now={now} scheduleSummary={scheduleSummaries.get(row.id) ?? ''} {...(openSession === undefined ? {} : { openSession })} />)}
     </div>
   )
 }
@@ -94,14 +108,18 @@ function OverviewRow({
   t,
   row,
   now,
+  scheduleSummary,
   openSession,
 }: {
   readonly t: Translate
   readonly row: TaskOverviewRow
   readonly now: Date
+  readonly scheduleSummary: string
   readonly openSession?: (sessionId: string) => void
 }): JSX.Element {
   const paused = row.status !== 'active'
+  const nextRun = row.nextRunAt === undefined ? t('stats.noneScheduled') : formatWithin(row.nextRunAt, now, t)
+  const status = paused ? t('status.paused') : t('status.active')
   return (
     <button
       type="button"
@@ -110,9 +128,13 @@ function OverviewRow({
       title={paused ? t('status.paused') : t('status.active')}
       onClick={() => { if (row.lastSessionId !== undefined) openSession?.(row.lastSessionId) }}
     >
-      <span className="dsh-st-rail-dot" />
-      <span className="dsh-st-overview-name">{row.name}</span>
-      <span className="dsh-st-overview-time">{row.nextRunAt === undefined ? t('stats.noneScheduled') : formatWithin(row.nextRunAt, now, t)}</span>
+      <span className="dsh-st-overview-copy">
+        <span className="dsh-st-overview-status">{paused ? <PauseIcon width={14} height={14} /> : <CheckIcon width={14} height={14} />}{status}</span>
+        <span className="dsh-st-overview-name">{row.name}</span>
+        {scheduleSummary !== '' && <span className="dsh-st-overview-schedule"><CalendarIcon width={14} height={14} />{scheduleSummary}</span>}
+      </span>
+      <span className="dsh-st-overview-next"><span>{t('stats.next')}</span><strong>{nextRun}</strong></span>
+      {row.lastSessionId !== undefined && <ChevronIcon width={12} height={12} className="dsh-st-overview-chevron" />}
     </button>
   )
 }

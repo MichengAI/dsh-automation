@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { CheckOutlineIcon, ChevronIcon } from './icons.js'
 
@@ -19,13 +19,17 @@ export interface DropdownMenuOption {
 export function DropdownMenu({
   ariaLabel,
   className,
+  buttonClassName,
   menuClassName,
   options,
+  trigger,
 }: {
   readonly ariaLabel: string
   readonly className?: string
+  readonly buttonClassName?: string
   readonly menuClassName?: string
   readonly options: readonly DropdownMenuOption[]
+  readonly trigger?: ReactNode
 }): JSX.Element {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
@@ -96,9 +100,11 @@ export function DropdownMenu({
     : null
   return (
     <div className={`dsh-st-dropdown${className === undefined ? '' : ` ${className}`}`} ref={root}>
-      <button type="button" className={`dsh-st-dropdown-btn${open ? ' is-open' : ''}`} aria-label={ariaLabel} aria-expanded={open} onClick={() => setOpen(value => !value)}>
-        <span className="dsh-st-dropdown-label">{selectedLabel}</span>
-        <ChevronIcon width={10} height={10} className="dsh-st-dropdown-chevron" />
+      <button type="button" className={`dsh-st-dropdown-btn${buttonClassName === undefined ? '' : ` ${buttonClassName}`}${open ? ' is-open' : ''}`} aria-label={ariaLabel} aria-expanded={open} onClick={() => setOpen(value => !value)}>
+        {trigger ?? <>
+          <span className="dsh-st-dropdown-label">{selectedLabel}</span>
+          <ChevronIcon width={10} height={10} className="dsh-st-dropdown-chevron" />
+        </>}
       </button>
       {menu}
     </div>

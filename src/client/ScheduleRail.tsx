@@ -51,14 +51,19 @@ export function ScheduleRail({
   t,
   runtime,
   openSession,
+  view: controlledView,
+  showViewSwitch = true,
 }: {
   readonly t: Translate
   readonly runtime: AutomationRuntime
   readonly openSession?: (sessionId: string) => void
+  readonly view?: ScheduleView
+  readonly showViewSwitch?: boolean
 }): JSX.Element {
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const [folded, setFolded] = useState<Record<string, boolean>>({})
-  const [view, setView] = useState<ScheduleView>('runs')
+  const [localView, setLocalView] = useState<ScheduleView>('runs')
+  const view = controlledView ?? localView
   const snapshot = state.snapshot
 
   const groups = useMemo(() => {
@@ -68,7 +73,7 @@ export function ScheduleRail({
 
   return (
     <div className="dsh-st-rail">
-      <ScheduleViewSwitch t={t} view={view} onChange={setView} />
+      {showViewSwitch && <ScheduleViewSwitch t={t} view={view} onChange={setLocalView} />}
       {view === 'overview'
         ? snapshot === undefined
           ? <div className="dsh-st-rail-empty">{state.phase === 'loading' ? t('loading') : t('overview.empty')}</div>
@@ -290,6 +295,5 @@ function NativeTaskRail({
     </div>
   )
 }
-
 
 

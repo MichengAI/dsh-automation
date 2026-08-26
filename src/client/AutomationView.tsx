@@ -39,9 +39,18 @@ import { setChatPrefill } from './prefill.js'
 import { isTransportError } from './runtime.js'
 import { SortMenu } from './sort-menu.js'
 import type { AutomationRunStatus, AutomationRunViewModel, AutomationViewModel } from './protocol.js'
+import {
+  AUTOMATION_TASK_SETTINGS_EVENT,
+  clearAutomationTaskSettingsRequest,
+  parseAutomationTaskSettingsRequest,
+  readAutomationTaskSettingsRequest,
+  resolveAutomationTaskSettings,
+  type AutomationTaskSettingsRequest,
+} from './task-settings-request.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const SORT_STORAGE: SortPreferenceStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage
+const TASK_SETTINGS_STORAGE: Storage | undefined = typeof window === 'undefined' ? undefined : window.sessionStorage
 
 type Tab = 'mine' | 'runs'
 
@@ -66,6 +75,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
   const [historyStatus, setHistoryStatus] = useState<'all' | AutomationRunStatus>('all')
   const [sortKey, setSortKey] = useState<AutomationSortKey>(() => readSortDefault(SORT_STORAGE, SETTINGS_SORT_DEFAULT_KEY)?.key ?? 'created')
   const [sortDirection, setSortDirection] = useState<AutomationSortDirection>(() => readSortDefault(SORT_STORAGE, SETTINGS_SORT_DEFAULT_KEY)?.direction ?? 'desc')
+  const [taskSettingsRequest, setTaskSettingsRequest] = useState<AutomationTaskSettingsRequest | undefined>(() => readAutomationTaskSettingsRequest(TASK_SETTINGS_STORAGE))
   const now = useMemo(() => new Date(state.snapshot?.serverNow ?? Date.now()), [state.snapshot?.serverNow, state.refreshedAt])
 
   const snapshot = state.snapshot
@@ -119,6 +129,30 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
     setDraft(formFromAutomation(item, workspaces, snapshot?.defaultModel ?? null, snapshot?.defaultPermission ?? item.permission))
     setCreating(true)
   }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onTaskSettings = (event: Event): void => {
+      const request = parseAutomationTaskSettingsRequest((event as CustomEvent<unknown>).detail)
+      if (request !== undefined) setTaskSettingsRequest(request)
+    }
+    window.addEventListener(AUTOMATION_TASK_SETTINGS_EVENT, onTaskSettings)
+    return () => { window.removeEventListener(AUTOMATION_TASK_SETTINGS_EVENT, onTaskSettings) }
+  }, [])
+
+  useEffect(() => {
+    if (taskSettingsRequest === undefined || snapshot === undefined) return
+    const item = resolveAutomationTaskSettings(taskSettingsRequest, snapshot.automations, snapshot.runs)
+    clearAutomationTaskSettingsRequest(TASK_SETTINGS_STORAGE)
+    setTaskSettingsRequest(undefined)
+    setTab('mine')
+    setQuery('')
+    if (item === undefined) {
+      setError(t('error.taskMissing'))
+      return
+    }
+    openEdit(item)
+  }, [snapshot, taskSettingsRequest, t])
 
   return (
     <div className="dsh-st-shell">

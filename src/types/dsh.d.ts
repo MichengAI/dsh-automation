@@ -52,6 +52,16 @@ declare module '@deepseek-ai/dsh-llm' {
 }
 
 declare module '@deepseek-ai/dsh-client-ui-primitives' {
+  import type { ReactNode } from 'react'
+  export type MenuEntry =
+    | { readonly id: string; readonly label: string; readonly icon?: ReactNode; readonly danger?: boolean }
+    | { readonly id: string; readonly type: 'separator' }
+  export function Button(props: { readonly variant?: string; readonly className?: string; readonly disabled?: boolean; readonly onClick?: () => void; readonly children?: ReactNode }): JSX.Element
+  export function Menu(props: { readonly open: boolean; readonly onClose: () => void; readonly items: readonly MenuEntry[]; readonly onSelect: (id: string) => void; readonly anchor: ReactNode; readonly portal?: boolean; readonly dense?: boolean; readonly compact?: boolean }): JSX.Element
+  export function Modal(props: { readonly open: boolean; readonly onClose: () => void; readonly closeLabel: string; readonly title: string; readonly footer?: ReactNode; readonly children?: ReactNode }): JSX.Element
+  export function IconArchiveOutline20(props: { readonly size?: number }): JSX.Element
+  export function IconEllipsisOutline16(props: { readonly size?: number }): JSX.Element
+  export function IconSettingsOutline16(props: { readonly size?: number }): JSX.Element
   export function IconCheckOutline16(props: { readonly className?: string }): JSX.Element
   export function IconChevronDownOutline14(props: { readonly className?: string }): JSX.Element
   export function IconChevronRightOutline14(props: { readonly className?: string }): JSX.Element

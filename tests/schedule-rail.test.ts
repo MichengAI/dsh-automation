@@ -29,6 +29,7 @@ import {
 } from '../src/client/schedule-rail-model.ts'
 import { relativeTime, nextOpenSessionMenuId, nextOpenSessionMenu, shouldCloseNativeSessionMenu, nativeSessionMenuStyle, nativeSessionHoverStyle, pointerPoint, clampMenuPoint, } from '../src/client/native-session-menu.ts'
 import { en, zh } from '../src/client/locales.ts'
+import { archiveScheduledGroup, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder } from '../src/client/native-group-actions.ts'
 
 
 test('当前会话没变时不要抢用户点的定时页签', () => {
@@ -329,6 +330,31 @@ test('右键菜单落在指针处，并被限制在视口内', () => {
   const next = nextOpenSessionMenu(null, 'sess-a', { x: 40, y: 80 })
   assert.deepEqual(next, { id: 'sess-a', x: 40, y: 80 })
   assert.equal(nextOpenSessionMenu(next, 'sess-a', { x: 41, y: 81 }), null)
+})
+
+test('仅展开的当前会话所属文件夹标记蓝色图标，折叠后恢复官方中性色', () => {
+  assert.equal(scheduledGroupShowsActiveFolder(true, ['session-a', 'session-b'], 'session-b'), true)
+  assert.equal(scheduledGroupShowsActiveFolder(false, ['session-a', 'session-b'], 'session-b'), false)
+  assert.equal(scheduledGroupShowsActiveFolder(true, ['session-a'], 'session-b'), false)
+  assert.equal(scheduledGroupShowsActiveFolder(true, ['session-a'], null), false)
+})
+
+test('只有归档插件标记存在时才显示整组归档能力', () => {
+  const seen: string[] = []
+  const root = { querySelector(selector: string) { seen.push(selector); return selector.includes('@michengai/dsh-archive-manager') ? {} : null } }
+  assert.equal(hasArchiveManagerPlugin(root), true)
+  assert.equal(hasArchiveManagerPlugin({ querySelector() { return null } }), false)
+  assert.equal(seen.length, 1)
+})
+
+test('整组归档串行执行，避免工作区状态写入互相覆盖', async () => {
+  const archived: string[] = []
+  await archiveScheduledGroup(['session-a', 'session-b'], async (id) => {
+    archived.push('start:' + id)
+    await Promise.resolve()
+    archived.push('end:' + id)
+  })
+  assert.deepEqual(archived, ['start:session-a', 'end:session-a', 'start:session-b', 'end:session-b'])
 })
 
 

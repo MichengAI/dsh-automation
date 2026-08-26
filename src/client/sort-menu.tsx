@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Translate } from './contracts.js'
 import { DropdownMenu, type DropdownMenuOption } from './dropdown-menu.js'
+import { SlidersIcon } from './icons.js'
 import {
   readSortDefault,
   writeSortDefault,
@@ -25,6 +26,8 @@ export function SortMenu({
   sortDirection,
   onSelect,
   compact = false,
+  iconOnly = false,
+  className,
 }: {
   readonly t: Translate
   readonly storage?: SortPreferenceStorage
@@ -33,6 +36,8 @@ export function SortMenu({
   readonly sortDirection: AutomationSortDirection
   readonly onSelect: (key: AutomationSortKey, direction: AutomationSortDirection) => void
   readonly compact?: boolean
+  readonly iconOnly?: boolean
+  readonly className?: string
 }): JSX.Element {
   const [saved, setSaved] = useState(() => readSortDefault(storage, storageKey))
   const options: DropdownMenuOption[] = SORT_OPTIONS.map(([key, direction]) => {
@@ -59,7 +64,8 @@ export function SortMenu({
   return (
     <DropdownMenu
       ariaLabel={t('sort.by')}
-      {...(compact ? { className: 'dsh-st-dropdown-compact' } : {})}
+      {...(compact || className !== undefined ? { className: [compact ? 'dsh-st-dropdown-compact' : '', className ?? ''].filter(Boolean).join(' ') } : {})}
+      {...(iconOnly ? { buttonClassName: 'dsh-st-n-head-btn', trigger: <SlidersIcon width={16} height={16} /> } : {})}
       menuClassName={compact ? 'dsh-st-dropdown-sort dsh-st-dropdown-compact' : 'dsh-st-dropdown-sort'}
       options={options}
     />

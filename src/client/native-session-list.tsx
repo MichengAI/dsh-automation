@@ -1,5 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
+import {
+  Button,
+  IconArchiveOutline20,
+  IconEllipsisOutline16,
+  IconSettingsOutline16,
+  Menu,
+  Modal,
+  type MenuEntry,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import type { Translate } from './contracts.js'
 import {
   ArchiveIcon,
@@ -19,10 +28,12 @@ import {
   shouldCloseNativeSessionMenu,
   type NativeSessionMenuState,
 } from './native-session-menu.js'
+import { archiveScheduledGroup, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder } from './native-group-actions.js'
 import type { AutomationRuntime } from './runtime.js'
 import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, keepScheduledSessionLink, type NativeSessionLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
 import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import { WorkspaceToolbar } from './workspace-toolbar.js'
+import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
 export {
   nativeSessionMenuStyle,
@@ -46,8 +57,9 @@ export function NativeScheduleSessionList(props: {
   readonly archiveSession?: (sessionId: string) => void | Promise<void>
   readonly deleteSession?: (sessionId: string) => void | Promise<void>
   readonly forkSession?: (sessionId: string) => void | Promise<void>
+  readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
 }): JSX.Element {
-  const { t, runtime, openSession, useSessions, useWorkspaces, renameSession, archiveSession, forkSession } = props
+  const { t, runtime, openSession, useSessions, useWorkspaces, renameSession, archiveSession, forkSession, openTaskSettings } = props
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const selectedId = useSessions ? useSessions((snap: { current?: string | null }) => snap?.current ?? null) : null
   const sessionById: Record<string, NativeSessionLike> = useSessions
@@ -56,6 +68,11 @@ export function NativeScheduleSessionList(props: {
   const archivedIds: string[] = useWorkspaces ? useWorkspaces((snap: { archivedSessionIds?: string[] }) => snap?.archivedSessionIds ?? []) : []
   const [folded, setFolded] = useState<Record<string, boolean>>({})
   const [openMenu, setOpenMenu] = useState<NativeSessionMenuState>(null)
+  const [openGroupMenu, setOpenGroupMenu] = useState<string>()
+  const [archiveGroupTarget, setArchiveGroupTarget] = useState<{ readonly id: string; readonly name: string; readonly sessionIds: readonly string[] }>()
+  const [archiveGroupBusy, setArchiveGroupBusy] = useState(false)
+  const [archiveGroupError, setArchiveGroupError] = useState<string>()
+  const [archiveManagerInstalled, setArchiveManagerInstalled] = useState(() => typeof document !== 'undefined' && hasArchiveManagerPlugin(document))
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<WorkspaceListSort>('time')
   const [groupMode, setGroupMode] = useState<WorkspaceGroupMode>('workspace')
@@ -86,6 +103,25 @@ export function NativeScheduleSessionList(props: {
     })).filter((group) => group.sessions.length > 0)
   }, [archived, presentIds, sessionById, state.snapshot])
   const visibleGroups = useMemo(() => applyWorkspaceBrowserQuery(groups.map((group) => ({ ...group, name: group.name })), query, sort, groupMode), [groups, query, sort, groupMode])
+  useEffect(() => {
+    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return
+    const refresh = (): void => { setArchiveManagerInstalled(hasArchiveManagerPlugin(document)) }
+    refresh()
+    const observer = new MutationObserver(refresh)
+    observer.observe(document.documentElement, { childList: true, subtree: true })
+    return () => { observer.disconnect() }
+  }, [])
+  const canArchiveGroup = archiveManagerInstalled && archiveSession !== undefined
+  const confirmArchiveGroup = (): void => {
+    if (archiveGroupTarget === undefined || archiveSession === undefined || archiveGroupBusy) return
+    const target = archiveGroupTarget
+    setArchiveGroupBusy(true)
+    setArchiveGroupError(undefined)
+    void archiveScheduledGroup(target.sessionIds, archiveSession)
+      .then(() => { setArchiveGroupTarget(undefined) })
+      .catch((caught: unknown) => { setArchiveGroupError(caught instanceof Error ? caught.message : t('error.action')) })
+      .finally(() => { setArchiveGroupBusy(false) })
+  }
   return (
     <div className='dsh-st-n'>
       <ScheduleViewSwitch t={t} view={view} onChange={setView} />
@@ -108,12 +144,31 @@ export function NativeScheduleSessionList(props: {
               {visibleGroups.length === 0 && state.phase !== 'loading' && <div className='dsh-st-n-empty'>{t('sidebar.empty')}</div>}
               {visibleGroups.map((group) => {
                 const expanded = folded[group.id] !== true
+                const hasCurrentSession = scheduledGroupShowsActiveFolder(expanded, group.sessions.map(session => session.id), selectedId)
                 return (
                   <div key={group.id} className='dsh-st-n-group'>
-                    {groupMode === 'workspace' && <div className='dsh-st-n-row' role='treeitem' aria-expanded={expanded} onClick={() => setFolded((current) => ({ ...current, [group.id]: expanded }))}>
-                      <span className='dsh-st-n-slot dsh-st-n-folder'>{expanded ? <FolderOpenIcon width={16} height={16} /> : <FolderClosedIcon width={16} height={16} />}</span>
-                      <span className='dsh-st-n-title'>{group.name}</span>
-                    </div>}
+                    {groupMode === 'workspace' && <NativeScheduleGroupRow
+                      t={t}
+                      id={group.id}
+                      name={group.name}
+                      sessionIds={group.sessions.map(session => session.id)}
+                      expanded={expanded}
+                      hasCurrentSession={hasCurrentSession}
+                      menuOpen={openGroupMenu === group.id}
+                      canArchiveGroup={canArchiveGroup}
+                      onToggle={() => setFolded((current) => ({ ...current, [group.id]: expanded }))}
+                      onMenuChange={(open) => {
+                        setOpenMenu(null)
+                        setOpenGroupMenu(open ? group.id : undefined)
+                      }}
+                      onTaskSettings={() => {
+                        openTaskSettings?.({ automationId: group.id, name: group.name, sessionIds: group.sessions.map(session => session.id) })
+                      }}
+                      onArchiveGroup={() => {
+                        setArchiveGroupError(undefined)
+                        setArchiveGroupTarget({ id: group.id, name: group.name, sessionIds: group.sessions.map(session => session.id) })
+                      }}
+                    />}
                     {(groupMode === 'list' || expanded) && group.sessions.map((session) => (
                       <NativeSessionRow
                         key={session.id}
@@ -126,7 +181,10 @@ export function NativeScheduleSessionList(props: {
                         selected={selectedId === session.id}
                         menuOpen={openMenu?.id === session.id}
                         menuPoint={openMenu === null || openMenu.id !== session.id ? { x: 8, y: 8 } : { x: openMenu.x, y: openMenu.y }}
-                        onToggleMenu={(event) => setOpenMenu((current) => nextOpenSessionMenu(current, session.id, pointerPoint(event)))}
+                        onToggleMenu={(event) => {
+                          setOpenGroupMenu(undefined)
+                          setOpenMenu((current) => nextOpenSessionMenu(current, session.id, pointerPoint(event)))
+                        }}
                         onCloseMenu={() => setOpenMenu((current) => current?.id === session.id ? null : current)}
                         onOpen={() => {
                           setOpenMenu(null)
@@ -142,6 +200,85 @@ export function NativeScheduleSessionList(props: {
               })}
             </div>
           </>}
+      <Modal
+        open={archiveGroupTarget !== undefined}
+        onClose={() => {
+          if (archiveGroupBusy) return
+          setArchiveGroupTarget(undefined)
+          setArchiveGroupError(undefined)
+        }}
+        closeLabel={t('session.archiveGroupClose')}
+        title={t('session.archiveGroup')}
+        footer={<div className='dsh-st-n-dialog-actions'>
+          <Button variant='outline' disabled={archiveGroupBusy} onClick={() => { setArchiveGroupTarget(undefined); setArchiveGroupError(undefined) }}>{t('session.archiveGroupCancel')}</Button>
+          <Button variant='outline' className='dsh-st-n-danger-button' disabled={archiveGroupBusy} onClick={confirmArchiveGroup}>{t('session.archiveGroupConfirm')}</Button>
+        </div>}
+      >
+        <p className='dsh-st-n-dialog-copy'>{archiveGroupTarget === undefined ? '' : t('session.archiveGroupDescription', { name: archiveGroupTarget.name, count: archiveGroupTarget.sessionIds.length })}</p>
+        {archiveGroupBusy && <div className='dsh-st-n-dialog-status' role='status'>{t('session.archiveGroupPending')}</div>}
+        {archiveGroupError !== undefined && <div className='dsh-st-n-dialog-error' role='alert'>{t('session.archiveGroupFailed', { message: archiveGroupError })}</div>}
+      </Modal>
+    </div>
+  )
+}
+
+function NativeScheduleGroupRow(props: {
+  readonly t: Translate
+  readonly id: string
+  readonly name: string
+  readonly sessionIds: readonly string[]
+  readonly expanded: boolean
+  readonly hasCurrentSession: boolean
+  readonly menuOpen: boolean
+  readonly canArchiveGroup: boolean
+  readonly onToggle: () => void
+  readonly onMenuChange: (open: boolean) => void
+  readonly onTaskSettings: () => void
+  readonly onArchiveGroup: () => void
+}): JSX.Element {
+  const { t, id, name, expanded, hasCurrentSession, menuOpen, canArchiveGroup, onToggle, onMenuChange, onTaskSettings, onArchiveGroup } = props
+  const items: MenuEntry[] = [
+    { id: 'task-settings', label: t('session.taskSettings'), icon: <IconSettingsOutline16 size={16} /> },
+    ...(canArchiveGroup
+      ? [
+          { type: 'separator' as const, id: 'archive-separator' },
+          { id: 'archive-group', label: t('session.archiveGroup'), icon: <IconArchiveOutline20 size={16} />, danger: true },
+        ]
+      : []),
+  ]
+  const rowClass = 'dsh-st-n-row' + (hasCurrentSession ? ' has-current-session' : '') + (menuOpen ? ' is-menu' : '')
+  return (
+    <div
+      className={rowClass}
+      role='treeitem'
+      aria-expanded={expanded}
+      data-n-group={id}
+      onClick={onToggle}
+    >
+      <span className='dsh-st-n-slot dsh-st-n-folder'>{expanded ? <FolderOpenIcon width={16} height={16} /> : <FolderClosedIcon width={16} height={16} />}</span>
+      <span className='dsh-st-n-title'>{name}</span>
+      <span className='dsh-st-n-acts'>
+        <Menu
+          open={menuOpen}
+          onClose={() => { onMenuChange(false) }}
+          items={items}
+          onSelect={(action) => {
+            onMenuChange(false)
+            if (action === 'task-settings') onTaskSettings()
+            if (action === 'archive-group') onArchiveGroup()
+          }}
+          portal
+          dense
+          compact
+          anchor={<button
+            type='button'
+            className='dsh-st-n-ico'
+            aria-label={t('session.groupActions', { name })}
+            onMouseDown={(event) => { event.stopPropagation() }}
+            onClick={(event) => { event.stopPropagation(); onMenuChange(!menuOpen) }}
+          ><IconEllipsisOutline16 size={16} /></button>}
+        />
+      </span>
     </div>
   )
 }
@@ -288,6 +425,3 @@ function NativeSessionRow(props: {
     </div>
   )
 }
-
-
-
