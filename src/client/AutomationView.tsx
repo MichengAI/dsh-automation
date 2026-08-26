@@ -10,6 +10,7 @@ import {
   formatWithin,
   formFromAutomation,
   groupHistory,
+  HISTORY_STATUS_OPTIONS,
   sortAutomations,
   type AutomationFormState,
   type AutomationSortDirection,
@@ -31,6 +32,7 @@ import {
   TrashIcon,
 } from './icons.js'
 import { CreateModal } from './create-modal.js'
+import { DeleteConfirmation } from './delete-confirmation.js'
 import { setChatPrefill } from './prefill.js'
 import { isTransportError } from './runtime.js'
 import type { AutomationRunStatus, AutomationRunViewModel, AutomationViewModel } from './protocol.js'
@@ -51,6 +53,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
   const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
   const [editingId, setEditingId] = useState<string>()
+  const [deleteTarget, setDeleteTarget] = useState<AutomationViewModel>()
   const [draft, setDraft] = useState<Partial<AutomationFormState>>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
@@ -209,7 +212,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
               ariaLabel={t('history.allStatus')}
               options={[
                 { key: 'all', label: t('history.allStatus'), selected: historyStatus === 'all', onSelect: () => setHistoryStatus('all') },
-                ...(['succeeded', 'failed', 'running', 'queued', 'skipped', 'cancelled'] as const).map(status => ({
+                ...HISTORY_STATUS_OPTIONS.map(status => ({
                   key: status,
                   label: t(`status.${status}`),
                   selected: historyStatus === status,
@@ -235,7 +238,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
                   onEdit={() => openEdit(item)}
                   onToggle={() => { void runAction(() => runtime.mutateAutomation(item.id, item.status === 'active' ? 'pause' : 'resume')) }}
                   onRun={() => { void runAction(() => runtime.runNow(item.id)) }}
-                  onDelete={() => { void runAction(() => runtime.mutateAutomation(item.id, 'delete')) }}
+                  onDelete={() => setDeleteTarget(item)}
                 />
               ))}
             </div>
@@ -283,6 +286,20 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
           }}
         />
       )}
+      <DeleteConfirmation
+        target={deleteTarget}
+        t={t}
+        busy={busy}
+        onCancel={() => setDeleteTarget(undefined)}
+        onConfirm={() => {
+          const target = deleteTarget
+          if (target === undefined) return
+          void runAction(async () => {
+            await runtime.mutateAutomation(target.id, 'delete')
+            setDeleteTarget(undefined)
+          })
+        }}
+      />
     </div>
   )
 }

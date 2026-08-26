@@ -32,3 +32,14 @@ test('任务模型菜单复刻官方两层模型与推理等级菜单且浮层�
   assert.doesNotMatch(modal, /form\.modelDefault|跟随默认模型|reasoningEffort: 'high'/)
   assert.match(styles, /\.dsh-st-flyout-root \.dsh-st-select-menu,\.dsh-st-flyout-root \.dsh-st-model-select-menu\{pointer-events:auto\}/)
 })
+
+test('删除任务必须先显示确认对话框', () => {
+  const view = readFileSync(new URL('../src/client/AutomationView.tsx', import.meta.url), 'utf8')
+  const confirmation = readFileSync(new URL('../src/client/delete-confirmation.tsx', import.meta.url), 'utf8')
+  assert.match(view, /setDeleteTarget\(item\)/)
+  assert.match(view, /<DeleteConfirmation/)
+  assert.match(confirmation, /role="alertdialog"/)
+  assert.match(confirmation, /card\.confirmDelete/)
+  assert.match(confirmation, /card\.confirmDeleteHint/)
+  assert.match(confirmation, /card\.confirm/)
+})

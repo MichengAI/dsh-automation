@@ -15,18 +15,21 @@ interface ToolAgent {
 const WEEKDAYS: readonly Weekday[] = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
 
 interface ScheduleArgs {
-  readonly kind?: 'once' | 'interval' | 'daily' | 'weekly'
+  readonly kind?: 'once' | 'interval' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom'
   readonly time_zone?: string
   readonly at?: string
   readonly every_minutes?: number
+  readonly minute?: number
   readonly time?: string
   readonly weekdays?: string[]
+  readonly month_day?: number
+  readonly every_days?: number
 }
 
 interface CreateArgs extends ScheduleArgs {
   readonly name: string
   readonly prompt: string
-  readonly kind: 'once' | 'interval' | 'daily' | 'weekly'
+  readonly kind: 'once' | 'interval' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom'
   readonly time_zone: string
   readonly permission?: PermissionPreset
 }
@@ -41,7 +44,9 @@ interface UpdateArgs extends ScheduleArgs {
 
 interface IdArgs { readonly id: string }
 
-const SCHEDULE_FIELDS = ['time_zone', 'at', 'every_minutes', 'time', 'weekdays'] as const
+const SCHEDULE_FIELDS = [
+  'time_zone', 'at', 'every_minutes', 'minute', 'time', 'weekdays', 'month_day', 'every_days',
+] as const
 
 function render(_args: unknown, value: JsonValue): { type: 'text'; text: string }[] {
   return [{ type: 'text', text: JSON.stringify(value) }]
@@ -70,9 +75,15 @@ function validateScheduleSelector(args: ScheduleArgs): void {
     ? ['time_zone', 'at'] as const
     : args.kind === 'interval'
       ? ['time_zone', 'every_minutes'] as const
-      : args.kind === 'daily'
-        ? ['time_zone', 'time'] as const
-        : ['time_zone', 'time', 'weekdays'] as const
+      : args.kind === 'hourly'
+        ? ['time_zone', 'minute'] as const
+        : args.kind === 'weekly'
+          ? ['time_zone', 'time', 'weekdays'] as const
+          : args.kind === 'monthly'
+            ? ['time_zone', 'time', 'month_day'] as const
+            : args.kind === 'custom'
+              ? ['time_zone', 'time', 'every_days'] as const
+              : ['time_zone', 'time'] as const
   const allowed = new Set<string>(required)
   const missing = required.filter(field => args[field] === undefined)
   if (missing.length > 0) throw new Error(`${args.kind} 计划需要 ${missing.join(', ')}`)
@@ -88,6 +99,8 @@ function scheduleFromArgs(args: ScheduleArgs, now: string): AutomationSchedule {
       return { kind: 'once', at: String(args.at ?? ''), timeZone }
     case 'interval':
       return { kind: 'interval', everyMinutes: Number(args.every_minutes), anchor: now, timeZone }
+    case 'hourly':
+      return { kind: 'hourly', minute: Number(args.minute), timeZone }
     case 'daily':
       return { kind: 'daily', time: String(args.time ?? ''), timeZone }
     case 'weekly': {
@@ -95,8 +108,12 @@ function scheduleFromArgs(args: ScheduleArgs, now: string): AutomationSchedule {
       if (weekdays.some(day => !WEEKDAYS.includes(day as Weekday))) throw new Error('weekdays 包含无效值')
       return { kind: 'weekly', weekdays: weekdays as Weekday[], time: String(args.time ?? ''), timeZone }
     }
+    case 'monthly':
+      return { kind: 'monthly', day: Number(args.month_day), time: String(args.time ?? ''), timeZone }
+    case 'custom':
+      return { kind: 'custom', everyDays: Number(args.every_days), time: String(args.time ?? ''), timeZone }
     default:
-      throw new Error('kind 必须是 once、interval、daily 或 weekly')
+      throw new Error('kind 必须是 once、interval、hourly、daily、weekly、monthly 或 custom')
   }
 }
 
@@ -112,12 +129,15 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
       parameters: {
         name: { type: 'string', required: true },
         prompt: { type: 'string', required: true, description: '每次独立运行都使用的自包含任务说明。' },
-        kind: { type: 'string', required: true, enum: ['once', 'interval', 'daily', 'weekly'] },
+        kind: { type: 'string', required: true, enum: ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom'] },
         time_zone: { type: 'string', required: true, description: 'IANA 时区，例如 Asia/Shanghai。' },
         at: { type: 'string', description: '一次性计划的带偏移 ISO 时间。' },
         every_minutes: { type: 'integer', description: '间隔计划的分钟数，最小 5。' },
-        time: { type: 'string', description: '每天或每周计划的本地 HH:mm。' },
+        minute: { type: 'integer', description: '每小时计划在第几分钟运行，范围 0-59。' },
+        time: { type: 'string', description: '每天、每周、每月或自定义计划的本地 HH:mm。' },
         weekdays: { type: 'array', items: { type: 'string', enum: WEEKDAYS } },
+        month_day: { type: 'integer', description: '每月计划在第几日运行，范围 1-31。' },
+        every_days: { type: 'integer', description: '自定义计划每隔几天运行，范围 1-365。' },
         permission: { type: 'string', enum: permissionNames },
       },
       output: JSON_OUTPUT,
@@ -170,12 +190,15 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         name: { type: 'string' },
         prompt: { type: 'string' },
         status: { type: 'string', enum: ['active', 'paused'] },
-        kind: { type: 'string', enum: ['once', 'interval', 'daily', 'weekly'] },
+        kind: { type: 'string', enum: ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom'] },
         time_zone: { type: 'string' },
         at: { type: 'string' },
         every_minutes: { type: 'integer' },
+        minute: { type: 'integer' },
         time: { type: 'string' },
         weekdays: { type: 'array', items: { type: 'string', enum: WEEKDAYS } },
+        month_day: { type: 'integer' },
+        every_days: { type: 'integer' },
         permission: { type: 'string', enum: permissionNames },
       },
       output: JSON_OUTPUT,

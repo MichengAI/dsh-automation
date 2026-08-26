@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, insertSkillGesture, prettyModelName, skillGestureToken, sortAutomations } from '../src/client/helpers.ts'
+import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, HISTORY_STATUS_OPTIONS, insertSkillGesture, prettyModelName, skillGestureToken, sortAutomations } from '../src/client/helpers.ts'
 import type { AutomationViewModel } from '../src/client/protocol.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
 import { createAutomationRuntime } from '../src/client/runtime.ts'
@@ -81,6 +81,12 @@ test('总览统计会统计未读失败并给出最近下次运行', () => {
   assert.equal(overview.attention, 1)
   assert.equal(overview.nextRunAt, '2026-08-16T02:00:00.000Z')
   assert.match(formatSchedule({ kind: 'daily', time: '09:00' }, t), /dailyAt/)
+})
+
+test('历史状态筛选覆盖 interrupted', () => {
+  assert.deepEqual(HISTORY_STATUS_OPTIONS, [
+    'succeeded', 'failed', 'interrupted', 'running', 'queued', 'skipped', 'cancelled',
+  ])
 })
 
 test('RPC 结果必须失败关闭，运行时会在变更后刷新快照', async () => {

@@ -232,6 +232,32 @@ test('更新工作区时必须由 id 和路径解析到同一个注册目录', a
   ), /同一个已注册目录/)
 })
 
+test('创建工作区时 id 和路径也必须解析到同一个注册目录', async () => {
+  const { service } = await makeService()
+  const scope = { sessionId: 'session_1', creatorKind: 'web' as const, hostWide: true }
+  const request = {
+    name: '工作区检查',
+    prompt: '检查状态',
+    schedule: { kind: 'once' as const, at: '2099-01-01T10:00:00.000Z', timeZone: 'UTC' },
+  }
+  await assert.rejects(() => service.create(scope, {
+    ...request,
+    workspaceId: 'missing',
+    cwd: 'D:\\work\\demo',
+  }), /同一个已注册目录/)
+  await assert.rejects(() => service.create(scope, {
+    ...request,
+    workspaceId: 'ws_1',
+    cwd: 'D:\\other',
+  }), /同一个已注册目录/)
+  const byId = await service.create(scope, { ...request, name: '仅 ID', workspaceId: 'ws_1' })
+  const byPath = await service.create(scope, { ...request, name: '仅目录', cwd: 'D:\\work\\demo' })
+  assert.equal(byId.workspaceId, 'ws_1')
+  assert.equal(byId.cwd, 'D:\\work\\demo')
+  assert.equal(byPath.workspaceId, 'ws_1')
+  assert.equal(byPath.cwd, 'D:\\work\\demo')
+})
+
 test('连续 snapshot 在短 TTL 内复用模型和技能目录结果', async () => {
   let listModelsCalls = 0
   let resolveCalls = 0

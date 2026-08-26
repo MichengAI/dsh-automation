@@ -548,10 +548,20 @@ export class AutomationService {
     let provider = request.provider ?? fallback?.provider ?? null
     let model = request.model ?? fallback?.model ?? null
     if (workspaceId !== '' || cwd !== '') {
-      const workspace = workspaceId !== ''
-        ? this.ctx.workspaceRegistry.get?.(workspaceId)
-          ?? await this.ctx.workspaceRegistry.resolveByPath?.(cwd)
-        : await this.ctx.workspaceRegistry.resolveByPath?.(cwd)
+      const registry = this.ctx.workspaceRegistry as {
+        get?: (id: unknown) => any
+        resolveByPath?: (path: string) => Promise<any> | any
+      }
+      const byId = workspaceId === '' ? undefined : registry.get?.(WorkspaceId(workspaceId))
+      const byPath = cwd === '' ? undefined : await registry.resolveByPath?.(cwd)
+      if (workspaceId !== '' && cwd !== '' && (
+        byId === undefined || byPath === undefined
+        || String(byId.id) !== String(byPath.id)
+        || String(byId.path) !== String(byPath.path)
+      )) {
+        throw new AutomationRequestError('创建任务的工作区 ID 和目录必须指向同一个已注册目录。')
+      }
+      const workspace = byId ?? byPath
       if (workspace === undefined) throw new AutomationRequestError('所选工作区不存在或目录未注册。')
       workspaceId = String(workspace.id)
       cwd = String(workspace.path)

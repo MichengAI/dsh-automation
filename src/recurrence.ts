@@ -195,7 +195,6 @@ function monthlyOccurrences(
   let cursor = after.setZone(schedule.timeZone).startOf('month')
   const values: string[] = []
   while (cursor.toUTC() <= until.plus({ days: 32 }) && values.length < limit) {
-    const candidate = localCandidate(cursor.set({ day: 1 }), hour, minute, schedule.timeZone)
     const dayValue = DateTime.fromObject(
       { year: cursor.year, month: cursor.month, day: schedule.day, hour, minute, second: 0, millisecond: 0 },
       { zone: schedule.timeZone },
@@ -205,7 +204,6 @@ function monthlyOccurrences(
       if (utc > after && utc <= until) values.push(utc.toISO()!)
     }
     cursor = cursor.plus({ months: 1 })
-    void candidate
   }
   return values
 }

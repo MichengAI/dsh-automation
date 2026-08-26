@@ -279,6 +279,10 @@ export function clockTime(iso: string): string {
 
 export type HistoryRange = 'day' | 'week' | 'month'
 
+export const HISTORY_STATUS_OPTIONS = [
+  'succeeded', 'failed', 'interrupted', 'running', 'queued', 'skipped', 'cancelled',
+] as const satisfies readonly AutomationRunStatus[]
+
 export type AutomationSortKey = 'created' | 'planned'
 export type AutomationSortDirection = 'asc' | 'desc'
 

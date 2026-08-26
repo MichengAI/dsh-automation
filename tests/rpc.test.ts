@@ -29,7 +29,55 @@ test('工具注册覆盖六个管理入口，并校验计划字段组合', () =>
   assert.deepEqual(definitions.get('automation_create')?.parameters?.permission?.enum, [
     'read-only', 'workspace-write',
   ])
+  assert.deepEqual(definitions.get('automation_create')?.parameters?.kind?.enum, [
+    'once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom',
+  ])
+  assert.deepEqual(definitions.get('automation_update')?.parameters?.kind?.enum, [
+    'once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom',
+  ])
   dispose()
+})
+
+test('Agent 工具可以创建和更新 hourly、monthly、custom 计划', async () => {
+  const schedules: unknown[] = []
+  const definitions = new Map<string, any>()
+  const agent = {
+    id: 'session-advanced',
+    ctx: {
+      tools: {
+        register(definition: { name: string }): () => void {
+          definitions.set(definition.name, definition)
+          return () => {}
+        },
+      },
+    },
+  }
+  registerAutomationTools({
+    permissionNames: () => ['read-only'],
+    async create(_scope: unknown, request: { schedule: unknown }) {
+      schedules.push(request.schedule)
+      return { id: `automation-${schedules.length}` }
+    },
+    async update(_scope: unknown, id: string, request: { schedule?: unknown }) {
+      schedules.push(request.schedule)
+      return { id }
+    },
+  } as never, agent)
+  const execute = definitions.get('automation_create')?.execute as (args: unknown, context: unknown) => Promise<unknown>
+  const update = definitions.get('automation_update')?.execute as (args: unknown, context: unknown) => Promise<unknown>
+  const context = { agent, signal: new AbortController().signal }
+
+  await execute({ name: 'hourly', prompt: 'p', kind: 'hourly', time_zone: 'UTC', minute: 15 }, context)
+  await execute({ name: 'monthly', prompt: 'p', kind: 'monthly', time_zone: 'UTC', time: '09:00', month_day: 31 }, context)
+  await execute({ name: 'custom', prompt: 'p', kind: 'custom', time_zone: 'UTC', time: '10:00', every_days: 3 }, context)
+  await update({ id: 'automation-1', kind: 'hourly', time_zone: 'UTC', minute: 45 }, context)
+
+  assert.deepEqual(schedules, [
+    { kind: 'hourly', minute: 15, timeZone: 'UTC' },
+    { kind: 'monthly', day: 31, time: '09:00', timeZone: 'UTC' },
+    { kind: 'custom', everyDays: 3, time: '10:00', timeZone: 'UTC' },
+    { kind: 'hourly', minute: 45, timeZone: 'UTC' },
+  ])
 })
 
 test('RPC 适配器只接受已知端点并返回失败关闭信封', async () => {
