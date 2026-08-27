@@ -1,18 +1,8 @@
 import { type ComponentType, type ReactNode } from 'react';
-import type { Translate } from './contracts.js';
+import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js';
 import type { AutomationRuntime } from './runtime.js';
-import { type NativeSessionLike, type NativeWorkspaceLike } from './schedule-rail-model.js';
 import { type ScheduleView } from './schedule-overview.js';
 import type { NativeTabRegistry } from './native-tabs.js';
-type SessionSelector = <S>(select: (state: {
-    ids?: string[];
-    byId?: Record<string, NativeSessionLike>;
-    current?: string | null;
-}) => S, eq?: (a: S, b: S) => boolean) => S;
-type WorkspaceSelector = <S>(select: (state: {
-    items?: NativeWorkspaceLike[];
-    archivedSessionIds?: string[];
-}) => S, eq?: (a: S, b: S) => boolean) => S;
 export declare function ScheduleRail({ t, runtime, openSession, view: controlledView, showViewSwitch, }: {
     readonly t: Translate;
     readonly runtime: AutomationRuntime;
@@ -34,4 +24,3 @@ export declare function NativeScheduleShell({ t, runtime, officialTree, hostProp
     readonly tabRegistry?: NativeTabRegistry;
     readonly wide?: boolean;
 }): JSX.Element | null;
-export {};

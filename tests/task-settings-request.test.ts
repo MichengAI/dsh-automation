@@ -99,6 +99,12 @@ test('旧执行记录缺少运行映射时按任务名回退', () => {
   assert.equal(resolveAutomationTaskSettings({ name: '天气', sessionIds: ['legacy'] }, [item], [])?.id, 'weather')
 })
 
+test('旧执行记录遇到多个同名任务时安全失败，不打开任意一条', () => {
+  const duplicateA = automation('a', '同名任务')
+  const duplicateB = automation('b', '同名任务')
+  assert.equal(resolveAutomationTaskSettings({ name: '同名任务', sessionIds: ['legacy'] }, [duplicateA, duplicateB], []), undefined)
+})
+
 test('拒绝无效的跨插件任务设置请求', () => {
   assert.equal(parseAutomationTaskSettingsRequest({ name: '', sessionIds: [] }), undefined)
   assert.equal(parseAutomationTaskSettingsRequest({ name: '天气', sessionIds: [1] }), undefined)

@@ -56,5 +56,8 @@ export function resolveAutomationTaskSettings(
   }
   const sessionIds = new Set(request.sessionIds)
   const automationId = runs.find(run => run.sessionId !== undefined && sessionIds.has(run.sessionId))?.automationId
-  return automations.find(item => item.id === automationId) ?? automations.find(item => item.name === request.name)
+  const mapped = automations.find(item => item.id === automationId)
+  if (mapped !== undefined) return mapped
+  const named = automations.filter(item => item.name === request.name)
+  return named.length === 1 ? named[0] : undefined
 }

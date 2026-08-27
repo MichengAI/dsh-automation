@@ -2,8 +2,11 @@ import type { ComponentType, ReactNode } from 'react';
 import type { AutomationLocaleKey } from './locales.js';
 import type { AutomationRuntime } from './runtime.js';
 import type { PermissionTranslate } from './permissions.js';
+import type { SessionListState, WorkspaceListState } from './schedule-rail-model.js';
 export type Translate = (key: AutomationLocaleKey, params?: Record<string, unknown>) => string;
 export type ModelTranslate = (key: string, params?: Record<string, unknown>) => string;
+export type SessionSelector = <Selected>(select: (state: SessionListState) => Selected, equals?: (left: Selected, right: Selected) => boolean) => Selected;
+export type WorkspaceSelector = <Selected>(select: (state: WorkspaceListState) => Selected, equals?: (left: Selected, right: Selected) => boolean) => Selected;
 export interface AutomationViewProps {
     readonly t: Translate;
     readonly permissionT: PermissionTranslate;
@@ -63,7 +66,7 @@ export interface NativeSwitcherProps {
     readonly wide?: boolean;
     readonly openSession?: (sessionId: string) => void;
     readonly open?: (sessionId: string) => void;
-    readonly useSessions?: (select: (state: any) => any) => any;
-    readonly useWorkspaces?: (select: (state: any) => any) => any;
+    readonly useSessions?: SessionSelector;
+    readonly useWorkspaces?: WorkspaceSelector;
     readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode;
 }

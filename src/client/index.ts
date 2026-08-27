@@ -1,6 +1,6 @@
 import { createElement, useEffect, type ComponentType } from 'react'
 import { AutomationView } from './AutomationView.js'
-import type { ClientContext, NativeSwitcherProps } from './contracts.js'
+import type { ClientContext, NativeSwitcherProps, SessionSelector, WorkspaceSelector } from './contracts.js'
 import { en, NS, zh } from './locales.js'
 import {
   attachNativeTabRegistry,
@@ -33,6 +33,14 @@ type HostComponent = ComponentType<any> & {
 }
 
 const SETTINGS_CLOCK_SVG = '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true" data-dsh-schedule-icon="1"><path fill="currentColor" d="M8 1.15A6.85 6.85 0 1 0 8 14.85 6.85 6.85 0 0 0 8 1.15Zm0 1.4a5.45 5.45 0 1 1 0 10.9 5.45 5.45 0 0 1 0-10.9Z"/><path fill="currentColor" d="M8.62 4.35H7.28v4.2l3.02 1.78.67-1.13-2.35-1.39V4.35Z"/></svg>'
+
+function isSessionSelector(value: unknown): value is SessionSelector {
+  return typeof value === 'function'
+}
+
+function isWorkspaceSelector(value: unknown): value is WorkspaceSelector {
+  return typeof value === 'function'
+}
 
 function installSettingsNavIcon(labels: () => readonly string[]): () => void {
   const wanted = new Set(labels().map(item => item.trim()).filter(item => item !== ''))
@@ -139,8 +147,8 @@ export function apply(ctx: ClientContext): void {
             t,
             runtime,
             openSession: opener,
-            ...(typeof props.useSessions === 'function' ? { useSessions: props.useSessions as any } : {}),
-            ...(typeof props.useWorkspaces === 'function' ? { useWorkspaces: props.useWorkspaces as any } : {}),
+            ...(isSessionSelector(props.useSessions) ? { useSessions: props.useSessions } : {}),
+            ...(isWorkspaceSelector(props.useWorkspaces) ? { useWorkspaces: props.useWorkspaces } : {}),
             ...(typeof props.renameSession === 'function' ? { renameSession: props.renameSession as any } : {}),
             ...(typeof props.archiveSession === 'function' ? { archiveSession: props.archiveSession as any } : {}),
             ...(typeof props.deleteSession === 'function' ? { deleteSession: props.deleteSession as any } : {}),

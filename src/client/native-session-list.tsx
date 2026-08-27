@@ -9,7 +9,7 @@ import {
   Modal,
   type MenuEntry,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { Translate } from './contracts.js'
+import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import {
   ArchiveIcon,
   BranchIcon,
@@ -51,8 +51,8 @@ export function NativeScheduleSessionList(props: {
   readonly t: Translate
   readonly runtime: AutomationRuntime
   readonly openSession?: (sessionId: string) => void
-  readonly useSessions?: (select: (state: any) => any) => any
-  readonly useWorkspaces?: (select: (state: any) => any) => any
+  readonly useSessions?: SessionSelector
+  readonly useWorkspaces?: WorkspaceSelector
   readonly renameSession?: (sessionId: string, title: string) => void | Promise<void>
   readonly archiveSession?: (sessionId: string) => void | Promise<void>
   readonly deleteSession?: (sessionId: string) => void | Promise<void>
@@ -61,11 +61,11 @@ export function NativeScheduleSessionList(props: {
 }): JSX.Element {
   const { t, runtime, openSession, useSessions, useWorkspaces, renameSession, archiveSession, forkSession, openTaskSettings } = props
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
-  const selectedId = useSessions ? useSessions((snap: { current?: string | null }) => snap?.current ?? null) : null
+  const selectedId = useSessions ? useSessions(snap => snap.current ?? null) : null
   const sessionById: Record<string, NativeSessionLike> = useSessions
-    ? useSessions((snap: { byId?: Record<string, NativeSessionLike> }) => snap?.byId ?? EMPTY_SESSION_BY_ID)
+    ? useSessions(snap => snap.byId ?? EMPTY_SESSION_BY_ID)
     : EMPTY_SESSION_BY_ID
-  const archivedIds: string[] = useWorkspaces ? useWorkspaces((snap: { archivedSessionIds?: string[] }) => snap?.archivedSessionIds ?? []) : []
+  const archivedIds: readonly string[] = useWorkspaces ? useWorkspaces(snap => snap.archivedSessionIds ?? []) : []
   const [folded, setFolded] = useState<Record<string, boolean>>({})
   const [openMenu, setOpenMenu] = useState<NativeSessionMenuState>(null)
   const [openGroupMenu, setOpenGroupMenu] = useState<string>()
@@ -79,7 +79,7 @@ export function NativeScheduleSessionList(props: {
   const [view, setView] = useState<ScheduleView>('runs')
   const archived = useMemo(() => new Set(archivedIds), [archivedIds])
   const listedIds: readonly string[] | undefined = useSessions
-    ? useSessions((snap: { ids?: string[] }) => Array.isArray(snap?.ids) ? snap.ids : undefined)
+    ? useSessions(snap => Array.isArray(snap.ids) ? snap.ids : undefined)
     : undefined
   const presentIds = useMemo(() => {
     if (listedIds !== undefined) return new Set(listedIds)

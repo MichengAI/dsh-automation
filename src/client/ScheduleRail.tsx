@@ -1,5 +1,5 @@
 import { Component, createElement, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
-import type { Translate } from './contracts.js'
+import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import { ClockIcon, RunningStateDot } from './icons.js'
 import type { AutomationRuntime } from './runtime.js'
 import {
@@ -24,17 +24,6 @@ import type { NativeSidebarTab as ExtraSidebarTab, NativeTabRegistry } from './n
 
 const EMPTY_EXTRA_TABS: ExtraSidebarTab[] = []
 const noopSubscribe = (_listener: () => void): (() => void) => () => undefined
-
-type SessionSelector = <S>(select: (state: {
-  ids?: string[]
-  byId?: Record<string, NativeSessionLike>
-  current?: string | null
-}) => S, eq?: (a: S, b: S) => boolean) => S
-
-type WorkspaceSelector = <S>(select: (state: {
-  items?: NativeWorkspaceLike[]
-  archivedSessionIds?: string[]
-}) => S, eq?: (a: S, b: S) => boolean) => S
 
 class OfficialTreeGuard extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
   override state = { failed: false }
@@ -295,5 +284,4 @@ function NativeTaskRail({
     </div>
   )
 }
-
 
