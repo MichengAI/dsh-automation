@@ -4,6 +4,15 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.21 — 2026-08-27
+
+- Localized the scheduled-session more-actions accessibility label in both English and Chinese.
+- Added regression coverage for opening the scheduled-task settings section, including delayed dialog mounting, cleanup, timeout handling, and cross-plugin request delivery.
+- Replaced the native session and workspace hook `any` signatures with shared typed selectors and narrowed unknown Host props at the adapter boundary.
+- Made legacy task-name fallback fail closed when multiple tasks share the same name, preventing the wrong task settings from opening.
+
+Published package: [`@michengai/dsh-automation@0.1.21`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.21).
+
 ## 0.1.20 — 2026-08-27
 
 - Merged [PR #4](https://github.com/MichengAI/dsh-automation/pull/4) by [@louishzwang](https://github.com/louishzwang), adding a read-only task overview beside execution history and persistent default sorting by created or planned time.

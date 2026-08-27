@@ -4,6 +4,15 @@
 
 以下记录最近发布的五个版本。Git 标签与 GitHub Release 现已和这些条目同步；历史条目继续保留原始发布提交链接。
 
+## 0.1.21 — 2026-08-27
+
+- 为定时会话的“更多操作”无障碍标签补齐中英文翻译。
+- 补充打开定时任务设置分区的回归测试，覆盖弹窗延迟挂载、资源清理、超时处理和跨插件请求传递。
+- 将原生会话与工作区 Hook 的 `any` 签名替换为共享强类型 Selector，并在宿主适配边界收窄未知参数。
+- 旧执行记录按任务名回退时若遇到多个同名任务将安全失败，避免打开错误的任务设置。
+
+发布包：[`@michengai/dsh-automation@0.1.21`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.21)。
+
 ## 0.1.20 — 2026-08-27
 
 - 合并 [PR #4](https://github.com/MichengAI/dsh-automation/pull/4)，感谢 [@louishzwang](https://github.com/louishzwang) 贡献：在执行记录旁增加只读任务总览，并支持按创建时间或计划时间保存默认排序。
