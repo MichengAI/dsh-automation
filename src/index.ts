@@ -29,7 +29,7 @@ export const Config = z.object({
 })
 
 const MUTATING_TOOLS = new Set([
-  'automation_create', 'automation_update', 'automation_run_now', 'automation_delete',
+  'automation_create', 'automation_manage',
 ])
 
 export type SessionApprovalPolicy = 'ask' | 'never'
@@ -62,15 +62,16 @@ export function needsHumanApproval(
 ): boolean {
   if (!isMountedAgent || exec.signal.aborted || !MUTATING_TOOLS.has(exec.name)) return false
   if (policy !== 'ask') return false
-  if (exec.name !== 'automation_update') return true
+  if (exec.name !== 'automation_manage') return true
   const args = typeof exec.arguments === 'object' && exec.arguments !== null
     ? exec.arguments as Record<string, unknown>
     : {}
-  return !(args.status === 'paused' && Object.keys(args).every(key => key === 'id' || key === 'status'))
+  return args.action !== 'pause' || Object.keys(args).some(key => key !== 'id' && key !== 'action')
 }
 
-export function humanApprovalReason(toolName: string): string {
-  return toolName === 'automation_delete'
+export function humanApprovalReason(toolName: string, args?: unknown): string {
+  const action = typeof args === 'object' && args !== null ? (args as Record<string, unknown>).action : undefined
+  return toolName === 'automation_manage' && action === 'delete'
     ? '此操作会永久删除自动化定义。运行历史会保留，但计划无法自动恢复。'
     : '此操作会创建或扩大无人值守的未来工作。请核对任务说明、计划、工作区和权限边界。'
 }
@@ -152,7 +153,7 @@ export async function apply(ctx: Context, rawConfig: Config): Promise<void> {
         }
         return {
           kind: 'ask' as const,
-          reason: humanApprovalReason(exec.name),
+          reason: humanApprovalReason(exec.name, exec.arguments),
         }
       })
       removeRpc = registerAutomationRpc(ctx, service)

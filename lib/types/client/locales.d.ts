@@ -37,13 +37,15 @@ export declare const en: {
     readonly 'chat.prompt': "I want to create a scheduled task that runs every [interval] and does [the actual task]";
     readonly 'menu.run': "Run task";
     readonly 'menu.edit': "Edit task";
+    readonly 'menu.pause': "Pause task";
+    readonly 'menu.resume': "Resume task";
     readonly 'menu.delete': "Delete task";
     readonly 'session.rename': "Rename";
     readonly 'session.fork': "Fork session";
     readonly 'session.archive': "Archive session";
     readonly 'session.moreActions': "More actions for {title}";
     readonly 'session.groupActions': "Actions for {name}";
-    readonly 'session.taskSettings': "Task settings";
+    readonly 'session.taskSettings': "Edit task";
     readonly 'session.archiveGroup': "Archive all conversations";
     readonly 'session.archiveGroupConfirm': "Archive all";
     readonly 'session.archiveGroupDescription': "Archive all {count} conversations for “{name}”. You can restore them later in Settings → Archived.";

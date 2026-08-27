@@ -19,7 +19,6 @@ import {
   type NativeWorkspaceLike,
 } from './schedule-rail-model.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
-import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import type { NativeSidebarTab as ExtraSidebarTab, NativeTabRegistry } from './native-tabs.js'
 
 const EMPTY_EXTRA_TABS: ExtraSidebarTab[] = []
@@ -40,19 +39,13 @@ export function ScheduleRail({
   t,
   runtime,
   openSession,
-  view: controlledView,
-  showViewSwitch = true,
 }: {
   readonly t: Translate
   readonly runtime: AutomationRuntime
   readonly openSession?: (sessionId: string) => void
-  readonly view?: ScheduleView
-  readonly showViewSwitch?: boolean
 }): JSX.Element {
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const [folded, setFolded] = useState<Record<string, boolean>>({})
-  const [localView, setLocalView] = useState<ScheduleView>('runs')
-  const view = controlledView ?? localView
   const snapshot = state.snapshot
 
   const groups = useMemo(() => {
@@ -62,18 +55,7 @@ export function ScheduleRail({
 
   return (
     <div className="dsh-st-rail">
-      {showViewSwitch && <ScheduleViewSwitch t={t} view={view} onChange={setLocalView} />}
-      {view === 'overview'
-        ? snapshot === undefined
-          ? <div className="dsh-st-rail-empty">{state.phase === 'loading' ? t('loading') : t('overview.empty')}</div>
-          : <ScheduleOverview
-              t={t}
-              automations={snapshot.automations}
-              runs={snapshot.runs}
-              {...(openSession === undefined ? {} : { openSession })}
-              {...(snapshot.serverNow === undefined ? {} : { serverNow: snapshot.serverNow })}
-            />
-        : <>
+      <>
             {state.phase === 'loading' && groups.length === 0 && <div className="dsh-st-rail-empty">{t('loading')}</div>}
             {groups.length === 0 && state.phase !== 'loading' && <div className="dsh-st-rail-empty">{t('sidebar.empty')}</div>}
             {groups.map(group => (
@@ -81,6 +63,7 @@ export function ScheduleRail({
                 <button
                   type="button"
                   className="dsh-st-rail-head"
+                  title={group.name}
                   onClick={() => setFolded(current => ({ ...current, [group.id]: !current[group.id] }))}
                 >
                   <span className="dsh-st-rail-folder"><ClockIcon width={16} height={16} /></span>
@@ -99,7 +82,7 @@ export function ScheduleRail({
                 ))}
               </section>
             ))}
-          </>}
+          </>
     </div>
   )
 }
@@ -284,4 +267,3 @@ function NativeTaskRail({
     </div>
   )
 }
-

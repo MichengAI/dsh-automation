@@ -69,11 +69,13 @@ test('schedule rail groups runs by task name', () => {
       { automationId: 'a2', status: 'queued', scheduledFor: '2026-08-16T03:00:00.000Z' },
     ],
   )
-  assert.equal(groups.length, 1)
+  assert.equal(groups.length, 2)
   assert.equal(groups[0]?.name, 'auto-report')
   assert.equal(groups[0]?.sessions.length, 2)
   assert.equal(groups[0]?.sessions[0]?.running, true)
   assert.ok((groups[0]?.sessions[0]?.label ?? '').includes('auto-report'))
+  assert.equal(groups[1]?.name, 'empty')
+  assert.equal(groups[1]?.sessions.length, 0)
   assert.ok(formatRunStamp('2026-08-16T02:30:00.000Z').includes('2026-08-16'))
 })
 
@@ -384,6 +386,18 @@ test('工作区搜索按名称过滤，筛选可按时间或名称排序', () =>
   assert.deepEqual(applyWorkspaceBrowserQuery(groups, '', 'manual').map((item) => item.name), ['报表', '审查'])
   assert.equal(applyWorkspaceBrowserQuery(groups, '', 'time', 'list').length, 1)
   assert.equal(applyWorkspaceBrowserQuery(groups, '', 'time', 'list')[0]?.sessions.length, 2)
+})
+
+test('搜索为空时保留未运行任务，列表模式也保留空文件夹', () => {
+  const groups = [
+    { name: '已运行', sessions: [{ title: '结果', updatedAt: '2026-08-18T03:00:00.000Z' }] },
+    { name: '未运行', sessions: [] },
+  ]
+  assert.deepEqual(applyWorkspaceBrowserQuery(groups, '', 'manual').map(item => item.name), ['已运行', '未运行'])
+  const list = applyWorkspaceBrowserQuery(groups, '', 'manual', 'list')
+  assert.equal(list.length, 2)
+  assert.equal(list[0]?.sessions.length, 1)
+  assert.equal(list[1]?.name, '未运行')
 })
 
 

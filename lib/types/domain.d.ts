@@ -62,6 +62,6 @@ export declare function resumeDefinition(current: AutomationDefinition, now: str
 export declare function deleteDefinition(current: AutomationDefinition): DeleteAutomationPlan;
 export declare function occurrenceKey(automationId: string, definitionRevision: number, scheduledFor: string): string;
 export declare function runIdForOccurrence(key: string): string;
-export declare function createScheduledRun(definition: AutomationDefinition, scheduledFor: string): AutomationRun;
+export declare function createScheduledRun(definition: AutomationDefinition, scheduledFor: string, trigger?: 'schedule' | 'catch-up'): AutomationRun;
 export declare function createManualRun(definition: AutomationDefinition, scheduledFor: string, nonce?: string): AutomationRun;
 export type { AutomationSchedule };

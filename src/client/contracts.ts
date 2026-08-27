@@ -23,6 +23,7 @@ export interface AutomationViewProps {
   readonly closeSettings?: () => void
 }
 
+
 export interface ClientRpc {
   call(channel: string, endpoint: string, payload: unknown, signal?: AbortSignal): Promise<unknown>
 }
@@ -73,5 +74,3 @@ export interface NativeSwitcherProps {
   readonly useWorkspaces?: WorkspaceSelector
   readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode
 }
-
-

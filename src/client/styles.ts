@@ -206,6 +206,10 @@ const CSS_TEXT = `
 .dsh-st-n-dialog-error{margin-top:12px;color:var(--dsw-alias-state-error-primary,#f85149);font-size:13px;line-height:20px}
 .dsh-st-n-danger-button{color:var(--dsw-alias-state-error-primary,#f85149)!important}
 .dsh-st-n-danger-button:hover{background:var(--dsw-alias-interactive-bg-hover-danger,rgba(248,81,73,.12))!important}
+.dsh-st-n-status-dot{width:8px;height:8px;border-radius:50%;background:#34c759;display:block;flex:none}.dsh-st-n-status-dot.is-error{background:#ff5f57}
+.dsh-st-n-hover-dot{background:#f2c94c}.dsh-st-n-hover-dot.is-run{background:#34c759}
+.dsh-st-n-hover-schedule{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--dsw-alias-border-l2,rgba(255,255,255,.1));font-size:12px;line-height:18px}.dsh-st-n-hover-schedule .dsh-st-chip{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dsh-st-n-hover-schedule .dsh-st-n-hover-time{width:100%;text-align:left}
+.dsh-st-n-head-acts{max-width:64px}
 `
 
 export function installStyles(): () => void {

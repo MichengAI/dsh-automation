@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
-import type { AutomationViewProps, Translate } from './contracts.js'
+import type { AutomationViewProps, ModelTranslate, Translate } from './contracts.js'
+import type { PermissionTranslate } from './permissions.js'
 import {
   AutomationFormError,
   buildCreateInput,
@@ -39,6 +40,7 @@ import { setChatPrefill } from './prefill.js'
 import { isTransportError } from './runtime.js'
 import { SortMenu } from './sort-menu.js'
 import type { AutomationRunStatus, AutomationRunViewModel, AutomationViewModel } from './protocol.js'
+import type { AutomationSnapshot } from './protocol.js'
 import {
   AUTOMATION_TASK_SETTINGS_EVENT,
   clearAutomationTaskSettingsRequest,
@@ -346,6 +348,80 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
   )
 }
 
+export function AutomationTaskEditor({ item, snapshot, t, permissionT, modelT, runtime, onClose }: {
+  readonly item: AutomationViewModel
+  readonly snapshot: AutomationSnapshot
+  readonly t: Translate
+  readonly permissionT: PermissionTranslate
+  readonly modelT: ModelTranslate
+  readonly runtime: AutomationViewProps['runtime']
+  readonly onClose: () => void
+}): JSX.Element {
+  const [busy, setBusy] = useState(false)
+  const workspaces = snapshot.workspaces ?? []
+  const draft = formFromAutomation(item, workspaces, snapshot.defaultModel ?? null, snapshot.defaultPermission ?? item.permission)
+  return <CreateModal
+    t={t}
+    permissionT={permissionT}
+    modelT={modelT}
+    busy={busy}
+    workspaces={workspaces}
+    models={snapshot.models ?? []}
+    modelFailures={snapshot.modelFailures ?? []}
+    defaultModel={snapshot.defaultModel ?? null}
+    skills={snapshot.skills ?? []}
+    permissions={snapshot.permissions}
+    defaultPermission={snapshot.defaultPermission}
+    draft={draft}
+    editing
+    onClose={onClose}
+    onSubmit={async (form) => {
+      setBusy(true)
+      try {
+        await runtime.updateAutomation(item.id, buildCreateInput(form, workspaces, snapshot.models ?? [], new Date(), { allowPastOnce: true }))
+        onClose()
+      } finally {
+        setBusy(false)
+      }
+    }}
+  />
+}
+
+export function AutomationTaskCreator({ snapshot, t, permissionT, modelT, runtime, onClose }: {
+  readonly snapshot: AutomationSnapshot
+  readonly t: Translate
+  readonly permissionT: PermissionTranslate
+  readonly modelT: ModelTranslate
+  readonly runtime: AutomationViewProps['runtime']
+  readonly onClose: () => void
+}): JSX.Element {
+  const [busy, setBusy] = useState(false)
+  const workspaces = snapshot.workspaces ?? []
+  return <CreateModal
+    t={t}
+    permissionT={permissionT}
+    modelT={modelT}
+    busy={busy}
+    workspaces={workspaces}
+    models={snapshot.models ?? []}
+    modelFailures={snapshot.modelFailures ?? []}
+    defaultModel={snapshot.defaultModel ?? null}
+    skills={snapshot.skills ?? []}
+    permissions={snapshot.permissions}
+    defaultPermission={snapshot.defaultPermission}
+    onClose={onClose}
+    onSubmit={async (form) => {
+      setBusy(true)
+      try {
+        await runtime.createAutomation(buildCreateInput(form, workspaces, snapshot.models ?? [], new Date()))
+        onClose()
+      } finally {
+        setBusy(false)
+      }
+    }}
+  />
+}
+
 function TaskCard({
   item, t, now, busy, onEdit, onToggle, onRun, onDelete,
 }: {
@@ -400,7 +476,7 @@ function RunRow({ run, t }: { readonly run: AutomationRunViewModel; readonly t: 
       <p>
         <span>{clockTime(run.startedAt ?? run.scheduledFor)}</span>
         {duration !== undefined && <span>{duration}</span>}
-        <span>{t('history.trigger')}</span>
+        <span>{t(`run.trigger.${run.trigger}` as 'run.trigger.schedule' | 'run.trigger.manual' | 'run.trigger.catch-up')}</span>
       </p>
     </article>
   )

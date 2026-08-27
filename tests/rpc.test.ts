@@ -3,7 +3,7 @@ import test from 'node:test'
 import { registerAutomationRpc } from '../src/rpc.ts'
 import { registerAutomationTools } from '../src/tools.ts'
 
-test('工具注册覆盖六个管理入口，并校验计划字段组合', () => {
+test('工具注册收敛为三个管理入口，并校验计划字段组合', () => {
   const names: string[] = []
   const descriptions = new Map<string, string>()
   const definitions = new Map<string, any>()
@@ -22,8 +22,7 @@ test('工具注册覆盖六个管理入口，并校验计划字段组合', () =>
   }
   const dispose = registerAutomationTools({ permissionNames: () => ['read-only', 'workspace-write'] } as never, agent)
   assert.deepEqual(names, [
-    'automation_create', 'automation_list', 'automation_update',
-    'automation_runs', 'automation_run_now', 'automation_delete',
+    'automation_create', 'automation_get', 'automation_manage',
   ])
   assert.match(descriptions.get('automation_create') ?? '', /定时任务/)
   assert.deepEqual(definitions.get('automation_create')?.parameters?.permission?.enum, [
@@ -32,7 +31,7 @@ test('工具注册覆盖六个管理入口，并校验计划字段组合', () =>
   assert.deepEqual(definitions.get('automation_create')?.parameters?.kind?.enum, [
     'once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom',
   ])
-  assert.deepEqual(definitions.get('automation_update')?.parameters?.kind?.enum, [
+  assert.deepEqual(definitions.get('automation_manage')?.parameters?.kind?.enum, [
     'once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom',
   ])
   dispose()
@@ -64,13 +63,13 @@ test('Agent 工具可以创建和更新 hourly、monthly、custom 计划', async
     },
   } as never, agent)
   const execute = definitions.get('automation_create')?.execute as (args: unknown, context: unknown) => Promise<unknown>
-  const update = definitions.get('automation_update')?.execute as (args: unknown, context: unknown) => Promise<unknown>
+  const update = definitions.get('automation_manage')?.execute as (args: unknown, context: unknown) => Promise<unknown>
   const context = { agent, signal: new AbortController().signal }
 
   await execute({ name: 'hourly', prompt: 'p', kind: 'hourly', time_zone: 'UTC', minute: 15 }, context)
   await execute({ name: 'monthly', prompt: 'p', kind: 'monthly', time_zone: 'UTC', time: '09:00', month_day: 31 }, context)
   await execute({ name: 'custom', prompt: 'p', kind: 'custom', time_zone: 'UTC', time: '10:00', every_days: 3 }, context)
-  await update({ id: 'automation-1', kind: 'hourly', time_zone: 'UTC', minute: 45 }, context)
+  await update({ id: 'automation-1', action: 'update', kind: 'hourly', time_zone: 'UTC', minute: 45 }, context)
 
   assert.deepEqual(schedules, [
     { kind: 'hourly', minute: 15, timeZone: 'UTC' },
@@ -128,5 +127,3 @@ test('RPC 限制任务字段长度并隐藏内部异常文案', async () => {
   assert.equal(warnings.length, 1)
   assert.match(warnings[0] ?? '', /RPC 'create' failed:.*storage path C:\\secret\\domain\.db/s)
 })
-
-

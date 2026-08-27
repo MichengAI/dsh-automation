@@ -27,7 +27,7 @@ export declare function needsHumanApproval(exec: {
     readonly arguments?: unknown;
     readonly signal: AbortSignal;
 }, isMountedAgent: boolean, policy?: SessionApprovalPolicy): boolean;
-export declare function humanApprovalReason(toolName: string): string;
+export declare function humanApprovalReason(toolName: string, args?: unknown): string;
 export declare function apply(ctx: Context, rawConfig: Config): Promise<void>;
 export type * from './types.ts';
 export { automationDomainSpec } from './domain.ts';

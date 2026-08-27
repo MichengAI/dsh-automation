@@ -6,6 +6,7 @@ export const NATIVE_SIDEBAR_TAB_KEY = 'dsh-automation.sidebar-tab'
 export interface ScheduleRailSession {
   readonly id: string
   readonly running: boolean
+  readonly status: string
   readonly label: string
 }
 
@@ -32,6 +33,7 @@ export interface NativeSessionLike {
   readonly origin?: string
   readonly updatedAt?: number | string
   readonly running?: boolean
+  readonly runStatus?: string
 }
 
 export interface NativeWorkspaceLike {
@@ -95,10 +97,11 @@ export function groupScheduledSessions(
         .map(run => ({
           id: run.sessionId as string,
           running: run.status === 'running' || run.status === 'queued',
+          status: run.status,
           label: formatRunStamp(run.startedAt ?? run.scheduledFor) + ' - ' + name,
         })),
     }
-  }).filter(group => group.sessions.length > 0)
+  })
 }
 
 export interface OverviewAutomationLike {
@@ -149,6 +152,8 @@ export function keepScheduledSessionLink(
 ): boolean {
   if (sessionId === undefined || sessionId === '') return false
   if (archived.has(sessionId)) return false
+  // 自动化运行记录是定时栏的权威来源；宿主 Session 列表更新存在短暂延迟。
+  if (sessionId.startsWith(AUTOMATION_SESSION_PREFIX)) return true
   if (presentIds === undefined) return true
   return presentIds.has(sessionId)
 }
@@ -480,11 +485,15 @@ export function applyWorkspaceBrowserQuery<T extends SearchableRailGroup>(
     if (group.name.toLocaleLowerCase().includes(needle)) return group
     const sessions = group.sessions.filter((session) => `${session.title ?? ''} ${session.label ?? ''}`.toLocaleLowerCase().includes(needle))
     return { ...group, sessions }
-  }).filter((group) => group.sessions.length > 0 || (needle !== '' && group.name.toLocaleLowerCase().includes(needle)))
+  }).filter((group) => needle === '' || group.sessions.length > 0 || group.name.toLocaleLowerCase().includes(needle))
   if (groupMode === 'list') {
     const sessions = filtered.flatMap((group) => [...group.sessions])
     if (sort === 'time') sessions.sort((left, right) => sessionTime(right) - sessionTime(left))
-    return sessions.length === 0 ? [] : [{ ...(filtered[0] as T), name: '', sessions }]
+    const emptyGroups = filtered.filter((group) => group.sessions.length === 0)
+    const sessionGroup = filtered.find((group) => group.sessions.length > 0)
+    return sessionGroup === undefined
+      ? emptyGroups
+      : [{ ...sessionGroup, name: '', sessions }, ...emptyGroups]
   }
   if (sort === 'manual') return filtered
   return [...filtered].sort((left, right) => latestSessionTime(right) - latestSessionTime(left))

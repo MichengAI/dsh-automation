@@ -34,7 +34,9 @@ import type {
 } from './types.ts'
 
 const MAX_TIMER_DELAY_MS = 2_147_483_647
+const CATCH_UP_THRESHOLD_MS = 5_000
 const OPTION_CACHE_TTL_MS = 30_000
+const GLOBAL_HISTORY_LIMIT = 1_000
 export const AUTOMATION_SESSION_PREFIX = 'dsh-automation-session-'
 
 export interface AutomationConfig {
@@ -650,11 +652,11 @@ export class AutomationService {
   ): Promise<void> {
     const scheduledFor = latestDueOccurrence(definition.schedule, now)
     if (scheduledFor === null || Date.parse(scheduledFor) <= Date.parse(definition.updatedAt)) return
-    if (related.some(run => run.trigger === 'schedule' && run.scheduledFor === scheduledFor)) return
-    const candidate = createScheduledRun(definition, scheduledFor)
-    if (this.runs.get(candidate.id) !== undefined) return
     const overlapping = related.some(run => run.status === 'queued' || run.status === 'running')
     const age = Date.parse(now) - Date.parse(scheduledFor)
+    if (related.some(run => (run.trigger === 'schedule' || run.trigger === 'catch-up') && run.scheduledFor === scheduledFor)) return
+    const candidate = createScheduledRun(definition, scheduledFor, age > CATCH_UP_THRESHOLD_MS ? 'catch-up' : 'schedule')
+    if (this.runs.get(candidate.id) !== undefined) return
     if (overlapping || age > this.config.misfireGraceMs) {
       const reason = overlapping
         ? { code: 'overlap', message: '上一次运行仍在进行，本次已跳过。' }
@@ -864,6 +866,16 @@ export class AutomationService {
       terminal.sort(compareRuns)
       for (const run of terminal.slice(this.config.historyLimit)) await this.runs.delete(run.id)
     }
+    await this.pruneGlobalHistory()
+  }
+
+  /** 全局只清理终态记录，绝不删除仍在排队或执行中的运行。 */
+  private async pruneGlobalHistory(): Promise<void> {
+    const terminal = [...this.runs.entries()]
+      .map(([, run]) => run)
+      .filter(run => run.status !== 'queued' && run.status !== 'running')
+      .sort(compareRuns)
+    for (const run of terminal.slice(GLOBAL_HISTORY_LIMIT)) await this.runs.delete(run.id)
   }
 
   private async pruneAllHistory(): Promise<void> {
@@ -1011,5 +1023,3 @@ function readSkillTitle(file: string): string | undefined {
     return undefined
   }
 }
-
-
