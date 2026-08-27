@@ -41,6 +41,7 @@ export declare const en: {
     readonly 'session.rename': "Rename";
     readonly 'session.fork': "Fork session";
     readonly 'session.archive': "Archive session";
+    readonly 'session.moreActions': "More actions for {title}";
     readonly 'session.groupActions': "Actions for {name}";
     readonly 'session.taskSettings': "Task settings";
     readonly 'session.archiveGroup': "Archive all conversations";

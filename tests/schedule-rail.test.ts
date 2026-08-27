@@ -31,6 +31,10 @@ import { relativeTime, nextOpenSessionMenuId, nextOpenSessionMenu, shouldCloseNa
 import { en, zh } from '../src/client/locales.ts'
 import { archiveScheduledGroup, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder } from '../src/client/native-group-actions.ts'
 
+test('会话更多操作的无障碍标签提供中英文模板', () => {
+  assert.equal(en['session.moreActions'], 'More actions for {title}')
+  assert.equal(zh['session.moreActions'], '“{title}”的更多操作')
+})
 
 test('当前会话没变时不要抢用户点的定时页签', () => {
   assert.equal(shouldFollowSessionTab('im:wecom:1', 'im:wecom:1'), false)

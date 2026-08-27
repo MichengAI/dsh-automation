@@ -406,7 +406,7 @@ function NativeSessionRow(props: {
       <span className='dsh-st-n-title'>{title}</span>
       <span className='dsh-st-n-time'>{relativeTime(updatedAt, t)}</span>
       <span className='dsh-st-n-acts'>
-        <button type='button' className='dsh-st-n-ico' aria-label={title + ' 更多'} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); hideHover(); onToggleMenu(event) }}>
+        <button type='button' className='dsh-st-n-ico' aria-label={t('session.moreActions', { title })} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); hideHover(); onToggleMenu(event) }}>
           <EllipsisIcon width={16} height={16} />
         </button>
       </span>

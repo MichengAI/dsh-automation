@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { AutomationRunViewModel, AutomationViewModel } from '../src/client/protocol.js'
-import { parseAutomationTaskSettingsRequest, resolveAutomationTaskSettings, writeAutomationTaskSettingsRequest } from '../src/client/task-settings-request.js'
+import {
+  AUTOMATION_TASK_SETTINGS_EVENT,
+  AUTOMATION_TASK_SETTINGS_STORAGE_KEY,
+  parseAutomationTaskSettingsRequest,
+  requestAutomationTaskSettings,
+  resolveAutomationTaskSettings,
+  writeAutomationTaskSettingsRequest,
+} from '../src/client/task-settings-request.js'
 
 function automation(id: string, name: string): AutomationViewModel {
   return {
@@ -58,6 +65,33 @@ test('任务设置请求可以跨设置弹窗挂载保存', () => {
   const storage = { setItem(_key: string, value: string) { stored = value } } as Storage
   writeAutomationTaskSettingsRequest(storage, { automationId: 'weather', name: '天气', sessionIds: ['session-1'] })
   assert.deepEqual(JSON.parse(stored), { automationId: 'weather', name: '天气', sessionIds: ['session-1'] })
+})
+
+test('任务设置请求同时写入 sessionStorage 并派发同一份事件详情', () => {
+  const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  let storedKey = ''
+  let storedValue = ''
+  const storage = {
+    setItem(key: string, value: string) { storedKey = key; storedValue = value },
+  } as Storage
+  const fakeWindow = Object.assign(new EventTarget(), { sessionStorage: storage })
+  Object.defineProperty(globalThis, 'window', { configurable: true, writable: true, value: fakeWindow })
+  try {
+    const request = { automationId: 'weather', name: '天气', sessionIds: ['session-1'] }
+    let received: unknown
+    fakeWindow.addEventListener(AUTOMATION_TASK_SETTINGS_EVENT, (event) => {
+      received = (event as CustomEvent<unknown>).detail
+    })
+
+    requestAutomationTaskSettings(request)
+
+    assert.equal(storedKey, AUTOMATION_TASK_SETTINGS_STORAGE_KEY)
+    assert.deepEqual(JSON.parse(storedValue), request)
+    assert.deepEqual(received, request)
+  } finally {
+    if (originalWindow === undefined) delete (globalThis as { window?: unknown }).window
+    else Object.defineProperty(globalThis, 'window', originalWindow)
+  }
 })
 
 test('旧执行记录缺少运行映射时按任务名回退', () => {
