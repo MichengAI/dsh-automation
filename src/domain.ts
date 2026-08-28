@@ -88,7 +88,7 @@ export const automationRunSchema: z.ZodType<AutomationRun> = z.object({
   automationName: nonBlank.optional(),
   definitionRevision: z.number().int().positive(),
   occurrenceKey: nonBlank,
-  trigger: z.enum(['schedule', 'manual']),
+  trigger: z.enum(['schedule', 'manual', 'catch-up']),
   scheduledFor: instant,
   status: z.enum(['queued', 'running', 'succeeded', 'failed', 'skipped', 'cancelled']),
   promptSnapshot: nonBlank,
@@ -189,11 +189,11 @@ export function runIdForOccurrence(key: string): string {
   return `run_${createHash('sha256').update(requireNonBlank(key, 'occurrenceKey')).digest('hex').slice(0, 32)}`
 }
 
-export function createScheduledRun(definition: AutomationDefinition, scheduledFor: string): AutomationRun {
+export function createScheduledRun(definition: AutomationDefinition, scheduledFor: string, trigger: 'schedule' | 'catch-up' = 'schedule'): AutomationRun {
   automationDefinitionSchema.parse(definition)
   const normalizedInstant = parseInstant(scheduledFor, 'scheduledFor')
   const key = occurrenceKey(definition.id, definition.revision, normalizedInstant)
-  return queuedRun(definition, normalizedInstant, 'schedule', key, runIdForOccurrence(key))
+  return queuedRun(definition, normalizedInstant, trigger, key, runIdForOccurrence(key))
 }
 
 export function createManualRun(
@@ -276,4 +276,3 @@ function positiveInteger(value: number, field: string): number {
 }
 
 export type { AutomationSchedule }
-

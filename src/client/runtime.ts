@@ -12,6 +12,8 @@ import { unwrapRpcResult } from './protocol.js'
 
 const CHANNEL = '/dsh-automation'
 const POLL_INTERVAL_MS = 15_000
+const RUN_NOW_REFRESH_ATTEMPTS = 8
+const RUN_NOW_REFRESH_DELAY_MS = 400
 
 export function isTransportError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
@@ -129,6 +131,15 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     }
   }
 
+  const refreshAfterRunNow = async (runId: string): Promise<void> => {
+    for (let attempt = 0; attempt < RUN_NOW_REFRESH_ATTEMPTS; attempt += 1) {
+      const current = state.snapshot
+      if (current?.runs.some(run => run.id === runId && run.sessionId !== undefined && run.sessionId !== '')) return
+      await new Promise<void>(resolve => setTimeout(resolve, RUN_NOW_REFRESH_DELAY_MS))
+      await refresh().catch(() => undefined)
+    }
+  }
+
   return {
     source,
     refresh,
@@ -151,7 +162,9 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     },
     async runNow(automationId) {
       const payload: RunNowRequest = { sessionId: 'settings', automationId }
-      await mutateThenRefresh('run-now', payload)
+      const result = unwrapRpcResult<{ readonly runId: string }>(await callRpc('run-now', payload))
+      await refresh()
+      void refreshAfterRunNow(result.runId)
     },
     async markRunRead(runId) {
       const payload: MarkReadRequest = { sessionId: 'settings', runId }
@@ -174,5 +187,3 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     },
   }
 }
-
-

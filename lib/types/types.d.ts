@@ -100,7 +100,7 @@ export interface AutomationRun {
     readonly automationName?: string | undefined;
     readonly definitionRevision: number;
     readonly occurrenceKey: string;
-    readonly trigger: 'schedule' | 'manual';
+    readonly trigger: 'schedule' | 'manual' | 'catch-up';
     readonly scheduledFor: string;
     readonly status: AutomationRunStatus;
     readonly promptSnapshot: string;

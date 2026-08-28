@@ -34,15 +34,16 @@ interface CreateArgs extends ScheduleArgs {
   readonly permission?: PermissionPreset
 }
 
-interface UpdateArgs extends ScheduleArgs {
+interface ManageArgs extends ScheduleArgs {
   readonly id: string
+  readonly action: 'update' | 'pause' | 'resume' | 'run_now' | 'delete'
   readonly name?: string
   readonly prompt?: string
   readonly status?: 'active' | 'paused'
   readonly permission?: PermissionPreset
 }
 
-interface IdArgs { readonly id: string }
+interface GetArgs { readonly id?: string; readonly include_runs?: boolean; readonly status?: string }
 
 const SCHEDULE_FIELDS = [
   'time_zone', 'at', 'every_minutes', 'minute', 'time', 'weekdays', 'month_day', 'every_days',
@@ -160,33 +161,45 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
     }))
 
     register(defineTool({
-      name: 'automation_list',
-      description: '列出当前工作区的自动化规则、下次运行时间和最近一次结果。',
-      parameters: {},
+      name: 'automation_get',
+      description: '读取当前工作区的自动化任务。省略 id 返回任务摘要；指定 id 返回任务详情，可用 include_runs 读取该任务的运行历史。',
+      parameters: {
+        id: { type: 'string', description: '可选的自动化 ID。' },
+        include_runs: { type: 'boolean', description: '指定 id 时是否返回该任务的运行历史。' },
+        status: { type: 'string', description: '可选的运行状态过滤。' },
+      },
       output: JSON_OUTPUT,
-      async execute(_args: Record<string, never>, exec: ToolRunContext) {
+      async execute(args: GetArgs, exec: ToolRunContext) {
         if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
         try {
           const snapshot = await service.snapshot(scope, exec.signal)
+          const definitions = args.id === undefined
+            ? snapshot.definitions
+            : snapshot.definitions.filter(item => item.id === args.id)
+          const runs = args.id === undefined
+            ? []
+            : snapshot.runs.filter(item => item.automationId === args.id && (args.status === undefined || item.status === args.status))
           return json({
             ok: true,
             generatedAt: snapshot.generatedAt,
             workspace: snapshot.workspace,
-            automations: snapshot.definitions,
+            automations: definitions,
+            ...(args.id === undefined || args.include_runs !== true ? {} : { runs }),
           })
         } catch (error: unknown) {
           if (exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
           return json({ ok: false, code: 'automation_error', message: error instanceof Error ? error.message : String(error) })
         }
       },
-      presentCall: () => present('列出自动化', 'read'),
+      presentCall: () => present('读取自动化', 'read'),
     }))
 
     register(defineTool({
-      name: 'automation_update',
-      description: '更新当前工作区中一条自动化的名称、任务说明、计划、权限或暂停/恢复状态。仅暂停不需要其他字段。',
+      name: 'automation_manage',
+      description: '管理当前工作区中已有的自动化。使用 action 执行 update、pause、resume、run_now 或 delete。',
       parameters: {
         id: { type: 'string', required: true },
+        action: { type: 'string', required: true, enum: ['update', 'pause', 'resume', 'run_now', 'delete'] },
         name: { type: 'string' },
         prompt: { type: 'string' },
         status: { type: 'string', enum: ['active', 'paused'] },
@@ -202,9 +215,14 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         permission: { type: 'string', enum: permissionNames },
       },
       output: JSON_OUTPUT,
-      async execute(args: UpdateArgs, exec: ToolRunContext) {
+      async execute(args: ManageArgs, exec: ToolRunContext) {
         if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
         try {
+          if (args.action === 'run_now') return json({ ok: true, run: await service.runNow(scope, args.id, exec.signal) })
+          if (args.action === 'delete') return json({ ok: true, value: await service.delete(scope, args.id, exec.signal) })
+          if (args.action === 'pause' || args.action === 'resume') {
+            return json({ ok: true, automation: await service.update(scope, args.id, { status: args.action === 'pause' ? 'paused' : 'active' }, exec.signal) })
+          }
           validateScheduleSelector(args)
           const input: {
             name?: string
@@ -218,7 +236,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
           if (args.status !== undefined) input.status = args.status
           if (args.permission !== undefined) input.permissionPreset = args.permission
           if (args.kind !== undefined) input.schedule = scheduleFromArgs(args, new Date().toISOString())
-          if (Object.keys(input).length === 0) throw new Error('automation_update 至少需要一个变更字段')
+          if (Object.keys(input).length === 0) throw new Error('automation_manage 的 update 至少需要一个变更字段')
           const value = await service.update(scope, args.id, input, exec.signal)
           return json({ ok: true, automation: value })
         } catch (error: unknown) {
@@ -226,59 +244,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
           return json({ ok: false, code: 'automation_error', message: error instanceof Error ? error.message : String(error) })
         }
       },
-      presentCall: (args: UpdateArgs) => present('更新自动化', 'other', args.id),
-    }))
-
-    register(defineTool({
-      name: 'automation_runs',
-      description: '读取当前工作区有界的自动化运行历史，包括失败、跳过、摘要和结果 Session。',
-      parameters: {},
-      output: JSON_OUTPUT,
-      async execute(_args: Record<string, never>, exec: ToolRunContext) {
-        if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
-        try {
-          const snapshot = await service.snapshot(scope, exec.signal)
-          return json({ ok: true, generatedAt: snapshot.generatedAt, runs: snapshot.runs })
-        } catch (error: unknown) {
-          if (exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
-          return json({ ok: false, code: 'automation_error', message: error instanceof Error ? error.message : String(error) })
-        }
-      },
-      presentCall: () => present('读取运行历史', 'read'),
-    }))
-
-    register(defineTool({
-      name: 'automation_run_now',
-      description: '立即排队执行一次已有自动化。仍会使用全新 Session 和该规则保存的权限边界。',
-      parameters: { id: { type: 'string', required: true } },
-      output: JSON_OUTPUT,
-      async execute(args: IdArgs, exec: ToolRunContext) {
-        if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
-        try {
-          return json({ ok: true, run: await service.runNow(scope, args.id, exec.signal) })
-        } catch (error: unknown) {
-          if (exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
-          return json({ ok: false, code: 'automation_error', message: error instanceof Error ? error.message : String(error) })
-        }
-      },
-      presentCall: (args: IdArgs) => present('立即运行自动化', 'other', args.id),
-    }))
-
-    register(defineTool({
-      name: 'automation_delete',
-      description: '删除当前工作区的自动化定义，但保留运行历史用于审计。',
-      parameters: { id: { type: 'string', required: true } },
-      output: JSON_OUTPUT,
-      async execute(args: IdArgs, exec: ToolRunContext) {
-        if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
-        try {
-          return json({ ok: true, value: await service.delete(scope, args.id, exec.signal) })
-        } catch (error: unknown) {
-          if (exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
-          return json({ ok: false, code: 'automation_error', message: error instanceof Error ? error.message : String(error) })
-        }
-      },
-      presentCall: (args: IdArgs) => present('删除自动化', 'other', args.id),
+      presentCall: (args: ManageArgs) => present('管理自动化', 'other', args.id),
     }))
   } catch (error) {
     for (const dispose of disposers.reverse()) dispose()

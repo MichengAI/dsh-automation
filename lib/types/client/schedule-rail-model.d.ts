@@ -4,6 +4,7 @@ export declare const NATIVE_SIDEBAR_TAB_KEY = "dsh-automation.sidebar-tab";
 export interface ScheduleRailSession {
     readonly id: string;
     readonly running: boolean;
+    readonly status: string;
     readonly label: string;
 }
 export interface ScheduleRailGroup {
@@ -27,6 +28,7 @@ export interface NativeSessionLike {
     readonly origin?: string;
     readonly updatedAt?: number | string;
     readonly running?: boolean;
+    readonly runStatus?: string;
 }
 export interface NativeWorkspaceLike {
     readonly id?: string;

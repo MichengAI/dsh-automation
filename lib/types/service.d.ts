@@ -138,6 +138,8 @@ export declare class AutomationService {
     private migratePermissionPresets;
     private recoverInterruptedRuns;
     private pruneWorkspaceHistory;
+    /** 全局只清理终态记录，绝不删除仍在排队或执行中的运行。 */
+    private pruneGlobalHistory;
     private pruneAllHistory;
 }
 export {};
