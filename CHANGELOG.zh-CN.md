@@ -4,6 +4,12 @@
 
 以下记录最近发布的五个版本。Git 标签与 GitHub Release 现已和这些条目同步；历史条目继续保留原始发布提交链接。
 
+## 0.1.22 — 2026-08-28
+
+- 启用仓库 GitHub Actions 发布工作流的 npm Trusted Publishing。
+
+发布包：[`@michengai/dsh-automation@0.1.22`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.22)。
+
 ## 0.1.21 — 2026-08-27
 
 - 为定时会话的“更多操作”无障碍标签补齐中英文翻译。

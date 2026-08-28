@@ -4,6 +4,12 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.22 — 2026-08-28
+
+- Enabled npm Trusted Publishing through the repository's GitHub Actions release workflow.
+
+Published package: [`@michengai/dsh-automation@0.1.22`](https://www.npmjs.com/package/@michengai/dsh-automation/v/0.1.22).
+
 ## 0.1.21 — 2026-08-27
 
 - Localized the scheduled-session more-actions accessibility label in both English and Chinese.
