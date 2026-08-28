@@ -265,16 +265,23 @@ test('新建任务采用模型适配器声明的默认推理等级', () => {
 
 
 test('编辑一次性任务允许保留已经过去的时间', () => {
-  const form = {
-    ...defaultFormState(new Date('2026-08-16T10:00:00+08:00'), workspaces, null, 'read-only'),
-    name: '补跑',
-    prompt: '继续处理',
-    scheduleKind: 'once' as const,
-    onceAt: '2026-08-16T09:00',
+  const previous = process.env.TZ
+  process.env.TZ = 'Asia/Shanghai'
+  try {
+    const form = {
+      ...defaultFormState(new Date('2026-08-16T10:00:00+08:00'), workspaces, null, 'read-only'),
+      name: '补跑',
+      prompt: '继续处理',
+      scheduleKind: 'once' as const,
+      onceAt: '2026-08-16T09:00',
+    }
+    assert.throws(() => buildCreateInput(form, workspaces, [], new Date('2026-08-16T10:00:00+08:00')), AutomationFormError)
+    const updated = buildCreateInput(form, workspaces, [], new Date('2026-08-16T10:00:00+08:00'), { allowPastOnce: true })
+    assert.equal(updated.schedule.kind, 'once')
+  } finally {
+    if (previous === undefined) delete process.env.TZ
+    else process.env.TZ = previous
   }
-  assert.throws(() => buildCreateInput(form, workspaces, [], new Date('2026-08-16T10:00:00+08:00')), AutomationFormError)
-  const updated = buildCreateInput(form, workspaces, [], new Date('2026-08-16T10:00:00+08:00'), { allowPastOnce: true })
-  assert.equal(updated.schedule.kind, 'once')
 })
 
 test('UTC+ 时区的周分组使用本地周一而不是前一天 UTC 日期', () => {
