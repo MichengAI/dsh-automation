@@ -65,6 +65,7 @@ declare module '@deepseek-ai/dsh-client-ui-primitives' {
   export function IconCheckOutline16(props: { readonly className?: string }): JSX.Element
   export function IconChevronDownOutline14(props: { readonly className?: string }): JSX.Element
   export function IconChevronRightOutline14(props: { readonly className?: string }): JSX.Element
+  export function IconListPenOutline16(props: { readonly size?: number; readonly className?: string }): JSX.Element
   export function RiskConfirmation(props: {
     readonly open: boolean
     readonly title: string

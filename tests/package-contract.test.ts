@@ -8,6 +8,7 @@ interface PackageManifest {
   files?: string[]
   peerDependencies?: Record<string, string>
   peerDependenciesMeta?: Record<string, { optional?: boolean }>
+  devDependencies?: Record<string, string>
   scripts?: Record<string, string>
   dsh?: {
     bundle?: { patch?: string }
@@ -27,7 +28,6 @@ test('包保持可安装的 DSH bundle 与 Web client 契约', async () => {
   assert.equal(manifest.dsh?.client?.platform, 'web')
   assert.deepEqual(manifest.dsh?.client?.inject, [
     '@deepseek-ai/dsh-client-connection',
-    '@deepseek-ai/dsh-client-runtime',
     '@deepseek-ai/dsh-client-locale',
     '@deepseek-ai/dsh-client-ui-settings',
     '@deepseek-ai/dsh-client-ui-conversation',
@@ -40,7 +40,16 @@ test('包保持可安装的 DSH bundle 与 Web client 契约', async () => {
   assert.ok(manifest.files?.includes('cordis.patch.yml'))
   assert.equal(manifest.scripts?.prepare, undefined)
   assert.equal(manifest.peerDependencies?.react, '^18.2.0')
-  assert.equal(manifest.peerDependencies?.['@deepseek-ai/dsh-permission-presets'], '>=0.1.0-rc.5 <0.2.0')
+  assert.equal(manifest.peerDependencies?.['@deepseek-ai/cordis'], '>=4.0.1 <5.0.0')
+  assert.equal(manifest.peerDependencies?.['@deepseek-ai/dsh-agent'], '>=0.1.1-rc.2 <0.2.0 || >=0.1.2-alpha.0 <=0.1.2-alpha.5')
+  assert.equal(manifest.peerDependencies?.['@deepseek-ai/dsh-client-runtime'], undefined)
+  assert.equal(manifest.peerDependencies?.['@deepseek-ai/dsh-client-ui-renderer'], undefined)
+  assert.equal(manifest.peerDependencies?.['@deepseek-ai/dsh-client-ui-workspace'], undefined)
+  assert.equal(manifest.peerDependencies?.['@deepseek-ai/dsh-client-ui-primitives'], '>=0.1.1-rc.2 <0.2.0 || >=0.1.2-alpha.0 <=0.1.2-alpha.5')
+  assert.equal(manifest.peerDependencies?.['@deepseek-ai/dsh-permission-presets'], '>=0.1.1-rc.2 <0.2.0 || >=0.1.2-alpha.0 <=0.1.2-alpha.5')
+  assert.equal(manifest.peerDependencies?.['@deepseek-ai/schemastery'], '>=3.18.1 <4.0.0')
+  assert.equal(manifest.devDependencies?.['@deepseek-ai/dsh-agent'], '0.1.2-alpha.5')
+  assert.equal(manifest.devDependencies?.['@deepseek-ai/dsh-client-ui-primitives'], '0.1.2-alpha.5')
   assert.deepEqual(manifest.peerDependenciesMeta?.react, { optional: true })
 
   const patch = await readFile(new URL('cordis.patch.yml', root), 'utf8')

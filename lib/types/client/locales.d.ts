@@ -23,6 +23,8 @@ export declare const en: {
     readonly 'sidebar.sortManual': "Manual";
     readonly 'sidebar.sortTime': "Recently updated";
     readonly 'header.lead': "Plan automatic tasks, or trigger them by hand. Describe the recurring work in any chat to create it quickly.";
+    readonly 'header.githubProject': "GitHub";
+    readonly 'header.githubFeedback': "Issues";
     readonly 'examples.title': "Recommended examples";
     readonly 'examples.1.title': "Daily regression check";
     readonly 'examples.1.body': "Create a scheduled task that runs every day and inspects new test failures.";

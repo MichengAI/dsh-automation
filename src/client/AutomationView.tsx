@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
+import { IconListPenOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { AutomationViewProps, Translate } from './contracts.js'
 import {
   AutomationFormError,
@@ -24,6 +25,7 @@ import {
 import {
   ChatIcon,
   ClockIcon,
+  GithubIcon,
   InfoIcon,
   MoreIcon,
   PencilIcon,
@@ -158,7 +160,13 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
     <div className="dsh-st-shell">
       <header className="dsh-st-top">
         <div className="dsh-st-heading">
-          <h1>{t('tab')}</h1>
+          <div className="dsh-st-heading-row">
+            <h1>{t('tab')}</h1>
+            <div className="dsh-st-heading-links">
+              <a className="dsh-st-heading-link" href="https://github.com/MichengAI/dsh-automation" target="_blank" rel="noreferrer" aria-label={t('header.githubProject')}><GithubIcon />{t('header.githubProject')}</a>
+              <a className="dsh-st-heading-link" href="https://github.com/MichengAI/dsh-automation/issues" target="_blank" rel="noreferrer" aria-label={t('header.githubFeedback')}><IconListPenOutline16 />{t('header.githubFeedback')}</a>
+            </div>
+          </div>
           <p>{t('header.lead')}</p>
         </div>
         <div className="dsh-st-toolbar">

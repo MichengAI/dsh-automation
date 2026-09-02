@@ -4,6 +4,12 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.23 — 2026-09-02
+
+- Declared DSH compatibility from `0.1.1-rc.2` through all `<0.2.0` stable releases and explicitly through `0.1.2-alpha.5`, while pinning the development test baseline to that alpha version.
+- Kept only common client injections so legacy hosts do not need alpha-only UI packages.
+- Aligned the Settings GitHub and Issues links with Archive Manager, including icons, dimensions, and localized labels.
+
 ## 0.1.22 — 2026-08-28
 
 - Enabled npm Trusted Publishing through the repository's GitHub Actions release workflow.

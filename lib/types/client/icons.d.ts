@@ -14,6 +14,7 @@ export declare function MoreIcon(props: IconProps): JSX.Element;
 export declare function InfoIcon(props: IconProps): JSX.Element;
 export declare function ClockIcon(props: IconProps): JSX.Element;
 export declare function ChatIcon(props: IconProps): JSX.Element;
+export declare function GithubIcon(props: IconProps): JSX.Element;
 export declare function FolderIcon(props: IconProps): JSX.Element;
 export declare function SparkleIcon(props: IconProps): JSX.Element;
 export declare function CloseOutlineIcon(props: IconProps): JSX.Element;
