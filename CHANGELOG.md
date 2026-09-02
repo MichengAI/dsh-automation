@@ -4,9 +4,13 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.24 — 2026-09-03
+
+- Corrected the DSH peer range to `>=0.1.0-rc.5 <0.2.0`; the development test baseline remains `0.1.2-alpha.5`.
+
 ## 0.1.23 — 2026-09-02
 
-- Declared DSH compatibility from `0.1.1-rc.2` through all `<0.2.0` stable releases and explicitly through `0.1.2-alpha.5`, while pinning the development test baseline to that alpha version.
+- Declared the DSH peer compatibility range as `>=0.1.0-rc.5 <0.2.0` and pinned the development test baseline to `0.1.2-alpha.5`.
 - Kept only common client injections so legacy hosts do not need alpha-only UI packages.
 - Aligned the Settings GitHub and Issues links with Archive Manager, including icons, dimensions, and localized labels.
 
