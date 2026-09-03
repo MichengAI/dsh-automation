@@ -30,7 +30,7 @@ import {
 } from './native-session-menu.js'
 import { archiveScheduledGroup, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder } from './native-group-actions.js'
 import type { AutomationRuntime } from './runtime.js'
-import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, keepScheduledSessionLink, type NativeSessionLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
+import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, keepScheduledSessionLink, scheduledSessionNeedsSnapshotRefresh, type NativeSessionLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
 import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import { WorkspaceToolbar } from './workspace-toolbar.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
@@ -77,6 +77,7 @@ export function NativeScheduleSessionList(props: {
   const [sort, setSort] = useState<WorkspaceListSort>('time')
   const [groupMode, setGroupMode] = useState<WorkspaceGroupMode>('workspace')
   const [view, setView] = useState<ScheduleView>('runs')
+  const snapshotRefreshFor = useRef<string | null>(null)
   const archived = useMemo(() => new Set(archivedIds), [archivedIds])
   const listedIds: readonly string[] | undefined = useSessions
     ? useSessions(snap => Array.isArray(snap.ids) ? snap.ids : undefined)
@@ -102,6 +103,15 @@ export function NativeScheduleSessionList(props: {
       }),
     })).filter((group) => group.sessions.length > 0)
   }, [archived, presentIds, sessionById, state.snapshot])
+  useEffect(() => {
+    if (!scheduledSessionNeedsSnapshotRefresh(selectedId, state.snapshot?.runs)) {
+      snapshotRefreshFor.current = null
+      return
+    }
+    if (snapshotRefreshFor.current === selectedId) return
+    snapshotRefreshFor.current = selectedId
+    void runtime.refresh().catch(() => undefined)
+  }, [runtime, selectedId, state.snapshot?.runs])
   const visibleGroups = useMemo(() => applyWorkspaceBrowserQuery(groups.map((group) => ({ ...group, name: group.name })), query, sort, groupMode), [groups, query, sort, groupMode])
   useEffect(() => {
     if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return

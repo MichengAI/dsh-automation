@@ -4,10 +4,13 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.27 — 2026-09-03
+
+- Fixed the scheduled execution-record list staying empty after a run until the sidebar was switched several times. New runs now stay visible even when the Host session index has not caught up yet, the snapshot refreshes immediately when the open session is a scheduled run, and polling speeds up while a run is queued or running.
+
 ## 0.1.26 — 2026-09-03
 
-- Updated the DSH development baseline to `0.1.2-rc.1`.
-- Read Session events through `snapshotEvents()` on current Hosts while retaining the legacy `events` fallback for older Hosts.
+- Added compatibility with DeepSeek Harness `0.1.2-rc.1`, keeping scheduled automations responsive to session events in current Hosts.
 
 ## 0.1.25 — 2026-09-03
 

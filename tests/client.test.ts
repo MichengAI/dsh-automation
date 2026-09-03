@@ -3,7 +3,7 @@ import test from 'node:test'
 import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, HISTORY_STATUS_OPTIONS, insertSkillGesture, prettyModelName, readSortDefault, skillGestureToken, sortAutomations, writeSortDefault } from '../src/client/helpers.ts'
 import type { AutomationViewModel } from '../src/client/protocol.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
-import { createAutomationRuntime } from '../src/client/runtime.ts'
+import { createAutomationRuntime, snapshotPollIntervalMs } from '../src/client/runtime.ts'
 
 const t = (key: string, params?: Record<string, unknown>): string => {
   if (params?.count !== undefined) return `${key}:${params.count}`
@@ -138,6 +138,13 @@ test('RPC 结果必须失败关闭，运行时会在变更后刷新快照', asyn
     cwd: 'D:\\work\\demo',
   })
   assert.deepEqual(calls, ['create', 'snapshot', 'update', 'snapshot'])
+})
+
+test('有排队或执行中的任务时加快侧栏快照轮询', () => {
+  assert.equal(snapshotPollIntervalMs([{ status: 'running' }]), 2_000)
+  assert.equal(snapshotPollIntervalMs([{ status: 'queued' }]), 2_000)
+  assert.equal(snapshotPollIntervalMs([{ status: 'succeeded' }]), 15_000)
+  assert.equal(snapshotPollIntervalMs([]), 15_000)
 })
 
 test('多个客户端订阅共享一个初始刷新和轮询器', async () => {

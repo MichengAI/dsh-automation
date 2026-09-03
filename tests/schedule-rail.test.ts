@@ -9,6 +9,7 @@ import {
   groupNativeTaskSessions,
   groupScheduledSessions,
   keepScheduledSessionLink,
+  scheduledSessionNeedsSnapshotRefresh,
   scheduledSessionTitle,
   sessionUpdatedAtIso,
   ensureOpenScheduledSession,
@@ -387,12 +388,18 @@ test('工作区搜索按名称过滤，筛选可按时间或名称排序', () =>
 })
 
 
-test('定时页不展示已归档或宿主已不认识的会话', () => {
+test('定时页只立刻隐藏已归档会话，宿主会话簿滞后时仍显示新执行记录', () => {
   const archived = new Set(['gone-archived'])
-  const present = new Set(['still-live'])
-  assert.equal(keepScheduledSessionLink('still-live', archived, present), true)
+  const present = new Set(['older-session'])
+  assert.equal(keepScheduledSessionLink('brand-new-run', archived, present), true)
   assert.equal(keepScheduledSessionLink('gone-archived', archived, present), false)
-  assert.equal(keepScheduledSessionLink('physically-deleted', archived, present), false)
   assert.equal(keepScheduledSessionLink('unknown-but-no-presence-map', archived), true)
   assert.equal(keepScheduledSessionLink('', archived, present), false)
+})
+
+test('当前已打开的定时会话若还没进快照，应立刻再拉一次执行记录', () => {
+  assert.equal(scheduledSessionNeedsSnapshotRefresh('dsh-automation-session-new', []), true)
+  assert.equal(scheduledSessionNeedsSnapshotRefresh('dsh-automation-session-new', [{ sessionId: 'dsh-automation-session-new' }]), false)
+  assert.equal(scheduledSessionNeedsSnapshotRefresh('chat-1', []), false)
+  assert.equal(scheduledSessionNeedsSnapshotRefresh(null, []), false)
 })

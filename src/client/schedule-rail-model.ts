@@ -141,16 +141,25 @@ export function deriveTaskOverviewRows(
   })
 }
 
-/** 归档中的、以及宿主已经不认识的 Session，都不应再出现在定时页。 */
+/** 归档立即摘掉。宿主会话簿经常晚于自动化快照，缺席不能当成已删除。 */
 export function keepScheduledSessionLink(
   sessionId: string | undefined,
   archived: ReadonlySet<string>,
-  presentIds?: ReadonlySet<string>,
+  _presentIds?: ReadonlySet<string>,
 ): boolean {
   if (sessionId === undefined || sessionId === '') return false
   if (archived.has(sessionId)) return false
-  if (presentIds === undefined) return true
-  return presentIds.has(sessionId)
+  return true
+}
+
+/** 当前打开的是定时会话，但快照还没有这条执行记录时，侧栏应立刻再拉一次。 */
+export function scheduledSessionNeedsSnapshotRefresh(
+  sessionId: string | null | undefined,
+  runs: readonly { readonly sessionId?: string }[] | undefined,
+): boolean {
+  if (sessionId === undefined || sessionId === null || sessionId === '') return false
+  if (!sessionId.startsWith(AUTOMATION_SESSION_PREFIX)) return false
+  return !(runs ?? []).some(run => run.sessionId === sessionId)
 }
 export function collectScheduledSessionIds(runs: readonly { readonly sessionId?: string | null }[] | undefined): Set<string> {
   const ids = new Set<string>()

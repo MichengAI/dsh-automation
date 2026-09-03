@@ -1,5 +1,8 @@
 import type { ClientRpc } from './contracts.js';
 import type { AutomationSnapshot, CreateAutomationInput, MutateRequest } from './protocol.js';
+export declare function snapshotPollIntervalMs(runs: readonly {
+    readonly status: string;
+}[] | undefined): number;
 export declare function isTransportError(error: unknown): boolean;
 export interface AutomationClientState {
     readonly phase: 'idle' | 'loading' | 'ready' | 'error';

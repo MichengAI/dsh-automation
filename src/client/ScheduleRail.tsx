@@ -8,6 +8,7 @@ import {
   filterWorkspaceListState,
   groupNativeTaskSessions,
   groupScheduledSessions,
+  scheduledSessionNeedsSnapshotRefresh,
   NATIVE_SIDEBAR_TAB_KEY,
   ownedSidebarTabIds,
   readNativeSidebarTab,
@@ -151,6 +152,16 @@ export function NativeScheduleShell({
   const currentId = useSessions?.((state) => state?.current ?? null)
   const automationState = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const scheduledIds = useMemo(() => collectScheduledSessionIds(automationState.snapshot?.runs), [automationState.snapshot])
+  const snapshotRefreshFor = useRef<string | null>(null)
+  useEffect(() => {
+    if (!scheduledSessionNeedsSnapshotRefresh(currentId, automationState.snapshot?.runs)) {
+      snapshotRefreshFor.current = null
+      return
+    }
+    if (snapshotRefreshFor.current === currentId) return
+    snapshotRefreshFor.current = currentId ?? null
+    void runtime.refresh().catch(() => undefined)
+  }, [automationState.snapshot?.runs, currentId, runtime])
   const useFilteredSessions = useCallback<SessionSelector>((selector, eq) => {
     if (useSessions === undefined) return selector({ ids: [], byId: {}, current: null })
     return useSessions(state => selector(filterTaskSessionState(state, scheduledIds)), eq)

@@ -11,7 +11,14 @@ import type {
 import { unwrapRpcResult } from './protocol.js'
 
 const CHANNEL = '/dsh-automation'
-const POLL_INTERVAL_MS = 15_000
+const IDLE_POLL_INTERVAL_MS = 15_000
+const ACTIVE_POLL_INTERVAL_MS = 2_000
+
+export function snapshotPollIntervalMs(runs: readonly { readonly status: string }[] | undefined): number {
+  return (runs ?? []).some(run => run.status === 'running' || run.status === 'queued')
+    ? ACTIVE_POLL_INTERVAL_MS
+    : IDLE_POLL_INTERVAL_MS
+}
 
 export function isTransportError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
@@ -47,8 +54,18 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
   let refreshPromise: Promise<void> | undefined
   let pollTimer: ReturnType<typeof setInterval> | undefined
   const listeners = new Set<() => void>()
+  const armPoll = (): void => {
+    if (pollTimer !== undefined) clearInterval(pollTimer)
+    if (listeners.size === 0) {
+      pollTimer = undefined
+      return
+    }
+    pollTimer = setInterval(() => { void refresh().catch(() => undefined) }, snapshotPollIntervalMs(state.snapshot?.runs))
+  }
   const publish = (next: AutomationClientState): void => {
+    const previousInterval = snapshotPollIntervalMs(state.snapshot?.runs)
     state = next
+    if (listeners.size > 0 && previousInterval !== snapshotPollIntervalMs(state.snapshot?.runs)) armPoll()
     for (const listener of [...listeners]) listener()
   }
   const source: AutomationStateSource = {
@@ -57,7 +74,7 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
       listeners.add(listener)
       if (listeners.size === 1) {
         queueMicrotask(() => { if (listeners.size > 0) void refresh().catch(() => undefined) })
-        pollTimer = setInterval(() => { void refresh().catch(() => undefined) }, POLL_INTERVAL_MS)
+        armPoll()
       }
       return () => {
         listeners.delete(listener)
