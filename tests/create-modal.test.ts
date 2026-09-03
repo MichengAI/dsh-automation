@@ -33,6 +33,12 @@ test('任务模型菜单复刻官方两层模型与推理等级菜单且浮层�
   assert.match(styles, /\.dsh-st-flyout-root \.dsh-st-select-menu,\.dsh-st-flyout-root \.dsh-st-model-select-menu\{pointer-events:auto\}/)
 })
 
+test('任务下拉菜单使用宿主主题颜色，浅色主题下保持文字可读', () => {
+  const styles = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
+  assert.match(styles, /\.dsh-st-select-menu\{[^}]*background:var\(--dsw-specific-menu,var\(--dsw-alias-bg-base\)\)/)
+  assert.doesNotMatch(styles, /\.dsh-st-select-menu\{[^}]*background:#2a2c31/)
+})
+
 test('删除任务必须先显示确认对话框', () => {
   const view = readFileSync(new URL('../src/client/AutomationView.tsx', import.meta.url), 'utf8')
   const confirmation = readFileSync(new URL('../src/client/delete-confirmation.tsx', import.meta.url), 'utf8')

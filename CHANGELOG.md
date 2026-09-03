@@ -4,6 +4,10 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.25 — 2026-09-03
+
+- Fixed scheduled-task select menus so their backgrounds, borders, shadows, and hover states follow the DSH theme. Time options now remain readable in light mode.
+
 ## 0.1.24 — 2026-09-03
 
 - Corrected the DSH peer range to `>=0.1.0-rc.5 <0.2.0`; the development test baseline remains `0.1.2-alpha.5`.
