@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { applyUnattendedPermission, pinAutomationSessionTitle, settlesWithin, summarizeRun, unattendedToolGuardReason } from '../src/executor.ts'
+import { applyUnattendedPermission, pinAutomationSessionTitle, readSessionEvents, settlesWithin, summarizeRun, unattendedToolGuardReason } from '../src/executor.ts'
 
 test('无人值守运行通过官方服务应用完整权限预设', () => {
   const selected: string[] = []
@@ -33,6 +33,16 @@ test('运行摘要只取本 run 区间内的最后一条助手文本和 turn 结
   ], 2)
   assert.equal(result.text, '新结果')
   assert.equal(result.reason?.kind, 'completed')
+})
+
+test('会话事件优先使用新版 snapshotEvents，并兼容旧版 events', () => {
+  const current = [{ seq: 2, type: 'turn/start', data: {} }]
+  const legacy = [{ seq: 1, type: 'user/message', data: {} }]
+  assert.deepEqual(readSessionEvents({
+    snapshotEvents: () => current,
+    events: legacy,
+  }), current)
+  assert.deepEqual(readSessionEvents({ events: legacy }), legacy)
 })
 
 test('未注入 sessionTitle 时不能让整次执行失败', () => {

@@ -14,10 +14,15 @@ import type { PermissionPresetService } from './permission-presets.ts'
 import type { AutomationDefinition, AutomationRun } from './types.ts'
 
 interface TextBlock { readonly type: string; readonly text?: string }
-interface SessionEventLike {
+export interface SessionEventLike {
   readonly seq: number
   readonly type: string
   readonly data: Record<string, any>
+}
+
+interface SessionEventReader {
+  readonly events?: readonly SessionEventLike[]
+  snapshotEvents?(): readonly SessionEventLike[]
 }
 
 const UNATTENDED_TOOL_ALLOWLIST = new Set([
@@ -76,6 +81,12 @@ export function applyUnattendedPermission(
 ): void {
   presets.set(session, permission)
   setApprovalPolicy(session, 'never')
+}
+
+/** 优先读取新版按需快照，避免保留旧版 Session.events 的内部日志引用。 */
+export function readSessionEvents(session: SessionEventReader): readonly SessionEventLike[] {
+  if (typeof session.snapshotEvents === 'function') return session.snapshotEvents()
+  return session.events ?? []
 }
 
 export function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): {
@@ -219,7 +230,7 @@ export async function executeAutomationRun(
     }
     if (timeout !== undefined) clearTimeout(timeout)
     await ctx.sessions.flush(handle.agent.session)
-    const outcome = summarizeRun(handle.agent.session.events, firstSeq)
+    const outcome = summarizeRun(readSessionEvents(handle.agent.session), firstSeq)
     const summary = boundSummary(outcome.text)
     if (aborted) {
       return {

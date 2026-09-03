@@ -48,8 +48,8 @@ test('包保持可安装的 DSH bundle 与 Web client 契约', async () => {
   assert.equal(manifest.peerDependencies?.['@deepseek-ai/dsh-client-ui-primitives'], '>=0.1.0-rc.5 <0.2.0')
   assert.equal(manifest.peerDependencies?.['@deepseek-ai/dsh-permission-presets'], '>=0.1.0-rc.5 <0.2.0')
   assert.equal(manifest.peerDependencies?.['@deepseek-ai/schemastery'], '>=3.18.1 <4.0.0')
-  assert.equal(manifest.devDependencies?.['@deepseek-ai/dsh-agent'], '0.1.2-alpha.5')
-  assert.equal(manifest.devDependencies?.['@deepseek-ai/dsh-client-ui-primitives'], '0.1.2-alpha.5')
+  assert.equal(manifest.devDependencies?.['@deepseek-ai/dsh-agent'], '0.1.2-rc.1')
+  assert.equal(manifest.devDependencies?.['@deepseek-ai/dsh-client-ui-primitives'], '0.1.2-rc.1')
   assert.deepEqual(manifest.peerDependenciesMeta?.react, { optional: true })
 
   const patch = await readFile(new URL('cordis.patch.yml', root), 'utf8')

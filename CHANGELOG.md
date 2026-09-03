@@ -4,6 +4,11 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.26 — 2026-09-03
+
+- Updated the DSH development baseline to `0.1.2-rc.1`.
+- Read Session events through `snapshotEvents()` on current Hosts while retaining the legacy `events` fallback for older Hosts.
+
 ## 0.1.25 — 2026-09-03
 
 - Fixed scheduled-task select menus so their backgrounds, borders, shadows, and hover states follow the DSH theme. Time options now remain readable in light mode.

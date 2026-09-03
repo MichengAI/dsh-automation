@@ -3,6 +3,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import z from '@deepseek-ai/schemastery'
+import { readSessionEvents } from './executor.ts'
 import { AUTOMATION_PROMPT_NAME, AUTOMATION_PROMPT_ORDER, AUTOMATION_PROMPT_TEXT } from './prompt.ts'
 import { registerAutomationRpc } from './rpc.ts'
 import { AutomationService } from './service.ts'
@@ -119,7 +120,7 @@ export async function apply(ctx: Context, rawConfig: Config): Promise<void> {
     try {
       const mountTools = (agent: any): void => {
         if (!alive || agentTools.has(agent)
-          || service.ownsSession(String(agent.id), agent.session.events)) return
+          || service.ownsSession(String(agent.id), readSessionEvents(agent.session))) return
         if (!ctx.agents.roots().includes(agent)) return
         const dispose = agent.ctx.effect(
           () => registerAutomationTools(service, agent),
