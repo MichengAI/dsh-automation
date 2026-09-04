@@ -4,6 +4,12 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.30 — 2026-09-04
+
+- Kept standalone Web and Codex UI scheduled-task lists current without requiring a mounted plugin page, and refreshed the Host session index when Automation runs reference sessions that have not appeared there yet.
+- Added bounded refresh-cycle backoff for delayed Host session creation, dynamically reading the current Host session store while suppressing repeated refresh warnings.
+- Refined the native and Codex UI schedule sidebars with aligned folder and card gutters, more compact task cards, and accessible pause/resume switches in place of status badges.
+
 ## 0.1.29 — 2026-09-04
 
 - Refreshed scheduled execution records immediately when the DSH page regains focus or becomes visible, avoiding stale history when Chromium throttles background-tab timers.
