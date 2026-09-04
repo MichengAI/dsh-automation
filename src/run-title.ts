@@ -8,11 +8,9 @@ const RUN_STAMP_OPTIONS: Intl.DateTimeFormatOptions = {
   minute: '2-digit',
   hourCycle: 'h23',
 }
-const localRunStampFormatter = new Intl.DateTimeFormat('en-CA', RUN_STAMP_OPTIONS)
 const zonedRunStampFormatters = new Map<string, Intl.DateTimeFormat>()
 
-function runStampFormatter(timeZone?: string): Intl.DateTimeFormat {
-  if (timeZone === undefined) return localRunStampFormatter
+function runStampFormatter(timeZone: string): Intl.DateTimeFormat {
   const cached = zonedRunStampFormatters.get(timeZone)
   if (cached !== undefined) return cached
   const formatter = new Intl.DateTimeFormat('en-CA', { ...RUN_STAMP_OPTIONS, timeZone })
@@ -23,6 +21,11 @@ function runStampFormatter(timeZone?: string): Intl.DateTimeFormat {
 export function formatRunStamp(iso: string, timeZone?: string): string {
   const value = new Date(iso)
   if (Number.isNaN(value.getTime())) return iso
+  if (timeZone === undefined) {
+    const date = `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`
+    const time = `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`
+    return `${date} ${time}`
+  }
   try {
     const parts = runStampFormatter(timeZone).formatToParts(value)
     const part = (type: Intl.DateTimeFormatPartTypes): string | undefined => parts.find(item => item.type === type)?.value
@@ -31,6 +34,7 @@ export function formatRunStamp(iso: string, timeZone?: string): string {
     if ([year, month, day, hour, minute].some(item => item === undefined)) return iso
     return `${year}-${month}-${day} ${hour}:${minute}`
   } catch {
+    // 历史数据若含宿主不支持的时区，保留原值以免侧栏整体渲染失败。
     return iso
   }
 }

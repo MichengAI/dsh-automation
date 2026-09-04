@@ -4,6 +4,12 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.28 — 2026-09-04
+
+- Compared normalized schedules semantically so property order no longer makes an unchanged overdue one-time schedule look edited.
+- Formatted scheduled-session and execution-record titles in the task's IANA time zone. Host-local fallback formatting now follows the runtime time zone dynamically.
+- Clarified that the unattended tool guard is layered on top of the selected permission preset, and ignored the repository-local pnpm store.
+
 ## 0.1.27 — 2026-09-03
 
 - Fixed the scheduled execution-record list staying empty after a run until the sidebar was switched several times. New runs now stay visible even when the Host session index has not caught up yet, the snapshot refreshes immediately when the open session is a scheduled run, and polling speeds up while a run is queued or running.

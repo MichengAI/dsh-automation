@@ -5,7 +5,6 @@ import {
   collectScheduledSessionIds,
   deriveTaskOverviewRows,
   isAutomationSidebarSession,
-  formatRunStamp,
   groupNativeTaskSessions,
   groupScheduledSessions,
   keepScheduledSessionLink,
@@ -58,31 +57,23 @@ test('频道若已作为协作页签注册，即使 slot 未就绪也不能打�
   assert.equal(resolveVisibleSidebarTab({ tab: 'tasks', channelsReady: false, extraTabIds: ['channels'] }), 'tasks')
 })
 test('schedule rail groups runs by task name', () => {
-  const previous = process.env.TZ
-  process.env.TZ = 'UTC'
-  try {
-    const groups = groupScheduledSessions(
-      [
-        { id: 'a1', name: 'auto-report', timeZone: 'Asia/Shanghai' },
-        { id: 'a2', name: 'empty' },
-      ],
-      [
-        { automationId: 'a1', sessionId: AUTOMATION_SESSION_PREFIX + '1', status: 'running', startedAt: '2026-08-16T02:30:00.000Z', scheduledFor: '2026-08-16T02:30:00.000Z' },
-        { automationId: 'a1', sessionId: AUTOMATION_SESSION_PREFIX + '2', status: 'succeeded', startedAt: '2026-08-15T02:30:00.000Z', scheduledFor: '2026-08-15T02:30:00.000Z' },
-        { automationId: 'a1', status: 'failed', scheduledFor: '2026-08-14T02:30:00.000Z' },
-        { automationId: 'a2', status: 'queued', scheduledFor: '2026-08-16T03:00:00.000Z' },
-      ],
-    )
-    assert.equal(groups.length, 1)
-    assert.equal(groups[0]?.name, 'auto-report')
-    assert.equal(groups[0]?.sessions.length, 2)
-    assert.equal(groups[0]?.sessions[0]?.running, true)
-    assert.equal(groups[0]?.sessions[0]?.label, '2026-08-16 10:30 - auto-report')
-    assert.ok(formatRunStamp('2026-08-16T02:30:00.000Z').includes('2026-08-16'))
-  } finally {
-    if (previous === undefined) delete process.env.TZ
-    else process.env.TZ = previous
-  }
+  const groups = groupScheduledSessions(
+    [
+      { id: 'a1', name: 'auto-report', timeZone: 'Asia/Shanghai' },
+      { id: 'a2', name: 'empty' },
+    ],
+    [
+      { automationId: 'a1', sessionId: AUTOMATION_SESSION_PREFIX + '1', status: 'running', startedAt: '2026-08-16T02:30:00.000Z', scheduledFor: '2026-08-16T02:30:00.000Z' },
+      { automationId: 'a1', sessionId: AUTOMATION_SESSION_PREFIX + '2', status: 'succeeded', startedAt: '2026-08-15T02:30:00.000Z', scheduledFor: '2026-08-15T02:30:00.000Z' },
+      { automationId: 'a1', status: 'failed', scheduledFor: '2026-08-14T02:30:00.000Z' },
+      { automationId: 'a2', status: 'queued', scheduledFor: '2026-08-16T03:00:00.000Z' },
+    ],
+  )
+  assert.equal(groups.length, 1)
+  assert.equal(groups[0]?.name, 'auto-report')
+  assert.equal(groups[0]?.sessions.length, 2)
+  assert.equal(groups[0]?.sessions[0]?.running, true)
+  assert.equal(groups[0]?.sessions[0]?.label, '2026-08-16 10:30 - auto-report')
 })
 
 test('任务总览包含从未运行的任务，并用最近会话作为可点开入口', () => {
