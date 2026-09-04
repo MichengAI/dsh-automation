@@ -4,7 +4,7 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
-## Unreleased
+## 0.1.31 — 2026-09-05
 
 - Aligned the scheduled-task editor with the Host modal surface, elevation, themed mask, and borderless close icon while preserving its existing dismissal behavior.
 - Opened the exact automation settings from task overview cards instead of navigating to the latest run session, removed the trailing session arrow, kept schedule icons visible, and replaced the verbose English next-run label with a compact right-aligned countdown while preserving the full accessible description.
