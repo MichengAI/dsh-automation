@@ -3,19 +3,22 @@ import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.
 import type { AutomationRuntime } from './runtime.js';
 import { type ScheduleView } from './schedule-overview.js';
 import type { NativeTabRegistry } from './native-tabs.js';
-export declare function ScheduleRail({ t, runtime, openSession, view: controlledView, showViewSwitch, }: {
+import type { AutomationTaskSettingsRequest } from './task-settings-request.js';
+export declare function ScheduleRail({ t, runtime, openSession, openTaskSettings, view: controlledView, showViewSwitch, }: {
     readonly t: Translate;
     readonly runtime: AutomationRuntime;
     readonly openSession?: (sessionId: string) => void;
+    readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void;
     readonly view?: ScheduleView;
     readonly showViewSwitch?: boolean;
 }): JSX.Element;
-export declare function NativeScheduleShell({ t, runtime, officialTree, hostProps, openSession, useSessions, useWorkspaces, renderSlot, hasChannels, subscribeChannels, tabRegistry, wide, }: {
+export declare function NativeScheduleShell({ t, runtime, officialTree, hostProps, openSession, openTaskSettings, useSessions, useWorkspaces, renderSlot, hasChannels, subscribeChannels, tabRegistry, wide, }: {
     readonly t: Translate;
     readonly runtime: AutomationRuntime;
     readonly officialTree?: ComponentType<any>;
     readonly hostProps?: Record<string, unknown>;
     readonly openSession?: (sessionId: string) => void;
+    readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void;
     readonly useSessions?: SessionSelector;
     readonly useWorkspaces?: WorkspaceSelector;
     readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode;

@@ -57,11 +57,10 @@ export interface TaskOverviewRow {
     readonly name: string;
     readonly status: AutomationStatus;
     readonly nextRunAt?: string;
-    readonly lastSessionId?: string;
 }
 export declare function automationToggleMutation(status: AutomationStatus): 'pause' | 'resume';
-/** 任务总览：每个定义一行；最近一次留有会话的运行决定该行是否可点开。 */
-export declare function deriveTaskOverviewRows(automations: readonly OverviewAutomationLike[], runs: readonly ScheduleRunLike[]): TaskOverviewRow[];
+/** 任务总览只由任务定义生成，不依赖执行记录或会话是否已经创建。 */
+export declare function deriveTaskOverviewRows(automations: readonly OverviewAutomationLike[]): TaskOverviewRow[];
 /** 归档立即摘掉。宿主会话簿经常晚于自动化快照，缺席不能当成已删除。 */
 export declare function keepScheduledSessionLink(sessionId: string | undefined, archived: ReadonlySet<string>, _presentIds?: ReadonlySet<string>): boolean;
 /** 当前打开的是定时会话，但快照还没有这条执行记录时，侧栏应立刻再拉一次。 */

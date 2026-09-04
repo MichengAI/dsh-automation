@@ -119,36 +119,22 @@ export interface TaskOverviewRow {
   readonly name: string
   readonly status: AutomationStatus
   readonly nextRunAt?: string
-  readonly lastSessionId?: string
 }
 
 export function automationToggleMutation(status: AutomationStatus): 'pause' | 'resume' {
   return status === 'active' ? 'pause' : 'resume'
 }
 
-/** 任务总览：每个定义一行；最近一次留有会话的运行决定该行是否可点开。 */
+/** 任务总览只由任务定义生成，不依赖执行记录或会话是否已经创建。 */
 export function deriveTaskOverviewRows(
   automations: readonly OverviewAutomationLike[],
-  runs: readonly ScheduleRunLike[],
 ): TaskOverviewRow[] {
-  const lastByAutomation = new Map<string, ScheduleRunLike>()
-  for (const run of runs) {
-    if (run.sessionId === undefined || run.sessionId === '') continue
-    const current = lastByAutomation.get(run.automationId)
-    const stamp = Date.parse(run.startedAt ?? run.scheduledFor)
-    const currentStamp = current === undefined ? Number.NaN : Date.parse(current.startedAt ?? current.scheduledFor)
-    if (current === undefined || stamp >= currentStamp) lastByAutomation.set(run.automationId, run)
-  }
-  return automations.map(item => {
-    const last = lastByAutomation.get(item.id)
-    return {
-      id: item.id,
-      name: item.name,
-      status: item.status,
-      ...(item.nextRunAt === undefined ? {} : { nextRunAt: item.nextRunAt }),
-      ...(last === undefined ? {} : { lastSessionId: last.sessionId }),
-    }
-  })
+  return automations.map(item => ({
+    id: item.id,
+    name: item.name,
+    status: item.status,
+    ...(item.nextRunAt === undefined ? {} : { nextRunAt: item.nextRunAt }),
+  }))
 }
 
 /** 归档立即摘掉。宿主会话簿经常晚于自动化快照，缺席不能当成已删除。 */

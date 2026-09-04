@@ -12,6 +12,17 @@ test('新建弹窗点遮罩不能关闭，只能取消或 ESC', () => {
   assert.equal(shouldCloseCreateModal('cancel'), true)
 })
 
+test('任务编辑弹窗使用宿主浮层背景和统一关闭图标', () => {
+  const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
+  const styles = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
+
+  assert.match(styles, /\.dsh-st-mask\{[^}]*background:var\(--dsw-alias-bg-mask-1\);[^}]*backdrop-filter:var\(--dsw-mask-blur\)/)
+  assert.match(styles, /\.dsh-st-modal\{[^}]*border:0;[^}]*border-radius:24px;[^}]*background:var\(--dsw-alias-bg-layer-2\);[^}]*box-shadow:var\(--dsw-elevation-prominent\)/)
+  assert.match(styles, /\.dsh-st-modal-close\{[^}]*width:28px;[^}]*height:28px;[^}]*border:0;[^}]*border-radius:8px;[^}]*background:transparent/)
+  assert.match(modal, /<button type="button" className="dsh-st-modal-close"[^>]*><CloseOutlineIcon width=\{14\} height=\{14\} \/><\/button>/)
+  assert.doesNotMatch(modal, />×<\/button>/)
+})
+
 test('权限选择与 Chat 一致，切换到完全访问时要求风险确认', () => {
   assert.equal(shouldConfirmFullAccess('read-only', 'danger-full-access'), true)
   assert.equal(shouldConfirmFullAccess('workspace-write', 'danger-full-access'), true)

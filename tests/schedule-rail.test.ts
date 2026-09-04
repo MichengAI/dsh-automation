@@ -76,22 +76,15 @@ test('schedule rail groups runs by task name', () => {
   assert.equal(groups[0]?.sessions[0]?.label, '2026-08-16 10:30 - auto-report')
 })
 
-test('任务总览包含从未运行的任务，并用最近会话作为可点开入口', () => {
+test('任务总览包含从未运行的任务并保留下次执行时间', () => {
   const rows = deriveTaskOverviewRows(
     [
       { id: 'a1', name: 'ran', status: 'active', nextRunAt: '2026-08-20T09:00:00+08:00' },
       { id: 'a2', name: 'never', status: 'paused' },
     ],
-    [
-      { automationId: 'a1', sessionId: AUTOMATION_SESSION_PREFIX + 'old', status: 'succeeded', startedAt: '2026-08-15T01:00:00.000Z', scheduledFor: '2026-08-15T01:00:00.000Z' },
-      { automationId: 'a1', sessionId: AUTOMATION_SESSION_PREFIX + 'new', status: 'succeeded', startedAt: '2026-08-16T01:00:00.000Z', scheduledFor: '2026-08-16T01:00:00.000Z' },
-      { automationId: 'a2', status: 'queued', scheduledFor: '2026-08-16T03:00:00.000Z' },
-    ],
   )
   assert.equal(rows.length, 2)
-  assert.equal(rows[0]?.lastSessionId, AUTOMATION_SESSION_PREFIX + 'new')
   assert.equal(rows[0]?.nextRunAt, '2026-08-20T09:00:00+08:00')
-  assert.equal(rows[1]?.lastSessionId, undefined)
   assert.equal(rows[1]?.nextRunAt, undefined)
 })
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, HISTORY_STATUS_OPTIONS, insertSkillGesture, prettyModelName, readSortDefault, skillGestureToken, sortAutomations, writeSortDefault } from '../src/client/helpers.ts'
+import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatRelativeTime, formatSchedule, formFromAutomation, groupHistory, HISTORY_STATUS_OPTIONS, insertSkillGesture, prettyModelName, readSortDefault, skillGestureToken, sortAutomations, writeSortDefault } from '../src/client/helpers.ts'
 import type { AutomationViewModel } from '../src/client/protocol.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
 import { createAutomationRuntime, effectiveSnapshotPollIntervalMs, installAutomationSessionSync, sessionIdsNeedingHostSync, snapshotPollIntervalMs, type HostSessionSync } from '../src/client/runtime.ts'
@@ -13,6 +13,12 @@ const t = (key: string, params?: Record<string, unknown>): string => {
 }
 
 const workspaces = [{ id: 'ws_1', title: 'demo', path: 'D:\\work\\demo' }]
+
+test('任务总览的紧凑倒计时按分钟和天选择短文案', () => {
+  const now = new Date('2026-09-05T00:00:00.000Z')
+  assert.equal(formatRelativeTime('2026-09-05T00:02:31.000Z', now, t as never), 'time.inMinute:3')
+  assert.equal(formatRelativeTime('2026-09-08T00:00:00.000Z', now, t as never), 'time.inDay:3')
+})
 
 function automationView(id: string, name: string, createdAt: string, nextRunAt?: string): AutomationViewModel {
   return {

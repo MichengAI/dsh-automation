@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { Translate } from './contracts.js'
+import { CalendarIcon } from './icons.js'
 import {
-  CalendarIcon,
-  ChevronIcon,
-} from './icons.js'
-import {
+  formatRelativeTime,
   formatWithin,
   formatSchedule,
   readSortDefault,
@@ -15,12 +13,12 @@ import {
   type SortPreferenceStorage,
 } from './helpers.js'
 import type { AutomationViewModel } from './protocol.js'
-import { automationToggleMutation, deriveTaskOverviewRows, keepScheduledSessionLink, type ScheduleRunLike, type TaskOverviewRow } from './schedule-rail-model.js'
+import { automationToggleMutation, deriveTaskOverviewRows, type TaskOverviewRow } from './schedule-rail-model.js'
 import { SortMenu } from './sort-menu.js'
+import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
 export type ScheduleView = 'runs' | 'overview'
 
-const EMPTY_SET: ReadonlySet<string> = new Set()
 const SORT_STORAGE: SortPreferenceStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage
 
 export function ScheduleViewSwitch({
@@ -40,24 +38,18 @@ export function ScheduleViewSwitch({
   )
 }
 
-/** 侧栏任务总览：任务状态可直接切换，有上次会话的任务可点开执行记录。 */
+/** 侧栏任务总览：点击卡片打开任务设置，右上角开关直接切换任务状态。 */
 export function ScheduleOverview({
   t,
   automations,
-  runs,
-  openSession,
   serverNow,
-  archived,
-  presentIds,
+  openTaskSettings,
   onToggleAutomation,
 }: {
   readonly t: Translate
   readonly automations: readonly AutomationViewModel[]
-  readonly runs: readonly ScheduleRunLike[]
-  readonly openSession?: (sessionId: string) => void
   readonly serverNow?: string
-  readonly archived?: ReadonlySet<string>
-  readonly presentIds?: ReadonlySet<string>
+  readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
   readonly onToggleAutomation?: (automationId: string, mutation: 'pause' | 'resume') => void | Promise<void>
 }): JSX.Element {
   const [sortKey, setSortKey] = useState<AutomationSortKey>(() => readSortDefault(SORT_STORAGE, OVERVIEW_SORT_DEFAULT_KEY)?.key ?? 'planned')
@@ -66,14 +58,8 @@ export function ScheduleOverview({
   const now = useMemo(() => new Date(serverNow ?? Date.now()), [serverNow])
   const rows = useMemo(() => {
     const sorted = sortAutomations(automations, sortKey, sortDirection)
-    return deriveTaskOverviewRows(sorted, runs).map((row) => {
-      if (row.lastSessionId === undefined || !keepScheduledSessionLink(row.lastSessionId, archived ?? EMPTY_SET, presentIds)) {
-        const { lastSessionId: _dropped, ...rest } = row
-        return rest
-      }
-      return row
-    })
-  }, [archived, automations, presentIds, runs, sortDirection, sortKey])
+    return deriveTaskOverviewRows(sorted)
+  }, [automations, sortDirection, sortKey])
   const scheduleSummaries = useMemo(() => new Map(automations.map(item => [item.id, formatSchedule(item.schedule, t)])), [automations, t])
 
   const toggleAutomation = (automationId: string, mutation: 'pause' | 'resume'): void => {
@@ -122,7 +108,7 @@ export function ScheduleOverview({
             scheduleSummary={scheduleSummaries.get(row.id) ?? ''}
             toggleDisabled={onToggleAutomation === undefined || busyIds.has(row.id)}
             onToggleAutomation={toggleAutomation}
-            {...(openSession === undefined ? {} : { openSession })}
+            {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
           />)}
     </div>
   )
@@ -133,7 +119,7 @@ function OverviewRow({
   row,
   now,
   scheduleSummary,
-  openSession,
+  openTaskSettings,
   toggleDisabled,
   onToggleAutomation,
 }: {
@@ -141,27 +127,28 @@ function OverviewRow({
   readonly row: TaskOverviewRow
   readonly now: Date
   readonly scheduleSummary: string
-  readonly openSession?: (sessionId: string) => void
+  readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
   readonly toggleDisabled: boolean
   readonly onToggleAutomation?: (automationId: string, mutation: 'pause' | 'resume') => void
 }): JSX.Element {
   const paused = row.status !== 'active'
   const nextRun = row.nextRunAt === undefined ? t('stats.noneScheduled') : formatWithin(row.nextRunAt, now, t)
+  const nextRunCompact = row.nextRunAt === undefined ? t('stats.noneScheduled') : formatRelativeTime(row.nextRunAt, now, t)
+  const nextRunLabel = `${t('stats.next')}: ${nextRun}`
   const toggleLabel = paused ? t('card.resume') : t('card.pause')
   return (
     <div className={`dsh-st-overview-row${paused ? ' is-paused' : ''}`}>
       <button
         type="button"
         className="dsh-st-overview-open"
-        disabled={row.lastSessionId === undefined}
-        onClick={() => { if (row.lastSessionId !== undefined) openSession?.(row.lastSessionId) }}
+        disabled={openTaskSettings === undefined}
+        onClick={() => { openTaskSettings?.({ automationId: row.id, name: row.name, sessionIds: [] }) }}
       >
         <span className="dsh-st-overview-copy">
           <span className="dsh-st-overview-name">{row.name}</span>
-          {scheduleSummary !== '' && <span className="dsh-st-overview-schedule"><CalendarIcon width={14} height={14} />{scheduleSummary}</span>}
+          {scheduleSummary !== '' && <span className="dsh-st-overview-schedule"><CalendarIcon width={14} height={14} /><span>{scheduleSummary}</span></span>}
         </span>
-        <span className="dsh-st-overview-next"><span>{t('stats.next')}</span><strong>{nextRun}</strong></span>
-        {row.lastSessionId !== undefined && <ChevronIcon width={12} height={12} className="dsh-st-overview-chevron" />}
+        <span className="dsh-st-overview-next" title={nextRunLabel} aria-label={nextRunLabel}><strong>{nextRunCompact}</strong></span>
       </button>
       <label className="dsh-st-overview-toggle" title={toggleLabel}>
         <input

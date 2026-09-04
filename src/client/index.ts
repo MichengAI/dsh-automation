@@ -15,7 +15,7 @@ import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
 import { AUTOMATION_SESSION_PREFIX, ensureOpenScheduledSession, hasCodexUiSidebar, pickWrappableWorkspacesEntry, resolveOfficialTreeComponent } from './schedule-rail-model.js'
 import { installStyles } from './styles.js'
 import { openSettingsSection } from './settings-navigation.js'
-import { requestAutomationTaskSettings } from './task-settings-request.js'
+import { requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
 
 export const name = 'dsh-automation-client'
 export const inject = ['slots', 'locale', 'connection', 'sessions']
@@ -76,6 +76,13 @@ export function apply(ctx: ClientContext): void {
   const permissionT = ctx.locale.bind('permission.access')
   const modelT = ctx.locale.bind('model')
   const runtime = createAutomationRuntime(ctx.connection.rpc)
+  const openTaskSettings = (request: AutomationTaskSettingsRequest): void => {
+    requestAutomationTaskSettings(request)
+    openSettingsSection(
+      [t('tab'), 'Scheduled tasks', '定时任务'],
+      () => { requestAutomationTaskSettings(request) },
+    )
+  }
   ctx.effect(() => installAutomationSessionSync(runtime, () => ctx.sessions), 'dsh-automation: session sync')
   ctx.effect(() => installSettingsNavIcon(() => [t('tab'), 'Scheduled tasks', '定时任务']), 'dsh-automation: settings icon')
   ctx.slots.inject('settings.section', () => ctx.slots.register({
@@ -99,6 +106,7 @@ export function apply(ctx: ClientContext): void {
       t,
       runtime,
       openSession: createScheduledSessionOpener(ctx, runtime, props.openSession),
+      openTaskSettings,
       ...(props.view === undefined ? {} : { view: props.view }),
       ...(props.showViewSwitch === undefined ? {} : { showViewSwitch: props.showViewSwitch }),
     })
@@ -154,13 +162,7 @@ export function apply(ctx: ClientContext): void {
             ...(typeof props.archiveSession === 'function' ? { archiveSession: props.archiveSession as any } : {}),
             ...(typeof props.deleteSession === 'function' ? { deleteSession: props.deleteSession as any } : {}),
             ...(typeof props.forkSession === 'function' ? { forkSession: props.forkSession as any } : {}),
-            openTaskSettings: (request) => {
-              requestAutomationTaskSettings(request)
-              openSettingsSection(
-                [t('tab'), 'Scheduled tasks', '定时任务'],
-                () => { requestAutomationTaskSettings(request) },
-              )
-            },
+            openTaskSettings,
           })
         },
       })
@@ -218,6 +220,7 @@ export function apply(ctx: ClientContext): void {
             runtime,
             hostProps: innerProps as Record<string, unknown>,
             openSession,
+            openTaskSettings,
             tabRegistry: registry,
             ...(innerProps.wide === undefined ? {} : { wide: innerProps.wide }),
             hasChannels: () => slotHasEntries(ctx, 'sidebar.channels'),

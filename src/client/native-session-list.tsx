@@ -142,12 +142,9 @@ export function NativeScheduleSessionList(props: {
           : <ScheduleOverview
               t={t}
               automations={state.snapshot.automations}
-              runs={state.snapshot.runs}
               onToggleAutomation={(automationId, mutation) => runtime.mutateAutomation(automationId, mutation)}
-              {...(openSession === undefined ? {} : { openSession })}
+              {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
               {...(state.snapshot.serverNow === undefined ? {} : { serverNow: state.snapshot.serverNow })}
-              archived={archived}
-              {...(presentIds === undefined ? {} : { presentIds })}
             />
         : <>
             <WorkspaceToolbar t={t} query={query} sort={sort} groupMode={groupMode} onQueryChange={setQuery} onSortChange={setSort} onGroupModeChange={setGroupMode} />

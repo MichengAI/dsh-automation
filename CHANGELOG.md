@@ -6,6 +6,8 @@ The five most recent published versions are listed below. Git tags and GitHub Re
 
 ## Unreleased
 
+- Aligned the scheduled-task editor with the Host modal surface, elevation, themed mask, and borderless close icon while preserving its existing dismissal behavior.
+- Opened the exact automation settings from task overview cards instead of navigating to the latest run session, removed the trailing session arrow, kept schedule icons visible, and replaced the verbose English next-run label with a compact right-aligned countdown while preserving the full accessible description.
 - Rearmed Host session synchronization every five minutes after a missing set exhausts its fast retries, and excluded terminal runs older than 24 hours so slow propagation is not abandoned permanently and stale sessions do not consume retry state.
 - Updated local automation status immediately after successful pause or resume mutations even when the following snapshot refresh fails, and reused the shared toggle semantics in Settings.
 - Used low-frequency snapshot polling while only the background synchronization bridge is subscribed, accelerating by run state only after UI subscribers mount. Host recovery now marks only started runs as interrupted and lets queued work resume through the scheduler.

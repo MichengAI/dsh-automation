@@ -22,6 +22,7 @@ import {
 import { NativeScheduleSessionList } from './native-session-list.js'
 import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import type { NativeSidebarTab as ExtraSidebarTab, NativeTabRegistry } from './native-tabs.js'
+import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
 const EMPTY_EXTRA_TABS: ExtraSidebarTab[] = []
 const noopSubscribe = (_listener: () => void): (() => void) => () => undefined
@@ -41,12 +42,14 @@ export function ScheduleRail({
   t,
   runtime,
   openSession,
+  openTaskSettings,
   view: controlledView,
   showViewSwitch = true,
 }: {
   readonly t: Translate
   readonly runtime: AutomationRuntime
   readonly openSession?: (sessionId: string) => void
+  readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
   readonly view?: ScheduleView
   readonly showViewSwitch?: boolean
 }): JSX.Element {
@@ -70,9 +73,8 @@ export function ScheduleRail({
           : <ScheduleOverview
               t={t}
               automations={snapshot.automations}
-              runs={snapshot.runs}
               onToggleAutomation={(automationId, mutation) => runtime.mutateAutomation(automationId, mutation)}
-              {...(openSession === undefined ? {} : { openSession })}
+              {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
               {...(snapshot.serverNow === undefined ? {} : { serverNow: snapshot.serverNow })}
             />
         : <>
@@ -112,6 +114,7 @@ export function NativeScheduleShell({
   officialTree,
   hostProps,
   openSession,
+  openTaskSettings,
   useSessions,
   useWorkspaces,
   renderSlot,
@@ -125,6 +128,7 @@ export function NativeScheduleShell({
   readonly officialTree?: ComponentType<any>
   readonly hostProps?: Record<string, unknown>
   readonly openSession?: (sessionId: string) => void
+  readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
   readonly useSessions?: SessionSelector
   readonly useWorkspaces?: WorkspaceSelector
   readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode
@@ -222,7 +226,7 @@ export function NativeScheduleShell({
   })
   const hostedSchedule = extraTabs.find(item => item.id === 'schedule')
   const scheduleBody = hostedSchedule === undefined
-    ? <NativeScheduleSessionList t={t} runtime={runtime} {...(openSession === undefined ? {} : { openSession })} {...(useSessions === undefined ? {} : { useSessions })} {...(useWorkspaces === undefined ? {} : { useWorkspaces })} />
+    ? <NativeScheduleSessionList t={t} runtime={runtime} {...(openSession === undefined ? {} : { openSession })} {...(openTaskSettings === undefined ? {} : { openTaskSettings })} {...(useSessions === undefined ? {} : { useSessions })} {...(useWorkspaces === undefined ? {} : { useWorkspaces })} />
     : hostedSchedule.render({ ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true }) as ReactNode
   return (
     <div className="dsh-st-shell-rail">

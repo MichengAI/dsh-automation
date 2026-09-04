@@ -12,7 +12,7 @@ import {
   type ScheduleKind,
 } from './helpers.js'
 import { shouldConfirmFullAccess } from './create-modal-logic.js'
-import { FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
+import { CloseOutlineIcon, FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
 import { MenuHostProvider, MenuPanel, MenuPopup, MenuRow, MenuSelect, useMenuState } from './menu.js'
 import { IconCheckOutline16, IconChevronDownOutline14, RiskConfirmation } from '@deepseek-ai/dsh-client-ui-primitives'
 
@@ -124,7 +124,7 @@ export function CreateModal({
             <h2>{editing === true ? t('modal.edit') : t('modal.title')}</h2>
             <p>{t('form.subtitle')}</p>
           </div>
-          <button type="button" className="dsh-st-icon" onClick={onClose} aria-label={t('form.cancel')}>×</button>
+          <button type="button" className="dsh-st-modal-close" onClick={onClose} aria-label={t('form.cancel')}><CloseOutlineIcon width={14} height={14} /></button>
         </div>
 
         <label className="dsh-st-field">
@@ -503,7 +503,4 @@ function clampOnceAt(value: string): string {
   const offset = next.getTimezoneOffset() * 60_000
   return new Date(next.getTime() - offset).toISOString().slice(0, 16)
 }
-
-
-
 
