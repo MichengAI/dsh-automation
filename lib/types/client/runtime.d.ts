@@ -26,4 +26,18 @@ export interface AutomationRuntime {
     forgetSession(sessionId: string): Promise<void>;
     forgetAutomationSessions(automationId: string): Promise<void>;
 }
+export interface HostSessionSync {
+    readonly list?: {
+        getSnapshot(): {
+            readonly ids?: readonly string[];
+            readonly byId?: Readonly<Record<string, unknown>>;
+        };
+    };
+    refresh?: () => Promise<void>;
+}
+/**
+ * 常驻订阅 Automation 快照，并把新产生的定时会话同步进 Host 会话列表。
+ * 独立模式依靠这条订阅持续轮询；Codex UI 模式还会在发现缺失会话时刷新 Host Store。
+ */
+export declare function installAutomationSessionSync(runtime: AutomationRuntime, sessions: HostSessionSync | undefined): () => void;
 export declare function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime;

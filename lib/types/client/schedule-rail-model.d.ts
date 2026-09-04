@@ -58,6 +58,7 @@ export interface TaskOverviewRow {
     readonly nextRunAt?: string;
     readonly lastSessionId?: string;
 }
+export declare function automationToggleMutation(status: string): 'pause' | 'resume';
 /** 任务总览：每个定义一行；最近一次留有会话的运行决定该行是否可点开。 */
 export declare function deriveTaskOverviewRows(automations: readonly OverviewAutomationLike[], runs: readonly ScheduleRunLike[]): TaskOverviewRow[];
 /** 归档立即摘掉。宿主会话簿经常晚于自动化快照，缺席不能当成已删除。 */

@@ -7,8 +7,8 @@ export declare function ScheduleViewSwitch({ t, view, onChange, }: {
     readonly view: ScheduleView;
     readonly onChange: (view: ScheduleView) => void;
 }): JSX.Element;
-/** 侧栏任务总览：只读列表，有上次会话的任务可点开，其余仅展示。 */
-export declare function ScheduleOverview({ t, automations, runs, openSession, serverNow, archived, presentIds, }: {
+/** 侧栏任务总览：任务状态可直接切换，有上次会话的任务可点开执行记录。 */
+export declare function ScheduleOverview({ t, automations, runs, openSession, serverNow, archived, presentIds, onToggleAutomation, }: {
     readonly t: Translate;
     readonly automations: readonly AutomationViewModel[];
     readonly runs: readonly ScheduleRunLike[];
@@ -16,4 +16,5 @@ export declare function ScheduleOverview({ t, automations, runs, openSession, se
     readonly serverNow?: string;
     readonly archived?: ReadonlySet<string>;
     readonly presentIds?: ReadonlySet<string>;
+    readonly onToggleAutomation?: (automationId: string, mutation: 'pause' | 'resume') => void | Promise<void>;
 }): JSX.Element;

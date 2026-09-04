@@ -3,7 +3,7 @@ import test from 'node:test'
 import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, HISTORY_STATUS_OPTIONS, insertSkillGesture, prettyModelName, readSortDefault, skillGestureToken, sortAutomations, writeSortDefault } from '../src/client/helpers.ts'
 import type { AutomationViewModel } from '../src/client/protocol.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
-import { createAutomationRuntime, snapshotPollIntervalMs } from '../src/client/runtime.ts'
+import { createAutomationRuntime, installAutomationSessionSync, snapshotPollIntervalMs } from '../src/client/runtime.ts'
 
 const t = (key: string, params?: Record<string, unknown>): string => {
   if (params?.count !== undefined) return `${key}:${params.count}`
@@ -162,6 +162,114 @@ test('多个客户端订阅共享一个初始刷新和轮询器', async () => {
   stopA()
   stopB()
   assert.equal(snapshots, 1)
+})
+
+test('插件级同步桥在页面未挂载时仍刷新快照并同步 Host 会话列表', async () => {
+  let snapshots = 0
+  let hostRefreshes = 0
+  const hostIds = new Set<string>()
+  const runtime = createAutomationRuntime({
+    async call(_channel, endpoint) {
+      if (endpoint !== 'snapshot') throw new Error(`unexpected ${endpoint}`)
+      snapshots += 1
+      return {
+        ok: true,
+        value: {
+          scope: { cwd: 'D:\\work' },
+          permissions: [],
+          defaultPermission: 'read-only',
+          automations: [],
+          runs: [{
+            id: 'r1',
+            automationId: 'a1',
+            automationName: 'A',
+            status: 'succeeded',
+            trigger: 'schedule',
+            scheduledFor: '2026-08-16T01:00:00.000Z',
+            sessionId: 'dsh-automation-session-r1',
+            unread: false,
+          }],
+          serverNow: '2026-08-16T01:00:00.000Z',
+        },
+      }
+    },
+  })
+  const stop = installAutomationSessionSync(runtime, {
+    list: { getSnapshot: () => ({ ids: [...hostIds], byId: {} }) },
+    async refresh() {
+      hostRefreshes += 1
+      hostIds.add('dsh-automation-session-r1')
+    },
+  })
+
+  await new Promise(resolve => setTimeout(resolve, 0))
+  assert.equal(snapshots, 1)
+  assert.equal(hostRefreshes, 1)
+
+  stop()
+  await runtime.refresh()
+  assert.equal(hostRefreshes, 1)
+})
+
+test('Host 会话同步合并重复请求，并在失败后的下一次快照发布时重试', async () => {
+  type Listener = () => void
+  const listeners = new Set<Listener>()
+  const snapshot = {
+    scope: { cwd: 'D:\\work' },
+    permissions: [],
+    defaultPermission: 'read-only',
+    automations: [],
+    runs: [{
+      id: 'r1',
+      automationId: 'a1',
+      automationName: 'A',
+      status: 'succeeded' as const,
+      trigger: 'schedule' as const,
+      scheduledFor: '2026-08-16T01:00:00.000Z',
+      sessionId: 'dsh-automation-session-r1',
+      unread: false,
+    }],
+    serverNow: '2026-08-16T01:00:00.000Z',
+  }
+  const runtime = {
+    source: {
+      getSnapshot: () => ({ phase: 'ready' as const, snapshot }),
+      subscribe(listener: Listener) {
+        listeners.add(listener)
+        return () => { listeners.delete(listener) }
+      },
+    },
+  } as unknown as ReturnType<typeof createAutomationRuntime>
+  let hostRefreshes = 0
+  let warnings = 0
+  const previousWarn = console.warn
+  console.warn = () => { warnings += 1 }
+  let stop = (): void => undefined
+  try {
+    stop = installAutomationSessionSync(runtime, {
+      list: { getSnapshot: () => ({ ids: [], byId: {} }) },
+      async refresh() {
+        hostRefreshes += 1
+        if (hostRefreshes === 1) throw new Error('temporary failure')
+      },
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    assert.equal(hostRefreshes, 1)
+    assert.equal(warnings, 1)
+    for (const listener of [...listeners]) listener()
+    for (const listener of [...listeners]) listener()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    assert.equal(hostRefreshes, 2)
+
+    for (const listener of [...listeners]) listener()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    assert.equal(hostRefreshes, 2)
+  } finally {
+    stop()
+    console.warn = previousWarn
+  }
+  assert.equal(listeners.size, 0)
 })
 
 test('页面恢复焦点或可见时立即刷新执行记录', async () => {

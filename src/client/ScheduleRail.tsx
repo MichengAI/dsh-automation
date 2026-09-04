@@ -71,6 +71,7 @@ export function ScheduleRail({
               t={t}
               automations={snapshot.automations}
               runs={snapshot.runs}
+              onToggleAutomation={(automationId, mutation) => runtime.mutateAutomation(automationId, mutation)}
               {...(openSession === undefined ? {} : { openSession })}
               {...(snapshot.serverNow === undefined ? {} : { serverNow: snapshot.serverNow })}
             />
@@ -295,4 +296,3 @@ function NativeTaskRail({
     </div>
   )
 }
-

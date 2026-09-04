@@ -49,6 +49,83 @@ export interface AutomationRuntime {
   forgetAutomationSessions(automationId: string): Promise<void>
 }
 
+export interface HostSessionSync {
+  readonly list?: {
+    getSnapshot(): {
+      readonly ids?: readonly string[]
+      readonly byId?: Readonly<Record<string, unknown>>
+    }
+  }
+  refresh?: () => Promise<void>
+}
+
+/**
+ * 常驻订阅 Automation 快照，并把新产生的定时会话同步进 Host 会话列表。
+ * 独立模式依靠这条订阅持续轮询；Codex UI 模式还会在发现缺失会话时刷新 Host Store。
+ */
+export function installAutomationSessionSync(
+  runtime: AutomationRuntime,
+  sessions: HostSessionSync | undefined,
+): () => void {
+  let stopped = false
+  let attemptedMissingKey: string | undefined
+  let hostRefreshPromise: Promise<void> | undefined
+  let reconcileAfterRefresh = false
+
+  const missingSessionKey = (): string | undefined => {
+    const snapshot = runtime.source.getSnapshot().snapshot
+    const hostSnapshot = sessions?.list?.getSnapshot()
+    if (snapshot === undefined || hostSnapshot === undefined || sessions?.refresh === undefined) return undefined
+    const present = new Set([
+      ...(hostSnapshot.ids ?? []),
+      ...Object.keys(hostSnapshot.byId ?? {}),
+    ])
+    return [...new Set(snapshot.runs
+      .map(run => run.sessionId)
+      .filter((sessionId): sessionId is string => sessionId !== undefined && sessionId !== ''))]
+      .filter(sessionId => !present.has(sessionId))
+      .sort()
+      .join('\u0000')
+  }
+
+  const reconcile = (): void => {
+    if (stopped) return
+    const missingKey = missingSessionKey()
+    if (missingKey === undefined) return
+    if (missingKey === '') {
+      attemptedMissingKey = undefined
+      return
+    }
+    if (missingKey === attemptedMissingKey) return
+    if (hostRefreshPromise !== undefined) {
+      reconcileAfterRefresh = true
+      return
+    }
+
+    attemptedMissingKey = missingKey
+    hostRefreshPromise = Promise.resolve()
+      .then(async () => { await sessions?.refresh?.() })
+      .catch((error: unknown) => {
+        if (!stopped) console.warn('[dsh-automation] 刷新 Host 会话列表失败', error)
+        if (attemptedMissingKey === missingKey) attemptedMissingKey = undefined
+      })
+      .finally(() => {
+        hostRefreshPromise = undefined
+        if (stopped || !reconcileAfterRefresh) return
+        reconcileAfterRefresh = false
+        reconcile()
+      })
+  }
+
+  const unsubscribe = runtime.source.subscribe(reconcile)
+  reconcile()
+  return () => {
+    stopped = true
+    reconcileAfterRefresh = false
+    unsubscribe()
+  }
+}
+
 export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
   let state: AutomationClientState = { phase: 'idle' }
   let refreshPromise: Promise<void> | undefined
@@ -210,4 +287,3 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     },
   }
 }
-

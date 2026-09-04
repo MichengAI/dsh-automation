@@ -143,6 +143,7 @@ export function NativeScheduleSessionList(props: {
               t={t}
               automations={state.snapshot.automations}
               runs={state.snapshot.runs}
+              onToggleAutomation={(automationId, mutation) => runtime.mutateAutomation(automationId, mutation)}
               {...(openSession === undefined ? {} : { openSession })}
               {...(state.snapshot.serverNow === undefined ? {} : { serverNow: state.snapshot.serverNow })}
               archived={archived}

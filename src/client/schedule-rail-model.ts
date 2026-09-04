@@ -120,6 +120,10 @@ export interface TaskOverviewRow {
   readonly lastSessionId?: string
 }
 
+export function automationToggleMutation(status: string): 'pause' | 'resume' {
+  return status === 'active' ? 'pause' : 'resume'
+}
+
 /** 任务总览：每个定义一行；最近一次留有会话的运行决定该行是否可点开。 */
 export function deriveTaskOverviewRows(
   automations: readonly OverviewAutomationLike[],
