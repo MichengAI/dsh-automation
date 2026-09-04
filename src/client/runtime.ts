@@ -53,6 +53,7 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
   let state: AutomationClientState = { phase: 'idle' }
   let refreshPromise: Promise<void> | undefined
   let pollTimer: ReturnType<typeof setInterval> | undefined
+  let removePageResumeListeners = (): void => undefined
   const listeners = new Set<() => void>()
   const armPoll = (): void => {
     if (pollTimer !== undefined) clearInterval(pollTimer)
@@ -61,6 +62,21 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
       return
     }
     pollTimer = setInterval(() => { void refresh().catch(() => undefined) }, snapshotPollIntervalMs(state.snapshot?.runs))
+  }
+  const armPageResumeListeners = (): void => {
+    removePageResumeListeners()
+    if (listeners.size === 0) return
+    const refreshOnResume = (): void => { void refresh().catch(() => undefined) }
+    const refreshOnVisible = (): void => {
+      if (document.visibilityState === 'visible') refreshOnResume()
+    }
+    if (typeof window !== 'undefined') window.addEventListener('focus', refreshOnResume)
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', refreshOnVisible)
+    removePageResumeListeners = () => {
+      if (typeof window !== 'undefined') window.removeEventListener('focus', refreshOnResume)
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', refreshOnVisible)
+      removePageResumeListeners = (): void => undefined
+    }
   }
   const publish = (next: AutomationClientState): void => {
     const previousInterval = snapshotPollIntervalMs(state.snapshot?.runs)
@@ -75,6 +91,8 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
       if (listeners.size === 1) {
         queueMicrotask(() => { if (listeners.size > 0) void refresh().catch(() => undefined) })
         armPoll()
+        // Chromium 会节流后台标签页计时器，恢复页面时必须主动追平快照。
+        armPageResumeListeners()
       }
       return () => {
         listeners.delete(listener)
@@ -82,6 +100,7 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
           clearInterval(pollTimer)
           pollTimer = undefined
         }
+        if (listeners.size === 0) removePageResumeListeners()
       }
     },
   }
@@ -191,5 +210,4 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     },
   }
 }
-
 

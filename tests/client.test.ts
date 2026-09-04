@@ -164,6 +164,55 @@ test('多个客户端订阅共享一个初始刷新和轮询器', async () => {
   assert.equal(snapshots, 1)
 })
 
+test('页面恢复焦点或可见时立即刷新执行记录', async () => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+  const previousDocument = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  const page = new EventTarget()
+  const documentTarget = new EventTarget() as EventTarget & { visibilityState: string }
+  Object.defineProperty(documentTarget, 'visibilityState', { configurable: true, writable: true, value: 'hidden' })
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: page })
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: documentTarget })
+
+  let stop = (): void => undefined
+  try {
+    let snapshots = 0
+    const runtime = createAutomationRuntime({
+      async call(_channel, endpoint) {
+        if (endpoint !== 'snapshot') throw new Error(`unexpected ${endpoint}`)
+        snapshots += 1
+        return { ok: true, value: { scope: { cwd: 'D:\\work' }, permissions: [], defaultPermission: 'read-only', automations: [], runs: [], serverNow: '2026-08-16T01:00:00.000Z' } }
+      },
+    })
+    stop = runtime.source.subscribe(() => {})
+    await new Promise(resolve => setTimeout(resolve, 0))
+    assert.equal(snapshots, 1)
+
+    page.dispatchEvent(new Event('focus'))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    assert.equal(snapshots, 2)
+
+    documentTarget.dispatchEvent(new Event('visibilitychange'))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    assert.equal(snapshots, 2)
+
+    documentTarget.visibilityState = 'visible'
+    documentTarget.dispatchEvent(new Event('visibilitychange'))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    assert.equal(snapshots, 3)
+
+    stop()
+    page.dispatchEvent(new Event('focus'))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    assert.equal(snapshots, 3)
+  } finally {
+    stop()
+    if (previousWindow === undefined) delete (globalThis as { window?: unknown }).window
+    else Object.defineProperty(globalThis, 'window', previousWindow)
+    if (previousDocument === undefined) delete (globalThis as { document?: unknown }).document
+    else Object.defineProperty(globalThis, 'document', previousDocument)
+  }
+})
+
 test('删除成功后即使刷新失败也要从列表里拿掉任务', async () => {
   const snapshot = {
     scope: { cwd: 'D:\\work' },

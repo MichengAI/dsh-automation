@@ -4,6 +4,11 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.29 — 2026-09-04
+
+- Refreshed scheduled execution records immediately when the DSH page regains focus or becomes visible, avoiding stale history when Chromium throttles background-tab timers.
+- Removed page-resume listeners after the final client subscriber disconnects.
+
 ## 0.1.28 — 2026-09-04
 
 - Compared normalized schedules semantically so property order no longer makes an unchanged overdue one-time schedule look edited.
