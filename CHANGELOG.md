@@ -4,6 +4,12 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## Unreleased
+
+- Rearmed Host session synchronization every five minutes after a missing set exhausts its fast retries, and excluded terminal runs older than 24 hours so slow propagation is not abandoned permanently and stale sessions do not consume retry state.
+- Updated local automation status immediately after successful pause or resume mutations even when the following snapshot refresh fails, and reused the shared toggle semantics in Settings.
+- Used low-frequency snapshot polling while only the background synchronization bridge is subscribed, accelerating by run state only after UI subscribers mount. Host recovery now marks only started runs as interrupted and lets queued work resume through the scheduler.
+
 ## 0.1.30 — 2026-09-04
 
 - Kept standalone Web and Codex UI scheduled-task lists current without requiring a mounted plugin page, and refreshed the Host session index when Automation runs reference sessions that have not appeared there yet.

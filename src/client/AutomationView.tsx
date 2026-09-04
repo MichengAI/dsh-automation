@@ -22,6 +22,7 @@ import {
   type ScheduleKind,
   type SortPreferenceStorage,
 } from './helpers.js'
+import { automationToggleMutation } from './schedule-rail-model.js'
 import {
   ChatIcon,
   ClockIcon,
@@ -286,7 +287,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
                   now={now}
                   busy={busy}
                   onEdit={() => openEdit(item)}
-                  onToggle={() => { void runAction(() => runtime.mutateAutomation(item.id, item.status === 'active' ? 'pause' : 'resume')) }}
+                  onToggle={() => { void runAction(() => runtime.mutateAutomation(item.id, automationToggleMutation(item.status))) }}
                   onRun={() => { void runAction(() => runtime.runNow(item.id)) }}
                   onDelete={() => setDeleteTarget(item)}
                 />

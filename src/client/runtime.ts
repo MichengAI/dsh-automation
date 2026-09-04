@@ -1,5 +1,6 @@
 import type { ClientRpc } from './contracts.js'
 import type {
+  AutomationRunViewModel,
   AutomationSnapshot,
   CreateAutomationInput,
   CreateRequest,
@@ -16,11 +17,21 @@ const ACTIVE_POLL_INTERVAL_MS = 2_000
 // 首次立即尝试；后续间隔单位是完整的 Automation 快照刷新周期，不是毫秒或状态发布次数。
 const HOST_SESSION_RETRY_REFRESH_GAPS = [1, 2, 4] as const
 const HOST_SESSION_MAX_ATTEMPTS = HOST_SESSION_RETRY_REFRESH_GAPS.length + 1
+const HOST_SESSION_REARM_INTERVAL_MS = 5 * 60 * 1_000
+const RECENT_TERMINAL_RUN_WINDOW_MS = 24 * 60 * 60 * 1_000
 
 export function snapshotPollIntervalMs(runs: readonly { readonly status: string }[] | undefined): number {
   return (runs ?? []).some(run => run.status === 'running' || run.status === 'queued')
     ? ACTIVE_POLL_INTERVAL_MS
     : IDLE_POLL_INTERVAL_MS
+}
+
+/** 没有界面订阅时维持低频轮询；界面打开后才按运行状态提升刷新频率。 */
+export function effectiveSnapshotPollIntervalMs(
+  runs: readonly { readonly status: string }[] | undefined,
+  foregroundSubscribers: number,
+): number {
+  return foregroundSubscribers > 0 ? snapshotPollIntervalMs(runs) : IDLE_POLL_INTERVAL_MS
 }
 
 export function isTransportError(error: unknown): boolean {
@@ -36,7 +47,7 @@ export interface AutomationClientState {
 
 export interface AutomationStateSource {
   getSnapshot(): AutomationClientState
-  subscribe(listener: () => void): () => void
+  subscribe(listener: () => void, options?: { readonly background?: boolean }): () => void
 }
 
 export interface AutomationRuntime {
@@ -62,10 +73,30 @@ export interface HostSessionSync {
   refresh?: () => Promise<void>
 }
 
+/** 只同步未完成或最近完成的会话，避免已被 Host 清理的历史记录永久占用重试集合。 */
+export function sessionIdsNeedingHostSync(
+  runs: readonly Pick<AutomationRunViewModel, 'status' | 'sessionId' | 'scheduledFor' | 'startedAt' | 'finishedAt'>[],
+  serverNow: string,
+): string[] {
+  const parsedNow = Date.parse(serverNow)
+  const referenceTime = Number.isFinite(parsedNow) ? parsedNow : Date.now()
+  const cutoff = referenceTime - RECENT_TERMINAL_RUN_WINDOW_MS
+  return [...new Set(runs
+    .filter((run) => {
+      if (run.status === 'queued' || run.status === 'running') return true
+      const timestamp = Date.parse(run.finishedAt ?? run.startedAt ?? run.scheduledFor)
+      return Number.isFinite(timestamp) && timestamp >= cutoff
+    })
+    .map(run => run.sessionId)
+    .filter((sessionId): sessionId is string => sessionId !== undefined && sessionId !== ''))]
+    .sort()
+}
+
 /** 常驻订阅保证无页面挂载时仍能发现新定时会话，并同步 Host 会话列表。 */
 export function installAutomationSessionSync(
   runtime: AutomationRuntime,
   getSessions: () => HostSessionSync | undefined,
+  options: { readonly now?: () => number } = {},
 ): () => void {
   let stopped = false
   let completedRefreshes = 0
@@ -74,6 +105,7 @@ export function installAutomationSessionSync(
   let trackedMissingKey: string | undefined
   let attempts = 0
   let nextAttemptRefresh = 0
+  let nextRearmAt = 0
   let warnedMissingKey: string | undefined
   let hostRefreshPromise: Promise<void> | undefined
   let reconcileAfterRefresh = false
@@ -82,6 +114,7 @@ export function installAutomationSessionSync(
     trackedMissingKey = missingKey
     attempts = 0
     nextAttemptRefresh = completedRefreshes
+    nextRearmAt = 0
     warnedMissingKey = undefined
   }
 
@@ -93,11 +126,8 @@ export function installAutomationSessionSync(
       ...(hostSnapshot.ids ?? []),
       ...Object.keys(hostSnapshot.byId ?? {}),
     ])
-    return [...new Set(snapshot.runs
-      .map(run => run.sessionId)
-      .filter((sessionId): sessionId is string => sessionId !== undefined && sessionId !== ''))]
+    return sessionIdsNeedingHostSync(snapshot.runs, snapshot.serverNow)
       .filter(sessionId => !present.has(sessionId))
-      .sort()
       .join('\u0000')
   }
 
@@ -115,7 +145,11 @@ export function installAutomationSessionSync(
       return
     }
     if (missingKey !== trackedMissingKey) resetAttempts(missingKey)
-    if (attempts >= HOST_SESSION_MAX_ATTEMPTS || completedRefreshes < nextAttemptRefresh) return
+    if (attempts >= HOST_SESSION_MAX_ATTEMPTS) {
+      if ((options.now ?? Date.now)() < nextRearmAt) return
+      resetAttempts(missingKey)
+    }
+    if (completedRefreshes < nextAttemptRefresh) return
     if (hostRefreshPromise !== undefined) {
       reconcileAfterRefresh = true
       return
@@ -127,6 +161,9 @@ export function installAutomationSessionSync(
     nextAttemptRefresh = retryGap === undefined
       ? Number.POSITIVE_INFINITY
       : completedRefreshes + retryGap
+    if (attempts >= HOST_SESSION_MAX_ATTEMPTS) {
+      nextRearmAt = (options.now ?? Date.now)() + HOST_SESSION_REARM_INTERVAL_MS
+    }
     hostRefreshPromise = Promise.resolve()
       .then(async () => { await sessions!.refresh!() })
       .catch((error: unknown) => {
@@ -152,7 +189,7 @@ export function installAutomationSessionSync(
       completedRefreshes += 1
     }
     reconcile()
-  })
+  }, { background: true })
   reconcile()
   return () => {
     stopped = true
@@ -167,17 +204,21 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
   let pollTimer: ReturnType<typeof setInterval> | undefined
   let removePageResumeListeners = (): void => undefined
   const listeners = new Set<() => void>()
+  const foregroundListeners = new Set<() => void>()
   const armPoll = (): void => {
     if (pollTimer !== undefined) clearInterval(pollTimer)
     if (listeners.size === 0) {
       pollTimer = undefined
       return
     }
-    pollTimer = setInterval(() => { void refresh().catch(() => undefined) }, snapshotPollIntervalMs(state.snapshot?.runs))
+    pollTimer = setInterval(
+      () => { void refresh().catch(() => undefined) },
+      effectiveSnapshotPollIntervalMs(state.snapshot?.runs, foregroundListeners.size),
+    )
   }
   const armPageResumeListeners = (): void => {
     removePageResumeListeners()
-    if (listeners.size === 0) return
+    if (foregroundListeners.size === 0) return
     const refreshOnResume = (): void => { void refresh().catch(() => undefined) }
     const refreshOnVisible = (): void => {
       if (document.visibilityState === 'visible') refreshOnResume()
@@ -191,28 +232,34 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     }
   }
   const publish = (next: AutomationClientState): void => {
-    const previousInterval = snapshotPollIntervalMs(state.snapshot?.runs)
+    const previousInterval = effectiveSnapshotPollIntervalMs(state.snapshot?.runs, foregroundListeners.size)
     state = next
-    if (listeners.size > 0 && previousInterval !== snapshotPollIntervalMs(state.snapshot?.runs)) armPoll()
+    if (listeners.size > 0 && previousInterval !== effectiveSnapshotPollIntervalMs(state.snapshot?.runs, foregroundListeners.size)) armPoll()
     for (const listener of [...listeners]) listener()
   }
   const source: AutomationStateSource = {
     getSnapshot: () => state,
-    subscribe: (listener) => {
+    subscribe: (listener, options = {}) => {
+      const hadListeners = listeners.size > 0
+      const hadForegroundListeners = foregroundListeners.size > 0
       listeners.add(listener)
-      if (listeners.size === 1) {
+      if (options.background !== true) foregroundListeners.add(listener)
+      if (!hadListeners || (options.background !== true && !hadForegroundListeners)) {
         queueMicrotask(() => { if (listeners.size > 0) void refresh().catch(() => undefined) })
-        armPoll()
-        // Chromium 会节流后台标签页计时器，恢复页面时必须主动追平快照。
-        armPageResumeListeners()
       }
+      armPoll()
+      // Chromium 会节流后台标签页计时器；只在界面挂载时监听恢复事件。
+      if (foregroundListeners.size > 0 && !hadForegroundListeners) armPageResumeListeners()
       return () => {
         listeners.delete(listener)
+        foregroundListeners.delete(listener)
         if (listeners.size === 0 && pollTimer !== undefined) {
           clearInterval(pollTimer)
           pollTimer = undefined
+        } else if (listeners.size > 0) {
+          armPoll()
         }
-        if (listeners.size === 0) removePageResumeListeners()
+        if (foregroundListeners.size === 0) removePageResumeListeners()
       }
     },
   }
@@ -291,7 +338,12 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
             ...snapshot,
             automations: snapshot.automations.filter(item => item.id !== automationId),
           })
-        : undefined)
+        : (snapshot) => ({
+            ...snapshot,
+            automations: snapshot.automations.map((item) => item.id === automationId
+              ? { ...item, status: mutation === 'pause' ? 'paused' : 'active' }
+              : item),
+          }))
     },
     async updateAutomation(automationId, input) {
       const payload: UpdateRequest = { sessionId: 'settings', automationId, input }

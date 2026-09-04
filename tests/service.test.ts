@@ -109,7 +109,7 @@ function sampleDefinition(overrides: Partial<AutomationDefinition> = {}): Automa
   })
 }
 
-test('重启后把遗留 queued/running 标记为 host_interrupted', async () => {
+test('重启后只把遗留 running 标记为 host_interrupted，并保留尚未启动的 queued', async () => {
   const definition = sampleDefinition()
   const { runs } = await makeService({
     definitions: [definition],
@@ -137,11 +137,37 @@ test('重启后把遗留 queued/running 标记为 host_interrupted', async () =>
       summary: null,
       error: null,
       unread: true,
+    }, {
+      version: 1,
+      id: 'run_queued',
+      automationId: definition.id,
+      definitionRevision: 1,
+      occurrenceKey: 'queued',
+      trigger: 'manual',
+      scheduledFor: '2026-08-16T00:31:00.000Z',
+      status: 'queued',
+      promptSnapshot: definition.prompt,
+      targetSnapshot: {
+        workspaceId: definition.workspaceId,
+        cwd: definition.cwd,
+        agentPreset: definition.agentPreset,
+        provider: null,
+        model: null,
+        permissionPreset: 'read-only',
+      },
+      sessionId: null,
+      startedAt: null,
+      finishedAt: null,
+      summary: null,
+      error: null,
+      unread: false,
     }],
   })
   const recovered = runs.get('run_old')
   assert.equal(recovered?.status, 'failed')
   assert.equal(recovered?.error?.code, 'host_interrupted')
+  assert.equal(runs.get('run_queued')?.status, 'queued')
+  assert.equal(runs.get('run_queued')?.error, null)
 })
 
 test('ownsSession 通过前缀、运行记录和消息来源识别自动化会话', async () => {

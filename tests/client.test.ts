@@ -3,7 +3,7 @@ import test from 'node:test'
 import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, HISTORY_STATUS_OPTIONS, insertSkillGesture, prettyModelName, readSortDefault, skillGestureToken, sortAutomations, writeSortDefault } from '../src/client/helpers.ts'
 import type { AutomationViewModel } from '../src/client/protocol.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
-import { createAutomationRuntime, installAutomationSessionSync, snapshotPollIntervalMs, type HostSessionSync } from '../src/client/runtime.ts'
+import { createAutomationRuntime, effectiveSnapshotPollIntervalMs, installAutomationSessionSync, sessionIdsNeedingHostSync, snapshotPollIntervalMs, type HostSessionSync } from '../src/client/runtime.ts'
 
 const t = (key: string, params?: Record<string, unknown>): string => {
   if (params?.count !== undefined) return `${key}:${params.count}`
@@ -145,6 +145,8 @@ test('有排队或执行中的任务时加快侧栏快照轮询', () => {
   assert.equal(snapshotPollIntervalMs([{ status: 'queued' }]), 2_000)
   assert.equal(snapshotPollIntervalMs([{ status: 'succeeded' }]), 15_000)
   assert.equal(snapshotPollIntervalMs([]), 15_000)
+  assert.equal(effectiveSnapshotPollIntervalMs([{ status: 'running' }], 0), 15_000)
+  assert.equal(effectiveSnapshotPollIntervalMs([{ status: 'running' }], 1), 2_000)
 })
 
 test('多个客户端订阅共享一个初始刷新和轮询器', async () => {
@@ -248,6 +250,7 @@ test('Host 会话同步按完整刷新周期退避重试，并限制同一缺失
     for (const listener of [...listeners]) listener()
   }
   let hostRefreshes = 0
+  let now = Date.parse('2026-08-16T01:00:00.000Z')
   let warnings = 0
   let rejectFirstRefresh: ((error: Error) => void) | undefined
   const previousWarn = console.warn
@@ -264,7 +267,7 @@ test('Host 会话同步按完整刷新周期退避重试，并限制同一缺失
   }
   let stop = (): void => undefined
   try {
-    stop = installAutomationSessionSync(runtime, () => hostSessions)
+    stop = installAutomationSessionSync(runtime, () => hostSessions, { now: () => now })
 
     await new Promise(resolve => setTimeout(resolve, 0))
     assert.equal(hostRefreshes, 1)
@@ -301,11 +304,26 @@ test('Host 会话同步按完整刷新周期退避重试，并限制同一缺失
       await new Promise(resolve => setTimeout(resolve, 0))
     }
     assert.equal(hostRefreshes, 4)
+    now += 5 * 60 * 1_000
+    publish('ready')
+    await new Promise(resolve => setTimeout(resolve, 0))
+    assert.equal(hostRefreshes, 5)
   } finally {
     stop()
     console.warn = previousWarn
   }
   assert.equal(listeners.size, 0)
+})
+
+test('Host 会话同步忽略过期终态运行，但保留近期终态与未完成运行', () => {
+  const serverNow = '2026-08-18T12:00:00.000Z'
+  const runs = [
+    { status: 'succeeded', sessionId: 'old', scheduledFor: '2026-08-16T01:00:00.000Z', finishedAt: '2026-08-16T01:01:00.000Z' },
+    { status: 'succeeded', sessionId: 'recent', scheduledFor: '2026-08-18T11:00:00.000Z', finishedAt: '2026-08-18T11:01:00.000Z' },
+    { status: 'running', sessionId: 'running', scheduledFor: '2026-08-01T01:00:00.000Z', startedAt: '2026-08-01T01:00:00.000Z' },
+  ] as const
+
+  assert.deepEqual(sessionIdsNeedingHostSync(runs, serverNow), ['recent', 'running'])
 })
 
 test('页面恢复焦点或可见时立即刷新执行记录', async () => {
@@ -385,6 +403,35 @@ test('删除成功后即使刷新失败也要从列表里拿掉任务', async ()
   await runtime.mutateAutomation('gone', 'delete')
   const state = runtime.source.getSnapshot()
   assert.deepEqual(state.snapshot?.automations.map(item => item.id), ['keep'])
+})
+
+test('暂停成功后即使刷新失败也立即更新本地开关状态', async () => {
+  const snapshot = {
+    scope: { cwd: 'D:\\work' },
+    permissions: [],
+    defaultPermission: 'read-only',
+    automations: [
+      { id: 'a1', revision: 1, name: 'A', prompt: 'p', status: 'active', schedule: { kind: 'daily', time: '09:00' }, scheduleSummary: '', timeZone: 'Asia/Shanghai', permission: 'read-only', createdAt: '', updatedAt: '' },
+    ],
+    runs: [],
+    serverNow: '2026-08-16T01:00:00.000Z',
+  }
+  let snapshots = 0
+  const runtime = createAutomationRuntime({
+    async call(_channel, endpoint) {
+      if (endpoint === 'snapshot') {
+        snapshots += 1
+        if (snapshots === 1) return { ok: true, value: snapshot }
+        throw new Error('Failed to fetch')
+      }
+      if (endpoint === 'mutate') return { ok: true, value: { id: 'a1', status: 'paused' } }
+      throw new Error(`unexpected ${endpoint}`)
+    },
+  })
+
+  await runtime.refresh()
+  await runtime.mutateAutomation('a1', 'pause')
+  assert.equal(runtime.source.getSnapshot().snapshot?.automations[0]?.status, 'paused')
 })
 
 test('编辑表单会从已有任务还原名称、计划和模型', () => {
