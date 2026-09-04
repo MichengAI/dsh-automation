@@ -13,8 +13,9 @@ import { unwrapRpcResult } from './protocol.js'
 const CHANNEL = '/dsh-automation'
 const IDLE_POLL_INTERVAL_MS = 15_000
 const ACTIVE_POLL_INTERVAL_MS = 2_000
-const HOST_SESSION_RETRY_GAPS = [1, 2, 4] as const
-const HOST_SESSION_MAX_ATTEMPTS = HOST_SESSION_RETRY_GAPS.length + 1
+// 首次立即尝试；后续间隔单位是完整的 Automation 快照刷新周期，不是毫秒或状态发布次数。
+const HOST_SESSION_RETRY_REFRESH_GAPS = [1, 2, 4] as const
+const HOST_SESSION_MAX_ATTEMPTS = HOST_SESSION_RETRY_REFRESH_GAPS.length + 1
 
 export function snapshotPollIntervalMs(runs: readonly { readonly status: string }[] | undefined): number {
   return (runs ?? []).some(run => run.status === 'running' || run.status === 'queued')
@@ -67,11 +68,12 @@ export function installAutomationSessionSync(
   getSessions: () => HostSessionSync | undefined,
 ): () => void {
   let stopped = false
-  let publication = 0
+  let completedRefreshes = 0
+  let automationRefreshInProgress = runtime.source.getSnapshot().phase === 'loading'
   let trackedSessions: HostSessionSync | undefined
   let trackedMissingKey: string | undefined
   let attempts = 0
-  let nextAttemptPublication = 0
+  let nextAttemptRefresh = 0
   let warnedMissingKey: string | undefined
   let hostRefreshPromise: Promise<void> | undefined
   let reconcileAfterRefresh = false
@@ -79,7 +81,7 @@ export function installAutomationSessionSync(
   const resetAttempts = (missingKey?: string): void => {
     trackedMissingKey = missingKey
     attempts = 0
-    nextAttemptPublication = publication
+    nextAttemptRefresh = completedRefreshes
     warnedMissingKey = undefined
   }
 
@@ -113,7 +115,7 @@ export function installAutomationSessionSync(
       return
     }
     if (missingKey !== trackedMissingKey) resetAttempts(missingKey)
-    if (attempts >= HOST_SESSION_MAX_ATTEMPTS || publication < nextAttemptPublication) return
+    if (attempts >= HOST_SESSION_MAX_ATTEMPTS || completedRefreshes < nextAttemptRefresh) return
     if (hostRefreshPromise !== undefined) {
       reconcileAfterRefresh = true
       return
@@ -121,10 +123,10 @@ export function installAutomationSessionSync(
 
     const attemptIndex = attempts
     attempts += 1
-    const retryGap = HOST_SESSION_RETRY_GAPS[attemptIndex]
-    nextAttemptPublication = retryGap === undefined
+    const retryGap = HOST_SESSION_RETRY_REFRESH_GAPS[attemptIndex]
+    nextAttemptRefresh = retryGap === undefined
       ? Number.POSITIVE_INFINITY
-      : publication + retryGap
+      : completedRefreshes + retryGap
     hostRefreshPromise = Promise.resolve()
       .then(async () => { await sessions!.refresh!() })
       .catch((error: unknown) => {
@@ -142,7 +144,13 @@ export function installAutomationSessionSync(
   }
 
   const unsubscribe = runtime.source.subscribe(() => {
-    publication += 1
+    const phase = runtime.source.getSnapshot().phase
+    if (phase === 'loading') {
+      automationRefreshInProgress = true
+    } else if (automationRefreshInProgress) {
+      automationRefreshInProgress = false
+      completedRefreshes += 1
+    }
     reconcile()
   })
   reconcile()

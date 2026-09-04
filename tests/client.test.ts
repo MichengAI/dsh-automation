@@ -213,9 +213,10 @@ test('插件级同步桥在页面未挂载时仍刷新快照并同步 Host 会�
   assert.equal(hostRefreshes, 1)
 })
 
-test('Host 会话同步按快照周期退避重试，并限制同一缺失集合的请求和告警', async () => {
+test('Host 会话同步按完整刷新周期退避重试，并限制同一缺失集合的请求和告警', async () => {
   type Listener = () => void
   const listeners = new Set<Listener>()
+  let phase: 'loading' | 'ready' | 'error' = 'ready'
   const snapshot = {
     scope: { cwd: 'D:\\work' },
     permissions: [],
@@ -235,13 +236,17 @@ test('Host 会话同步按快照周期退避重试，并限制同一缺失集合
   }
   const runtime = {
     source: {
-      getSnapshot: () => ({ phase: 'ready' as const, snapshot }),
+      getSnapshot: () => ({ phase, snapshot }),
       subscribe(listener: Listener) {
         listeners.add(listener)
         return () => { listeners.delete(listener) }
       },
     },
   } as unknown as ReturnType<typeof createAutomationRuntime>
+  const publish = (nextPhase: typeof phase): void => {
+    phase = nextPhase
+    for (const listener of [...listeners]) listener()
+  }
   let hostRefreshes = 0
   let warnings = 0
   let rejectFirstRefresh: ((error: Error) => void) | undefined
@@ -263,28 +268,39 @@ test('Host 会话同步按快照周期退避重试，并限制同一缺失集合
 
     await new Promise(resolve => setTimeout(resolve, 0))
     assert.equal(hostRefreshes, 1)
-    for (const listener of [...listeners]) listener()
-    for (const listener of [...listeners]) listener()
+    publish('loading')
+    publish('ready')
     assert.equal(hostRefreshes, 1)
     rejectFirstRefresh?.(new Error('temporary failure'))
     await new Promise(resolve => setTimeout(resolve, 0))
     assert.equal(hostRefreshes, 2)
     assert.equal(warnings, 1)
 
-    for (const listener of [...listeners]) listener()
+    publish('loading')
     await new Promise(resolve => setTimeout(resolve, 0))
     assert.equal(hostRefreshes, 2)
-    for (const listener of [...listeners]) listener()
+    publish('ready')
+    await new Promise(resolve => setTimeout(resolve, 0))
+    assert.equal(hostRefreshes, 2)
+    publish('loading')
+    publish('ready')
     await new Promise(resolve => setTimeout(resolve, 0))
     assert.equal(hostRefreshes, 3)
     assert.equal(warnings, 1)
 
-    for (let index = 0; index < 8; index += 1) {
-      for (const listener of [...listeners]) listener()
+    for (let index = 0; index < 4; index += 1) {
+      publish('loading')
+      publish('ready')
       await new Promise(resolve => setTimeout(resolve, 0))
     }
     assert.equal(hostRefreshes, 4)
     assert.equal(warnings, 1)
+    for (let index = 0; index < 4; index += 1) {
+      publish('loading')
+      publish('ready')
+      await new Promise(resolve => setTimeout(resolve, 0))
+    }
+    assert.equal(hostRefreshes, 4)
   } finally {
     stop()
     console.warn = previousWarn
