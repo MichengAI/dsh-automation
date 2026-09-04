@@ -312,11 +312,18 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     patch?: (snapshot: AutomationSnapshot) => AutomationSnapshot,
   ): Promise<void> => {
     unwrapRpcResult<unknown>(await callRpc(endpoint, payload))
-    if (patch !== undefined && state.snapshot !== undefined) {
-      publish({ phase: 'ready', snapshot: patch(state.snapshot), refreshedAt: Date.now() })
+    const applyPatch = (): void => {
+      if (patch !== undefined && state.snapshot !== undefined) {
+        publish({ phase: 'ready', snapshot: patch(state.snapshot), refreshedAt: Date.now() })
+      }
     }
     const pendingBeforeRefresh = refreshPromise
-    if (pendingBeforeRefresh !== undefined) await pendingBeforeRefresh.catch(() => undefined)
+    applyPatch()
+    if (pendingBeforeRefresh !== undefined) {
+      await pendingBeforeRefresh.catch(() => undefined)
+      // 在途快照可能携带变更前状态；完成后重放幂等补丁，避免覆盖即时反馈。
+      applyPatch()
+    }
     try {
       await refresh()
     } catch {

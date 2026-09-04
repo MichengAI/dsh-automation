@@ -375,7 +375,7 @@ test('页面恢复焦点或可见时立即刷新执行记录', async () => {
   }
 })
 
-test('删除成功后即使刷新失败也要从列表里拿掉任务', async () => {
+test('删除成功后不会被在途旧快照恢复，即使后续刷新失败', async () => {
   const snapshot = {
     scope: { cwd: 'D:\\work' },
     permissions: [],
@@ -388,11 +388,17 @@ test('删除成功后即使刷新失败也要从列表里拿掉任务', async ()
     serverNow: '2026-08-16T01:00:00.000Z',
   }
   let snapshots = 0
+  let resolveStaleSnapshot: (() => void) | undefined
+  const staleSnapshot = new Promise<void>((resolve) => { resolveStaleSnapshot = resolve })
   const runtime = createAutomationRuntime({
     async call(_channel, endpoint) {
       if (endpoint === 'snapshot') {
         snapshots += 1
         if (snapshots === 1) return { ok: true, value: snapshot }
+        if (snapshots === 2) {
+          await staleSnapshot
+          return { ok: true, value: snapshot }
+        }
         throw new Error('Failed to fetch')
       }
       if (endpoint === 'mutate') return { ok: true, value: { id: 'gone', deleted: true } }
@@ -400,9 +406,16 @@ test('删除成功后即使刷新失败也要从列表里拿掉任务', async ()
     },
   })
   await runtime.refresh()
-  await runtime.mutateAutomation('gone', 'delete')
-  const state = runtime.source.getSnapshot()
-  assert.deepEqual(state.snapshot?.automations.map(item => item.id), ['keep'])
+  const pendingSnapshot = runtime.refresh()
+  const mutation = runtime.mutateAutomation('gone', 'delete')
+  await new Promise(resolve => setImmediate(resolve))
+  assert.deepEqual(runtime.source.getSnapshot().snapshot?.automations.map(item => item.id), ['keep'])
+
+  resolveStaleSnapshot?.()
+  await pendingSnapshot
+  await mutation
+  assert.deepEqual(runtime.source.getSnapshot().snapshot?.automations.map(item => item.id), ['keep'])
+  assert.equal(snapshots, 3)
 })
 
 test('暂停成功后即使刷新失败也立即更新本地开关状态', async () => {
@@ -432,6 +445,54 @@ test('暂停成功后即使刷新失败也立即更新本地开关状态', async
   await runtime.refresh()
   await runtime.mutateAutomation('a1', 'pause')
   assert.equal(runtime.source.getSnapshot().snapshot?.automations[0]?.status, 'paused')
+})
+
+test('暂停和恢复成功后不会被在途旧快照覆盖', async () => {
+  for (const scenario of [
+    { initialStatus: 'active', mutation: 'pause', expectedStatus: 'paused' },
+    { initialStatus: 'paused', mutation: 'resume', expectedStatus: 'active' },
+  ] as const) {
+    const snapshot = {
+      scope: { cwd: 'D:\\work' },
+      permissions: [],
+      defaultPermission: 'read-only',
+      automations: [
+        { id: 'a1', revision: 1, name: 'A', prompt: 'p', status: scenario.initialStatus, schedule: { kind: 'daily', time: '09:00' }, scheduleSummary: '', timeZone: 'Asia/Shanghai', permission: 'read-only', createdAt: '', updatedAt: '' },
+      ],
+      runs: [],
+      serverNow: '2026-08-16T01:00:00.000Z',
+    }
+    let snapshots = 0
+    let resolveStaleSnapshot: (() => void) | undefined
+    const staleSnapshot = new Promise<void>((resolve) => { resolveStaleSnapshot = resolve })
+    const runtime = createAutomationRuntime({
+      async call(_channel, endpoint) {
+        if (endpoint === 'snapshot') {
+          snapshots += 1
+          if (snapshots === 1) return { ok: true, value: snapshot }
+          if (snapshots === 2) {
+            await staleSnapshot
+            return { ok: true, value: snapshot }
+          }
+          throw new Error('Failed to fetch')
+        }
+        if (endpoint === 'mutate') return { ok: true, value: { id: 'a1' } }
+        throw new Error(`unexpected ${endpoint}`)
+      },
+    })
+
+    await runtime.refresh()
+    const pendingSnapshot = runtime.refresh()
+    const mutation = runtime.mutateAutomation('a1', scenario.mutation)
+    await new Promise(resolve => setImmediate(resolve))
+    assert.equal(runtime.source.getSnapshot().snapshot?.automations[0]?.status, scenario.expectedStatus)
+
+    resolveStaleSnapshot?.()
+    await pendingSnapshot
+    await mutation
+    assert.equal(runtime.source.getSnapshot().snapshot?.automations[0]?.status, scenario.expectedStatus)
+    assert.equal(snapshots, 3)
+  }
 })
 
 test('编辑表单会从已有任务还原名称、计划和模型', () => {

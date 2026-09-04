@@ -835,7 +835,8 @@ export class AutomationService {
   private async recoverInterruptedRuns(): Promise<void> {
     const finishedAt = toIso()
     for (const [id, run] of this.runs.entries()) {
-      // queued 尚未交给执行器，启动后的调度泵可以继续领取；只有 running 代表宿主中断了执行。
+      // queued 已在上次进程完成准入，启动后的调度泵会继续领取且不再应用 misfireGraceMs；
+      // 只有 running 代表宿主中断了执行。
       if (run.status !== 'running') continue
       await this.runs.put(id, {
         ...run,

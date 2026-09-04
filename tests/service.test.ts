@@ -170,6 +170,67 @@ test('重启后只把遗留 running 标记为 host_interrupted，并保留尚未
   assert.equal(runs.get('run_queued')?.error, null)
 })
 
+test('重启后调度泵会领取已准入的 queued，且不按 misfire 窗口重新判定', async () => {
+  const definition = sampleDefinition()
+  let resolveWorkspaceStatus: ((status: string) => void) | undefined
+  const workspaceStatus = new Promise<string>((resolve) => { resolveWorkspaceStatus = resolve })
+  const { service, runs } = await makeService({
+    definitions: [definition],
+    runs: [{
+      version: 1,
+      id: 'run_queued',
+      automationId: definition.id,
+      definitionRevision: 1,
+      occurrenceKey: 'queued',
+      trigger: 'schedule',
+      scheduledFor: '2026-08-16T01:00:00.000Z',
+      status: 'queued',
+      promptSnapshot: definition.prompt,
+      targetSnapshot: {
+        workspaceId: definition.workspaceId,
+        cwd: definition.cwd,
+        agentPreset: definition.agentPreset,
+        provider: null,
+        model: null,
+        permissionPreset: 'read-only',
+      },
+      sessionId: null,
+      startedAt: null,
+      finishedAt: null,
+      summary: null,
+      error: null,
+      unread: false,
+    }],
+  }, {}, {
+    workspaceRegistry: {
+      get(id: unknown) {
+        if (String(id) !== 'ws_1') return undefined
+        return {
+          id: 'ws_1',
+          title: 'demo',
+          path: 'D:\\work\\demo',
+          status: async () => workspaceStatus,
+        }
+      },
+    },
+  })
+
+  try {
+    service.start()
+    for (let attempt = 0; attempt < 20 && runs.get('run_queued')?.status === 'queued'; attempt += 1) {
+      await new Promise(resolve => setImmediate(resolve))
+    }
+    const claimed = runs.get('run_queued')
+    assert.equal(claimed?.status, 'running')
+    assert.match(claimed?.sessionId ?? '', /^dsh-automation-session-/)
+    assert.equal(typeof claimed?.startedAt, 'string')
+    assert.equal(runs.size, 1)
+  } finally {
+    resolveWorkspaceStatus?.('unavailable')
+    await service.dispose()
+  }
+})
+
 test('ownsSession 通过前缀、运行记录和消息来源识别自动化会话', async () => {
   const { service } = await makeService()
   assert.equal(service.ownsSession('dsh-automation-session-abc'), true)
