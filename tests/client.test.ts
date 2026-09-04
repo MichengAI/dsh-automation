@@ -3,7 +3,7 @@ import test from 'node:test'
 import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatSchedule, formFromAutomation, groupHistory, HISTORY_STATUS_OPTIONS, insertSkillGesture, prettyModelName, readSortDefault, skillGestureToken, sortAutomations, writeSortDefault } from '../src/client/helpers.ts'
 import type { AutomationViewModel } from '../src/client/protocol.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'
-import { createAutomationRuntime, installAutomationSessionSync, snapshotPollIntervalMs } from '../src/client/runtime.ts'
+import { createAutomationRuntime, installAutomationSessionSync, snapshotPollIntervalMs, type HostSessionSync } from '../src/client/runtime.ts'
 
 const t = (key: string, params?: Record<string, unknown>): string => {
   if (params?.count !== undefined) return `${key}:${params.count}`
@@ -168,6 +168,7 @@ test('插件级同步桥在页面未挂载时仍刷新快照并同步 Host 会�
   let snapshots = 0
   let hostRefreshes = 0
   const hostIds = new Set<string>()
+  let hostSessions: HostSessionSync | undefined
   const runtime = createAutomationRuntime({
     async call(_channel, endpoint) {
       if (endpoint !== 'snapshot') throw new Error(`unexpected ${endpoint}`)
@@ -194,13 +195,14 @@ test('插件级同步桥在页面未挂载时仍刷新快照并同步 Host 会�
       }
     },
   })
-  const stop = installAutomationSessionSync(runtime, {
+  const stop = installAutomationSessionSync(runtime, () => hostSessions)
+  hostSessions = {
     list: { getSnapshot: () => ({ ids: [...hostIds], byId: {} }) },
     async refresh() {
       hostRefreshes += 1
       hostIds.add('dsh-automation-session-r1')
     },
-  })
+  }
 
   await new Promise(resolve => setTimeout(resolve, 0))
   assert.equal(snapshots, 1)
@@ -211,7 +213,7 @@ test('插件级同步桥在页面未挂载时仍刷新快照并同步 Host 会�
   assert.equal(hostRefreshes, 1)
 })
 
-test('Host 会话同步合并重复请求，并在失败后的下一次快照发布时重试', async () => {
+test('Host 会话同步按快照周期退避重试，并限制同一缺失集合的请求和告警', async () => {
   type Listener = () => void
   const listeners = new Set<Listener>()
   const snapshot = {
@@ -242,29 +244,47 @@ test('Host 会话同步合并重复请求，并在失败后的下一次快照发
   } as unknown as ReturnType<typeof createAutomationRuntime>
   let hostRefreshes = 0
   let warnings = 0
+  let rejectFirstRefresh: ((error: Error) => void) | undefined
   const previousWarn = console.warn
   console.warn = () => { warnings += 1 }
+  const hostSessions = {
+    list: { getSnapshot: () => ({ ids: [], byId: {} }) },
+    async refresh() {
+      hostRefreshes += 1
+      if (hostRefreshes === 1) {
+        await new Promise<never>((_resolve, reject) => { rejectFirstRefresh = reject })
+      }
+      if (hostRefreshes === 3) throw new Error('temporary failure again')
+    },
+  }
   let stop = (): void => undefined
   try {
-    stop = installAutomationSessionSync(runtime, {
-      list: { getSnapshot: () => ({ ids: [], byId: {} }) },
-      async refresh() {
-        hostRefreshes += 1
-        if (hostRefreshes === 1) throw new Error('temporary failure')
-      },
-    })
+    stop = installAutomationSessionSync(runtime, () => hostSessions)
 
     await new Promise(resolve => setTimeout(resolve, 0))
     assert.equal(hostRefreshes, 1)
-    assert.equal(warnings, 1)
     for (const listener of [...listeners]) listener()
     for (const listener of [...listeners]) listener()
+    assert.equal(hostRefreshes, 1)
+    rejectFirstRefresh?.(new Error('temporary failure'))
     await new Promise(resolve => setTimeout(resolve, 0))
     assert.equal(hostRefreshes, 2)
+    assert.equal(warnings, 1)
 
     for (const listener of [...listeners]) listener()
     await new Promise(resolve => setTimeout(resolve, 0))
     assert.equal(hostRefreshes, 2)
+    for (const listener of [...listeners]) listener()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    assert.equal(hostRefreshes, 3)
+    assert.equal(warnings, 1)
+
+    for (let index = 0; index < 8; index += 1) {
+      for (const listener of [...listeners]) listener()
+      await new Promise(resolve => setTimeout(resolve, 0))
+    }
+    assert.equal(hostRefreshes, 4)
+    assert.equal(warnings, 1)
   } finally {
     stop()
     console.warn = previousWarn

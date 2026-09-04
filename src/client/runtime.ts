@@ -13,6 +13,8 @@ import { unwrapRpcResult } from './protocol.js'
 const CHANNEL = '/dsh-automation'
 const IDLE_POLL_INTERVAL_MS = 15_000
 const ACTIVE_POLL_INTERVAL_MS = 2_000
+const HOST_SESSION_RETRY_GAPS = [1, 2, 4] as const
+const HOST_SESSION_MAX_ATTEMPTS = HOST_SESSION_RETRY_GAPS.length + 1
 
 export function snapshotPollIntervalMs(runs: readonly { readonly status: string }[] | undefined): number {
   return (runs ?? []).some(run => run.status === 'running' || run.status === 'queued')
@@ -59,20 +61,29 @@ export interface HostSessionSync {
   refresh?: () => Promise<void>
 }
 
-/**
- * 常驻订阅 Automation 快照，并把新产生的定时会话同步进 Host 会话列表。
- * 独立模式依靠这条订阅持续轮询；Codex UI 模式还会在发现缺失会话时刷新 Host Store。
- */
+/** 常驻订阅保证无页面挂载时仍能发现新定时会话，并同步 Host 会话列表。 */
 export function installAutomationSessionSync(
   runtime: AutomationRuntime,
-  sessions: HostSessionSync | undefined,
+  getSessions: () => HostSessionSync | undefined,
 ): () => void {
   let stopped = false
-  let attemptedMissingKey: string | undefined
+  let publication = 0
+  let trackedSessions: HostSessionSync | undefined
+  let trackedMissingKey: string | undefined
+  let attempts = 0
+  let nextAttemptPublication = 0
+  let warnedMissingKey: string | undefined
   let hostRefreshPromise: Promise<void> | undefined
   let reconcileAfterRefresh = false
 
-  const missingSessionKey = (): string | undefined => {
+  const resetAttempts = (missingKey?: string): void => {
+    trackedMissingKey = missingKey
+    attempts = 0
+    nextAttemptPublication = publication
+    warnedMissingKey = undefined
+  }
+
+  const missingSessionKey = (sessions: HostSessionSync | undefined): string | undefined => {
     const snapshot = runtime.source.getSnapshot().snapshot
     const hostSnapshot = sessions?.list?.getSnapshot()
     if (snapshot === undefined || hostSnapshot === undefined || sessions?.refresh === undefined) return undefined
@@ -90,24 +101,37 @@ export function installAutomationSessionSync(
 
   const reconcile = (): void => {
     if (stopped) return
-    const missingKey = missingSessionKey()
+    const sessions = getSessions()
+    if (sessions !== trackedSessions) {
+      trackedSessions = sessions
+      resetAttempts()
+    }
+    const missingKey = missingSessionKey(sessions)
     if (missingKey === undefined) return
     if (missingKey === '') {
-      attemptedMissingKey = undefined
+      resetAttempts()
       return
     }
-    if (missingKey === attemptedMissingKey) return
+    if (missingKey !== trackedMissingKey) resetAttempts(missingKey)
+    if (attempts >= HOST_SESSION_MAX_ATTEMPTS || publication < nextAttemptPublication) return
     if (hostRefreshPromise !== undefined) {
       reconcileAfterRefresh = true
       return
     }
 
-    attemptedMissingKey = missingKey
+    const attemptIndex = attempts
+    attempts += 1
+    const retryGap = HOST_SESSION_RETRY_GAPS[attemptIndex]
+    nextAttemptPublication = retryGap === undefined
+      ? Number.POSITIVE_INFINITY
+      : publication + retryGap
     hostRefreshPromise = Promise.resolve()
-      .then(async () => { await sessions?.refresh?.() })
+      .then(async () => { await sessions!.refresh!() })
       .catch((error: unknown) => {
-        if (!stopped) console.warn('[dsh-automation] 刷新 Host 会话列表失败', error)
-        if (attemptedMissingKey === missingKey) attemptedMissingKey = undefined
+        if (!stopped && warnedMissingKey !== missingKey) {
+          warnedMissingKey = missingKey
+          console.warn('[dsh-automation] 刷新 Host 会话列表失败', error)
+        }
       })
       .finally(() => {
         hostRefreshPromise = undefined
@@ -117,7 +141,10 @@ export function installAutomationSessionSync(
       })
   }
 
-  const unsubscribe = runtime.source.subscribe(reconcile)
+  const unsubscribe = runtime.source.subscribe(() => {
+    publication += 1
+    reconcile()
+  })
   reconcile()
   return () => {
     stopped = true

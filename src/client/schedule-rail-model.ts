@@ -1,5 +1,7 @@
 /** 侧栏定时树与原生任务列表的纯函数，供组件和单测共用。 */
 
+import type { AutomationStatus } from './protocol.js'
+
 export const AUTOMATION_SESSION_PREFIX = 'dsh-automation-session-'
 export const NATIVE_SIDEBAR_TAB_KEY = 'dsh-automation.sidebar-tab'
 
@@ -108,19 +110,19 @@ export function groupScheduledSessions(
 export interface OverviewAutomationLike {
   readonly id: string
   readonly name: string
-  readonly status: string
+  readonly status: AutomationStatus
   readonly nextRunAt?: string
 }
 
 export interface TaskOverviewRow {
   readonly id: string
   readonly name: string
-  readonly status: string
+  readonly status: AutomationStatus
   readonly nextRunAt?: string
   readonly lastSessionId?: string
 }
 
-export function automationToggleMutation(status: string): 'pause' | 'resume' {
+export function automationToggleMutation(status: AutomationStatus): 'pause' | 'resume' {
   return status === 'active' ? 'pause' : 'resume'
 }
 

@@ -1,4 +1,5 @@
 /** 侧栏定时树与原生任务列表的纯函数，供组件和单测共用。 */
+import type { AutomationStatus } from './protocol.js';
 export declare const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
 export declare const NATIVE_SIDEBAR_TAB_KEY = "dsh-automation.sidebar-tab";
 export interface ScheduleRailSession {
@@ -48,17 +49,17 @@ export declare function groupScheduledSessions(automations: readonly {
 export interface OverviewAutomationLike {
     readonly id: string;
     readonly name: string;
-    readonly status: string;
+    readonly status: AutomationStatus;
     readonly nextRunAt?: string;
 }
 export interface TaskOverviewRow {
     readonly id: string;
     readonly name: string;
-    readonly status: string;
+    readonly status: AutomationStatus;
     readonly nextRunAt?: string;
     readonly lastSessionId?: string;
 }
-export declare function automationToggleMutation(status: string): 'pause' | 'resume';
+export declare function automationToggleMutation(status: AutomationStatus): 'pause' | 'resume';
 /** 任务总览：每个定义一行；最近一次留有会话的运行决定该行是否可点开。 */
 export declare function deriveTaskOverviewRows(automations: readonly OverviewAutomationLike[], runs: readonly ScheduleRunLike[]): TaskOverviewRow[];
 /** 归档立即摘掉。宿主会话簿经常晚于自动化快照，缺席不能当成已删除。 */

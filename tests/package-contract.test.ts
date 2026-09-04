@@ -71,5 +71,5 @@ test('包保持可安装的 DSH bundle 与 Web client 契约', async () => {
 test('客户端入口在插件生命周期内安装常驻会话同步桥', async () => {
   const source = await readFile(new URL('src/client/index.ts', root), 'utf8')
   assert.match(source, /import \{ createAutomationRuntime, installAutomationSessionSync \} from '\.\/runtime\.js'/)
-  assert.match(source, /ctx\.effect\(\(\) => installAutomationSessionSync\(runtime, ctx\.sessions\), 'dsh-automation: session sync'\)/)
+  assert.match(source, /ctx\.effect\(\(\) => installAutomationSessionSync\(runtime, \(\) => ctx\.sessions\), 'dsh-automation: session sync'\)/)
 })

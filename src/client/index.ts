@@ -76,7 +76,7 @@ export function apply(ctx: ClientContext): void {
   const permissionT = ctx.locale.bind('permission.access')
   const modelT = ctx.locale.bind('model')
   const runtime = createAutomationRuntime(ctx.connection.rpc)
-  ctx.effect(() => installAutomationSessionSync(runtime, ctx.sessions), 'dsh-automation: session sync')
+  ctx.effect(() => installAutomationSessionSync(runtime, () => ctx.sessions), 'dsh-automation: session sync')
   ctx.effect(() => installSettingsNavIcon(() => [t('tab'), 'Scheduled tasks', '定时任务']), 'dsh-automation: settings icon')
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
