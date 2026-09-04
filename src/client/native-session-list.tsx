@@ -90,13 +90,14 @@ export function NativeScheduleSessionList(props: {
   const groups = useMemo(() => {
     const snapshot = state.snapshot
     if (snapshot === undefined) return []
+    const timeZoneById = new Map(snapshot.automations.map(item => [item.id, item.timeZone]))
     return groupScheduledSessions(snapshot.automations, snapshot.runs).map((group) => ({
       ...group,
       sessions: group.sessions.filter((session) => keepScheduledSessionLink(session.id, archived, presentIds)).map((session) => {
         const run = snapshot.runs.find((item) => item.sessionId === session.id)
         return {
           ...session,
-          title: formatRunStamp((run && (run.startedAt || run.scheduledFor)) || ''),
+          title: formatRunStamp((run && (run.startedAt || run.scheduledFor)) || '', timeZoneById.get(group.id)),
           updatedAt: (run && (run.startedAt || run.scheduledFor)) || '',
           running: session.running || sessionById[session.id]?.running === true,
         }

@@ -60,11 +60,15 @@ export function sessionUpdatedAtIso(value: number | string | undefined, fallback
 }
 
 export function groupScheduledSessions(
-  automations: readonly { readonly id: string; readonly name: string }[],
+  automations: readonly { readonly id: string; readonly name: string; readonly timeZone?: string }[],
   runs: readonly ScheduleRunLike[],
 ): ScheduleRailGroup[] {
   const nameById = new Map<string, string>()
-  for (const item of automations) nameById.set(item.id, item.name)
+  const timeZoneById = new Map<string, string>()
+  for (const item of automations) {
+    nameById.set(item.id, item.name)
+    if (item.timeZone !== undefined) timeZoneById.set(item.id, item.timeZone)
+  }
   for (const run of runs) {
     const stored = (run.automationName || '').trim()
     if (stored !== '' && stored !== run.automationId && !nameById.has(run.automationId)) {
@@ -95,7 +99,7 @@ export function groupScheduledSessions(
         .map(run => ({
           id: run.sessionId as string,
           running: run.status === 'running' || run.status === 'queued',
-          label: formatRunStamp(run.startedAt ?? run.scheduledFor) + ' - ' + name,
+          label: formatRunStamp(run.startedAt ?? run.scheduledFor, timeZoneById.get(id)) + ' - ' + name,
         })),
     }
   }).filter(group => group.sessions.length > 0)

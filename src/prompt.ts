@@ -18,7 +18,7 @@ export const AUTOMATION_CREATE_DESCRIPTION = [
   '为当前工作区创建一条独立 DSH 自动化；每次触发开启全新 Session，不继承当前对话。',
   '工作日早上 8 点示例：kind=weekly, weekdays=["MO","TU","WE","TH","FR"], time="08:00", time_zone="Asia/Shanghai"。',
   '同时支持 hourly(minute)、monthly(month_day + time) 和 custom(every_days + time)。',
-  '必须使用显式 IANA 时区。最短间隔 5 分钟。默认只读；只有需要改文件时才选 workspace-write。',
+  '必须使用显式 IANA 时区。最短间隔 5 分钟。默认权限来自 Host；不需要写入时应显式选择 read-only，只有需要改文件时才选 workspace-write。',
 ].join('')
 
 export function shouldUseAutomationCreate(userText: string): boolean {

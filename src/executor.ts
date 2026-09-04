@@ -25,6 +25,7 @@ interface SessionEventReader {
   snapshotEvents?(): readonly SessionEventLike[]
 }
 
+// 该列表只限制无人值守可调用的工具类别；读写边界仍由已应用的 Host 权限预设决定。
 const UNATTENDED_TOOL_ALLOWLIST = new Set([
   'run_code',
   'bash', 'pwsh',
@@ -181,7 +182,11 @@ export async function executeAutomationRun(
     }))
     await handle.agent.whenIdle()
     await workspace.attachSession(sessionId)
-    pinAutomationSessionTitle(ctx, handle.agent.session, automationSessionTitle(definition.name, run.startedAt ?? run.scheduledFor))
+    pinAutomationSessionTitle(ctx, handle.agent.session, automationSessionTitle(
+      definition.name,
+      run.startedAt ?? run.scheduledFor,
+      definition.timeZone,
+    ))
     const firstSeq = handle.agent.session.seq
     handle.agent.followup(createUserMessage({
       content: [{ type: 'text', text: run.promptSnapshot }],

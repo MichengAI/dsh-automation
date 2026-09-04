@@ -54,6 +54,40 @@ export function normalizeSchedule(schedule: AutomationSchedule): AutomationSched
   return { ...schedule, weekdays: WEEKDAY_ORDER.filter(day => selected.has(day)) }
 }
 
+/** 按计划字段比较语义，避免对象字段顺序影响变更判断。 */
+export function isEqualSchedule(left: AutomationSchedule, right: AutomationSchedule): boolean {
+  const normalizedLeft = normalizeSchedule(left)
+  const normalizedRight = normalizeSchedule(right)
+  if (normalizedLeft.kind !== normalizedRight.kind || normalizedLeft.timeZone !== normalizedRight.timeZone) {
+    return false
+  }
+  switch (normalizedLeft.kind) {
+    case 'once':
+      return normalizedRight.kind === 'once' && normalizedLeft.at === normalizedRight.at
+    case 'interval':
+      return normalizedRight.kind === 'interval'
+        && normalizedLeft.everyMinutes === normalizedRight.everyMinutes
+        && normalizedLeft.anchor === normalizedRight.anchor
+    case 'hourly':
+      return normalizedRight.kind === 'hourly' && normalizedLeft.minute === normalizedRight.minute
+    case 'daily':
+      return normalizedRight.kind === 'daily' && normalizedLeft.time === normalizedRight.time
+    case 'weekly':
+      return normalizedRight.kind === 'weekly'
+        && normalizedLeft.time === normalizedRight.time
+        && normalizedLeft.weekdays.length === normalizedRight.weekdays.length
+        && normalizedLeft.weekdays.every((day, index) => day === normalizedRight.weekdays[index])
+    case 'monthly':
+      return normalizedRight.kind === 'monthly'
+        && normalizedLeft.day === normalizedRight.day
+        && normalizedLeft.time === normalizedRight.time
+    case 'custom':
+      return normalizedRight.kind === 'custom'
+        && normalizedLeft.everyDays === normalizedRight.everyDays
+        && normalizedLeft.time === normalizedRight.time
+  }
+}
+
 export function scheduleToRRule(schedule: AutomationSchedule): string {
   const normalized = normalizeSchedule(schedule)
   if (normalized.kind === 'once') {

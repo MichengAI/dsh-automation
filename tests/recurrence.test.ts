@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+  isEqualSchedule,
   latestDueOccurrence,
   nextOccurrence,
   normalizeSchedule,
@@ -38,6 +39,17 @@ test('每周计划按标准化星期顺序生成 RRULE', () => {
   })
   assert.deepEqual(schedule.kind === 'weekly' ? [...schedule.weekdays] : [], ['MO', 'FR'])
   assert.match(scheduleToRRule(schedule), /FREQ=WEEKLY;BYDAY=MO,FR/)
+})
+
+test('计划语义判等不受对象字段顺序和星期顺序影响', () => {
+  assert.equal(isEqualSchedule(
+    { kind: 'weekly', time: '09:00', weekdays: ['FR', 'MO'], timeZone: 'Asia/Shanghai' },
+    { kind: 'weekly', weekdays: ['MO', 'FR'], time: '09:00', timeZone: 'Asia/Shanghai' },
+  ), true)
+  assert.equal(isEqualSchedule(
+    { kind: 'daily', time: '09:00', timeZone: 'Asia/Shanghai' },
+    { kind: 'daily', time: '10:00', timeZone: 'Asia/Shanghai' },
+  ), false)
 })
 
 test('每小时计划按分钟对齐', () => {

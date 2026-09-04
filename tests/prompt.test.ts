@@ -27,4 +27,6 @@ test('工具描述和系统提示必须点名定时任务，并禁止默认建�
   assert.match(AUTOMATION_PROMPT_TEXT, /kind=monthly, month_day=31/)
   assert.match(AUTOMATION_PROMPT_TEXT, /kind=custom, every_days=3/)
   assert.match(AUTOMATION_CREATE_DESCRIPTION, /hourly\(minute\)/)
+  assert.match(AUTOMATION_CREATE_DESCRIPTION, /默认权限来自 Host/)
+  assert.doesNotMatch(AUTOMATION_CREATE_DESCRIPTION, /默认只读/)
 })

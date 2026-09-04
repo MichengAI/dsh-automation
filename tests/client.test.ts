@@ -308,10 +308,21 @@ test('UTC+ 时区的周分组使用本地周一而不是前一天 UTC 日期', (
 
 import { automationSessionTitle } from '../src/run-title.ts'
 
-test('automation session title uses run time and task name', () => {
-  const title = automationSessionTitle('自动执行-报表系统-生成部署', '2026-08-16T02:30:00.000Z')
-  assert.ok(title.includes('自动执行-报表系统-生成部署'))
-  assert.ok(title.includes('2026-08-16'))
+test('自动化会话标题按计划时区显示运行时间和任务名', () => {
+  const previous = process.env.TZ
+  process.env.TZ = 'UTC'
+  try {
+    const title = automationSessionTitle(
+      '自动执行-报表系统-生成部署',
+      '2026-08-16T01:30:00.000Z',
+      'Asia/Shanghai',
+    )
+    assert.ok(title.includes('自动执行-报表系统-生成部署'))
+    assert.ok(title.includes('2026-08-16 09:30'))
+  } finally {
+    if (previous === undefined) delete process.env.TZ
+    else process.env.TZ = previous
+  }
 })
 
 test('技能点选写入 /name，已存在则不重复', () => {

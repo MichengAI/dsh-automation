@@ -43,6 +43,7 @@ export declare function sessionUpdatedAtIso(value: number | string | undefined, 
 export declare function groupScheduledSessions(automations: readonly {
     readonly id: string;
     readonly name: string;
+    readonly timeZone?: string;
 }[], runs: readonly ScheduleRunLike[]): ScheduleRailGroup[];
 export interface OverviewAutomationLike {
     readonly id: string;

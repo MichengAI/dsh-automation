@@ -215,6 +215,12 @@ test('编辑已到期 once 的非计划字段时允许保留原时间', async ()
     { name: '改名后', schedule: definition.schedule },
   )
   assert.equal(updated.name, '改名后')
+  const sameSchedule = await service.update(
+    { sessionId: 'session_1', creatorKind: 'web', hostWide: true },
+    definition.id,
+    { schedule: { timeZone: 'UTC', at: definition.schedule.kind === 'once' ? definition.schedule.at : '', kind: 'once' } },
+  )
+  assert.deepEqual(sameSchedule.schedule, definition.schedule)
   await assert.rejects(() => service.update(
     { sessionId: 'session_1', creatorKind: 'web', hostWide: true },
     definition.id,

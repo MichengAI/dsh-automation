@@ -19,7 +19,7 @@ import {
   updateDefinition,
 } from './domain.ts'
 import { executeAutomationRun } from './executor.ts'
-import { latestDueOccurrence, nextOccurrence, normalizeSchedule } from './recurrence.ts'
+import { isEqualSchedule, latestDueOccurrence, nextOccurrence } from './recurrence.ts'
 import {
   normalizePermissionPreset,
   type PermissionOption,
@@ -324,7 +324,7 @@ export class AutomationService {
       }
       try {
         const scheduleChanged = fields.schedule !== undefined
-          && JSON.stringify(normalizeSchedule(fields.schedule)) !== JSON.stringify(current.schedule)
+          && !isEqualSchedule(fields.schedule, current.schedule)
         if (scheduleChanged && fields.schedule?.kind === 'once'
           && nextOccurrence(fields.schedule, now) === null) {
           throw new AutomationRequestError('一次性自动化必须安排在未来时间。')
