@@ -13,7 +13,6 @@ interface SessionEventReader {
 }
 /** 对不保证及时响应 AbortSignal 的宿主任务设置第二道退出上限。 */
 export declare function settlesWithin(promise: Promise<unknown>, timeoutMs: number): Promise<boolean>;
-export declare function unattendedToolGuardReason(name: string, args: unknown): string | undefined;
 export interface RunCompletion {
     readonly sessionId?: string;
     readonly status: 'succeeded' | 'failed' | 'cancelled';

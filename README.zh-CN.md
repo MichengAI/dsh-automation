@@ -124,6 +124,7 @@ dsh --profile web --dump-config
 | 项目 | 行为 |
 | --- | --- |
 | 权限 | 列表和默认值直接来自 Host 官方 `permissionPresets` 服务；支持 Host 注册的自定义预设。 |
+| 工具调用 | 遵循 Host 的工具可用性、权限和审批检查，不额外维护固定工具白名单或禁止后台 shell；后台进程由 Host 管理。 |
 | 完全访问 | 选择官方 `danger-full-access` 时显示与 Chat 一致的风险确认和橙色提示。 |
 | 审批 | 对话创建跟随当前会话策略。Full access（`never`）直接创建；Workspace Write / Read Only（`ask`）走官方授权卡。无人值守运行仍是 fail-closed 的 `never`。 |
 | 重试 | 已经开始的运行不会自动重试。 |

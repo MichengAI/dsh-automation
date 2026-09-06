@@ -4,6 +4,10 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.32 — 2026-09-06
+
+- Removed the fixed unattended tool allowlist and background-shell ban so tool calls and background process management follow DSH. Retained automatic rejection of approval requests and task timeout cancellation.
+
 ## 0.1.31 — 2026-09-05
 
 - Aligned the scheduled-task editor with the Host modal surface, elevation, themed mask, and borderless close icon while preserving its existing dismissal behavior.

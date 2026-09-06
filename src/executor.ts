@@ -8,7 +8,6 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { WorkspaceId } from '@deepseek-ai/dsh-workspace'
-import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { automationSessionTitle } from './run-title.ts'
 import type { PermissionPresetService } from './permission-presets.ts'
 import type { AutomationDefinition, AutomationRun } from './types.ts'
@@ -25,16 +24,6 @@ interface SessionEventReader {
   snapshotEvents?(): readonly SessionEventLike[]
 }
 
-// 该列表只限制无人值守可调用的工具类别；读写边界仍由已应用的 Host 权限预设决定。
-const UNATTENDED_TOOL_ALLOWLIST = new Set([
-  'run_code',
-  'bash', 'pwsh',
-  'read', 'read_image', 'write', 'edit', 'str_replace_editor',
-  'glob', 'grep', 'lsp',
-  'web_search', 'web_fetch',
-  'skill',
-  'session_search', 'session_trace', 'session_event_read', 'session_event_search', 'session_event_trace',
-])
 const CANCEL_CONVERGENCE_TIMEOUT_MS = 10_000
 
 /** 对不保证及时响应 AbortSignal 的宿主任务设置第二道退出上限。 */
@@ -48,17 +37,6 @@ export async function settlesWithin(promise: Promise<unknown>, timeoutMs: number
   } finally {
     if (timer !== undefined) clearTimeout(timer)
   }
-}
-
-export function unattendedToolGuardReason(name: string, args: unknown): string | undefined {
-  if ((name === 'bash' || name === 'pwsh')
-    && typeof args === 'object' && args !== null
-    && (args as Record<string, unknown>).run_in_background === true) {
-    return '无人值守运行不允许启动后台进程。'
-  }
-  return UNATTENDED_TOOL_ALLOWLIST.has(name)
-    ? undefined
-    : `工具 '${name}' 不在无人值守自动化允许列表中。`
 }
 
 export interface RunCompletion {
@@ -177,7 +155,6 @@ export async function executeAutomationRun(
         const agent = agentCtx.agent
         if (agent === undefined) throw new Error('automation setup has no scoped Agent')
         applyUnattendedPermission(ctx.permissionPresets, agent.session, target.permissionPreset)
-        agentCtx.tools.guard((exec: ToolExecution) => unattendedToolGuardReason(exec.name, exec.arguments))
       },
     }))
     await handle.agent.whenIdle()
