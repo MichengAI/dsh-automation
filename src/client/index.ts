@@ -1,11 +1,4 @@
 import { createElement, useEffect, type ComponentType } from 'react'
-import { createRoot } from 'react-dom/client'
-import {
-  IconCloseOutline16,
-  IconCopyOutline16,
-  IconDownloadOutline16,
-  IconRefreshOutline16,
-} from '@deepseek-ai/dsh-client-ui-primitives'
 import { AutomationView } from './AutomationView.js'
 import type { ClientContext, NativeSwitcherProps, SessionSelector, WorkspaceSelector } from './contracts.js'
 import { en, NS, zh } from './locales.js'
@@ -28,16 +21,31 @@ import { observePluginUpdate, type PluginUpdateIconName } from './plugin-update-
 export const name = 'dsh-automation-client'
 export const inject = ['slots', 'locale', 'connection', 'sessions']
 
-const UPDATE_ICON_COMPONENTS: Record<PluginUpdateIconName, ComponentType<{ readonly size?: number }>> = {
-  refresh: IconRefreshOutline16,
-  download: IconDownloadOutline16,
-  copy: IconCopyOutline16,
-  close: IconCloseOutline16,
+const UPDATE_ICON_PATHS: Record<PluginUpdateIconName, readonly string[]> = {
+  refresh: ['M13.5 5.5V2.5m0 0h-3m3 0-2.1 2.1A5.5 5.5 0 1 0 13.2 12'],
+  download: ['M8 2v8m0 0 3-3m-3 3-3-3M3 13v2h10v-2'],
+  copy: ['M5 5h8v8H5z', 'M3 3h8'],
+  close: ['m4 4 8 8M12 4 4 12'],
 }
 
 function createPluginUpdateIcon(name: PluginUpdateIconName): HTMLElement {
   const element = document.createElement('span')
-  createRoot(element).render(createElement(UPDATE_ICON_COMPONENTS[name], { size: 16 }))
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('viewBox', '0 0 16 16')
+  svg.setAttribute('width', '16')
+  svg.setAttribute('height', '16')
+  svg.setAttribute('fill', 'none')
+  svg.setAttribute('stroke', 'currentColor')
+  svg.setAttribute('stroke-width', '1.5')
+  svg.setAttribute('stroke-linecap', 'round')
+  svg.setAttribute('stroke-linejoin', 'round')
+  svg.setAttribute('aria-hidden', 'true')
+  for (const d of UPDATE_ICON_PATHS[name]) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path.setAttribute('d', d)
+    svg.append(path)
+  }
+  element.append(svg)
   return element
 }
 

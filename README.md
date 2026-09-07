@@ -104,6 +104,10 @@ dsh --profile web --dump-config
 
 Restart DSH Web and hard-refresh the browser. Local installation reads and applies `cordis.patch.yml`; do not copy `lib` files manually.
 
+## Updates
+
+The settings title shows the installed version and a **Check for updates** button. When a newer release is available, **Update automatically** runs only when the DSH CLI or Desktop update service is available; otherwise, the dialog provides a profile-specific manual command to copy and run.
+
 ## Usage
 
 Open **Settings → Scheduled Tasks**, then use the panel as follows:

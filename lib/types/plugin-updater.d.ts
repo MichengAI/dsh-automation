@@ -15,6 +15,7 @@ export type PluginUpdaterOptions = {
     readonly manifestUrl: URL;
 };
 export declare function isTrustedUpdateRequest(request: HostRequest): boolean;
+export declare function isDshCliEntry(entry: string, manifest: unknown, packageRoot: string): boolean;
 export declare function isNewerVersion(currentValue: string, candidateValue: string): boolean;
 export declare function registerPluginUpdater(ctx: Context, options: PluginUpdaterOptions): () => void;
 export {};
