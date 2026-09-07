@@ -1,4 +1,11 @@
 import { createElement, useEffect, type ComponentType } from 'react'
+import { createRoot } from 'react-dom/client'
+import {
+  IconCloseOutline16,
+  IconCopyOutline16,
+  IconDownloadOutline16,
+  IconRefreshOutline16,
+} from '@deepseek-ai/dsh-client-ui-primitives'
 import { AutomationView } from './AutomationView.js'
 import type { ClientContext, NativeSwitcherProps, SessionSelector, WorkspaceSelector } from './contracts.js'
 import { en, NS, zh } from './locales.js'
@@ -16,9 +23,23 @@ import { AUTOMATION_SESSION_PREFIX, ensureOpenScheduledSession, hasCodexUiSideba
 import { installStyles } from './styles.js'
 import { openSettingsSection } from './settings-navigation.js'
 import { requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
+import { observePluginUpdate, type PluginUpdateIconName } from './plugin-update-ui.js'
 
 export const name = 'dsh-automation-client'
 export const inject = ['slots', 'locale', 'connection', 'sessions']
+
+const UPDATE_ICON_COMPONENTS: Record<PluginUpdateIconName, ComponentType<{ readonly size?: number }>> = {
+  refresh: IconRefreshOutline16,
+  download: IconDownloadOutline16,
+  copy: IconCopyOutline16,
+  close: IconCloseOutline16,
+}
+
+function createPluginUpdateIcon(name: PluginUpdateIconName): HTMLElement {
+  const element = document.createElement('span')
+  createRoot(element).render(createElement(UPDATE_ICON_COMPONENTS[name], { size: 16 }))
+  return element
+}
 
 type MutableSlotEntry = {
   component?: ComponentType<any>
@@ -72,6 +93,15 @@ function installSettingsNavIcon(labels: () => readonly string[]): () => void {
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => installStyles(), 'dsh-automation: styles')
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-automation: locale')
+  ctx.effect(() => observePluginUpdate({
+    endpoint: '/api/michengai/dsh-automation/update',
+    packageName: '@michengai/dsh-automation',
+    titleRowSelector: '.dsh-st-heading-row',
+    linksSelector: '.dsh-st-heading-links',
+    zhName: '定时任务',
+    enName: 'Scheduled tasks',
+    createIcon: createPluginUpdateIcon,
+  }), 'dsh-automation: plugin update ui')
   const t = ctx.locale.bind(NS)
   const permissionT = ctx.locale.bind('permission.access')
   const modelT = ctx.locale.bind('model')

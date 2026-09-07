@@ -66,6 +66,10 @@ declare module '@deepseek-ai/dsh-client-ui-primitives' {
   export function IconChevronDownOutline14(props: { readonly className?: string }): JSX.Element
   export function IconChevronRightOutline14(props: { readonly className?: string }): JSX.Element
   export function IconListPenOutline16(props: { readonly size?: number; readonly className?: string }): JSX.Element
+  export function IconRefreshOutline16(props: { readonly size?: number }): JSX.Element
+  export function IconDownloadOutline16(props: { readonly size?: number }): JSX.Element
+  export function IconCopyOutline16(props: { readonly size?: number }): JSX.Element
+  export function IconCloseOutline16(props: { readonly size?: number }): JSX.Element
   export function RiskConfirmation(props: {
     readonly open: boolean
     readonly title: string
@@ -142,4 +146,12 @@ declare module '@deepseek-ai/dsh-tools' {
 declare module "react-dom" {
   import type { ReactNode, ReactPortal } from "react"
   export function createPortal(children: ReactNode, container: Element | DocumentFragment): ReactPortal
+}
+
+declare module 'react-dom/client' {
+  import type { ReactNode } from 'react'
+
+  export function createRoot(container: Element): {
+    render(node: ReactNode): void
+  }
 }

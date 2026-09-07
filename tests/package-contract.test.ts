@@ -4,6 +4,8 @@ import test from 'node:test'
 
 interface PackageManifest {
   name?: string
+  packageManager?: string
+  engines?: { node?: string }
   exports?: Record<string, { default?: string } | string>
   files?: string[]
   peerDependencies?: Record<string, string>
@@ -24,6 +26,8 @@ test('包保持可安装的 DSH bundle 与 Web client 契约', async () => {
   ) as PackageManifest
 
   assert.equal(manifest.name, '@michengai/dsh-automation')
+  assert.equal(manifest.packageManager, 'pnpm@11.22.0')
+  assert.equal(manifest.engines?.node, '^22.19.0 || >=24.0.0')
   assert.equal(manifest.dsh?.bundle?.patch, './cordis.patch.yml')
   assert.equal(manifest.dsh?.client?.platform, 'web')
   assert.deepEqual(manifest.dsh?.client?.inject, [
@@ -31,6 +35,7 @@ test('包保持可安装的 DSH bundle 与 Web client 契约', async () => {
     '@deepseek-ai/dsh-client-locale',
     '@deepseek-ai/dsh-client-ui-settings',
     '@deepseek-ai/dsh-client-ui-conversation',
+    '@deepseek-ai/dsh-client-ui-primitives',
   ])
   assert.deepEqual(manifest.exports?.['./client'], {
     types: './lib/types/client/index.d.ts',

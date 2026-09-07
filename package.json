@@ -3,6 +3,7 @@
   "version": "0.1.32",
   "description": "在独立 DSH Session 中按计划执行编码任务，支持 Web 设置页与 Agent 双入口管理。",
   "type": "module",
+  "packageManager": "pnpm@11.22.0",
   "main": "./lib/index.js",
   "types": "./lib/types/index.d.ts",
   "exports": {
@@ -50,7 +51,8 @@
         "@deepseek-ai/dsh-client-connection",
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-client-ui-conversation"
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-primitives"
       ]
     }
   },
@@ -74,6 +76,7 @@
     "@deepseek-ai/dsh-client-ui-conversation": ">=0.1.0-rc.5 <0.2.0",
     "@deepseek-ai/dsh-client-ui-primitives": ">=0.1.0-rc.5 <0.2.0",
     "@deepseek-ai/dsh-client-ui-settings": ">=0.1.0-rc.5 <0.2.0",
+    "@deepseek-ai/dsh-host-webserver": ">=0.1.0-rc.5 <0.2.0",
     "@deepseek-ai/dsh-llm": ">=0.1.0-rc.5 <0.2.0",
     "@deepseek-ai/dsh-permission-presets": ">=0.1.0-rc.5 <0.2.0",
     "@deepseek-ai/dsh-session": ">=0.1.0-rc.5 <0.2.0",
@@ -99,6 +102,7 @@
     "@deepseek-ai/dsh-client-ui-conversation": "0.1.2-rc.1",
     "@deepseek-ai/dsh-client-ui-primitives": "0.1.2-rc.1",
     "@deepseek-ai/dsh-client-ui-settings": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-host-webserver": "0.1.2-rc.1",
     "@deepseek-ai/dsh-llm": "0.1.2-rc.1",
     "@deepseek-ai/dsh-permission-presets": "0.1.2-rc.1",
     "@deepseek-ai/dsh-session": "0.1.2-rc.1",

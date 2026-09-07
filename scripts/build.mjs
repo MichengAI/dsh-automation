@@ -60,6 +60,7 @@ await build({
   external: [
     'react',
     'react-dom',
+    'react-dom/client',
     'react/jsx-runtime',
     '@deepseek-ai/dsh-client-ui-primitives',
   ],

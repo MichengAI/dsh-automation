@@ -8,11 +8,12 @@ import { AUTOMATION_PROMPT_NAME, AUTOMATION_PROMPT_ORDER, AUTOMATION_PROMPT_TEXT
 import { registerAutomationRpc } from './rpc.ts'
 import { AutomationService } from './service.ts'
 import { registerAutomationTools } from './tools.ts'
+import { registerPluginUpdater } from './plugin-updater.ts'
 
 export const name = 'dsh-automation'
 export const inject = [
   'storageDomain', 'agents', 'sessions', 'workspaceRegistry', 'agentDefaultModel',
-  'agentPresets', 'permissionPresets', 'tools', 'connection', 'llm',
+  'agentPresets', 'permissionPresets', 'tools', 'connection', 'llm', 'webServer',
 ]
 
 export interface Config {
@@ -77,6 +78,11 @@ export function humanApprovalReason(toolName: string): string {
 }
 
 export async function apply(ctx: Context, rawConfig: Config): Promise<void> {
+  ctx.effect(() => registerPluginUpdater(ctx, {
+    endpoint: '/api/michengai/dsh-automation/update',
+    packageName: '@michengai/dsh-automation',
+    manifestUrl: new URL('../package.json', import.meta.url),
+  }), 'dsh-automation: plugin updater')
   const config = rawConfig as Required<Config>
   await ctx.effect(async () => {
     let alive = true
