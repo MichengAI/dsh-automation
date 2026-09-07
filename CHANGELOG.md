@@ -6,6 +6,10 @@ The five most recent published versions are listed below. Git tags and GitHub Re
 
 ## Unreleased
 
+## 0.1.34 - 2026-09-07
+
+- Aligned the release workflow's pnpm version with the package-declared version so tag publishing can start its checks.
+
 ## 0.1.33 - 2026-09-07
 
 - Added independent in-product update checks with automatic updates when a verified DSH update service is available and a profile-specific manual fallback otherwise.
