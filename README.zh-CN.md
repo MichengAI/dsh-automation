@@ -21,14 +21,13 @@
 
 ## 功能概览
 
-- 在「设置 → 定时任务」里管理计划任务。
-- 支持 Web 设置页和 Agent 工具创建、暂停、恢复、立即运行和删除。
-- 每次到期都启动全新 root Agent 和 Session，不继承来源对话。
-- 计划类型包括不重复、间隔、每小时、每天、每周、每月和自定义间隔天数。
-- 新建弹窗可选择工作目录、模型、技能，以及 Host 官方提供的权限预设。
-- 在任意对话里描述定时任务即可创建；Full access 直接执行，其他权限走官方授权卡。
-- 运行状态包含 `queued`、`running`、`succeeded`、`failed`、`skipped`、`cancelled`。
-- 侧栏提供「定时」页签：文件夹是任务名称，子会话是执行时间。原生下只包裹官方任务树，不依赖 `dsh-codex-ui`。
+把需要按时重复的工作交给 DSH。你可以在设置页安排任务，也可以在对话中说明执行时间和要求，再回看每次运行的结果。
+
+- **安排一次或重复执行**：支持间隔、每小时、每天、每周、每月和自定义间隔天数。
+- **选择工作环境**：设置工作目录、模型、技能和权限。
+- **随时调整安排**：创建、暂停、恢复、立即运行或删除任务。
+- **查看执行结果**：在侧栏「定时」中按任务和执行时间回看会话，在设置页筛选运行记录。
+- **每次独立运行**：使用已保存的任务说明，不继承创建任务时的整段对话。
 
 ## 界面预览
 
@@ -40,7 +39,7 @@
 
 ![定时任务设置页](assets/screenshots/settings-tasks.png)
 
-在对话里描述任务。Agent 会调用 `automation_create`，并弹出官方授权：
+在对话里描述任务。DSH 会按所选权限模式处理授权：
 
 ![通过对话创建定时任务](assets/screenshots/chat-create.png)
 
@@ -56,13 +55,20 @@
 
 ## DSH 产品生态
 
-本产品既可以独立安装，也可以随桌面端或 Web 套件一起使用。它们共享同一个 DSH 核心，但面向不同的使用方式；在原生 DSH 下，本产品不依赖 Codex UI：
+想直接使用完整工作台，可下载 [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop/releases)；已有 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 环境，可按需独立安装以下 8 个自研插件。桌面端已随附这些插件。
 
-| 产品 | 与本产品的关系 |
+| 插件 | 你可以用它做什么 |
 | --- | --- |
-| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | 本产品的运行宿主，提供模型、会话、工具和插件系统 |
-| [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop) | 下载安装即用的桌面产品，已内置本产品和其他 5 个功能产品 |
-| 6 个功能产品 | [Codex UI](https://github.com/MichengAI/dsh-codex-ui) · [IM Connect](https://github.com/MichengAI/dsh-im-connect) · [Automation](https://github.com/MichengAI/dsh-automation) · [Skills Manager](https://github.com/MichengAI/dsh-skills-manager) · [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) · [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) |
+| [Codex UI](https://github.com/MichengAI/dsh-codex-ui) | 整理项目与会话、搜索任务、跳转对话轮次 |
+| [IM Connect](https://github.com/MichengAI/dsh-im-connect) | 从微信、飞书、钉钉等消息平台下任务、收回复 |
+| [Automation](https://github.com/MichengAI/dsh-automation) | 按计划执行任务，查看每次运行的结果 |
+| [Skills Manager](https://github.com/MichengAI/dsh-skills-manager) | 统一查找、启停、创建和导入本机技能 |
+| [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) | 搜索、恢复或清理已归档会话 |
+| [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) | 按任务选择并召唤专业角色 |
+| [BTW](https://github.com/MichengAI/dsh-btw) | 在当前上下文中临时旁问，不打断主任务 |
+| [Simplify](https://github.com/MichengAI/dsh-simplify) | 用 /simplify 整理 Git 改动范围内的代码 |
+
+桌面端介绍与下载站的源码见[官网仓库](https://github.com/MichengAI/dsh-codex-desktop-website)。
 
 ## 前置条件
 
@@ -72,7 +78,15 @@
 
 ## 安装
 
-`dsh plugin add` 会转发到 profile 目录里的 `pnpm add`。不写版本、不指定官方源时，本机镜像可能让你停在旧版。
+以下安装命令使用官方 npm 源。
+
+### 让 Agent 帮你安装（推荐）
+
+把下面这段话发给任意能够执行本机终端命令的 Agent。将 `web` 替换为实际使用的 profile；安装完成后，在 DSH 中使用本插件。
+
+```text
+请将 DSH 插件 @michengai/dsh-automation 安装到本机 web profile，执行：dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https://registry.npmjs.org/。安装后执行 dsh --profile web --dump-config，确认配置包含 dsh-automation，并告诉我如何重新加载 DSH 和开始使用。
+```
 
 ### 从 npm 安装
 
@@ -84,25 +98,6 @@ dsh --profile web --dump-config
 ```
 
 安装后重启 DSH Web，并在浏览器硬刷新。需要钉死某一版时，把 `@latest` 换成 `@0.1.5`。
-
-### 从源码安装
-
-适用于调试或使用未发布改动。克隆后的目录会直接作为插件安装路径：
-
-```powershell
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$OutputEncoding = [System.Text.Encoding]::UTF8
-Set-Location D:\Repository\deepseek-harness-plugin
-git clone https://github.com/MichengAI/dsh-automation.git
-Set-Location .\dsh-automation
-pnpm install
-pnpm test
-pnpm build
-dsh plugin --profile web add .
-dsh --profile web --dump-config
-```
-
-完成后重启 DSH Web 并硬刷新浏览器。`dsh plugin ... add .` 会自动读取并应用 `cordis.patch.yml`；不要手工复制 `lib` 文件。
 
 ## 在线更新
 
@@ -138,6 +133,25 @@ dsh --profile web --dump-config
 计划只表达未来意图，不是缓存下来的授权。
 
 ## 二次开发
+
+### 从源码安装
+
+适用于调试或使用未发布改动。克隆后的目录会直接作为插件安装路径：
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+Set-Location D:\Repository\deepseek-harness-plugin
+git clone https://github.com/MichengAI/dsh-automation.git
+Set-Location .\dsh-automation
+pnpm install
+pnpm test
+pnpm build
+dsh plugin --profile web add .
+dsh --profile web --dump-config
+```
+
+完成后重启 DSH Web 并硬刷新浏览器。`dsh plugin ... add .` 会自动读取并应用 `cordis.patch.yml`；不要手工复制 `lib` 文件。
 
 当前源码在 `src`，构建产物在 `lib`：
 

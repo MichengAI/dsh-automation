@@ -21,14 +21,13 @@
 
 ## Features
 
-- Manage scheduled tasks from **Settings → Scheduled Tasks**.
-- Create, pause, resume, run now, and delete rules from the Web UI or Agent tools.
-- Start each occurrence in a fresh root Agent and Session. Source-chat history is not inherited.
-- Support once, interval, hourly, daily, weekly, monthly, and custom-every-N-days schedules.
-- Pick workspace, model, skills, and any permission preset exposed by the Host.
-- Create from chat: describe the schedule in any conversation, then confirm with the official approval card.
-- Keep durable run history: `queued`, `running`, `succeeded`, `failed`, `skipped`, `cancelled`.
-- Add a sidebar **Scheduled** tab. Folders are task names and child sessions are run times. On stock DSH it wraps the official workspace tree and does not depend on `dsh-codex-ui`.
+Let DSH handle work on a schedule. Set up tasks in Settings or describe the timing and requirements in a conversation, then review each run.
+
+- **Run once or repeat**: choose intervals, hourly, daily, weekly, monthly, or every N days.
+- **Choose the working environment**: set the directory, model, skills, and permissions.
+- **Adjust the schedule anytime**: create, pause, resume, run immediately, or delete tasks.
+- **Review results**: browse task conversations by name and run time in the **Scheduled** tab, or filter run history in Settings.
+- **Keep each run independent**: each run uses the saved task instructions and does not inherit the conversation that created it.
 
 ## Interface
 
@@ -40,7 +39,7 @@ Open **Settings → Scheduled Tasks** to search, create, pause, and inspect rule
 
 ![Scheduled tasks settings](assets/screenshots/settings-tasks.png)
 
-Describe the job in chat. The agent calls `automation_create` and asks through the official approval card:
+Describe the job in chat. DSH handles approval according to the selected permission mode:
 
 ![Create a scheduled task from chat](assets/screenshots/chat-create.png)
 
@@ -56,13 +55,20 @@ Run history stays in Settings and can be filtered by day, week, month, task, or 
 
 ## DSH product ecosystem
 
-This product can be installed independently or used through the desktop app or Web suite. They share the same DSH core but serve different ways of working; on stock DSH, this product does not depend on Codex UI:
+For a ready-to-use workbench, download [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop/releases). If you already use [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), install any of these eight plugins individually. The desktop app includes all eight.
 
-| Product | Relationship to this product |
+| Plugin | What you can do |
 | --- | --- |
-| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) | The host runtime that provides models, sessions, tools, and the plugin system |
-| [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop) | A ready-to-install desktop product with this product and the other five feature products built in |
-| Six feature products | [Codex UI](https://github.com/MichengAI/dsh-codex-ui) · [IM Connect](https://github.com/MichengAI/dsh-im-connect) · [Automation](https://github.com/MichengAI/dsh-automation) · [Skills Manager](https://github.com/MichengAI/dsh-skills-manager) · [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) · [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) |
+| [Codex UI](https://github.com/MichengAI/dsh-codex-ui) | Organize projects and conversations, search tasks, and navigate chat turns |
+| [IM Connect](https://github.com/MichengAI/dsh-im-connect) | Send tasks and receive replies through your usual messenger |
+| [Automation](https://github.com/MichengAI/dsh-automation) | Schedule tasks and review each run |
+| [Skills Manager](https://github.com/MichengAI/dsh-skills-manager) | Find, enable, create, and import local skills |
+| [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) | Search, restore, or clean up archived conversations |
+| [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) | Choose and summon specialists for your task |
+| [BTW](https://github.com/MichengAI/dsh-btw) | Ask side questions without interrupting the main task |
+| [Simplify](https://github.com/MichengAI/dsh-simplify) | Use /simplify to improve code within your Git changes |
+
+The desktop introduction and download site is maintained in the [website repository](https://github.com/MichengAI/dsh-codex-desktop-website).
 
 ## Prerequisites
 
@@ -72,7 +78,15 @@ This product can be installed independently or used through the desktop app or W
 
 ## Installation
 
-`dsh plugin add` forwards to `pnpm add` in the profile directory. If you omit a version or the official registry, a local mirror may leave you on an old build.
+The installation commands below use the official npm registry.
+
+### Ask an agent to install it (recommended)
+
+Send the prompt below to any agent that can run terminal commands on your computer. Replace `web` with your actual profile. Once installed, use the plugin in DSH.
+
+```text
+Install the DSH plugin @michengai/dsh-automation into my local web profile by running: dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https://registry.npmjs.org/. Then run dsh --profile web --dump-config, confirm the configuration includes dsh-automation, and explain how to reload DSH and start using the plugin.
+```
 
 ### Install from npm
 
@@ -84,25 +98,6 @@ dsh --profile web --dump-config
 ```
 
 Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.5` instead of `@latest` when needed.
-
-### Install from source
-
-Use this for debugging or unpublished changes. The cloned directory becomes the plugin source path:
-
-```powershell
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$OutputEncoding = [System.Text.Encoding]::UTF8
-Set-Location D:\Repository\deepseek-harness-plugin
-git clone https://github.com/MichengAI/dsh-automation.git
-Set-Location .\dsh-automation
-pnpm install
-pnpm test
-pnpm build
-dsh plugin --profile web add .
-dsh --profile web --dump-config
-```
-
-Restart DSH Web and hard-refresh the browser. Local installation reads and applies `cordis.patch.yml`; do not copy `lib` files manually.
 
 ## Updates
 
@@ -138,6 +133,25 @@ Each dispatched run uses the saved prompt, workspace, model, and permission boun
 A schedule stores future intent. It is not a cached permission grant.
 
 ## Development
+
+### Install from source
+
+Use this for debugging or unpublished changes. The cloned directory becomes the plugin source path:
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+Set-Location D:\Repository\deepseek-harness-plugin
+git clone https://github.com/MichengAI/dsh-automation.git
+Set-Location .\dsh-automation
+pnpm install
+pnpm test
+pnpm build
+dsh plugin --profile web add .
+dsh --profile web --dump-config
+```
+
+Restart DSH Web and hard-refresh the browser. Local installation reads and applies `cordis.patch.yml`; do not copy `lib` files manually.
 
 Current sources live in `src` and build into `lib`:
 
