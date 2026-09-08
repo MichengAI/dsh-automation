@@ -180,8 +180,8 @@ pnpm build
 
 `pnpm check` 会连续执行类型检查、测试和构建。
 
-## 项目文档与许可证
+## 许可证
 
-项目状态、使用边界、技术架构和迭代记录从[文档交接入口](docs/00-交接入口/00-阅读导航.md)开始。补充说明见 NOTICE。
+补充说明见 [NOTICE](NOTICE)。
 
 本项目采用 [Apache License 2.0](LICENSE)。
