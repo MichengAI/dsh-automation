@@ -4,7 +4,7 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
-## Unreleased
+## 0.1.35 - 2026-09-09
 
 - Adjust model menu sizing and hint containers, and simplify model rows.
 
