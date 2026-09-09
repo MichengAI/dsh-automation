@@ -6,6 +6,10 @@ The five most recent published versions are listed below. Git tags and GitHub Re
 
 ## Unreleased
 
+- Adjust model menu sizing and hint containers, and simplify model rows.
+
+- Unified settings headings, descriptions, and action layouts; maintenance controls no longer squeeze titles or versions. The layout adapts to native DSH settings without Codex UI.
+
 ## 0.1.34 - 2026-09-07
 
 - Aligned the release workflow's pnpm version with the package-declared version so tag publishing can start its checks.

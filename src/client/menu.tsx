@@ -143,7 +143,7 @@ export function MenuRow({
         <span>{label}</span>
       </span>
       <span className="dsh-st-menu-row-side">
-        {hint}
+        {hint !== undefined && <span>{hint}</span>}
         {active === true && chevron !== true && <i className="dsh-st-tick" />}
         {chevron === true && <i className="dsh-st-next" />}
       </span>

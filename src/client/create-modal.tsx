@@ -410,7 +410,6 @@ function ModelPicker({
                 >
                   <span className="dsh-st-model-option-copy">
                     <span className="dsh-st-model-name">{item.label}</span>
-                    {item.description !== undefined && <span className="dsh-st-model-description">{item.description}</span>}
                   </span>
                   <span className="dsh-st-model-check">{value === modelKey && <IconCheckOutline16 />}</span>
                 </button>
