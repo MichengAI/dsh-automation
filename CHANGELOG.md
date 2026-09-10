@@ -4,7 +4,7 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
-## Unreleased
+## 0.1.36 - 2026-09-10
 
 - Support DSH `0.1.5-rc.1` Agent setup and Web RPC dependency injection while retaining legacy interfaces. Correct manual/scheduled history labels and cover the official patch engine, real Connection, AgentLoop, and permissions.
 - Accept both persisted session-list formats; preserve all session links when enumeration is unavailable or malformed, avoiding accidental unlinking of existing cold sessions.

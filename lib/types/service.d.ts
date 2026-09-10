@@ -1,7 +1,7 @@
 /** 持久化定义、occurrence 认领、时钟与执行调度。 */
-import type { Context } from '@deepseek-ai/cordis';
-import { type PermissionOption } from './permission-presets.ts';
-import type { AutomationDefinition, AutomationRun, AutomationSchedule, PermissionPreset, UpdateAutomationInput } from './types.ts';
+import type { Context } from "@deepseek-ai/cordis";
+import { type PermissionOption } from "./permission-presets.ts";
+import type { AutomationDefinition, AutomationRun, AutomationSchedule, PermissionPreset, UpdateAutomationInput } from "./types.ts";
 export declare const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
 export interface AutomationConfig {
     readonly maxConcurrentRuns: number;
@@ -48,7 +48,7 @@ export interface CreateRequest {
 }
 export interface AutomationScope {
     readonly sessionId: string;
-    readonly creatorKind: 'agent' | 'web';
+    readonly creatorKind: "agent" | "web";
     readonly hostWide?: boolean;
 }
 export interface AutomationSnapshot {
@@ -103,8 +103,8 @@ export declare class AutomationService {
     dispose(): Promise<void>;
     snapshot(scope: AutomationScope, signal?: AbortSignal): Promise<AutomationSnapshot>;
     create(scope: AutomationScope, request: CreateRequest, signal?: AbortSignal): Promise<AutomationDefinition>;
-    update(scope: AutomationScope, id: string, input: Omit<UpdateAutomationInput, 'now'> & {
-        readonly status?: 'active' | 'paused';
+    update(scope: AutomationScope, id: string, input: Omit<UpdateAutomationInput, "now"> & {
+        readonly status?: "active" | "paused";
     }, signal?: AbortSignal): Promise<AutomationDefinition>;
     delete(scope: AutomationScope, id: string, signal?: AbortSignal): Promise<{
         readonly id: string;
