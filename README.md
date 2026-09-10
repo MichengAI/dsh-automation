@@ -70,8 +70,8 @@ For a ready-to-use workbench, download [DSH Codex Desktop](https://github.com/Mi
 
 ## Prerequisites
 
-- The current source uses DSH `0.1.5-rc.1` for development and real Host compatibility tests, while retaining the legacy Agent setup callback and session-list formats. Back up automation storage and sessions in the Profile before upgrading the Host; V3 sessions cannot be read after downgrading.
-- Official DSH peerDependencies are exactly `0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1`; development dependencies remain pinned to `0.1.5-rc.1`. Use one consistent official package version within each Host.
+- The current source uses DSH `0.1.5-rc.2` for development and real Host compatibility tests, while retaining the legacy Agent setup callback and session-list formats. Back up automation storage and sessions in the Profile before upgrading the Host; V3 sessions cannot be read after downgrading.
+- Official DSH peerDependencies are exactly `0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2`; development dependencies remain pinned to `0.1.5-rc.2`. Use one consistent official package version within each Host.
 - Other versions are outside the declared compatibility range. Installers may warn, and strict peer validation rejects them. Extend and pass the version matrix before adding a new rc.
 - The Connection patch replaces the Web bundle's configured injection list with `[webServer, webRuntime]`; Loader still merges dependencies declared by the plugin source. Custom Hosts with additional configured injections must retain these two entries and their extra dependencies in a later Profile patch. This patch does not automatically merge other bundles' lists.
 - A working DeepSeek Harness Web installation with `dsh` available in PowerShell.

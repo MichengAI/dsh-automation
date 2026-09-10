@@ -38,8 +38,8 @@ class FixedAdapter extends LlmAdapter {
   }
 }
 
-const hostVersion = process.env.DSH_TEST_VERSION ?? "0.1.5-rc.1";
-const explicitAgent = hostVersion === "0.1.5-rc.1";
+const hostVersion = process.env.DSH_TEST_VERSION ?? "0.1.5-rc.2";
+const explicitAgent = ["0.1.5-rc.1", "0.1.5-rc.2"].includes(hostVersion);
 
 test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动化 RPC`, async (t) => {
   const ctx = new Context();

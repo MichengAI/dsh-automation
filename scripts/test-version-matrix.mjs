@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
-const versions = ['0.1.0-rc.8', '0.1.1-rc.2', '0.1.2-rc.1', '0.1.5-rc.1']
+const versions = ['0.1.0-rc.8', '0.1.1-rc.2', '0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2']
 const range = versions.join(' || ')
 for (const [name, value] of Object.entries(manifest.peerDependencies)) {
   if (name.startsWith('@deepseek-ai/dsh-')) assert.equal(value, range, name)
@@ -29,6 +29,27 @@ run('npm', ['pack', '--ignore-scripts', '--pack-destination', directory], root)
 const archive = (await readdir(directory)).find(name => name.endsWith('.tgz'))
 assert.ok(archive)
 const results = []
+// 官方间接 peer 使用 ^ 范围；新版发布后也必须保持每组宿主依赖完整同版。
+async function pinOfficialDependencies(dependencies, version) {
+  const visited = new Set()
+  while (true) {
+    const pending = Object.keys(dependencies).filter(name => name.startsWith('@deepseek-ai/dsh-') && !visited.has(name))
+    if (pending.length === 0) return
+    const manifests = await Promise.all(pending.map(async name => {
+      const response = await fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}/${version}`, { signal: AbortSignal.timeout(30_000) })
+      if (!response.ok) throw new Error(`读取 ${name}@${version} 失败：HTTP ${response.status}`)
+      const metadata = await response.json()
+      assert.equal(metadata.version, version, name)
+      visited.add(name)
+      return metadata
+    }))
+    for (const metadata of manifests) {
+      for (const name of Object.keys({ ...metadata.dependencies, ...metadata.peerDependencies, ...metadata.optionalDependencies })) {
+        if (name.startsWith('@deepseek-ai/dsh-')) dependencies[name] = version
+      }
+    }
+  }
+}
 for (const version of versions) {
   const cwd = join(directory, version)
   await mkdir(cwd)
@@ -38,6 +59,7 @@ for (const version of versions) {
     for (const name of Object.keys(manifest.devDependencies)) {
       if (name.startsWith('@deepseek-ai/dsh-')) dependencies[name] = version
     }
+    await pinOfficialDependencies(dependencies, version)
     await writeFile(join(cwd, 'package.json'), JSON.stringify({ private: true, type: 'module', dependencies }, null, 2))
     console.log(`${version}：安装独立依赖`)
     run('npm', ['install', '--ignore-scripts', '--strict-peer-deps', '--no-audit', '--no-fund', '--registry=https://registry.npmjs.org'], cwd)
