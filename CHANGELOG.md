@@ -4,8 +4,13 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.38 - 2026-09-11
+
+- Add support for DSH `0.1.5-rc.2`, retaining compatibility with `0.1.0-rc.8`, `0.1.1-rc.2`, `0.1.2-rc.1`, and `0.1.5-rc.1`.
+
 ## 0.1.37 - 2026-09-11
 
+- This version was not published to npm; install `0.1.38` or later.
 - Add support for DSH `0.1.5-rc.2`, retaining compatibility with `0.1.0-rc.8`, `0.1.1-rc.2`, `0.1.2-rc.1`, and `0.1.5-rc.1`.
 
 ## 0.1.36 - 2026-09-10
