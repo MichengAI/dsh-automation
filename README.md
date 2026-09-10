@@ -70,6 +70,8 @@ For a ready-to-use workbench, download [DSH Codex Desktop](https://github.com/Mi
 
 ## Prerequisites
 
+- The current source uses DSH `0.1.5-rc.1` for development and real Host compatibility tests, while retaining the legacy Agent setup callback and session-list formats. Back up automation storage and sessions in the Profile before upgrading the Host; V3 sessions cannot be read after downgrading.
+- Official DSH peerDependencies are exactly `0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1`; development dependencies remain pinned to `0.1.5-rc.1`. Use one consistent official package version within each Host.
 - A working DeepSeek Harness Web installation with `dsh` available in PowerShell.
 - Examples use the `web` profile; replace it with the target profile.
 - Source installation and development require Node.js 22.19+. npm installation does not require running `npm install` in an arbitrary directory.
@@ -178,7 +180,9 @@ pnpm test
 pnpm build
 ```
 
-`pnpm check` runs typecheck, tests, and build together.
+`pnpm check` runs typecheck, unit tests, real Host compatibility tests, and build. `pnpm test:host` bypasses runtime stubs and uses the official AgentLoop, Session V3, and permission service with a fixed local model adapter; it makes no external model calls. Browser interactions and real model calls require separate acceptance testing.
+
+`pnpm test:matrix` builds the package, then creates separate temporary npm environments for all four versions using network access. It checks strict peer installation, every official dependency version, the packaged entry point, real AgentLoop execution, and service regressions. All four versions pass. Persistence enumeration in service regressions uses in-memory fixtures for both cold-session formats; it does not validate on-disk migration of a real Profile. The printed evidence directory retains installation lockfiles, test logs, and `results.json`. The matrix does not modify development dependencies or connect to the user's Profile.
 
 ## License
 

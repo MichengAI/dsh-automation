@@ -4,6 +4,15 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## Unreleased
+
+- Fix Web Host startup failure caused by missing `webServer` injection in the new Connection dedicated RPC channel, preserve the Web Profile's `webRuntime` injection, and add real Connection registration/disposal regressions.
+- Distinguish manual, scheduled, and catch-up runs in history.
+- Restrict official Host compatibility to `0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1`, keeping development dependencies pinned to `0.1.5-rc.1`; add `pnpm test:matrix` for isolated installation and execution regressions across all four versions.
+- Support the explicit Agent setup callback in DSH `0.1.5-rc.1` while retaining legacy Host compatibility, fixing automation startup failures.
+- Accept persisted session snapshots without unlinking existing cold sessions during startup reconciliation; preserve links when persistence cannot be listed.
+- Update official development dependencies and prerelease compatibility ranges, and add unstubbed AgentLoop, V3 session, and permission-log regression coverage.
+
 ## 0.1.35 - 2026-09-09
 
 - Adjust model menu sizing and hint containers, and simplify model rows.

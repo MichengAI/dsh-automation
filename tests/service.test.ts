@@ -532,58 +532,67 @@ test('删除定义与运行完成并发时只更新历史任务名', async () =>
   assert.equal(completed?.automationName, '当前任务名')
 })
 
-test('启动时对宿主已不存在的 Session 摘掉 run.sessionId', async () => {
-  const definition = sampleDefinition()
-  const definitions = new MemoryTable<AutomationDefinition>()
-  const runs = new MemoryTable<AutomationRun>()
-  await definitions.put(definition.id, definition)
-  await runs.put('run_ghost', {
-    version: 1,
-    id: 'run_ghost',
-    automationId: definition.id,
-    definitionRevision: 1,
-    occurrenceKey: 'k3',
-    trigger: 'schedule',
-    scheduledFor: '2026-08-16T00:30:00.000Z',
-    status: 'succeeded',
-    promptSnapshot: definition.prompt,
-    targetSnapshot: {
-      workspaceId: definition.workspaceId,
-      cwd: definition.cwd,
-      agentPreset: definition.agentPreset,
-      provider: null,
-      model: null,
-      permissionPreset: 'read-only',
-    },
-    sessionId: 'ghost',
-    startedAt: '2026-08-16T00:30:00.000Z',
-    finishedAt: '2026-08-16T00:31:00.000Z',
-    summary: 'ok',
-    error: null,
-    unread: false,
-  })
-  const ctx = {
-    permissionPresets,
-    logger: { warn() {} },
-    get(name: string) { return name === 'sessionPersistence' ? { async list() { return [{ id: 'other' }] } } : undefined },
-    sessions: { list() { return [] } },
-    storageDomain: {
-      async open() {
-        return {
-          name: 'dsh_automation',
-          table(name: string) { return name === 'definitions' ? definitions : runs },
-          async close() {},
-        }
+for (const scenario of [
+  { name: '旧版已删除会话', stored: [{ id: 'other' }], live: [], expected: null },
+  { name: '旧版冷会话', stored: [{ id: 'ghost' }], live: [], expected: 'ghost' },
+  { name: '新版冷会话', stored: [{ header: { id: 'ghost' }, revision: 'r1' }], live: [], expected: 'ghost' },
+  { name: '新版已删除会话', stored: [{ header: { id: 'other' }, revision: 'r1' }], live: [], expected: null },
+  { name: '尚未落盘的活会话', stored: [], live: [{ id: 'ghost' }], expected: 'ghost' },
+  { name: '缺少持久化枚举', stored: undefined, live: [], expected: 'ghost' },
+]) {
+  test(`启动对账保留真实关联：${scenario.name}`, async () => {
+    const definition = sampleDefinition()
+    const definitions = new MemoryTable<AutomationDefinition>()
+    const runs = new MemoryTable<AutomationRun>()
+    await definitions.put(definition.id, definition)
+    await runs.put('run_ghost', {
+      version: 1,
+      id: 'run_ghost',
+      automationId: definition.id,
+      definitionRevision: 1,
+      occurrenceKey: 'k3',
+      trigger: 'schedule',
+      scheduledFor: '2026-08-16T00:30:00.000Z',
+      status: 'succeeded',
+      promptSnapshot: definition.prompt,
+      targetSnapshot: {
+        workspaceId: definition.workspaceId,
+        cwd: definition.cwd,
+        agentPreset: definition.agentPreset,
+        provider: null,
+        model: null,
+        permissionPreset: 'read-only',
       },
-    },
-    agents: { get() { return { session: { header: {}, requestHeader: () => ({ config: {} }) }, ctx: {} } } },
-    workspaceRegistry: { async resolveByPath() { return { id: 'ws_1', title: 'demo', path: 'D:\\work\\demo' } } },
-    agentDefaultModel: { currentSelection: () => ({ provider: 'deepseek', model: 'v4' }) },
-    agentPresets: { composedPreset: () => 'standard' },
-  }
-  const service = await AutomationService.open(ctx as never, config())
-  Object.assign(service, { definitions, runs })
-  const ghost = runs.get('run_ghost')
-  assert.equal(ghost?.status, 'succeeded')
-  assert.equal(ghost?.sessionId, null)
-})
+      sessionId: 'ghost',
+      startedAt: '2026-08-16T00:30:00.000Z',
+      finishedAt: '2026-08-16T00:31:00.000Z',
+      summary: 'ok',
+      error: null,
+      unread: false,
+    })
+    const ctx = {
+      permissionPresets,
+      logger: { warn() {} },
+      get(name: string) { return name === 'sessionPersistence' && scenario.stored !== undefined ? { async list() { return scenario.stored } } : undefined },
+      sessions: { list() { return scenario.live } },
+      storageDomain: {
+        async open() {
+          return {
+            name: 'dsh_automation',
+            table(name: string) { return name === 'definitions' ? definitions : runs },
+            async close() {},
+          }
+        },
+      },
+      agents: { get() { return { session: { header: {}, requestHeader: () => ({ config: {} }) }, ctx: {} } } },
+      workspaceRegistry: { async resolveByPath() { return { id: 'ws_1', title: 'demo', path: 'D:\\work\\demo' } } },
+      agentDefaultModel: { currentSelection: () => ({ provider: 'deepseek', model: 'v4' }) },
+      agentPresets: { composedPreset: () => 'standard' },
+    }
+    const service = await AutomationService.open(ctx as never, config())
+    Object.assign(service, { definitions, runs })
+    const ghost = runs.get('run_ghost')
+    assert.equal(ghost?.status, 'succeeded')
+    assert.equal(ghost?.sessionId, scenario.expected)
+  })
+}

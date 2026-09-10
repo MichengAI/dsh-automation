@@ -2,7 +2,6 @@
 
 declare module '@deepseek-ai/cordis' {
   export interface Context {
-    readonly agent?: any
     readonly agents: any
     readonly agentDefaultModel: any
     readonly agentPresets: any

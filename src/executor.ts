@@ -13,6 +13,7 @@ import type { PermissionPresetService } from './permission-presets.ts'
 import type { AutomationDefinition, AutomationRun } from './types.ts'
 
 interface TextBlock { readonly type: string; readonly text?: string }
+interface SetupAgent { readonly session: unknown }
 export interface SessionEventLike {
   readonly seq: number
   readonly type: string
@@ -149,10 +150,11 @@ export async function executeAutomationRun(
       ...(config.signal === undefined ? {} : { signal: config.signal }),
       meta: { cwd: target.cwd, agentPreset: target.agentPreset },
       agentOptions: { provider: selection.provider, model: selection.model },
-      setup: async (agentCtx: Context) => {
+      setup: async (agentCtx: Context, createdAgent?: SetupAgent) => {
         await ctx.agentPresets.mount(agentCtx, target.agentPreset)
         installModelSelection(agentCtx, { current: selection, assembled: undefined })
-        const agent = agentCtx.agent
+        // 0.1.5 显式传入 Agent；只有旧宿主才读取上下文入口。
+        const agent = createdAgent ?? (agentCtx as Context & { agent?: SetupAgent }).agent
         if (agent === undefined) throw new Error('automation setup has no scoped Agent')
         applyUnattendedPermission(ctx.permissionPresets, agent.session, target.permissionPreset)
       },
@@ -267,4 +269,3 @@ export function pinAutomationSessionTitle(ctx: Context, session: unknown, title:
     ctx.logger.warn(`dsh-automation: failed to pin session title: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
-

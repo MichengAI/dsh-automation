@@ -409,7 +409,7 @@ function RunRow({ run, t }: { readonly run: AutomationRunViewModel; readonly t: 
       <p>
         <span>{clockTime(run.startedAt ?? run.scheduledFor)}</span>
         {duration !== undefined && <span>{duration}</span>}
-        <span>{t('history.trigger')}</span>
+        <span>{t(run.trigger === 'manual' ? 'history.triggerManual' : run.trigger === 'catch-up' ? 'history.triggerCatchUp' : 'history.trigger')}</span>
       </p>
     </article>
   )

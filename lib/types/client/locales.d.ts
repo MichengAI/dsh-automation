@@ -71,6 +71,8 @@ export declare const en: {
     readonly 'history.week': "Week of {date}";
     readonly 'history.month': "{month}";
     readonly 'history.trigger': "Scheduled";
+    readonly 'history.triggerManual': "Manual";
+    readonly 'history.triggerCatchUp': "Catch-up";
     readonly 'history.nextApprox': "Next run in about {when}";
     readonly 'time.withinMinute': "about {count} minutes";
     readonly 'time.withinHour': "about {count} hours";

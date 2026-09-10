@@ -434,16 +434,22 @@ export class AutomationService {
 
   private async knownSessionIds(): Promise<Set<string> | undefined> {
     const live = this.ctx.sessions as { list?: () => readonly { readonly id: string }[] } | undefined
-    const persistence = this.ctx.get?.("sessionPersistence") as { list?: () => Promise<readonly { readonly id: string }[]> } | undefined
+    const persistence = this.ctx.get?.("sessionPersistence") as {
+      list?: () => Promise<readonly ({ readonly id: string } | { readonly header: { readonly id: string } })[]>
+    } | undefined
     const canListLive = typeof live?.list === "function"
     const canListStored = typeof persistence?.list === "function"
-    if (!canListLive && !canListStored) return undefined
+    // 活会话列表不包含已卸载的历史，不能单独作为删除关联的依据。
+    if (!canListStored) return undefined
     const ids = new Set<string>()
     if (canListLive && live?.list !== undefined) {
       for (const session of live.list()) ids.add(String(session.id))
     }
     if (canListStored && persistence?.list !== undefined) {
-      for (const header of await persistence.list()) ids.add(String(header.id))
+      for (const item of await persistence.list()) {
+        const header = 'header' in item ? item.header : item
+        ids.add(String(header.id))
+      }
     }
     return ids
   }
@@ -1013,5 +1019,4 @@ function readSkillTitle(file: string): string | undefined {
     return undefined
   }
 }
-
 

@@ -1,4 +1,9 @@
 # 一次安装同时挂载 Host 服务并发布 Web 客户端。
+# 新版 Connection 的独立 RPC 注册在自身作用域读取 webServer，需显式注入。
+- id: connection
+  inject:
+    - webServer
+    - webRuntime
 - insert:
     - id: dsh-automation
       name: '@michengai/dsh-automation'

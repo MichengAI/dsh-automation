@@ -28,8 +28,8 @@ for (const permission of ['read-only', 'workspace-write', 'danger-full-access', 
   })
 }
 
-for (const hostDenies of [false, true]) {
-  test(`执行器对后台 shell 和扩展工具遵循 Host ${hostDenies ? '拒绝' : '允许'}结果`, async () => {
+for (const [hostDenies, setupApi] of [[false, 'legacy'], [true, 'legacy'], [false, 'explicit'], [true, 'explicit']] as const) {
+  test(`${setupApi} 创建接口对后台 shell 和扩展工具遵循 Host ${hostDenies ? '拒绝' : '允许'}结果`, async () => {
     const definition = createDefinition({
       id: 'automation_permissions', name: '权限检查', prompt: '执行权限检查。',
       schedule: { kind: 'daily', time: '09:00', timeZone: 'Asia/Shanghai' },
@@ -62,7 +62,13 @@ for (const hostDenies of [false, true]) {
         session.append('turn/end', { reason: { kind: 'completed' } })
       },
     }
-    const agentCtx = { agent, tools: { guard(callback: (call: Call) => string | undefined) { guards.push(callback) } } }
+    const agentCtx = {
+      get agent() {
+        if (setupApi === 'explicit') throw new Error('新版 Host 不允许读取 ctx.agent')
+        return agent
+      },
+      tools: { guard(callback: (call: Call) => string | undefined) { guards.push(callback) } },
+    }
     const ctx = {
       workspaceRegistry: { get: () => ({ path: definition.cwd, status: async () => 'ok', attachSession: async () => {} }) },
       agentDefaultModel: { currentSelection: () => ({ provider: 'test', model: 'test' }) },
@@ -70,8 +76,8 @@ for (const hostDenies of [false, true]) {
       permissionPresets: { set(target: unknown, preset: string) { assert.equal(target, session); appliedPreset = preset } },
       agents: {
         withoutInitiator: (callback: () => unknown) => callback(),
-        async create(options: { setup: (ctx: unknown) => Promise<void> }) {
-          await options.setup(agentCtx)
+        async create(options: { setup: (ctx: unknown, agent?: unknown) => Promise<void> }) {
+          await options.setup(agentCtx, setupApi === 'explicit' ? agent : undefined)
           return { agent, async dispose() { disposed = true } }
         },
       },
@@ -141,4 +147,3 @@ test('sessionTitle.rename 失败只记日志，不抛出', () => {
   assert.equal(warnings.length, 1)
   assert.match(warnings[0] ?? '', /rename rejected/)
 })
-
