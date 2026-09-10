@@ -34,6 +34,7 @@ for (const version of versions) {
   await mkdir(cwd)
   try {
     const dependencies = { [manifest.name]: `file:${join(directory, archive)}`, '@deepseek-ai/cordis': '4.0.2', '@deepseek-ai/schemastery': '3.18.2', react: '18.3.1', tsx: '4.23.12', ...manifest.dependencies }
+    for (const name of ['js-yaml', '@deepseek-ai/cordis-plugin-include']) dependencies[name] = manifest.devDependencies[name]
     for (const name of Object.keys(manifest.devDependencies)) {
       if (name.startsWith('@deepseek-ai/dsh-')) dependencies[name] = version
     }

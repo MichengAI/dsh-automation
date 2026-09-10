@@ -2,6 +2,7 @@ import type { Translate } from './contracts.js'
 import type {
   AutomationSchedule,
   AutomationRunStatus,
+  AutomationRunViewModel,
   AutomationSnapshot,
   AutomationViewModel,
   CreateAutomationInput,
@@ -10,6 +11,11 @@ import type {
 } from './protocol.js'
 
 export type ScheduleKind = 'once' | 'interval' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom'
+
+/** 使用宿主实际产生的触发类型和统一文案，避免把手动运行显示为定时。 */
+export function formatRunTrigger(trigger: AutomationRunViewModel['trigger'], t: Translate): string {
+  return t(`run.trigger.${trigger}`)
+}
 
 export interface AutomationFormState {
   readonly name: string

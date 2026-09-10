@@ -1,5 +1,14 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { formatRunTrigger } from '../src/client/helpers.ts'
+import { en, zh } from '../src/client/locales.ts'
+
+test('运行历史按实际触发类型显示中英文文案', () => {
+  assert.equal(formatRunTrigger('manual', key => zh[key]), '手动触发')
+  assert.equal(formatRunTrigger('schedule', key => zh[key]), '定时触发')
+  assert.equal(formatRunTrigger('manual', key => en[key]), 'Manual')
+  assert.equal(formatRunTrigger('schedule', key => en[key]), 'Scheduled')
+})
 import { AutomationFormError, buildCreateInput, defaultFormState, deriveOverview, formatRelativeTime, formatSchedule, formFromAutomation, groupHistory, HISTORY_STATUS_OPTIONS, insertSkillGesture, prettyModelName, readSortDefault, skillGestureToken, sortAutomations, writeSortDefault } from '../src/client/helpers.ts'
 import type { AutomationViewModel } from '../src/client/protocol.ts'
 import { unwrapRpcResult } from '../src/client/protocol.ts'

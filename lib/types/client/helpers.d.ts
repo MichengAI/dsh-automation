@@ -1,6 +1,8 @@
 import type { Translate } from './contracts.js';
-import type { AutomationSchedule, AutomationSnapshot, AutomationViewModel, CreateAutomationInput, ModelOption, WorkspaceOption } from './protocol.js';
+import type { AutomationSchedule, AutomationRunViewModel, AutomationSnapshot, AutomationViewModel, CreateAutomationInput, ModelOption, WorkspaceOption } from './protocol.js';
 export type ScheduleKind = 'once' | 'interval' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
+/** 使用宿主实际产生的触发类型和统一文案，避免把手动运行显示为定时。 */
+export declare function formatRunTrigger(trigger: AutomationRunViewModel['trigger'], t: Translate): string;
 export interface AutomationFormState {
     readonly name: string;
     readonly prompt: string;

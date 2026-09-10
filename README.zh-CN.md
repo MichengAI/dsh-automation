@@ -72,6 +72,8 @@
 
 - 当前源码以 DSH `0.1.5-rc.1` 为开发和真实宿主测试基线，保留旧版 Agent 创建回调及会话列表格式的兼容。升级宿主前备份 Profile 中的自动化存储和会话目录；V3 会话不支持降级读取。
 - 官方 DSH peerDependencies 精确限定为 `0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1`；开发依赖固定为 `0.1.5-rc.1`。同一宿主中的官方包应使用一致版本。
+- 其他版本不在声明兼容范围内；安装器可能提示 peer 警告，启用严格 peer 校验时会失败。支持新 rc 前需扩展版本矩阵并通过验证。
+- Connection 补丁替换 Web bundle 的配置注入列表为 `[webServer, webRuntime]`，Loader 仍会合并插件源码声明的依赖。自定义宿主若增加了其他配置注入，需在后置 Profile 补丁中保留这两项并补齐自定义依赖；本补丁不自动合并其他 bundle 的列表。
 - 已可正常运行 DeepSeek Harness Web，且可在 PowerShell 中使用 `dsh`。
 - 以下示例使用 `web` profile；请替换为实际目标 profile。
 - 从源码安装或二次开发需要 Node.js 22.19+；仅从 npm 安装无需在任意目录执行 `npm install`。

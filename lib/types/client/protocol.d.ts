@@ -91,7 +91,7 @@ export interface AutomationRunViewModel {
     readonly automationId: string;
     readonly automationName: string;
     readonly status: AutomationRunStatus;
-    readonly trigger: 'schedule' | 'manual' | 'catch-up';
+    readonly trigger: 'schedule' | 'manual';
     readonly scheduledFor: string;
     readonly startedAt?: string;
     readonly finishedAt?: string;

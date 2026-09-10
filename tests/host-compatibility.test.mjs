@@ -2,7 +2,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFile } from 'node:fs/promises'
-import { Context } from '@deepseek-ai/cordis'
+import { Context, Inject } from '@deepseek-ai/cordis'
+import { load } from 'js-yaml'
+import { applyEntryPatches } from '@deepseek-ai/cordis-plugin-include'
 import LlmRuntime, { LlmAdapter } from '@deepseek-ai/dsh-llm'
 import SessionStore from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
@@ -52,11 +54,20 @@ test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动�
     async readRecord() { return record },
     async modifyRecord(_key, mutate) { record = await mutate(record); return record },
   })
-  // 直接读取 bundle 中受控的注入列表，让删除该修复时能复现真实启动失败。
-  const patch = await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
-  const section = patch.match(/^- id: connection\r?\n  inject:\r?\n((?:    - [\w]+\r?\n)+)/m)
-  const extraInject = section?.[1].trim().split(/\r?\n/).map(line => line.trim().slice(2)) ?? []
-  await ctx.plugin({ ...Connection, inject: [...Connection.inject, ...extraInject] })
+  const patches = load(await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8'))
+  assert.ok(Array.isArray(patches), 'bundle 必须是 YAML 补丁列表')
+  const warnings = []
+  const base = [{ id: 'connection', name: '@deepseek-ai/dsh-client-connection', inject: ['webRuntime'] }]
+  // 先用官方引擎替换配置，再按 Loader 语义合并插件源码依赖，覆盖两个层次。
+  const entries = applyEntryPatches(base, patches, (...args) => warnings.push(args))
+  const entry = entries.find(item => item.id === 'connection')
+  assert.deepEqual(warnings, [])
+  assert.deepEqual(entry?.inject, ['webServer', 'webRuntime'])
+  assert.deepEqual(base[0].inject, ['webRuntime'], '补丁不可污染原始 bundle')
+  const inject = Inject.resolve(Connection.inject)
+  Inject.resolve(entry.inject, inject)
+  for (const dependency of Object.keys(Inject.resolve(Connection.inject))) assert.ok(dependency in inject)
+  await ctx.plugin({ ...Connection, inject })
   let remove
   await ctx.plugin({
     inject: ['connection', 'webServer'],
@@ -65,6 +76,21 @@ test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动�
   assert.ok([...routes].some(route => route.path === '/dsh-automation'))
   await remove()
   assert.ok(![...routes].some(route => route.path === '/dsh-automation'))
+})
+
+test('Connection 补丁拒绝同 ID 的其他插件，并明确额外配置依赖的替换语义', async () => {
+  const patches = load(await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8'))
+  assert.ok(Array.isArray(patches))
+  const patch = patches.find(item => item.id === 'connection')
+  assert.ok(patch, '缺少 Connection 补丁')
+  const warnings = []
+  const unrelated = [{ id: 'connection', name: 'other-plugin', inject: ['customExtra'] }]
+  assert.deepEqual(applyEntryPatches(unrelated, [patch], (...args) => warnings.push(args)), unrelated)
+  assert.equal(warnings.length, 1)
+  assert.match(warnings[0][0], /name mismatch/)
+  const custom = [{ id: 'connection', name: patch.name, inject: ['webRuntime', 'customExtra'] }]
+  const applied = applyEntryPatches(custom, [patch], () => assert.fail('匹配补丁不应告警'))
+  assert.deepEqual(applied[0].inject, ['webServer', 'webRuntime'])
 })
 
 test(`${hostVersion} 真实 AgentLoop 执行自动化、保留权限日志并释放 Agent`, { timeout: 10_000 }, async t => {

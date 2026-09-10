@@ -539,6 +539,14 @@ for (const scenario of [
   { name: '新版已删除会话', stored: [{ header: { id: 'other' }, revision: 'r1' }], live: [], expected: null },
   { name: '尚未落盘的活会话', stored: [], live: [{ id: 'ghost' }], expected: 'ghost' },
   { name: '缺少持久化枚举', stored: undefined, live: [], expected: 'ghost' },
+  { name: '枚举缺少 id 时保留关联', stored: [{ header: {} }], live: [], expected: 'ghost', warns: true },
+  { name: '枚举不是数组时保留关联', stored: { items: [] }, live: [], expected: 'ghost', warns: true },
+  { name: '枚举空项时保留关联', stored: [null], live: [], expected: 'ghost', warns: true },
+  { name: '枚举空白 id 时保留关联', stored: [{ id: ' ' }], live: [], expected: 'ghost', warns: true },
+  { name: '部分枚举损坏时停止清理', stored: [{ id: 'other' }, { id: 123 }], live: [], expected: 'ghost', warns: true },
+  { name: '无关 header 回退顶层 id', stored: [{ id: 'ghost', header: { title: '旧元数据' } }], live: [], expected: 'ghost' },
+  { name: '空 header 回退顶层 id', stored: [{ id: 'ghost', header: null }], live: [], expected: 'ghost' },
+  { name: '活会话枚举异常时保留关联', stored: [], live: [{}], expected: 'ghost', warns: true },
 ]) {
   test(`启动对账保留真实关联：${scenario.name}`, async () => {
     const definition = sampleDefinition()
@@ -570,9 +578,10 @@ for (const scenario of [
       error: null,
       unread: false,
     })
+    const warnings: string[] = []
     const ctx = {
       permissionPresets,
-      logger: { warn() {} },
+      logger: { warn(message: string) { warnings.push(message) } },
       get(name: string) { return name === 'sessionPersistence' && scenario.stored !== undefined ? { async list() { return scenario.stored } } : undefined },
       sessions: { list() { return scenario.live } },
       storageDomain: {
@@ -594,5 +603,6 @@ for (const scenario of [
     const ghost = runs.get('run_ghost')
     assert.equal(ghost?.status, 'succeeded')
     assert.equal(ghost?.sessionId, scenario.expected)
+    assert.equal(warnings.length, 'warns' in scenario ? 1 : 0)
   })
 }

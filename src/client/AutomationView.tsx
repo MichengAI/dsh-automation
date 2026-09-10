@@ -7,6 +7,7 @@ import {
   clockTime,
   defaultFormState,
   formatDuration,
+  formatRunTrigger,
   formatSchedule,
   formatWithin,
   formFromAutomation,
@@ -409,7 +410,7 @@ function RunRow({ run, t }: { readonly run: AutomationRunViewModel; readonly t: 
       <p>
         <span>{clockTime(run.startedAt ?? run.scheduledFor)}</span>
         {duration !== undefined && <span>{duration}</span>}
-        <span>{t(run.trigger === 'manual' ? 'history.triggerManual' : run.trigger === 'catch-up' ? 'history.triggerCatchUp' : 'history.trigger')}</span>
+        <span>{formatRunTrigger(run.trigger, t)}</span>
       </p>
     </article>
   )

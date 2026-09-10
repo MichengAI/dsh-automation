@@ -18,6 +18,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: 4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@deepseek-ai/cordis-plugin-include':
+        specifier: 1.0.7
+        version: 1.0.7(@deepseek-ai/cordis-plugin-loader@1.0.3)(@deepseek-ai/cordis@4.0.2)
       '@deepseek-ai/dsh-agent':
         specifier: 0.1.5-rc.1
         version: 0.1.5-rc.1(011efc65c149ca53f6af28580be53483)
@@ -78,6 +81,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: 3.18.2
         version: 3.18.2
+      '@types/js-yaml':
+        specifier: 4.0.9
+        version: 4.0.9
       '@types/luxon':
         specifier: ^3.7.1
         version: 3.7.4
@@ -90,6 +96,9 @@ importers:
       esbuild:
         specifier: ^0.25.0
         version: 0.25.0
+      js-yaml:
+        specifier: 4.3.1
+        version: 4.3.1
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -745,6 +754,9 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
+  '@types/js-yaml@4.0.9':
+    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
+
   '@types/luxon@3.7.4':
     resolution: {integrity: sha512-V536ZAd6ZJztrrBlLcDFaaZrXNAL2E5uGmssWf/dpSiLkmkLScXUYhUBnWPmtW+cIqnNHzf6//TCMpIc9SCRRQ==}
 
@@ -1363,6 +1375,8 @@ snapshots:
     optional: true
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@types/js-yaml@4.0.9': {}
 
   '@types/luxon@3.7.4': {}
 

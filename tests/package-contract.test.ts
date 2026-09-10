@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { access, readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { load } from 'js-yaml'
 
 interface PackageManifest {
   name?: string
@@ -66,9 +67,12 @@ test('包保持可安装的 DSH bundle 与 Web client 契约', async () => {
   assert.deepEqual(manifest.peerDependenciesMeta?.react, { optional: true })
 
   const patch = await readFile(new URL('cordis.patch.yml', root), 'utf8')
-  assert.match(patch, /^\s*- insert:\s*$/m)
-  assert.match(patch, /^\s*- id: dsh-automation\s*$/m)
-  assert.match(patch, /^\s*name: ['"]@michengai\/dsh-automation['"]\s*$/m)
+  const entries = load(patch) as Array<{ id?: string; name?: string; inject?: string[]; insert?: Array<{ id: string; name: string }> }>
+  assert.ok(Array.isArray(entries))
+  assert.deepEqual(entries.filter(entry => entry.id === 'connection'), [{
+    id: 'connection', name: '@deepseek-ai/dsh-client-connection', inject: ['webServer', 'webRuntime'],
+  }])
+  assert.ok(entries.some(entry => entry.insert?.some(plugin => plugin.id === 'dsh-automation' && plugin.name === '@michengai/dsh-automation')))
 
   await Promise.all([
     access(new URL('lib/index.js', root)),

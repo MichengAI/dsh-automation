@@ -433,22 +433,30 @@ export class AutomationService {
   }
 
   private async knownSessionIds(): Promise<Set<string> | undefined> {
-    const live = this.ctx.sessions as { list?: () => readonly { readonly id: string }[] } | undefined
+    const live = this.ctx.sessions as { list?: () => unknown } | undefined
     const persistence = this.ctx.get?.("sessionPersistence") as {
-      list?: () => Promise<readonly ({ readonly id: string } | { readonly header: { readonly id: string } })[]>
+      list?: () => Promise<unknown>
     } | undefined
-    const canListLive = typeof live?.list === "function"
-    const canListStored = typeof persistence?.list === "function"
     // 活会话列表不包含已卸载的历史，不能单独作为删除关联的依据。
-    if (!canListStored) return undefined
+    if (typeof persistence?.list !== 'function') return undefined
     const ids = new Set<string>()
-    if (canListLive && live?.list !== undefined) {
-      for (const session of live.list()) ids.add(String(session.id))
-    }
-    if (canListStored && persistence?.list !== undefined) {
-      for (const item of await persistence.list()) {
-        const header = 'header' in item ? item.header : item
-        ids.add(String(header.id))
+    const lists = [
+      typeof live?.list === 'function' ? live.list() : [],
+      await persistence.list(),
+    ]
+    for (const list of lists) {
+      if (!Array.isArray(list)) {
+        this.ctx.logger.warn('dsh-automation: 会话枚举格式异常，本轮保留全部会话关联。')
+        return undefined
+      }
+      for (const item of list) {
+        const id = readListedSessionId(item)
+        // 枚举不完整时，不能把未识别的会话视作已删除。
+        if (id === undefined) {
+          this.ctx.logger.warn('dsh-automation: 会话枚举包含无效 ID，本轮保留全部会话关联。')
+          return undefined
+        }
+        ids.add(id)
       }
     }
     return ids
@@ -882,6 +890,19 @@ export class AutomationService {
   }
 }
 
+/** 兼容新版快照 header.id 和旧版顶层 id，不把异常值转换为字符串。 */
+function readListedSessionId(item: unknown): string | undefined {
+  if (typeof item !== 'object' || item === null) return undefined
+  const value = item as { id?: unknown; header?: unknown }
+  const header = typeof value.header === 'object' && value.header !== null
+    ? value.header as { id?: unknown }
+    : undefined
+  for (const id of [header?.id, value.id]) {
+    if (typeof id === 'string' && id.trim() !== '') return id
+  }
+  return undefined
+}
+
 
 
 
@@ -1019,4 +1040,3 @@ function readSkillTitle(file: string): string | undefined {
     return undefined
   }
 }
-

@@ -70,9 +70,6 @@ export declare const en: {
     readonly 'history.date': "{date}";
     readonly 'history.week': "Week of {date}";
     readonly 'history.month': "{month}";
-    readonly 'history.trigger': "Scheduled";
-    readonly 'history.triggerManual': "Manual";
-    readonly 'history.triggerCatchUp': "Catch-up";
     readonly 'history.nextApprox': "Next run in about {when}";
     readonly 'time.withinMinute': "about {count} minutes";
     readonly 'time.withinHour': "about {count} hours";
@@ -201,7 +198,6 @@ export declare const en: {
     readonly 'card.cancel': "Cancel";
     readonly 'run.trigger.schedule': "Scheduled";
     readonly 'run.trigger.manual': "Manual";
-    readonly 'run.trigger.catch-up': "Catch-up";
     readonly 'run.openSession': "Session {id}";
     readonly 'run.markRead': "Mark reviewed";
     readonly loading: "Loading automations…";
