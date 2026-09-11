@@ -4,7 +4,6 @@ import { type PermissionOption } from "./permission-presets.ts";
 import type { AutomationDefinition, AutomationRun, AutomationSchedule, PermissionPreset, UpdateAutomationInput } from "./types.ts";
 export declare const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
 export interface AutomationConfig {
-    readonly maxConcurrentRuns: number;
     readonly runTimeoutMs: number;
     readonly misfireGraceMs: number;
     readonly historyLimit: number;

@@ -4,6 +4,11 @@
 
 The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.39 - 2026-09-12
+
+- Remove the global concurrency cap for different automations, including those in the same directory, so they no longer wait for one of the previous two execution slots.
+- The legacy `maxConcurrentRuns` setting no longer takes effect. Duplicate-run protection remains for each automation: an existing queued or running record blocks another manual start, and overlapping scheduled occurrences are still skipped.
+
 ## 0.1.38 - 2026-09-11
 
 - Add support for DSH `0.1.5-rc.2`, retaining compatibility with `0.1.0-rc.8`, `0.1.1-rc.2`, `0.1.2-rc.1`, and `0.1.5-rc.1`.

@@ -130,6 +130,7 @@ dsh --profile web --dump-config
 | 审批 | 对话创建跟随当前会话策略。Full access（`never`）直接创建；Workspace Write / Read Only（`ask`）走官方授权卡。无人值守运行仍是 fail-closed 的 `never`。 |
 | 重试 | 已经开始的运行不会自动重试。 |
 | Host 重启 | 遗留的 `queued` / `running` 会变成 `failed(host_interrupted)`。 |
+| 并发 | 不同自动化任务不设插件级全局并发上限，同一目录下也可同时运行。旧配置 `maxConcurrentRuns` 不再生效。 |
 | 重叠 | 同一规则同时最多一个 active run。冲突 occurrence 记为 `skipped(overlap)`。 |
 
 计划只表达未来意图，不是缓存下来的授权。

@@ -10,7 +10,6 @@
     - id: dsh-automation
       name: '@michengai/dsh-automation'
       config:
-        maxConcurrentRuns: 2
         runTimeoutMinutes: 60
         misfireGraceMinutes: 15
         historyLimit: 200

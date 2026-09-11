@@ -130,6 +130,7 @@ Each dispatched run uses the saved prompt, workspace, model, and permission boun
 | Approval | Chat create follows the session policy. Full access (`never`) proceeds; Workspace Write / Read Only (`ask`) shows the official card. Unattended runs stay fail-closed `never`. |
 | Retry | No automatic retry after a started run. |
 | Host restart | Leftover `queued` / `running` records become `failed(host_interrupted)`. |
+| Concurrency | Different automations have no plugin-level global concurrency cap, including those in the same directory. The legacy `maxConcurrentRuns` setting no longer takes effect. |
 | Overlap | One active run per rule. A colliding occurrence is recorded as `skipped(overlap)`. |
 
 A schedule stores future intent. It is not a cached permission grant.

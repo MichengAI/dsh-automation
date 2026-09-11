@@ -3,7 +3,6 @@ import type { Context } from '@deepseek-ai/cordis';
 export declare const name = "dsh-automation";
 export declare const inject: string[];
 export interface Config {
-    readonly maxConcurrentRuns?: number;
     readonly runTimeoutMinutes?: number;
     readonly misfireGraceMinutes?: number;
     readonly historyLimit?: number;

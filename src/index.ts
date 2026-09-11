@@ -17,14 +17,12 @@ export const inject = [
 ]
 
 export interface Config {
-  readonly maxConcurrentRuns?: number
   readonly runTimeoutMinutes?: number
   readonly misfireGraceMinutes?: number
   readonly historyLimit?: number
 }
 
 export const Config = z.object({
-  maxConcurrentRuns: z.number().step(1).min(1).max(32).default(2),
   runTimeoutMinutes: z.number().step(1).min(1).max(1_440).default(60),
   misfireGraceMinutes: z.number().step(1).min(0).max(10_080).default(15),
   historyLimit: z.number().step(1).min(1).max(5_000).default(200),
@@ -87,7 +85,6 @@ export async function apply(ctx: Context, rawConfig: Config): Promise<void> {
   await ctx.effect(async () => {
     let alive = true
     const service = await AutomationService.open(ctx, {
-      maxConcurrentRuns: config.maxConcurrentRuns,
       runTimeoutMs: config.runTimeoutMinutes * 60_000,
       misfireGraceMs: config.misfireGraceMinutes * 60_000,
       historyLimit: config.historyLimit,

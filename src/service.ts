@@ -42,7 +42,6 @@ const OPTION_CACHE_TTL_MS = 30_000;
 export const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
 
 export interface AutomationConfig {
-  readonly maxConcurrentRuns: number;
   readonly runTimeoutMs: number;
   readonly misfireGraceMs: number;
   readonly historyLimit: number;
@@ -872,11 +871,6 @@ export class AutomationService {
 
   private async startQueuedRuns(): Promise<void> {
     if (this.stopping) return;
-    const capacity = Math.max(
-      0,
-      this.config.maxConcurrentRuns - this.active.size,
-    );
-    if (capacity === 0) return;
     const activeAutomationIds = new Set(
       [...this.active.keys()]
         .map((id) => this.runs.get(id)?.automationId)
@@ -894,7 +888,6 @@ export class AutomationService {
       if (activeAutomationIds.has(run.automationId)) continue;
       activeAutomationIds.add(run.automationId);
       queued.push(run);
-      if (queued.length === capacity) break;
     }
     for (const run of queued) this.startRun(run);
   }

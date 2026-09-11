@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createDefinition } from "../src/domain.ts";
+import { createDefinition, createManualRun } from "../src/domain.ts";
 import { AutomationService, type AutomationConfig } from "../src/service.ts";
 import type { AutomationDefinition, AutomationRun } from "../src/types.ts";
 
@@ -48,7 +48,6 @@ class MemoryTable<V> {
 
 function config(overrides: Partial<AutomationConfig> = {}): AutomationConfig {
   return {
-    maxConcurrentRuns: 2,
     runTimeoutMs: 60_000,
     misfireGraceMs: 15 * 60_000,
     historyLimit: 3,
@@ -320,6 +319,42 @@ test("创建和立即运行都限制在来源工作区", async () => {
       ),
     /已有排队/,
   );
+});
+
+test("同目录的不同自动化全部启动，仍阻止同一自动化重叠和停止后的调度", async () => {
+  const { service, runs } = await makeService();
+  const internals = service as unknown as {
+    active: Map<string, unknown>;
+    stopping: boolean;
+    startRun(run: AutomationRun): void;
+    startQueuedRuns(): Promise<void>;
+  };
+  const now = "2026-09-12T00:00:00.000Z";
+  const busyDefinition = sampleDefinition({ id: "busy" });
+  const busy = createManualRun(busyDefinition, now);
+  await runs.put(busy.id, { ...busy, status: "running" });
+  internals.active.set(busy.id, {});
+  const blocked = createManualRun(busyDefinition, now);
+  await runs.put(blocked.id, blocked);
+  const expected: string[] = [];
+  for (let index = 0; index < 40; index++) {
+    const definition = sampleDefinition({ id: `independent_${index}` });
+    const run = createManualRun(definition, now);
+    await runs.put(run.id, run);
+    expected.push(run.id);
+    if (index === 0) {
+      const duplicate = createManualRun(definition, now);
+      await runs.put(duplicate.id, duplicate);
+    }
+  }
+  const started: string[] = [];
+  // 在执行器边界记录启动，避免模型调用干扰调度行为的验证。
+  internals.startRun = (run) => { started.push(run.id); };
+  await internals.startQueuedRuns();
+  assert.deepEqual(started, expected);
+  internals.stopping = true;
+  await internals.startQueuedRuns();
+  assert.deepEqual(started, expected);
 });
 
 test("权限列表、默认值和校验均来自 Host 官方服务", async () => {
