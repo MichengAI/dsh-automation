@@ -152,6 +152,9 @@ export declare const en: {
     readonly "form.time": "Time";
     readonly "form.days": "Weekdays";
     readonly "form.timeZone": "Time zone";
+    readonly "form.maxConcurrentRuns": "Maximum concurrent runs";
+    readonly "form.maxConcurrentRunsHint": "Maximum overlapping runs of this task. Defaults to 1; scheduled triggers are skipped when full.";
+    readonly "form.error.maxConcurrentRuns": "Enter a positive whole number for concurrent runs.";
     readonly "form.permission": "Permission boundary";
     readonly "permission.readOnly": "Read Only";
     readonly "permission.workspaceWrite": "Workspace Write";
@@ -162,7 +165,7 @@ export declare const en: {
     readonly "form.error.name": "Enter a name.";
     readonly "form.error.prompt": "Enter a complete, standalone task prompt.";
     readonly "form.error.once": "Choose a valid future date and time.";
-    readonly "form.error.interval": "The interval must be between 5 and 43,200 minutes.";
+    readonly "form.error.interval": "The interval must be between 1 and 43,200 minutes.";
     readonly "form.error.weekdays": "Select at least one weekday.";
     readonly "day.1": "Mon";
     readonly "day.2": "Tue";

@@ -74,6 +74,7 @@ export interface AutomationViewModel {
     readonly schedule: AutomationSchedule;
     readonly scheduleSummary: string;
     readonly timeZone: string;
+    readonly maxConcurrentRuns?: number;
     readonly permission: AutomationPermission;
     readonly workspaceId?: string;
     readonly cwd?: string;
@@ -125,6 +126,7 @@ export interface CreateAutomationInput {
     readonly prompt: string;
     readonly schedule: AutomationSchedule;
     readonly timeZone: string;
+    readonly maxConcurrentRuns?: number;
     readonly permission: AutomationPermission;
     readonly workspaceId: string;
     readonly cwd: string;

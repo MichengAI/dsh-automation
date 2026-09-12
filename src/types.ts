@@ -81,6 +81,7 @@ declare module '@deepseek-ai/dsh-llm' {
 export interface AutomationDefinition {
   readonly version: 1
   readonly id: string
+  readonly maxConcurrentRuns?: number
   readonly revision: number
   readonly name: string
   readonly prompt: string
@@ -146,6 +147,7 @@ export interface CreateAutomationInput {
   readonly provider?: string | null
   readonly model?: string | null
   readonly reasoningEffort?: string | null | undefined
+  readonly maxConcurrentRuns?: number
   readonly permissionPreset?: PermissionPreset
   readonly createdBy: AutomationCreator
   readonly now: string
@@ -160,6 +162,7 @@ export interface UpdateAutomationInput {
   readonly provider?: string | null
   readonly model?: string | null
   readonly reasoningEffort?: string | null | undefined
+  readonly maxConcurrentRuns?: number
   readonly permissionPreset?: PermissionPreset
   readonly workspaceId?: string
   readonly cwd?: string

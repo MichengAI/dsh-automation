@@ -22,6 +22,7 @@ export interface AutomationFormState {
   readonly prompt: string
   readonly scheduleKind: ScheduleKind
   readonly onceAt: string
+  readonly maxConcurrentRuns: string
   readonly everyMinutes: string
   readonly intervalAnchor: string
   readonly time: string
@@ -38,6 +39,7 @@ export interface AutomationFormState {
 }
 
 export type FormErrorKey =
+  | 'form.error.maxConcurrentRuns'
   | 'form.error.name'
   | 'form.error.prompt'
   | 'form.error.once'
@@ -96,6 +98,7 @@ export function defaultFormState(
     scheduleKind: 'daily',
     onceAt: localDateTimeValue(now),
     everyMinutes: '60',
+    maxConcurrentRuns: '1',
     intervalAnchor: '',
     time: '09:00',
     weekdays: [1, 2, 3, 4, 5],
@@ -120,6 +123,8 @@ export function buildCreateInput(
   now = new Date(),
   options: { readonly allowPastOnce?: boolean } = {},
 ): CreateAutomationInput {
+  const maxConcurrentRuns = Number(form.maxConcurrentRuns)
+  if (!Number.isSafeInteger(maxConcurrentRuns) || maxConcurrentRuns < 1) throw new AutomationFormError('form.error.maxConcurrentRuns')
   const name = form.name.trim()
   const prompt = form.prompt.trim()
   if (name === '') throw new AutomationFormError('form.error.name')
@@ -139,7 +144,7 @@ export function buildCreateInput(
     }
     case 'interval': {
       const everyMinutes = Number(form.everyMinutes)
-      if (!Number.isInteger(everyMinutes) || everyMinutes < 5 || everyMinutes > 43_200) {
+      if (!Number.isInteger(everyMinutes) || everyMinutes < 1 || everyMinutes > 43_200) {
         throw new AutomationFormError('form.error.interval')
       }
       schedule = {
@@ -184,6 +189,7 @@ export function buildCreateInput(
     schedule,
     timeZone: form.timeZone,
     permission: form.permission,
+    maxConcurrentRuns,
     workspaceId: workspace.id,
     cwd: workspace.path,
     ...(selected === undefined ? { provider: null, model: null } : { provider: selected.provider, model: selected.model }),
@@ -432,6 +438,7 @@ export function formFromAutomation(
     name: item.name,
     prompt: item.prompt,
     permission: item.permission,
+    maxConcurrentRuns: String(item.maxConcurrentRuns ?? 1),
     workspaceId: item.workspaceId ?? base.workspaceId,
     modelKey,
     reasoningEffort: item.reasoningEffort ?? 'none',

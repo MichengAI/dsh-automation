@@ -79,6 +79,7 @@ export interface CreateRequest {
   readonly name: string;
   readonly prompt: string;
   readonly schedule: AutomationSchedule;
+  readonly maxConcurrentRuns?: number;
   readonly permissionPreset?: PermissionPreset;
   readonly workspaceId?: string;
   readonly cwd?: string;
@@ -345,6 +346,7 @@ export class AutomationService {
       try {
         value = createDefinition({
           id: `automation_${randomUUID()}`,
+          maxConcurrentRuns: request.maxConcurrentRuns ?? 1,
           name: request.name,
           prompt: request.prompt,
           schedule: request.schedule,
@@ -471,13 +473,14 @@ export class AutomationService {
     const run = await this.serialize(async () => {
       const definition = await this.ownedDefinition(scope, id);
       throwIfCancelled(signal);
-      const alreadyActive = [...this.runs.entries()].some(
+      const limit = definition.maxConcurrentRuns ?? 1;
+      const activeCount = [...this.runs.entries()].filter(
         ([, candidate]) =>
           candidate.automationId === id &&
           (candidate.status === "queued" || candidate.status === "running"),
-      );
-      if (alreadyActive)
-        throw new AutomationRequestError("该自动化已有排队或运行中的任务。");
+      ).length;
+      if (activeCount >= limit)
+        throw new AutomationRequestError(`该自动化已有排队或运行中的任务，已达到并发上限（${limit}）。`);
       const value = createManualRun(definition, toIso());
       await this.runs.put(value.id, value);
       return value;
@@ -846,13 +849,13 @@ export class AutomationService {
       return;
     const candidate = createScheduledRun(definition, scheduledFor);
     if (this.runs.get(candidate.id) !== undefined) return;
-    const overlapping = related.some(
+    const overlapping = related.filter(
       (run) => run.status === "queued" || run.status === "running",
-    );
+    ).length >= (definition.maxConcurrentRuns ?? 1);
     const age = Date.parse(now) - Date.parse(scheduledFor);
     if (overlapping || age > this.config.misfireGraceMs) {
       const reason = overlapping
-        ? { code: "overlap", message: "上一次运行仍在进行，本次已跳过。" }
+        ? { code: "overlap", message: "已达到该自动化的并发上限，本次已跳过。" }
         : {
             code: "misfire",
             message: "Host 恢复时已超出补跑窗口，本次已跳过。",
@@ -871,11 +874,11 @@ export class AutomationService {
 
   private async startQueuedRuns(): Promise<void> {
     if (this.stopping) return;
-    const activeAutomationIds = new Set(
-      [...this.active.keys()]
-        .map((id) => this.runs.get(id)?.automationId)
-        .filter((id): id is string => id !== undefined),
-    );
+    const activeCounts = new Map<string, number>();
+    for (const id of this.active.keys()) {
+      const automationId = this.runs.get(id)?.automationId;
+      if (automationId !== undefined) activeCounts.set(automationId, (activeCounts.get(automationId) ?? 0) + 1);
+    }
     const candidates = [...this.runs.entries()]
       .map(([, run]) => run)
       .filter((run) => run.status === "queued" && !this.active.has(run.id))
@@ -885,8 +888,10 @@ export class AutomationService {
       );
     const queued: AutomationRun[] = [];
     for (const run of candidates) {
-      if (activeAutomationIds.has(run.automationId)) continue;
-      activeAutomationIds.add(run.automationId);
+      const count = activeCounts.get(run.automationId) ?? 0;
+      const limit = this.definitions.get(run.automationId)?.maxConcurrentRuns ?? 1;
+      if (count >= limit) continue;
+      activeCounts.set(run.automationId, count + 1);
       queued.push(run);
     }
     for (const run of queued) this.startRun(run);

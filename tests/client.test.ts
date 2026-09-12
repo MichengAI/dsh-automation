@@ -1009,3 +1009,22 @@ test("技能点选写入 /name，已存在则不重复", () => {
   const mid = insertSkillGesture("请执行", "/web-search", 3);
   assert.equal(mid.text, "请执行 /web-search ");
 });
+
+
+test("并发数量表单默认单次、提交数值并拒绝无效输入", () => {
+  const form = { ...defaultFormState(new Date(), workspaces), name: "并发任务", prompt: "处理下一项" };
+  assert.equal(form.maxConcurrentRuns, "1");
+  assert.equal(buildCreateInput({ ...form, maxConcurrentRuns: "3" }, workspaces, []).maxConcurrentRuns, 3);
+  for (const value of ["", "0", "-1", "1.5", "abc"]) {
+    assert.throws(() => buildCreateInput({ ...form, maxConcurrentRuns: value }, workspaces, []), /form.error.maxConcurrentRuns/);
+  }
+});
+
+test("间隔表单接受一分钟并拒绝零值和小数", () => {
+  const form = { ...defaultFormState(new Date(), workspaces), name: "分钟任务", prompt: "检查下一项", scheduleKind: "interval" as const, everyMinutes: "1" };
+  const input = buildCreateInput(form, workspaces, []);
+  assert.equal(input.schedule.kind === "interval" && input.schedule.everyMinutes, 1);
+  for (const everyMinutes of ["0", "-1", "0.5"]) {
+    assert.throws(() => buildCreateInput({ ...form, everyMinutes }, workspaces, []), /form.error.interval/);
+  }
+});

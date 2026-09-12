@@ -37,6 +37,7 @@ export interface CreateRequest {
     readonly name: string;
     readonly prompt: string;
     readonly schedule: AutomationSchedule;
+    readonly maxConcurrentRuns?: number;
     readonly permissionPreset?: PermissionPreset;
     readonly workspaceId?: string;
     readonly cwd?: string;

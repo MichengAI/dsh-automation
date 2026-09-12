@@ -131,7 +131,7 @@ Each dispatched run uses the saved prompt, workspace, model, and permission boun
 | Retry | No automatic retry after a started run. |
 | Host restart | Leftover `queued` / `running` records become `failed(host_interrupted)`. |
 | Concurrency | Different automations have no plugin-level global concurrency cap, including those in the same directory. The legacy `maxConcurrentRuns` setting no longer takes effect. |
-| Overlap | One active run per rule. A colliding occurrence is recorded as `skipped(overlap)`. |
+| Per-task concurrency | Set Maximum concurrent runs in the create/edit dialog (positive integer, default `1`). Queued and running executions share this limit. When full, scheduled triggers become `skipped(overlap)` and manual runs return a limit error. Lowering the limit does not cancel existing runs. Agent create/update tools accept `max_concurrent_runs`; Web RPC accepts `maxConcurrentRuns`. Existing tasks default to `1`. |
 
 A schedule stores future intent. It is not a cached permission grant.
 

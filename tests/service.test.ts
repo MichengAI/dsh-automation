@@ -907,3 +907,39 @@ for (const scenario of [
     assert.equal(warnings.length, "warns" in scenario ? 1 : 0);
   });
 }
+
+test("单任务并发上限统一约束手动准入、定时准入和队列启动", async () => {
+  const definition = sampleDefinition({ maxConcurrentRuns: 2 });
+  const { service, runs } = await makeService({ definitions: [definition] });
+  const scope = { sessionId: "session_1", creatorKind: "web" as const };
+  const results = await Promise.allSettled(Array.from({ length: 3 }, () => service.runNow(scope, definition.id)));
+  assert.equal(results.filter(result => result.status === "fulfilled").length, 2);
+  assert.equal(results.filter(result => result.status === "rejected").length, 1);
+  const internals = service as any;
+  const started: string[] = [];
+  internals.startRun = (run: AutomationRun) => started.push(run.id);
+  await internals.startQueuedRuns();
+  assert.equal(started.length, 2);
+  await internals.claimLatestDue(definition, "2026-08-16T01:00:00.000Z", [...runs.entries()].map(([, run]) => run));
+  assert.equal([...runs.entries()].filter(([, run]) => run.status === "skipped").length, 1);
+});
+
+test("定时任务有剩余并发名额时准入，降低上限后等待现有运行结束", async () => {
+  const definition = sampleDefinition({ maxConcurrentRuns: 2 });
+  const { service, runs, definitions } = await makeService({ definitions: [definition] });
+  const first = createManualRun(definition, "2026-08-16T00:50:00.000Z");
+  await runs.put(first.id, { ...first, status: "running" });
+  const internals = service as any;
+  internals.active.set(first.id, {});
+  await internals.claimLatestDue(definition, "2026-08-16T01:00:00.000Z", [...runs.entries()].map(([, run]) => run));
+  assert.equal([...runs.entries()].filter(([, run]) => run.status === "queued").length, 1);
+  await definitions.put(definition.id, { ...definition, maxConcurrentRuns: 1 });
+  const started: string[] = [];
+  internals.startRun = (run: AutomationRun) => started.push(run.id);
+  await internals.startQueuedRuns();
+  assert.equal(started.length, 0);
+  internals.active.delete(first.id);
+  await runs.put(first.id, { ...first, status: "succeeded" });
+  await internals.startQueuedRuns();
+  assert.equal(started.length, 1);
+});

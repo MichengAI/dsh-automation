@@ -31,6 +31,7 @@ interface CreateArgs extends ScheduleArgs {
   readonly prompt: string
   readonly kind: 'once' | 'interval' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom'
   readonly time_zone: string
+  readonly max_concurrent_runs?: number
   readonly permission?: PermissionPreset
 }
 
@@ -39,6 +40,7 @@ interface UpdateArgs extends ScheduleArgs {
   readonly name?: string
   readonly prompt?: string
   readonly status?: 'active' | 'paused'
+  readonly max_concurrent_runs?: number
   readonly permission?: PermissionPreset
 }
 
@@ -132,12 +134,13 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         kind: { type: 'string', required: true, enum: ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom'] },
         time_zone: { type: 'string', required: true, description: 'IANA 时区，例如 Asia/Shanghai。' },
         at: { type: 'string', description: '一次性计划的带偏移 ISO 时间。' },
-        every_minutes: { type: 'integer', description: '间隔计划的分钟数，最小 5。' },
+        every_minutes: { type: 'integer', description: '间隔计划的分钟数，最小 1。' },
         minute: { type: 'integer', description: '每小时计划在第几分钟运行，范围 0-59。' },
         time: { type: 'string', description: '每天、每周、每月或自定义计划的本地 HH:mm。' },
         weekdays: { type: 'array', items: { type: 'string', enum: WEEKDAYS } },
         month_day: { type: 'integer', description: '每月计划在第几日运行，范围 1-31。' },
         every_days: { type: 'integer', description: '自定义计划每隔几天运行，范围 1-365。' },
+        max_concurrent_runs: { type: 'integer', minimum: 1, description: '同一自动化的并发运行上限，默认 1' },
         permission: { type: 'string', enum: permissionNames },
       },
       output: JSON_OUTPUT,
@@ -148,6 +151,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
             name: args.name,
             prompt: args.prompt,
             schedule: scheduleFromArgs(args, new Date().toISOString()),
+            ...(args.max_concurrent_runs === undefined ? {} : { maxConcurrentRuns: args.max_concurrent_runs }),
             ...(args.permission === undefined ? {} : { permissionPreset: args.permission }),
           }, exec.signal)
           return json({ ok: true, automation: value })
@@ -199,6 +203,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         weekdays: { type: 'array', items: { type: 'string', enum: WEEKDAYS } },
         month_day: { type: 'integer' },
         every_days: { type: 'integer' },
+        max_concurrent_runs: { type: 'integer', minimum: 1, description: '同一自动化的并发运行上限，默认 1' },
         permission: { type: 'string', enum: permissionNames },
       },
       output: JSON_OUTPUT,
@@ -211,11 +216,13 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
             prompt?: string
             status?: 'active' | 'paused'
             schedule?: AutomationSchedule
+            maxConcurrentRuns?: number
             permissionPreset?: PermissionPreset
           } = {}
           if (args.name !== undefined) input.name = String(args.name)
           if (args.prompt !== undefined) input.prompt = String(args.prompt)
           if (args.status !== undefined) input.status = args.status
+          if (args.max_concurrent_runs !== undefined) input.maxConcurrentRuns = args.max_concurrent_runs
           if (args.permission !== undefined) input.permissionPreset = args.permission
           if (args.kind !== undefined) input.schedule = scheduleFromArgs(args, new Date().toISOString())
           if (Object.keys(input).length === 0) throw new Error('automation_update 至少需要一个变更字段')

@@ -8,6 +8,7 @@ export interface AutomationFormState {
     readonly prompt: string;
     readonly scheduleKind: ScheduleKind;
     readonly onceAt: string;
+    readonly maxConcurrentRuns: string;
     readonly everyMinutes: string;
     readonly intervalAnchor: string;
     readonly time: string;
@@ -22,7 +23,7 @@ export interface AutomationFormState {
     readonly reasoningEffort: string;
     readonly skills: readonly string[];
 }
-export type FormErrorKey = 'form.error.name' | 'form.error.prompt' | 'form.error.once' | 'form.error.interval' | 'form.error.weekdays' | 'form.error.workspace';
+export type FormErrorKey = 'form.error.maxConcurrentRuns' | 'form.error.name' | 'form.error.prompt' | 'form.error.once' | 'form.error.interval' | 'form.error.weekdays' | 'form.error.workspace';
 export declare class AutomationFormError extends Error {
     readonly key: FormErrorKey;
     constructor(key: FormErrorKey);

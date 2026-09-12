@@ -15,8 +15,8 @@ export function assertValidSchedule(schedule: AutomationSchedule): void {
     return
   }
   if (schedule.kind === 'interval') {
-    if (!Number.isInteger(schedule.everyMinutes) || schedule.everyMinutes < 5) {
-      throw new Error('interval.everyMinutes must be an integer of at least 5')
+    if (!Number.isInteger(schedule.everyMinutes) || schedule.everyMinutes < 1) {
+      throw new Error('interval.everyMinutes must be an integer of at least 1')
     }
     parseInstant(schedule.anchor, 'interval.anchor')
     return

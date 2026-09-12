@@ -100,3 +100,12 @@ test('每周计划遇到不存在的夏令时时刻后仍能找到上一次有�
     '2026-03-01T07:30:00.000Z',
   )
 })
+
+test('一分钟间隔按分钟触发并拒绝零值和小数', () => {
+  const schedule = { kind: 'interval' as const, everyMinutes: 1, anchor: '2026-08-16T00:00:00.000Z', timeZone: 'UTC' }
+  assert.equal(latestDueOccurrence(schedule, '2026-08-16T00:00:59.000Z'), null)
+  assert.equal(nextOccurrence(schedule, schedule.anchor), '2026-08-16T00:01:00.000Z')
+  assert.equal(latestDueOccurrence(schedule, '2026-08-16T00:02:30.000Z'), '2026-08-16T00:02:00.000Z')
+  assert.match(scheduleToRRule(schedule), /FREQ=MINUTELY;INTERVAL=1/)
+  for (const everyMinutes of [0, -1, 0.5]) assert.throws(() => normalizeSchedule({ ...schedule, everyMinutes }))
+})

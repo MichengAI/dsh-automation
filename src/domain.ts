@@ -12,7 +12,7 @@ const timeZone = nonBlank
 const weekday = z.enum(['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'])
 export const automationScheduleSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('once'), at: instant, timeZone }),
-  z.object({ kind: z.literal('interval'), everyMinutes: z.number().int().min(5), anchor: instant, timeZone }),
+  z.object({ kind: z.literal('interval'), everyMinutes: z.number().int().min(1), anchor: instant, timeZone }),
   z.object({ kind: z.literal('daily'), time: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/), timeZone }),
   z.object({
     kind: z.literal('weekly'),
@@ -52,6 +52,7 @@ export const automationDefinitionSchema: z.ZodType<AutomationDefinition> = z.obj
   version: z.literal(1),
   id: nonBlank,
   revision: z.number().int().positive(),
+  maxConcurrentRuns: z.number().int().positive().default(1),
   name: nonBlank.max(200),
   prompt: nonBlank.max(100_000),
   status: z.enum(['active', 'paused']),
@@ -120,6 +121,7 @@ export function createDefinition(input: CreateAutomationInput): AutomationDefini
     name: requireNonBlank(input.name, 'name'),
     prompt: requireNonBlank(input.prompt, 'prompt'),
     status: 'active',
+    maxConcurrentRuns: input.maxConcurrentRuns ?? 1,
     schedule,
     rrule: scheduleToRRule(schedule),
     timeZone: schedule.timeZone,
@@ -148,6 +150,7 @@ export function updateDefinition(
     name: input.name === undefined ? current.name : requireNonBlank(input.name, 'name'),
     prompt: input.prompt === undefined ? current.prompt : requireNonBlank(input.prompt, 'prompt'),
     status: input.status ?? current.status,
+    maxConcurrentRuns: input.maxConcurrentRuns ?? current.maxConcurrentRuns ?? 1,
     schedule,
     rrule: scheduleToRRule(schedule),
     timeZone: schedule.timeZone,

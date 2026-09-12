@@ -130,3 +130,22 @@ test('RPC 限制任务字段长度并隐藏内部异常文案', async () => {
 })
 
 
+
+test('RPC 创建和编辑传递并发数量，拒绝非整数类型', async () => {
+  let handler: ((endpoint: string, payload: unknown, signal: AbortSignal) => Promise<any>) | undefined
+  const received: number[] = []
+  registerAutomationRpc({
+    logger: { warn() {} },
+    connection: { rpc: { handle(_channel: string, next: typeof handler) { handler = next; return async () => {} } } },
+  } as never, {
+    async create(_scope: unknown, input: { maxConcurrentRuns: number }) { received.push(input.maxConcurrentRuns); return { id: 'a' } },
+    async update(_scope: unknown, _id: string, input: { maxConcurrentRuns: number }) { received.push(input.maxConcurrentRuns); return { id: 'a', revision: 2 } },
+  } as never)
+  const input = { name: 'n', prompt: 'p', timeZone: 'UTC', permission: 'read-only', schedule: { kind: 'daily', time: '09:00' }, maxConcurrentRuns: 3 }
+  const signal = new AbortController().signal
+  for (const endpoint of ['create', 'update']) {
+    assert.equal((await handler!(endpoint, { automationId: 'a', input }, signal)).ok, true)
+    assert.equal((await handler!(endpoint, { automationId: 'a', input: { ...input, maxConcurrentRuns: '3' } }, signal)).error.code, 'bad-request')
+  }
+  assert.deepEqual(received, [3, 3])
+})

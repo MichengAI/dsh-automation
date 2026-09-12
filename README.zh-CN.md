@@ -131,7 +131,7 @@ dsh --profile web --dump-config
 | 重试 | 已经开始的运行不会自动重试。 |
 | Host 重启 | 遗留的 `queued` / `running` 会变成 `failed(host_interrupted)`。 |
 | 并发 | 不同自动化任务不设插件级全局并发上限，同一目录下也可同时运行。旧配置 `maxConcurrentRuns` 不再生效。 |
-| 重叠 | 同一规则同时最多一个 active run。冲突 occurrence 记为 `skipped(overlap)`。 |
+| 单任务并发 | 在任务的新建/编辑页设置“并发数量”（正整数，默认 `1`）。同一任务的排队及运行记录共用此上限；满额时定时触发记为 `skipped(overlap)`，手动运行返回上限提示。调低上限不取消已有运行。Agent 创建/更新工具使用 `max_concurrent_runs`，Web RPC 使用 `maxConcurrentRuns`；旧任务默认 `1`。 |
 
 计划只表达未来意图，不是缓存下来的授权。
 

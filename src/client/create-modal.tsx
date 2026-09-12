@@ -148,7 +148,7 @@ export function CreateModal({
             )}
             {form.scheduleKind === 'interval' && (
               <>
-                <input className="is-narrow" type="number" min={5} value={form.everyMinutes} onChange={event => update({ everyMinutes: event.target.value })} />
+                <input className="is-narrow" type="number" min={1} value={form.everyMinutes} onChange={event => update({ everyMinutes: event.target.value })} />
                 <span className="dsh-st-suffix">{t('form.minutesShort')}</span>
               </>
             )}
@@ -200,6 +200,12 @@ export function CreateModal({
             ))}
           </div>
         )}
+
+        <label className="dsh-st-field">
+          <span>{t('form.maxConcurrentRuns')}</span>
+          <input type="number" min={1} step={1} required value={form.maxConcurrentRuns} onChange={event => update({ maxConcurrentRuns: event.target.value })} />
+          <small>{t('form.maxConcurrentRunsHint')}</small>
+        </label>
 
         <div className="dsh-st-field">
           <span>{t('form.prompt')}</span>
