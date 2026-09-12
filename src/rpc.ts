@@ -50,6 +50,13 @@ function integer(value: unknown, label: string): number {
   return value
 }
 
+function positiveInteger(value: unknown, label: string): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1) {
+    throw new RpcRequestError(`${label} must be a positive integer`)
+  }
+  return value
+}
+
 function toDomainSchedule(raw: unknown, timeZone: string): DomainSchedule {
   const schedule = record(raw, 'schedule')
   const kind = string(schedule.kind, 'schedule.kind')
@@ -200,7 +207,7 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
             prompt: string(input.prompt, 'input.prompt', 100_000),
             schedule: toDomainSchedule(input.schedule, timeZone),
             permissionPreset: string(input.permission, 'input.permission'),
-            ...(input.maxConcurrentRuns === undefined ? {} : { maxConcurrentRuns: integer(input.maxConcurrentRuns, 'input.maxConcurrentRuns') }),
+            ...(input.maxConcurrentRuns === undefined ? {} : { maxConcurrentRuns: positiveInteger(input.maxConcurrentRuns, 'input.maxConcurrentRuns') }),
             ...(input.workspaceId === undefined ? {} : { workspaceId: string(input.workspaceId, 'input.workspaceId') }),
             ...(input.cwd === undefined ? {} : { cwd: string(input.cwd, 'input.cwd') }),
             ...(input.provider === undefined ? {} : { provider: input.provider === null ? null : string(input.provider, 'input.provider') }),
@@ -232,7 +239,7 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
             prompt: string(input.prompt, 'input.prompt', 100_000),
             schedule: toDomainSchedule(input.schedule, timeZone),
             permissionPreset: string(input.permission, 'input.permission'),
-            ...(input.maxConcurrentRuns === undefined ? {} : { maxConcurrentRuns: integer(input.maxConcurrentRuns, 'input.maxConcurrentRuns') }),
+            ...(input.maxConcurrentRuns === undefined ? {} : { maxConcurrentRuns: positiveInteger(input.maxConcurrentRuns, 'input.maxConcurrentRuns') }),
             ...(input.workspaceId === undefined ? {} : { workspaceId: string(input.workspaceId, 'input.workspaceId') }),
             ...(input.cwd === undefined ? {} : { cwd: string(input.cwd, 'input.cwd') }),
             ...(input.provider === undefined ? {} : { provider: input.provider === null ? null : string(input.provider, 'input.provider') }),

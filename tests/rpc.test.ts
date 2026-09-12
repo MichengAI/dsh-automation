@@ -131,7 +131,7 @@ test('RPC 限制任务字段长度并隐藏内部异常文案', async () => {
 
 
 
-test('RPC 创建和编辑传递并发数量，拒绝非整数类型', async () => {
+test('RPC 创建和编辑在入口统一拒绝非正整数并发数量', async () => {
   let handler: ((endpoint: string, payload: unknown, signal: AbortSignal) => Promise<any>) | undefined
   const received: number[] = []
   registerAutomationRpc({
@@ -145,7 +145,12 @@ test('RPC 创建和编辑传递并发数量，拒绝非整数类型', async () =
   const signal = new AbortController().signal
   for (const endpoint of ['create', 'update']) {
     assert.equal((await handler!(endpoint, { automationId: 'a', input }, signal)).ok, true)
-    assert.equal((await handler!(endpoint, { automationId: 'a', input: { ...input, maxConcurrentRuns: '3' } }, signal)).error.code, 'bad-request')
+    for (const maxConcurrentRuns of [0, -1, 1.5, '3', null, Number.MAX_SAFE_INTEGER + 1]) {
+      const result = await handler!(endpoint, { automationId: 'a', input: { ...input, maxConcurrentRuns } }, signal)
+      assert.equal(result.ok, false)
+      assert.equal(result.error.code, 'bad-request')
+      assert.equal(result.error.message, 'input.maxConcurrentRuns must be a positive integer')
+    }
   }
   assert.deepEqual(received, [3, 3])
 })

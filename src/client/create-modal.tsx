@@ -133,61 +133,61 @@ export function CreateModal({
         </label>
 
         <div className="dsh-st-plan-row">
-        <div className="dsh-st-field">
-          {t('form.planTime')}
-          <div className="dsh-st-inline">
-            <MenuSelect
-              value={form.scheduleKind}
-              options={KINDS.map(kind => ({ value: kind, label: t(`form.${kind}`) }))}
-              onChange={value => update({ scheduleKind: value })}
-            />
-            {form.scheduleKind === 'once' && (
-              <>
-                <input type="date" min={today} value={datePart} onChange={event => update({ onceAt: clampOnceAt(`${event.target.value}T${timePart}`) })} />
-                <TimeSelect value={timePart} {...(minOnceTime === undefined ? {} : { minTime: minOnceTime })} onChange={value => update({ onceAt: clampOnceAt(`${datePart}T${value}`) })} />
-              </>
-            )}
-            {form.scheduleKind === 'interval' && (
-              <>
-                <input className="is-narrow" type="number" min={1} value={form.everyMinutes} onChange={event => update({ everyMinutes: event.target.value })} />
-                <span className="dsh-st-suffix">{t('form.minutesShort')}</span>
-              </>
-            )}
-            {form.scheduleKind === 'hourly' && (
-              <>
-                <MenuSelect value={form.hourlyMinute} options={MINUTES.map(item => ({ value: item, label: item }))} onChange={value => update({ hourlyMinute: value })} />
-                <span className="dsh-st-suffix">{t('form.minutesShort')}</span>
-              </>
-            )}
-            {(form.scheduleKind === 'daily' || form.scheduleKind === 'weekly') && (
-              <TimeSelect value={form.time} onChange={value => update({ time: value })} />
-            )}
-            {form.scheduleKind === 'monthly' && (
-              <>
-                <MenuSelect
-                  value={form.monthDay}
-                  options={Array.from({ length: 31 }, (_, index) => {
-                    const day = String(index + 1)
-                    return { value: day, label: t('form.monthDay', { day }) }
-                  })}
-                  onChange={value => update({ monthDay: value })}
-                />
+          <div className="dsh-st-field">
+            {t('form.planTime')}
+            <div className="dsh-st-inline">
+              <MenuSelect
+                value={form.scheduleKind}
+                options={KINDS.map(kind => ({ value: kind, label: t(`form.${kind}`) }))}
+                onChange={value => update({ scheduleKind: value })}
+              />
+              {form.scheduleKind === 'once' && (
+                <>
+                  <input type="date" min={today} value={datePart} onChange={event => update({ onceAt: clampOnceAt(`${event.target.value}T${timePart}`) })} />
+                  <TimeSelect value={timePart} {...(minOnceTime === undefined ? {} : { minTime: minOnceTime })} onChange={value => update({ onceAt: clampOnceAt(`${datePart}T${value}`) })} />
+                </>
+              )}
+              {form.scheduleKind === 'interval' && (
+                <>
+                  <input className="is-narrow" type="number" min={1} value={form.everyMinutes} onChange={event => update({ everyMinutes: event.target.value })} />
+                  <span className="dsh-st-suffix">{t('form.minutesShort')}</span>
+                </>
+              )}
+              {form.scheduleKind === 'hourly' && (
+                <>
+                  <MenuSelect value={form.hourlyMinute} options={MINUTES.map(item => ({ value: item, label: item }))} onChange={value => update({ hourlyMinute: value })} />
+                  <span className="dsh-st-suffix">{t('form.minutesShort')}</span>
+                </>
+              )}
+              {(form.scheduleKind === 'daily' || form.scheduleKind === 'weekly') && (
                 <TimeSelect value={form.time} onChange={value => update({ time: value })} />
-              </>
-            )}
-            {form.scheduleKind === 'custom' && (
-              <>
-                <input className="is-narrow" type="number" min={1} value={form.customDays} onChange={event => update({ customDays: event.target.value })} />
-                <span className="dsh-st-suffix">{t('form.daysShort')}</span>
-                <TimeSelect value={form.time} onChange={value => update({ time: value })} />
-              </>
-            )}
+              )}
+              {form.scheduleKind === 'monthly' && (
+                <>
+                  <MenuSelect
+                    value={form.monthDay}
+                    options={Array.from({ length: 31 }, (_, index) => {
+                      const day = String(index + 1)
+                      return { value: day, label: t('form.monthDay', { day }) }
+                    })}
+                    onChange={value => update({ monthDay: value })}
+                  />
+                  <TimeSelect value={form.time} onChange={value => update({ time: value })} />
+                </>
+              )}
+              {form.scheduleKind === 'custom' && (
+                <>
+                  <input className="is-narrow" type="number" min={1} value={form.customDays} onChange={event => update({ customDays: event.target.value })} />
+                  <span className="dsh-st-suffix">{t('form.daysShort')}</span>
+                  <TimeSelect value={form.time} onChange={value => update({ time: value })} />
+                </>
+              )}
+            </div>
           </div>
-        </div>
-        <label className="dsh-st-field dsh-st-concurrency" title={t('form.maxConcurrentRunsHint')}>
-          <span>{t('form.maxConcurrentRuns')}</span>
-          <input type="number" min={1} step={1} required value={form.maxConcurrentRuns} onChange={event => update({ maxConcurrentRuns: event.target.value })} />
-        </label>
+          <label className="dsh-st-field dsh-st-concurrency" title={t('form.maxConcurrentRunsHint')}>
+            <span>{t('form.maxConcurrentRuns')}</span>
+            <input type="number" min={1} step={1} required value={form.maxConcurrentRuns} onChange={event => update({ maxConcurrentRuns: event.target.value })} />
+          </label>
         </div>
 
         {form.scheduleKind === 'weekly' && (

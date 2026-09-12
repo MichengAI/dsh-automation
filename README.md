@@ -132,7 +132,7 @@ Each dispatched run uses the saved prompt, workspace, model, and permission boun
 | Host restart | Leftover `queued` / `running` records become `failed(host_interrupted)`. |
 | Concurrency | Different automations have no plugin-level global concurrency cap, including those in the same directory. The legacy plugin-level global concurrency setting (`maxConcurrentRuns` in plugin config) no longer takes effect; it is separate from the per-task field below. |
 | Minimum interval | Since `0.1.40`, interval schedules accept whole minutes starting at `1`. Missed triggers are not replayed individually; only the latest due occurrence is considered within the recovery window. |
-| Per-task concurrency | Available since `0.1.40`. Set Maximum concurrent runs in the create/edit dialog (positive integer, default `1`). Queued and running executions share this limit. When full, scheduled triggers become `skipped(overlap)` and manual runs return a limit error. Lowering the limit does not cancel existing runs. Agent create/update tools accept `max_concurrent_runs`; Web RPC accepts `maxConcurrentRuns`. Existing tasks default to `1`. |
+| Per-task concurrency | Available since `0.1.40`. Set Concurrency in the create/edit dialog (positive integer, default `1`). Queued and running executions share this limit. When full, scheduled triggers become `skipped(overlap)` and manual runs return a limit error. Lowering the limit does not cancel existing runs. Agent create/update tools accept `max_concurrent_runs`; Web RPC accepts `maxConcurrentRuns`. Existing tasks default to `1`. |
 
 A schedule stores future intent. It is not a cached permission grant.
 
