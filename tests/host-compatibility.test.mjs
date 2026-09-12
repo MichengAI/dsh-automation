@@ -223,3 +223,19 @@ test(`${hostVersion} 真实 AgentLoop 执行自动化、保留权限日志并释
   assert.equal(ctx.agents.get("compat-run"), undefined);
   assert.equal(ctx.sessions.get("compat-run"), undefined);
 });
+
+test("真实 DSH Schema 可编译全部自动化管理工具", async () => {
+  const { registerAutomationTools } = await import("../src/tools.ts");
+  const registered = [];
+  const agent = {
+    id: "schema-regression",
+    ctx: { tools: { register(definition) { registered.push(definition); return () => {}; } } },
+  };
+  const dispose = registerAutomationTools({ permissionNames: () => ["read-only"] }, agent);
+  assert.equal(registered.length, 6);
+  for (const name of ["automation_create", "automation_update"]) {
+    const tool = registered.find(item => item.name === name);
+    assert.equal(tool.parameters.properties.max_concurrent_runs.type, "integer");
+  }
+  dispose();
+});

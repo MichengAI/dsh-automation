@@ -153,7 +153,7 @@ export declare const en: {
     readonly "form.days": "Weekdays";
     readonly "form.timeZone": "Time zone";
     readonly "form.maxConcurrentRuns": "Maximum concurrent runs";
-    readonly "form.maxConcurrentRunsHint": "Maximum overlapping runs of this task. Defaults to 1; scheduled triggers are skipped when full.";
+    readonly "form.maxConcurrentRunsHint": "Queued and running executions share this limit. Defaults to 1; when full, scheduled triggers are skipped and manual runs are rejected.";
     readonly "form.error.maxConcurrentRuns": "Enter a positive whole number for concurrent runs.";
     readonly "form.permission": "Permission boundary";
     readonly "permission.readOnly": "Read Only";

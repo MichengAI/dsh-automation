@@ -149,3 +149,34 @@ test('RPC 创建和编辑传递并发数量，拒绝非整数类型', async () =
   }
   assert.deepEqual(received, [3, 3])
 })
+
+test('Agent 创建与更新工具透传并发数量，省略参数时不覆盖已有值', async () => {
+  const definitions = new Map<string, any>()
+  const requests: Record<string, unknown>[] = []
+  const agent = {
+    id: 'concurrency-tool-test',
+    ctx: { tools: { register(definition: { name: string }) { definitions.set(definition.name, definition); return () => {} } } },
+  }
+  const dispose = registerAutomationTools({
+    permissionNames: () => ['read-only'],
+    async create(_scope: unknown, input: Record<string, unknown>) { requests.push(input); return { id: 'a' } },
+    async update(_scope: unknown, _id: string, input: Record<string, unknown>) { requests.push(input); return { id: 'a' } },
+  } as never, agent)
+  const context = { agent, signal: new AbortController().signal }
+  const create = definitions.get('automation_create').execute
+  const update = definitions.get('automation_update').execute
+  const input = { name: '检查', prompt: '领取下一项', kind: 'interval', every_minutes: 1, time_zone: 'UTC' }
+  try {
+    await create({ ...input, max_concurrent_runs: 3 }, context)
+    await update({ id: 'a', max_concurrent_runs: 2 }, context)
+    await create(input, context)
+    await update({ id: 'a', name: '改名' }, context)
+    assert.equal(requests.length, 4)
+    assert.equal(requests[0]?.maxConcurrentRuns, 3)
+    assert.deepEqual(requests[1], { maxConcurrentRuns: 2 })
+    assert.equal(Object.hasOwn(requests[2]!, 'maxConcurrentRuns'), false)
+    assert.equal(Object.hasOwn(requests[3]!, 'maxConcurrentRuns'), false)
+  } finally {
+    dispose()
+  }
+})

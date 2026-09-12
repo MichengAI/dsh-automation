@@ -132,6 +132,7 @@ export function CreateModal({
           <input value={form.name} placeholder={t('form.namePlaceholder')} onChange={event => update({ name: event.target.value })} />
         </label>
 
+        <div className="dsh-st-plan-row">
         <div className="dsh-st-field">
           {t('form.planTime')}
           <div className="dsh-st-inline">
@@ -183,6 +184,11 @@ export function CreateModal({
             )}
           </div>
         </div>
+        <label className="dsh-st-field dsh-st-concurrency" title={t('form.maxConcurrentRunsHint')}>
+          <span>{t('form.maxConcurrentRuns')}</span>
+          <input type="number" min={1} step={1} required value={form.maxConcurrentRuns} onChange={event => update({ maxConcurrentRuns: event.target.value })} />
+        </label>
+        </div>
 
         {form.scheduleKind === 'weekly' && (
           <div className="dsh-st-weekdays">
@@ -200,12 +206,6 @@ export function CreateModal({
             ))}
           </div>
         )}
-
-        <label className="dsh-st-field">
-          <span>{t('form.maxConcurrentRuns')}</span>
-          <input type="number" min={1} step={1} required value={form.maxConcurrentRuns} onChange={event => update({ maxConcurrentRuns: event.target.value })} />
-          <small>{t('form.maxConcurrentRunsHint')}</small>
-        </label>
 
         <div className="dsh-st-field">
           <span>{t('form.prompt')}</span>

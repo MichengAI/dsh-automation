@@ -2,7 +2,13 @@
 
 [简体中文](CHANGELOG.zh-CN.md)
 
-The five most recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
+Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
+
+## 0.1.40 - Unreleased
+
+- Configure concurrency per automation to allow overlapping executions of the same task. The default is `1`, preserving existing task behavior. When full, scheduled triggers are skipped and manual starts are rejected; lowering the limit does not cancel existing runs.
+- Reduce the minimum interval from 5 minutes to 1 minute.
+- Agent create/update tools accept `max_concurrent_runs`, and Web RPC accepts per-task `maxConcurrentRuns`; these are separate from the retired plugin-level global concurrency setting.
 
 ## 0.1.39 - 2026-09-12
 
