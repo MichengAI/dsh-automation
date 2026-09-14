@@ -4,6 +4,10 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.42 - 2026-09-14
+
+- Preserve a replacement sidebar tab when an older registration with the same ID is unloaded.
+
 ## 0.1.41 - 2026-09-14
 
 - Fix Scheduled and execution-history navigation disappearing when used with the archive and IM plugins.
