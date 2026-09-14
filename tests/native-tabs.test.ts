@@ -33,3 +33,24 @@ test('session filters hide automation sessions from the host task tree', () => {
   assert.equal(registry.sessionFilters[0]?.('chat-1'), true)
   assert.equal(registry.sessionFilters[0]?.('dsh-automation-session-1'), false)
 })
+
+test('旧页签的卸载不会删除同 ID 的新页签，也不会发送多余通知', () => {
+  const registry = createNativeTabRegistry(null)
+  const oldTab = { id: 'schedule', label: '旧页签', render: () => null }
+  const newTab = { id: 'schedule', label: '新页签', render: () => null }
+  let notifications = 0
+  registry.subscribe(() => { notifications += 1 })
+  const removeOld = registry.insert(oldTab)
+  const removeNew = registry.insert(newTab)
+  const snapshot = registry.getTabs()
+  removeOld()
+  assert.deepEqual(registry.getTabs(), [newTab])
+  assert.equal(registry.getTabs(), snapshot)
+  assert.equal(notifications, 2)
+  removeNew()
+  assert.deepEqual(registry.getTabs(), [])
+  assert.equal(notifications, 3)
+  removeNew()
+  removeOld()
+  assert.equal(notifications, 3)
+})

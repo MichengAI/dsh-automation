@@ -189,6 +189,8 @@ pnpm build
 
 `pnpm check` runs typecheck, unit tests, real Host compatibility tests, and build. `pnpm test:host` bypasses runtime stubs and uses the official AgentLoop, Session V3, and permission service with a fixed local model adapter; it makes no external model calls. Browser interactions and real model calls require separate acceptance testing.
 
+Cross-plugin sidebar regressions run with `pnpm test:composition <dsh-im-connect checkout>`. Build the IM checkout first; the script reads its `lib/client.js`. It executes the composition logic and tab registries of both repositories, covering registration order, delayed notifications, and uninstall handover across the archive, IM, scheduled, and Codex UI plugins; slots and timers use a simulated environment, so it does not install any plugin or replace Desktop rendering acceptance testing. This separate check requires an external checkout and is not included in `pnpm check`; use a fixed IM revision for reproducible results.
+
 `pnpm test:matrix` builds the package, then creates separate temporary npm environments for all four versions using network access. It checks strict peer installation, every official dependency version, the packaged entry point, real AgentLoop execution, and service regressions. All four versions pass. Persistence enumeration in service regressions uses in-memory fixtures for both cold-session formats; it does not validate on-disk migration of a real Profile. The printed evidence directory retains installation lockfiles, test logs, and `results.json`. The matrix does not modify development dependencies or connect to the user's Profile.
 
 ## License

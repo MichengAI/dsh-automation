@@ -62,6 +62,7 @@
     "test": "node --import ./tests/register-dsh-stubs.mjs --import tsx --test tests/*.test.ts",
     "check": "pnpm typecheck && pnpm test && pnpm test:host && pnpm build",
     "test:host": "node --import tsx --test tests/host-compatibility.test.mjs",
+    "test:composition": "node --import tsx scripts/verify-sidebar-composition.mjs",
     "test:matrix": "pnpm build && node scripts/test-version-matrix.mjs"
   },
   "dependencies": {

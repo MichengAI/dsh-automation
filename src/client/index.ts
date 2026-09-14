@@ -156,7 +156,6 @@ export function apply(ctx: ClientContext): void {
     let ownedRegistry: ReturnType<typeof createNativeTabRegistry> | undefined
     let insertedRegistry: ReturnType<typeof createNativeTabRegistry> | undefined
     let removeInsertedTab = (): void => undefined
-    let wrapped = false
     let syncing = false
     let retryTimer: number | undefined
     // 直接替换 component 不触发宿主插槽通知；与 IM 共用事件，在本次同步完成后重新协调。
@@ -183,7 +182,6 @@ export function apply(ctx: ClientContext): void {
       originalComp = undefined
       ownedWrapper = undefined
       ownedRegistry = undefined
-      wrapped = false
     }
     const insertScheduleTab = (entry: unknown, openSession?: (id: string) => void): boolean => {
       const registry = findNativeTabRegistry(entry)
@@ -264,7 +262,7 @@ export function apply(ctx: ClientContext): void {
           ensureScheduleTab()
           return
         }
-        if (occupant?.component === undefined || wrapped) return
+        if (occupant?.component === undefined) return
         const resolved = resolveOfficialTreeComponent(occupant.component)
         if (resolved === undefined) return
         originalComp = resolved as ComponentType<any>
@@ -299,7 +297,6 @@ export function apply(ctx: ClientContext): void {
         occupant.component = marked
         ownedWrapper = marked
         wrappedEntry = occupant
-        wrapped = true
         ensureScheduleTab()
         notifyPeers()
       } catch (error) {

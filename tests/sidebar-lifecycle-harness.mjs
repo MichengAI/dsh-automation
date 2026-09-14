@@ -1,5 +1,19 @@
 // 执行真实接入闭包，以可控插槽、计时器验证加载顺序和卸载，不模拟 React 渲染。
 import assert from 'node:assert/strict'
+import { createNativeTabRegistry, attachNativeTabRegistry, findNativeTabRegistry } from '../src/client/native-tabs.ts'
+
+// 定位失败或标记重复时立即报错，避免执行空片段或另一个同名闭包。
+export function extractBlock(source, startMarker, endMarker, label, required = []) {
+  source = source.replace(/\r\n/g, '\n')
+  const start = source.indexOf(startMarker), end = source.indexOf(endMarker)
+  if (start < 0 || end <= start || source.indexOf(startMarker, start + 1) >= 0 || source.indexOf(endMarker, end + 1) >= 0) {
+    throw new Error(`${label}：抽取标记缺失、重复或顺序错误，请更新测试定位`)
+  }
+  const body = source.slice(start, end)
+  assert.ok(body.trim().length > 0, `${label}：提取内容为空`)
+  for (const marker of required) assert.ok(body.includes(marker), `${label}：缺少 ${marker}，请更新测试定位`)
+  return body
+}
 
 export function createHarness(body, kind) {
   let entries = [], codex = false
@@ -17,14 +31,8 @@ export function createHarness(body, kind) {
       return () => subscriptions.get(name).delete(callback)
     },
   }
-  const registry = tree => {
-    const items = new Map()
-    return { officialTree: tree, getTabs: () => [...items.values()], insert(tab) {
-      items.set(tab.id, tab)
-      return () => { if (items.get(tab.id) === tab) items.delete(tab.id) }
-    } }
-  }
-  const find = entry => entry?.__dshNativeTabs ?? entry?.component?.__dshNativeTabs
+  const registry = createNativeTabRegistry
+  const find = findNativeTabRegistry
   const ownFlag = kind === 'automation' ? '__dshAutomationWrapped' : '__imConnectWrapped'
   const ctx = { slots }
   const env = {
@@ -36,14 +44,14 @@ export function createHarness(body, kind) {
     isForeignSidebarHost: component => !!component?.__dshNativeTabHost,
     resolveOfficialTreeComponent: component => component,
     createNativeTabRegistry: registry,
-    attachNativeTabRegistry: (target, value) => { target.__dshNativeTabs = value; return value },
+    attachNativeTabRegistry,
     findNativeTabRegistry: find,
     subscribeLocale: () => () => {}, subscribeChannelMembership: () => () => {},
     isChannelSession: () => false,
   }
   const emit = name => { for (const f of [...(subscriptions.get(name) ?? [])]) f() }
   return {
-    window, winner, find, registry,
+    window, winner, find, registry, emit,
     add(priority = 0) {
       const entry = { priority, component: function Tree() {} }
       entries.push(entry); emit('sidebar.workspaces'); return entry
@@ -64,6 +72,22 @@ export function createHarness(body, kind) {
 }
 
 export function lifecycleCases(test, body, kind) {
+  for (const trigger of ['event', 'sidebar.workspaces', 'sidebar', 'timer']) {
+    test(`卸载后不响应 ${trigger}，也不重新接入侧栏`, async () => {
+      const h = createHarness(body, kind), entry = h.add(), original = entry.component
+      const stop = h.start()
+      stop()
+      await h.settle()
+      assert.equal(entry.component, original)
+      assert.equal(h.find(entry), undefined)
+      if (trigger === 'event') h.window.dispatchEvent(new Event('dsh-native-sidebar-change'))
+      else if (trigger === 'timer') h.tick()
+      else h.emit(trigger)
+      await h.settle()
+      assert.equal(entry.component, original)
+      assert.equal(h.find(entry), undefined)
+    })
+  }
   test('后注册的高优先级侧栏接入页签，移除后恢复官方侧栏', async () => {
     const h = createHarness(body, kind), official = h.add(), original = official.component
     const stop = h.start(); h.assertAttached(official)
@@ -84,7 +108,9 @@ export function lifecycleCases(test, body, kind) {
   test('重复通知不会重复包裹，卸载不会覆盖其他插件后来替换的组件', async () => {
     const h = createHarness(body, kind), entry = h.add()
     const stop = h.start(), wrapped = entry.component
-    h.tick(); h.tick(); assert.equal(entry.component, wrapped)
+    h.window.dispatchEvent(new Event('dsh-native-sidebar-change'))
+    h.emit('sidebar.workspaces'); h.emit('sidebar')
+    await h.settle(); assert.equal(entry.component, wrapped)
     const replacement = function Replacement() {}
     entry.component = replacement
     stop(); await h.settle(); assert.equal(entry.component, replacement)

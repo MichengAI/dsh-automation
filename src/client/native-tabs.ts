@@ -48,7 +48,13 @@ export function createNativeTabRegistry(officialTree: unknown): NativeTabRegistr
         rebuild()
         emit()
       }
-      return () => { tabs.delete(tab.id); rebuild(); emit() }
+      return () => {
+        // 旧注册的清理只能移除自己，不能误删同 ID 的替代页签。
+        if (tabs.get(tab.id) !== tab) return
+        tabs.delete(tab.id)
+        rebuild()
+        emit()
+      }
     },
     addSessionFilter(filter: (id: string) => boolean) {
       sessionFilters.push(filter)

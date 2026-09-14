@@ -1,22 +1,21 @@
 // 显式指定 IM 检出目录，执行两仓库真实接入闭包的组合回归；不安装插件或启动宿主。
+// 先构建 IM，再在本仓运行 node --import tsx scripts/verify-sidebar-composition.mjs <IM 检出目录>。
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import ts from 'typescript'
 import * as tabs from '../src/client/native-tabs.ts'
 import * as model from '../src/client/schedule-rail-model.ts'
-import { createHarness } from '../tests/sidebar-lifecycle-harness.mjs'
+import { createHarness, extractBlock } from '../tests/sidebar-lifecycle-harness.mjs'
 
 if (!process.argv[2]) throw new Error('请提供 dsh-im-connect 检出目录')
 const auto = readFileSync(new URL('../src/client/index.ts', import.meta.url), 'utf8')
-const im = readFileSync(resolve(process.argv[2], 'client.js'), 'utf8')
-const block = auto.slice(auto.indexOf('    let wrappedEntry:'), auto.indexOf("\n  ctx.slots.inject('conversation.input.left'"))
-const autoBody = ts.transpileModule(block.slice(0, block.lastIndexOf('\n  })')), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
-const imStart = im.indexOf('        let wrappedEntry = null;')
-const imBody = im.slice(imStart, im.indexOf('\n      });', imStart))
-const registryStart = im.indexOf('    function createNativeTabRegistry(')
-const registryEnd = im.indexOf('    function applyRegistryFilters(', registryStart)
-const imHelpers = new Function(im.slice(registryStart, registryEnd) + '; return { createNativeTabRegistry, attachNativeTabRegistry, findNativeTabRegistry };')()
+const im = readFileSync(resolve(process.argv[2], 'lib/client.js'), 'utf8')
+const block = extractBlock(auto, '    let wrappedEntry:', "\n  ctx.slots.inject('conversation.input.left'", '定时生命周期')
+const autoBody = ts.transpileModule(extractBlock(block, '    let wrappedEntry:', '\n  })', '定时生命周期闭包', ['notifyPeers', 'ownedWrapper']), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
+const imBody = extractBlock(im, '        let wrappedEntry = null;', '\n      });\n    }\n\n    exports.apply', 'IM 生命周期', ['notifyPeers', 'ownedWrapper'])
+const registry = extractBlock(im, '    function createNativeTabRegistry(', '    function applyRegistryFilters(', 'IM 注册表', ['function attachNativeTabRegistry(', 'function findNativeTabRegistry('])
+const imHelpers = new Function(registry + '; return { createNativeTabRegistry, attachNativeTabRegistry, findNativeTabRegistry };')()
 const permutations = list => list.length < 2 ? [list] : list.flatMap((p, i) => permutations(list.filter((_, j) => i !== j)).map(rest => [p, ...rest]))
 let scenarios = 0
 for (const group of ['A', 'I', 'T', 'AI', 'AT', 'IT', 'AIT']) {
