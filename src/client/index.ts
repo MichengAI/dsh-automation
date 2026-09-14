@@ -152,10 +152,15 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('sidebar.workspaces', () => {
     let wrappedEntry: MutableSlotEntry | undefined
     let originalComp: ComponentType<any> | undefined
+    let ownedWrapper: HostComponent | undefined
+    let ownedRegistry: ReturnType<typeof createNativeTabRegistry> | undefined
+    let insertedRegistry: ReturnType<typeof createNativeTabRegistry> | undefined
     let removeInsertedTab = (): void => undefined
     let wrapped = false
     let syncing = false
     let retryTimer: number | undefined
+    // 直接替换 component 不触发宿主插槽通知；与 IM 共用事件，在本次同步完成后重新协调。
+    const notifyPeers = (): void => { queueMicrotask(() => window.dispatchEvent(new Event('dsh-native-sidebar-change'))) }
     const listenChannels = (listener: () => void) => ctx.slots.subscribe?.('sidebar.channels', listener) ?? (() => undefined)
     const stopRetry = (): void => {
       if (retryTimer !== undefined) {
@@ -167,16 +172,27 @@ export function apply(ctx: ClientContext): void {
       stopRetry()
       removeInsertedTab()
       removeInsertedTab = (): void => undefined
-      if (wrappedEntry !== undefined && originalComp !== undefined) {
-        try { wrappedEntry.component = originalComp } catch { /* ignore */ }
+      insertedRegistry = undefined
+      if (wrappedEntry !== undefined) {
+        if (originalComp !== undefined && wrappedEntry.component === ownedWrapper) wrappedEntry.component = originalComp
+        const record = wrappedEntry as MutableSlotEntry & { __dshNativeTabs?: unknown }
+        if (record.__dshNativeTabs === ownedRegistry) delete record.__dshNativeTabs
+        notifyPeers()
       }
       wrappedEntry = undefined
       originalComp = undefined
+      ownedWrapper = undefined
+      ownedRegistry = undefined
       wrapped = false
     }
     const insertScheduleTab = (entry: unknown, openSession?: (id: string) => void): boolean => {
       const registry = findNativeTabRegistry(entry)
       if (registry === undefined) return false
+      if (insertedRegistry !== registry) {
+        removeInsertedTab()
+        removeInsertedTab = (): void => undefined
+        insertedRegistry = registry
+      }
       if (registry.getTabs().some(item => item.id === 'schedule')) return true
       removeInsertedTab = registry.insert({
         id: 'schedule',
@@ -212,7 +228,7 @@ export function apply(ctx: ClientContext): void {
         const record = entry as { component?: unknown }
         if (insertScheduleTab(entry) || insertScheduleTab(record.component)) return true
       }
-      return wrappedEntry !== undefined && insertScheduleTab(wrappedEntry)
+      return false
     }
     const ensureScheduleTab = (): void => {
       if (insertIntoKnownHosts()) {
@@ -235,13 +251,16 @@ export function apply(ctx: ClientContext): void {
           return
         }
         const entries = readSlotEntries(ctx, 'sidebar.workspaces')
-        const occupant = pickWrappableWorkspacesEntry(entries) as MutableSlotEntry | undefined
-        const current = occupant?.component
-        if (current !== undefined && isForeignSidebarHost(current)) {
+        const active = entries.find(entry => (entry as MutableSlotEntry)?.component !== undefined) as MutableSlotEntry | undefined
+        if (wrappedEntry !== undefined && (active !== wrappedEntry || active.component !== ownedWrapper)) unwrap()
+        if (active === wrappedEntry && active?.component === ownedWrapper && ownedWrapper !== undefined) {
           ensureScheduleTab()
           return
         }
-        if (wrappedEntry?.component !== undefined && (wrappedEntry.component as HostComponent).__dshAutomationWrapped === true) {
+        if (active === undefined) { unwrap(); return }
+        const occupant = pickWrappableWorkspacesEntry(entries) as MutableSlotEntry | undefined
+        const current = occupant?.component
+        if (current !== undefined && isForeignSidebarHost(current)) {
           ensureScheduleTab()
           return
         }
@@ -250,6 +269,7 @@ export function apply(ctx: ClientContext): void {
         if (resolved === undefined) return
         originalComp = resolved as ComponentType<any>
         const registry = createNativeTabRegistry(originalComp)
+        ownedRegistry = registry
         attachNativeTabRegistry(occupant, registry)
         function AutomationNativeWorkspaceShell(innerProps: NativeSwitcherProps): JSX.Element | null {
           const openSession = createScheduledSessionOpener(ctx, runtime, innerProps.openSession ?? innerProps.open)
@@ -266,7 +286,7 @@ export function apply(ctx: ClientContext): void {
             ...(innerProps.useSessions === undefined ? {} : { useSessions: innerProps.useSessions }),
             ...(innerProps.useWorkspaces === undefined ? {} : { useWorkspaces: innerProps.useWorkspaces }),
             ...(innerProps.renderSlot === undefined ? {} : { renderSlot: innerProps.renderSlot }),
-            ...(originalComp === undefined ? {} : { officialTree: originalComp }),
+            officialTree: tree,
           })
         }
         const marked = AutomationNativeWorkspaceShell as HostComponent
@@ -274,11 +294,14 @@ export function apply(ctx: ClientContext): void {
         marked.__dshNativeTabHost = true
         marked.__dshAutomationWrapped = true
         marked.__dshAutomationOriginal = originalComp
+        const tree = originalComp
         attachNativeTabRegistry(marked, registry)
         occupant.component = marked
+        ownedWrapper = marked
         wrappedEntry = occupant
         wrapped = true
         ensureScheduleTab()
+        notifyPeers()
       } catch (error) {
         console.warn('[dsh-automation] 包裹官方任务树失败', error)
       } finally {
@@ -287,8 +310,10 @@ export function apply(ctx: ClientContext): void {
     }
     sync()
     const unsub = typeof ctx.slots.subscribe === 'function' ? ctx.slots.subscribe('sidebar.workspaces', sync) : () => undefined
+    const unsubSidebar = ctx.slots.subscribe?.('sidebar', sync) ?? (() => undefined)
+    window.addEventListener('dsh-native-sidebar-change', sync)
     ensureScheduleTab()
-    return () => { unsub(); unwrap() }
+    return () => { unsub(); unsubSidebar(); window.removeEventListener('dsh-native-sidebar-change', sync); unwrap() }
   })
   ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
     name: 'conversation.input.left',

@@ -189,6 +189,8 @@ pnpm build
 
 `pnpm check` 会连续执行类型检查、单元测试、真实宿主兼容测试和构建。`pnpm test:host` 不加载宿主运行时桩，使用官方 AgentLoop、Session V3 和权限服务，模型响应由本地固定适配器提供，不调用外部模型。浏览器交互和真实模型调用需另行验收。
 
+跨插件侧栏回归可运行 `node --import tsx scripts/verify-sidebar-composition.mjs <dsh-im-connect 检出目录>`。它执行两仓库的接入逻辑和页签注册表，覆盖归档、IM、定时及 Codex UI 的注册顺序、延迟通知与卸载接管；插槽和计时器使用模拟环境，不替代 Desktop 渲染验收，也不安装插件。
+
 `pnpm test:matrix` 先构建发布包，再联网为上述四个版本分别建立临时 npm 环境，执行严格 peer 安装、整棵官方依赖树版本检查、发布入口加载、真实 AgentLoop 执行和服务回归。四版均通过；服务回归中的持久化枚举使用内存夹具，覆盖新旧冷会话格式，不等同于真实 Profile 的磁盘迁移验收。脚本输出证据目录，保留各版安装锁文件、测试日志和 `results.json`。矩阵不修改开发依赖，也不连接用户 Profile。
 
 ## 许可证
