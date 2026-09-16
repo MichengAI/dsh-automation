@@ -8,6 +8,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 - Add support for DSH `0.1.6-alpha.1`, retaining compatibility with `0.1.0-rc.8`, `0.1.1-rc.2`, `0.1.2-rc.1`, `0.1.5-rc.1`, and `0.1.5-rc.2`.
 - On DSH `0.1.6+` hosts, collect run summaries from live `session/event` updates and fall back to the deprecated snapshot when that stream is missing or incomplete. Owned-session detection prefers `deriveMessages` and still reads events on older hosts.
+- Open scheduled-task settings from overview cards on the Codex UI settings page, not only the official settings dialog.
 
 ## 0.1.42 - 2026-09-14
 

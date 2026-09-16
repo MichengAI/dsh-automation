@@ -29,7 +29,21 @@ export function pickSettingsLauncher<T extends Pick<SettingsButton, 'textContent
 
 let cancelPendingNavigation: (() => void) | undefined
 
-/** 打开宿主设置弹窗并选择定时任务分区；宿主提供公开 section API 后可集中替换。 */
+export const SETTINGS_CODEX_TRIGGER_SELECTOR = '[data-dcu-settings-trigger]'
+export const SETTINGS_CODEX_PAGE_SELECTOR = '[data-dcu-settings-page]'
+export const SETTINGS_OPEN_SECTION_EVENT = 'dcu-settings-open-section'
+
+function requestCodexSettingsSection(labels: readonly string[]): boolean {
+  const trigger = document.querySelector<HTMLButtonElement>(SETTINGS_CODEX_TRIGGER_SELECTOR)
+  if (trigger === null) return false
+  const request = new CustomEvent(SETTINGS_OPEN_SECTION_EVENT, {
+    detail: { labels: [...labels] },
+    cancelable: true,
+  })
+  return !trigger.dispatchEvent(request)
+}
+
+/** 打开 Codex 设置页或官方设置弹窗，并选择定时任务分区。 */
 export function openSettingsSection(
   labels: readonly string[],
   onSelected?: () => void,
@@ -39,16 +53,22 @@ export function openSettingsSection(
     onMissing?.()
     return
   }
+  if (requestCodexSettingsSection(labels)) {
+    onSelected?.()
+    return
+  }
   const launchers = [...document.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')]
   const launcher = pickSettingsLauncher(launchers)
+  const pageTrigger = document.querySelector<HTMLButtonElement>(SETTINGS_CODEX_TRIGGER_SELECTOR)
   const dialogOpen = document.querySelector('[role="dialog"]') !== null
-  if (!dialogOpen && launcher === undefined) {
+  const pageOpen = document.querySelector(SETTINGS_CODEX_PAGE_SELECTOR) !== null
+  if (!dialogOpen && !pageOpen && launcher === undefined && pageTrigger === null) {
     onMissing?.()
     return
   }
 
   cancelPendingNavigation?.()
-  if (!dialogOpen) launcher?.click()
+  if (!dialogOpen && !pageOpen) (pageTrigger ?? launcher)?.click()
   let frame: number | undefined
   let finished = false
   const observer = new MutationObserver(() => { schedule() })
@@ -61,7 +81,10 @@ export function openSettingsSection(
     if (cancelPendingNavigation === cleanup) cancelPendingNavigation = undefined
   }
   const select = (): boolean => {
-    const buttons = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] nav button')]
+    const buttons = [
+      ...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] nav button'),
+      ...document.querySelectorAll<HTMLButtonElement>(`${SETTINGS_CODEX_PAGE_SELECTOR} nav button`),
+    ]
     const target = pickSettingsSectionButton(buttons, labels)
     if (target === undefined) return false
     cleanup()

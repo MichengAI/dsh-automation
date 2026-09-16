@@ -104,6 +104,39 @@ test('设置弹窗异步挂载后选择定时任务分区并清理观察器', ()
   }
 })
 
+test('Codex 设置页通过分区事件打开定时任务，不再依赖官方 dialog', () => {
+  let selected = 0
+  let missing = 0
+  let received: unknown
+  const trigger = {
+    dispatchEvent(event: Event) {
+      received = (event as CustomEvent).detail
+      event.preventDefault()
+      return false
+    },
+  }
+  const restoreDocument = replaceGlobal('document', {
+    body: {},
+    querySelector(selector: string) { return selector === '[data-dcu-settings-trigger]' ? trigger : null },
+    querySelectorAll() { return [] },
+  })
+  const restoreWindow = replaceGlobal('window', {
+    requestAnimationFrame() { return 1 },
+    cancelAnimationFrame() {},
+    setTimeout() { return 2 },
+    clearTimeout() {},
+  })
+  try {
+    openSettingsSection(['定时任务', 'Scheduled tasks'], () => { selected += 1 }, () => { missing += 1 })
+    assert.deepEqual(received, { labels: ['定时任务', 'Scheduled tasks'] })
+    assert.equal(selected, 1)
+    assert.equal(missing, 0)
+  } finally {
+    restoreWindow()
+    restoreDocument()
+  }
+})
+
 test('设置分区在超时前仍不存在时报告缺失并清理观察器', () => {
   const dom = settingsDom({ hasTarget: false })
   let selected = 0
