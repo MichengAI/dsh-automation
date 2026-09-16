@@ -4,7 +4,7 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
-## Unreleased
+## 0.1.44 - 2026-09-16
 
 - Keep only turn-boundary events in the live run-summary buffer, dropping request headers and tool results.
 - Treat plugin-fiber unload (`INACTIVE_EFFECT`) or an aborted run signal mid-execution as `cancelled`, not `executor_error`.

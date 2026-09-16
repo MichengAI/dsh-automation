@@ -4,7 +4,7 @@
 
 以下记录待发布变更及近期已发布版本。Git 标签与 GitHub Release 现已和这些条目同步；历史条目继续保留原始发布提交链接。
 
-## 未发布
+## 0.1.44 - 2026-09-16
 
 - 运行摘要增量只保留 turn 边界事件，不再缓存 request/header 和工具结果。
 - 插件 fiber 卸载抛出 `INACTIVE_EFFECT`，或运行中段已 abort 时，将运行记为 `cancelled`，而不是 `executor_error`。
