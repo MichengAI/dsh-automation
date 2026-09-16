@@ -25,6 +25,7 @@ minimumReleaseAgeExclude:
   - '@deepseek-ai/dsh-invariants@0.1.2-alpha.5 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1'
   - '@deepseek-ai/dsh-llm@0.1.2-alpha.5 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1'
   - '@deepseek-ai/dsh-permission-presets@0.1.2-alpha.5 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1'
+  - '@deepseek-ai/dsh-ptc-runtime@0.1.6-alpha.1'
   - '@deepseek-ai/dsh-sandbox-policy@0.1.2-alpha.5 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1'
   - '@deepseek-ai/dsh-sandbox@0.1.2-alpha.5 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1'
   - '@deepseek-ai/dsh-scope@0.1.2-alpha.5 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1'

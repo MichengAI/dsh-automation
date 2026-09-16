@@ -95,7 +95,7 @@ export function hasAutomationSource(hint: SessionOwnershipHint = []): boolean {
   return eventsHaveAutomationSource(readSessionEvents(hint))
 }
 
-/** 已弃用的同步历史读取，只给 session/event 没有增量的旧宿主兜底。 */
+/** 已弃用的同步历史读取，只给 session/event 没有增量或不完整时兜底。 */
 export function readSessionEvents(session: SessionEventReader): readonly SessionEventLike[] {
   if (typeof session.snapshotEvents === 'function') return session.snapshotEvents()
   return session.events ?? []
@@ -118,12 +118,15 @@ export function watchSessionEvents(
   return { events, stop }
 }
 
+/** 增量能产出正文或结束原因时用增量；否则回退同步快照。 */
 export function summarizeCollectedRun(
   live: readonly SessionEventLike[],
   session: SessionEventReader,
   firstSeq: number,
 ): ReturnType<typeof summarizeRun> {
-  return summarizeRun(live.length > 0 ? live : readSessionEvents(session), firstSeq)
+  const fromLive = summarizeRun(live, firstSeq)
+  if (fromLive.text !== '' || fromLive.reason !== undefined) return fromLive
+  return summarizeRun(readSessionEvents(session), firstSeq)
 }
 
 export function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): {

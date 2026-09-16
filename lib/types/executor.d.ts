@@ -43,12 +43,13 @@ export interface ExecutorConfig {
 export declare function applyUnattendedPermission(presets: PermissionPresetService, session: unknown, permission: AutomationDefinition['permissionPreset']): void;
 /** 新宿主读 deriveMessages 投影；旧宿主和测试夹具再回退事件数组或弃用的同步快照。 */
 export declare function hasAutomationSource(hint?: SessionOwnershipHint): boolean;
-/** 已弃用的同步历史读取，只给 session/event 没有增量的旧宿主兜底。 */
+/** 已弃用的同步历史读取，只给 session/event 没有增量或不完整时兜底。 */
 export declare function readSessionEvents(session: SessionEventReader): readonly SessionEventLike[];
 /** 订阅当前会话增量，避免为摘要再扫整段历史。 */
 export declare function watchSessionEvents(ctx: {
     on?(name: string, listener: (...args: any[]) => void): () => void;
 }, session: unknown, fromSeq: number): SessionEventWatch;
+/** 增量能产出正文或结束原因时用增量；否则回退同步快照。 */
 export declare function summarizeCollectedRun(live: readonly SessionEventLike[], session: SessionEventReader, firstSeq: number): ReturnType<typeof summarizeRun>;
 export declare function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): {
     readonly text: string;

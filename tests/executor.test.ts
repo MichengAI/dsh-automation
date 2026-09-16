@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createDefinition, createScheduledRun } from '../src/domain.ts'
-import { applyUnattendedPermission, executeAutomationRun, hasAutomationSource, pinAutomationSessionTitle, readSessionEvents, settlesWithin, summarizeRun, watchSessionEvents, type SessionEventLike } from '../src/executor.ts'
+import { applyUnattendedPermission, executeAutomationRun, hasAutomationSource, pinAutomationSessionTitle, readSessionEvents, settlesWithin, summarizeCollectedRun, summarizeRun, watchSessionEvents, type SessionEventLike } from '../src/executor.ts'
 
 for (const permission of ['read-only', 'workspace-write', 'danger-full-access', 'host-custom']) {
   test(`无人值守应用 Host 预设 ${permission} 后禁用审批`, () => {
@@ -142,9 +142,52 @@ test('有 session/event 增量时摘要不读 snapshotEvents', () => {
       return () => {}
     },
   }, session, 1)
-  const result = summarizeRun(watched.events, 1)
+  let read = 0
+  const result = summarizeCollectedRun(watched.events, {
+    snapshotEvents() {
+      read += 1
+      throw new Error('完整增量不应回退 snapshotEvents')
+    },
+  }, 1)
   watched.stop()
+  assert.equal(read, 0)
   assert.equal(result.text, '增量摘要')
+  assert.equal(result.reason?.kind, 'completed')
+})
+
+test('增量只有无关事件时回退 snapshotEvents', () => {
+  const result = summarizeCollectedRun(
+    [{ seq: 1, type: 'request/header', data: {} }],
+    {
+      snapshotEvents: () => [
+        { seq: 1, type: 'request/header', data: {} },
+        { seq: 2, type: 'turn/start', data: {} },
+        { seq: 3, type: 'assistant/message', data: { message: { content: [{ type: 'text', text: '快照摘要' }] } } },
+        { seq: 4, type: 'turn/end', data: { reason: { kind: 'completed' } } },
+      ],
+    },
+    1,
+  )
+  assert.equal(result.text, '快照摘要')
+  assert.equal(result.reason?.kind, 'completed')
+})
+
+test('订阅了 session/event 但没有增量时回退 snapshotEvents', () => {
+  const watched = watchSessionEvents({
+    on(name) {
+      assert.equal(name, 'session/event')
+      return () => {}
+    },
+  }, { id: 'silent' }, 1)
+  const result = summarizeCollectedRun(watched.events, {
+    snapshotEvents: () => [
+      { seq: 1, type: 'turn/start', data: {} },
+      { seq: 2, type: 'assistant/message', data: { message: { content: [{ type: 'text', text: '静默回退' }] } } },
+      { seq: 3, type: 'turn/end', data: { reason: { kind: 'completed' } } },
+    ],
+  }, 1)
+  watched.stop()
+  assert.equal(result.text, '静默回退')
   assert.equal(result.reason?.kind, 'completed')
 })
 
