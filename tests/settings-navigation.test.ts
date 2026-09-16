@@ -137,6 +137,59 @@ test('Codex 设置页通过分区事件打开定时任务，不再依赖官方 d
   }
 })
 
+test('Codex trigger 在事件未被取消时回退到设置页导航', () => {
+  let selected = 0
+  let missing = 0
+  let triggerClicks = 0
+  let targetClicks = 0
+  let pageOpen = false
+  let frameCallback: FrameRequestCallback | undefined
+  const trigger = {
+    dispatchEvent() { return true },
+    click() { triggerClicks += 1; pageOpen = true },
+  }
+  const target = {
+    textContent: '定时任务',
+    click() { targetClicks += 1 },
+  }
+  const restoreDocument = replaceGlobal('document', {
+    body: {},
+    querySelector(selector: string) {
+      if (selector === '[data-dcu-settings-trigger]') return trigger
+      if (selector === '[data-dcu-settings-page]') return pageOpen ? {} : null
+      return null
+    },
+    querySelectorAll(selector: string) {
+      if (selector === '[data-dcu-settings-page] nav button') return pageOpen ? [target] : []
+      return []
+    },
+  })
+  const restoreWindow = replaceGlobal('window', {
+    requestAnimationFrame(callback: FrameRequestCallback) { frameCallback = callback; return 1 },
+    cancelAnimationFrame() { frameCallback = undefined },
+    setTimeout() { return 2 },
+    clearTimeout() {},
+  })
+  const restoreObserver = replaceGlobal('MutationObserver', class {
+    observe() {}
+    disconnect() {}
+    takeRecords(): MutationRecord[] { return [] }
+  })
+  try {
+    openSettingsSection(['定时任务', 'Scheduled tasks'], () => { selected += 1 }, () => { missing += 1 })
+    assert.equal(triggerClicks, 1)
+    assert.equal(selected, 0)
+    frameCallback?.(0)
+    assert.equal(selected, 1)
+    assert.equal(missing, 0)
+    assert.equal(targetClicks, 1)
+  } finally {
+    restoreObserver()
+    restoreWindow()
+    restoreDocument()
+  }
+})
+
 test('设置分区在超时前仍不存在时报告缺失并清理观察器', () => {
   const dom = settingsDom({ hasTarget: false })
   let selected = 0

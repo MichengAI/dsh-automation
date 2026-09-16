@@ -235,3 +235,105 @@ test('sessionTitle.rename 失败只记日志，不抛出', () => {
   assert.equal(warnings.length, 1)
   assert.match(warnings[0] ?? '', /rename rejected/)
 })
+
+test('增量订阅只保留摘要需要的 turn 边界事件', () => {
+  const session = { id: 'live' }
+  const watched = watchSessionEvents({
+    on(_name, listener) {
+      listener(session, { seq: 1, type: 'request/header', data: { prompt: 'secret' } })
+      listener(session, { seq: 2, type: 'tool/result', data: { output: 'huge' } })
+      listener(session, { seq: 3, type: 'turn/start', data: {} })
+      listener(session, { seq: 4, type: 'assistant/message', data: { message: { content: [{ type: 'text', text: '摘要' }] } } })
+      listener(session, { seq: 5, type: 'turn/end', data: { reason: { kind: 'completed' } } })
+      return () => {}
+    },
+  }, session, 1)
+  assert.deepEqual(watched.events.map(event => event.type), ['turn/start', 'assistant/message', 'turn/end'])
+  watched.stop()
+})
+
+function sampleRun() {
+  const definition = createDefinition({
+    id: 'automation_unload', name: '卸载检查', prompt: '检查卸载。',
+    schedule: { kind: 'daily', time: '09:00', timeZone: 'Asia/Shanghai' },
+    workspaceId: 'ws_1', cwd: 'D:\\work\\demo', agentPreset: 'standard',
+    permissionPreset: 'read-only',
+    createdBy: { kind: 'web', sessionId: 'source' }, now: '2026-09-06T00:00:00.000Z',
+  })
+  return { definition, run: createScheduledRun(definition, '2026-09-06T01:00:00.000Z') }
+}
+
+function executorStub(on: () => never) {
+  const session = { get seq() { return 0 } }
+  const agent = {
+    session,
+    async whenIdle() {},
+    followup() { throw new Error('卸载后不应再 followup') },
+    cancel() {},
+  }
+  let disposed = false
+  return {
+    get disposed() { return disposed },
+    ctx: {
+      workspaceRegistry: { get: () => ({ path: 'D:\\work\\demo', status: async () => 'ok', attachSession: async () => {} }) },
+      agentDefaultModel: { currentSelection: () => ({ provider: 'test', model: 'test' }) },
+      agentPresets: { mount: async () => {} },
+      permissionPresets: { set() {} },
+      agents: {
+        withoutInitiator: (callback: () => unknown) => callback(),
+        async create() { return { agent, async dispose() { disposed = true } } },
+      },
+      sessions: { flush: async () => {} },
+      get: () => undefined,
+      on,
+    },
+  }
+}
+
+test('插件 fiber 卸载时 ctx.on 抛 INACTIVE_EFFECT 记为 cancelled', async () => {
+  const { definition, run } = sampleRun()
+  const stub = executorStub(() => {
+    throw Object.assign(new Error('cannot create effect on inactive context'), { code: 'INACTIVE_EFFECT' })
+  })
+  const result = await executeAutomationRun(stub.ctx as never, definition, run, {
+    sessionId: 'automation_unload',
+    runTimeoutMs: 1_000,
+  })
+  assert.equal(result.status, 'cancelled')
+  assert.equal(result.error?.code, 'cancelled')
+  assert.equal(stub.disposed, true)
+})
+
+test('已 abort 时中段抛错也记为 cancelled', async () => {
+  const { definition, run } = sampleRun()
+  const abort = new AbortController()
+  const stub = executorStub(() => {
+    throw new Error('fiber already gone')
+  })
+  const originalCreate = stub.ctx.agents.create
+  stub.ctx.agents.create = async () => {
+    abort.abort()
+    return originalCreate()
+  }
+  const result = await executeAutomationRun(stub.ctx as never, definition, run, {
+    sessionId: 'automation_aborted',
+    runTimeoutMs: 1_000,
+    signal: abort.signal,
+  })
+  assert.equal(result.status, 'cancelled')
+  assert.equal(result.error?.code, 'cancelled')
+})
+
+test('执行器其他异常仍记为 executor_error', async () => {
+  const { definition, run } = sampleRun()
+  const stub = executorStub(() => {
+    throw new Error('watch failed')
+  })
+  const result = await executeAutomationRun(stub.ctx as never, definition, run, {
+    sessionId: 'automation_error',
+    runTimeoutMs: 1_000,
+  })
+  assert.equal(result.status, 'failed')
+  assert.equal(result.error?.code, 'executor_error')
+  assert.match(result.error?.message ?? '', /watch failed/)
+})

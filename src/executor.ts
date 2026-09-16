@@ -37,6 +37,16 @@ export interface SessionEventWatch {
 }
 
 const CANCEL_CONVERGENCE_TIMEOUT_MS = 10_000
+const SUMMARY_EVENT_TYPES = new Set(['turn/start', 'assistant/message', 'turn/end'])
+
+function isInactiveEffect(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error
+    && (error as { readonly code?: unknown }).code === 'INACTIVE_EFFECT'
+}
+
+function isAbortRequested(signal?: AbortSignal): boolean {
+  return signal?.aborted === true
+}
 
 /** 对不保证及时响应 AbortSignal 的宿主任务设置第二道退出上限。 */
 export async function settlesWithin(promise: Promise<unknown>, timeoutMs: number): Promise<boolean> {
@@ -112,6 +122,7 @@ export function watchSessionEvents(
     ? ctx.on('session/event', (target: unknown, event: SessionEventLike) => {
         if (target !== session || typeof event?.type !== 'string') return
         if (typeof event.seq === 'number' && event.seq < fromSeq) return
+        if (!SUMMARY_EVENT_TYPES.has(event.type)) return
         events.push(event)
       })
     : () => {}
@@ -180,7 +191,7 @@ export async function executeAutomationRun(
   run: AutomationRun,
   config: ExecutorConfig,
 ): Promise<RunCompletion> {
-  if (config.signal?.aborted === true) {
+  if (isAbortRequested(config.signal)) {
     return { status: 'cancelled', error: { code: 'cancelled', message: '自动化在启动前已被取消。' } }
   }
   const target = run.targetSnapshot
@@ -304,6 +315,13 @@ export async function executeAutomationRun(
       error: reasonError(outcome.reason),
     }
   } catch (error: unknown) {
+    if (isAbortRequested(config.signal) || isInactiveEffect(error)) {
+      return {
+        ...(handle === undefined ? {} : { sessionId: String(sessionId) }),
+        status: 'cancelled',
+        error: { code: 'cancelled', message: '自动化因其所属服务停止而被取消。' },
+      }
+    }
     return {
       ...(handle === undefined ? {} : { sessionId: String(sessionId) }),
       status: 'failed',

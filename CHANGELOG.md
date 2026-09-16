@@ -4,6 +4,11 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## Unreleased
+
+- Keep only turn-boundary events in the live run-summary buffer, dropping request headers and tool results.
+- Treat plugin-fiber unload (`INACTIVE_EFFECT`) or an aborted run signal mid-execution as `cancelled`, not `executor_error`.
+
 ## 0.1.43 - 2026-09-16
 
 - Add support for DSH `0.1.6-alpha.1`, retaining compatibility with `0.1.0-rc.8`, `0.1.1-rc.2`, `0.1.2-rc.1`, `0.1.5-rc.1`, and `0.1.5-rc.2`.
