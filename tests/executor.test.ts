@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createDefinition, createScheduledRun } from '../src/domain.ts'
-import { applyUnattendedPermission, executeAutomationRun, pinAutomationSessionTitle, readSessionEvents, settlesWithin, summarizeRun, type SessionEventLike } from '../src/executor.ts'
+import { applyUnattendedPermission, executeAutomationRun, hasAutomationSource, pinAutomationSessionTitle, readSessionEvents, settlesWithin, summarizeRun, watchSessionEvents, type SessionEventLike } from '../src/executor.ts'
 
 for (const permission of ['read-only', 'workspace-write', 'danger-full-access', 'host-custom']) {
   test(`无人值守应用 Host 预设 ${permission} 后禁用审批`, () => {
@@ -39,10 +39,15 @@ for (const [hostDenies, setupApi] of [[false, 'legacy'], [true, 'legacy'], [fals
     })
     const run = createScheduledRun(definition, '2026-09-06T01:00:00.000Z')
     const events: SessionEventLike[] = []
+    const listeners: Array<(session: unknown, event: SessionEventLike) => void> = []
     const session = {
       get seq() { return events.length },
-      snapshotEvents: () => events,
-      append(type: string, data: Record<string, unknown>) { events.push({ seq: events.length, type, data }) },
+      snapshotEvents() { throw new Error('生产路径不应再读 snapshotEvents') },
+      append(type: string, data: Record<string, unknown>) {
+        const event = { seq: events.length, type, data }
+        events.push(event)
+        for (const listener of listeners) listener(session, event)
+      },
     }
     type Call = { name: string; arguments: Record<string, unknown> }
     const guards: ((call: Call) => string | undefined)[] = [() => hostDenies ? 'Host denied' : undefined]
@@ -83,6 +88,14 @@ for (const [hostDenies, setupApi] of [[false, 'legacy'], [true, 'legacy'], [fals
       },
       sessions: { flush: async () => {} },
       get: () => undefined,
+      on(name: string, listener: (session: unknown, event: SessionEventLike) => void) {
+        if (name !== 'session/event') return () => {}
+        listeners.push(listener)
+        return () => {
+          const index = listeners.indexOf(listener)
+          if (index >= 0) listeners.splice(index, 1)
+        }
+      },
     }
     const result = await executeAutomationRun(ctx as never, definition, run, { sessionId: 'automation_run', runTimeoutMs: 1_000 })
     assert.equal(result.status, 'succeeded')
@@ -115,6 +128,38 @@ test('会话事件优先使用新版 snapshotEvents，并兼容旧版 events', (
     events: legacy,
   }), current)
   assert.deepEqual(readSessionEvents({ events: legacy }), legacy)
+})
+
+test('有 session/event 增量时摘要不读 snapshotEvents', () => {
+  const session = { id: 'live' }
+  const watched = watchSessionEvents({
+    on(name, listener) {
+      assert.equal(name, 'session/event')
+      listener(session, { seq: 1, type: 'turn/start', data: {} })
+      listener({ id: 'other' }, { seq: 9, type: 'turn/end', data: { reason: { kind: 'error' } } })
+      listener(session, { seq: 2, type: 'assistant/message', data: { message: { content: [{ type: 'text', text: '增量摘要' }] } } })
+      listener(session, { seq: 3, type: 'turn/end', data: { reason: { kind: 'completed' } } })
+      return () => {}
+    },
+  }, session, 1)
+  const result = summarizeRun(watched.events, 1)
+  watched.stop()
+  assert.equal(result.text, '增量摘要')
+  assert.equal(result.reason?.kind, 'completed')
+})
+
+test('归属识别优先 deriveMessages，存在投影时不读 snapshotEvents', () => {
+  assert.equal(hasAutomationSource({
+    deriveMessages: () => [{ source: { kind: 'automation' } }],
+    snapshotEvents: () => { throw new Error('deprecated') },
+  }), true)
+  assert.equal(hasAutomationSource({
+    deriveMessages: () => [{ source: { kind: 'user' } }],
+    snapshotEvents: () => [{ seq: 1, type: 'user/message', data: { source: { kind: 'automation' } } }],
+  }), false)
+  assert.equal(hasAutomationSource([
+    { seq: 1, type: 'user/message', data: { source: { kind: 'automation' } } },
+  ]), true)
 })
 
 test('未注入 sessionTitle 时不能让整次执行失败', () => {

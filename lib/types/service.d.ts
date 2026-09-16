@@ -1,5 +1,6 @@
 /** 持久化定义、occurrence 认领、时钟与执行调度。 */
 import type { Context } from "@deepseek-ai/cordis";
+import { type SessionOwnershipHint } from "./executor.ts";
 import { type PermissionOption } from "./permission-presets.ts";
 import type { AutomationDefinition, AutomationRun, AutomationSchedule, PermissionPreset, UpdateAutomationInput } from "./types.ts";
 export declare const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
@@ -75,10 +76,6 @@ export interface AutomationDefinitionView extends AutomationDefinition {
 export declare class AutomationRequestError extends Error {
     readonly name = "AutomationRequestError";
 }
-interface SessionEventLike {
-    readonly type: string;
-    readonly data: unknown;
-}
 export declare class AutomationService {
     private readonly ctx;
     private readonly domain;
@@ -96,7 +93,7 @@ export declare class AutomationService {
     private constructor();
     static open(ctx: Context, config: AutomationConfig): Promise<AutomationService>;
     start(): void;
-    ownsSession(sessionId: string, events?: readonly SessionEventLike[]): boolean;
+    ownsSession(sessionId: string, hint?: SessionOwnershipHint): boolean;
     permissionNames(): readonly string[];
     permissionOptions(): readonly PermissionOption[];
     defaultPermission(): string;
@@ -140,4 +137,3 @@ export declare class AutomationService {
     private pruneWorkspaceHistory;
     private pruneAllHistory;
 }
-export {};

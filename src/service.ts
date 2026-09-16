@@ -18,7 +18,7 @@ import {
   deleteDefinition,
   updateDefinition,
 } from "./domain.ts";
-import { executeAutomationRun } from "./executor.ts";
+import { executeAutomationRun, hasAutomationSource, type SessionOwnershipHint } from "./executor.ts";
 import {
   isEqualSchedule,
   latestDueOccurrence,
@@ -119,11 +119,6 @@ export class AutomationRequestError extends Error {
   override readonly name = "AutomationRequestError";
 }
 
-interface SessionEventLike {
-  readonly type: string;
-  readonly data: unknown;
-}
-
 function asMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -204,25 +199,12 @@ export class AutomationService {
 
   ownsSession(
     sessionId: string,
-    events: readonly SessionEventLike[] = [],
+    hint: SessionOwnershipHint = [],
   ): boolean {
     if (sessionId.startsWith(AUTOMATION_SESSION_PREFIX)) return true;
     if ([...this.runs.entries()].some(([, run]) => run.sessionId === sessionId))
       return true;
-    return events.some((event) => {
-      if (
-        event.type !== "user/message" ||
-        typeof event.data !== "object" ||
-        event.data === null
-      )
-        return false;
-      const source = (event.data as { readonly source?: unknown }).source;
-      return (
-        typeof source === "object" &&
-        source !== null &&
-        (source as { readonly kind?: unknown }).kind === "automation"
-      );
-    });
+    return hasAutomationSource(hint);
   }
 
   permissionNames(): readonly string[] {

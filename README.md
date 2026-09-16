@@ -73,8 +73,8 @@ For a desktop workbench, download [DSH Codex Desktop](https://github.com/Micheng
 
 ## Prerequisites
 
-- The current source uses DSH `0.1.5-rc.2` for development and real Host compatibility tests, while retaining the legacy Agent setup callback and session-list formats. Back up automation storage and sessions in the Profile before upgrading the Host; V3 sessions cannot be read after downgrading.
-- Official DSH peerDependencies are exactly `0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2`; development dependencies remain pinned to `0.1.5-rc.2`. Use one consistent official package version within each Host.
+- The current source uses DSH `0.1.6-alpha.1` for development and real Host compatibility tests, while retaining the legacy Agent setup callback and session-list formats. Back up automation storage and sessions in the Profile before upgrading the Host; V3 sessions cannot be read after downgrading.
+- Official DSH peerDependencies are exactly `0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1`; development dependencies remain pinned to `0.1.6-alpha.1`. Use one consistent official package version within each Host.
 - Other versions are outside the declared compatibility range. Installers may warn, and strict peer validation rejects them. Extend and pass the version matrix before adding a new rc.
 - The Connection patch replaces the Web bundle's configured injection list with `[webServer, webRuntime]`; Loader still merges dependencies declared by the plugin source. Custom Hosts with additional configured injections must retain these two entries and their extra dependencies in a later Profile patch. This patch does not automatically merge other bundles' lists.
 - A working DeepSeek Harness Web installation with `dsh` available in PowerShell.
@@ -191,7 +191,7 @@ pnpm build
 
 Cross-plugin sidebar regressions run with `pnpm test:composition <dsh-im-connect checkout>`. Build the IM checkout first; the script reads its `lib/client.js`. It executes the composition logic and tab registries of both repositories, covering registration order, delayed notifications, and uninstall handover across the archive, IM, scheduled, and Codex UI plugins; slots and timers use a simulated environment, so it does not install any plugin or replace Desktop rendering acceptance testing. This separate check requires an external checkout and is not included in `pnpm check`; use a fixed IM revision for reproducible results.
 
-`pnpm test:matrix` builds the package, then creates separate temporary npm environments for all four versions using network access. It checks strict peer installation, every official dependency version, the packaged entry point, real AgentLoop execution, and service regressions. All four versions pass. Persistence enumeration in service regressions uses in-memory fixtures for both cold-session formats; it does not validate on-disk migration of a real Profile. The printed evidence directory retains installation lockfiles, test logs, and `results.json`. The matrix does not modify development dependencies or connect to the user's Profile.
+`pnpm test:matrix` builds the package, then creates separate temporary npm environments for every declared Host version using network access. It checks strict peer installation, every official dependency version, the packaged entry point, real AgentLoop execution, and service regressions. All declared versions pass. Persistence enumeration in service regressions uses in-memory fixtures for both cold-session formats; it does not validate on-disk migration of a real Profile. The printed evidence directory retains installation lockfiles, test logs, and `results.json`. The matrix does not modify development dependencies or connect to the user's Profile.
 
 ## License
 

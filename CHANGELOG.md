@@ -4,6 +4,11 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.43 - 2026-09-16
+
+- Add support for DSH `0.1.6-alpha.1`, retaining compatibility with `0.1.0-rc.8`, `0.1.1-rc.2`, `0.1.2-rc.1`, `0.1.5-rc.1`, and `0.1.5-rc.2`.
+- Collect run summaries from live `session/event` updates and detect owned sessions via `deriveMessages`, so production code no longer depends on deprecated `snapshotEvents`.
+
 ## 0.1.42 - 2026-09-14
 
 - Preserve a replacement sidebar tab when an older registration with the same ID is unloaded.

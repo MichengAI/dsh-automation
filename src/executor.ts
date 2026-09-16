@@ -15,7 +15,7 @@ import type { AutomationDefinition, AutomationRun } from './types.ts'
 interface TextBlock { readonly type: string; readonly text?: string }
 interface SetupAgent { readonly session: unknown }
 export interface SessionEventLike {
-  readonly seq: number
+  readonly seq?: number
   readonly type: string
   readonly data: Record<string, any>
 }
@@ -23,6 +23,17 @@ export interface SessionEventLike {
 interface SessionEventReader {
   readonly events?: readonly SessionEventLike[]
   snapshotEvents?(): readonly SessionEventLike[]
+}
+
+export interface SessionOwnershipHintObject extends SessionEventReader {
+  deriveMessages?(): readonly { readonly source?: { readonly kind?: unknown } }[]
+}
+
+export type SessionOwnershipHint = readonly SessionEventLike[] | SessionOwnershipHintObject
+
+export interface SessionEventWatch {
+  readonly events: SessionEventLike[]
+  stop(): void
 }
 
 const CANCEL_CONVERGENCE_TIMEOUT_MS = 10_000
@@ -63,10 +74,56 @@ export function applyUnattendedPermission(
   setApprovalPolicy(session, 'never')
 }
 
-/** 优先读取新版按需快照，避免保留旧版 Session.events 的内部日志引用。 */
+function isSessionEventList(hint: SessionOwnershipHint): hint is readonly SessionEventLike[] {
+  return Array.isArray(hint)
+}
+
+function eventsHaveAutomationSource(events: readonly SessionEventLike[]): boolean {
+  return events.some((event) => {
+    if (event.type !== 'user/message' || typeof event.data !== 'object' || event.data === null) return false
+    const source = (event.data as { readonly source?: unknown }).source
+    return typeof source === 'object' && source !== null && (source as { readonly kind?: unknown }).kind === 'automation'
+  })
+}
+
+/** 新宿主读 deriveMessages 投影；旧宿主和测试夹具再回退事件数组或弃用的同步快照。 */
+export function hasAutomationSource(hint: SessionOwnershipHint = []): boolean {
+  if (isSessionEventList(hint)) return eventsHaveAutomationSource(hint)
+  if (typeof hint.deriveMessages === 'function') {
+    return hint.deriveMessages().some((message) => message?.source?.kind === 'automation')
+  }
+  return eventsHaveAutomationSource(readSessionEvents(hint))
+}
+
+/** 已弃用的同步历史读取，只给 session/event 没有增量的旧宿主兜底。 */
 export function readSessionEvents(session: SessionEventReader): readonly SessionEventLike[] {
   if (typeof session.snapshotEvents === 'function') return session.snapshotEvents()
   return session.events ?? []
+}
+
+/** 订阅当前会话增量，避免为摘要再扫整段历史。 */
+export function watchSessionEvents(
+  ctx: { on?(name: string, listener: (...args: any[]) => void): () => void },
+  session: unknown,
+  fromSeq: number,
+): SessionEventWatch {
+  const events: SessionEventLike[] = []
+  const stop = typeof ctx.on === 'function'
+    ? ctx.on('session/event', (target: unknown, event: SessionEventLike) => {
+        if (target !== session || typeof event?.type !== 'string') return
+        if (typeof event.seq === 'number' && event.seq < fromSeq) return
+        events.push(event)
+      })
+    : () => {}
+  return { events, stop }
+}
+
+export function summarizeCollectedRun(
+  live: readonly SessionEventLike[],
+  session: SessionEventReader,
+  firstSeq: number,
+): ReturnType<typeof summarizeRun> {
+  return summarizeRun(live.length > 0 ? live : readSessionEvents(session), firstSeq)
 }
 
 export function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): {
@@ -77,7 +134,7 @@ export function summarizeRun(events: readonly SessionEventLike[], firstSeq: numb
   let text = ''
   let reason: Record<string, any> | undefined
   for (const event of events) {
-    if (event.seq < firstSeq) continue
+    if (typeof event.seq === 'number' && event.seq < firstSeq) continue
     if (event.type === 'turn/start') {
       started = true
       continue
@@ -144,6 +201,7 @@ export async function executeAutomationRun(
   let handle: Awaited<ReturnType<Context['agents']['create']>> | undefined
   let timeout: ReturnType<typeof setTimeout> | undefined
   let removeCancellationListener = () => {}
+  let watched: SessionEventWatch | undefined
   try {
     handle = await ctx.agents.withoutInitiator(() => ctx.agents.create({
       sessionId,
@@ -167,6 +225,7 @@ export async function executeAutomationRun(
       definition.timeZone,
     ))
     const firstSeq = handle.agent.session.seq
+    watched = watchSessionEvents(ctx, handle.agent.session, firstSeq)
     handle.agent.followup(createUserMessage({
       content: [{ type: 'text', text: run.promptSnapshot }],
       source: {
@@ -214,7 +273,7 @@ export async function executeAutomationRun(
     }
     if (timeout !== undefined) clearTimeout(timeout)
     await ctx.sessions.flush(handle.agent.session)
-    const outcome = summarizeRun(readSessionEvents(handle.agent.session), firstSeq)
+    const outcome = summarizeCollectedRun(watched.events, handle.agent.session, firstSeq)
     const summary = boundSummary(outcome.text)
     if (aborted) {
       return {
@@ -251,6 +310,7 @@ export async function executeAutomationRun(
       },
     }
   } finally {
+    watched?.stop()
     removeCancellationListener()
     if (timeout !== undefined) clearTimeout(timeout)
     if (handle !== undefined) {

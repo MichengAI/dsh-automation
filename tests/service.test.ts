@@ -289,6 +289,15 @@ test("ownsSession 通过前缀、运行记录和消息来源识别自动化会�
     ]),
     false,
   );
+  assert.equal(
+    service.ownsSession("user-session", {
+      deriveMessages: () => [{ source: { kind: "automation" } }],
+      snapshotEvents: () => {
+        throw new Error("deprecated");
+      },
+    }),
+    true,
+  );
 });
 
 test("创建和立即运行都限制在来源工作区", async () => {
