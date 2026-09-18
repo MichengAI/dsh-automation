@@ -32,9 +32,9 @@ import {
   shouldFollowSessionTab,
   tabForSessionId,
 } from '../src/client/schedule-rail-model.ts'
-import { relativeTime, nextOpenSessionMenuId, nextOpenSessionMenu, shouldCloseNativeSessionMenu, nativeSessionMenuStyle, nativeSessionHoverStyle, pointerPoint, clampMenuPoint, } from '../src/client/native-session-menu.ts'
+import { relativeTime, nativeSessionHoverStyle } from '../src/client/native-session-menu.ts'
 import { en, zh } from '../src/client/locales.ts'
-import { archiveScheduledGroup, canDeleteScheduledSession, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder, scheduledSessionMenuActions, scheduledSessionOmitsStatusSlot } from '../src/client/native-group-actions.ts'
+import { archiveScheduledGroup, canDeleteScheduledSession, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder, scheduledListHostActions, scheduledSessionMenuActions, scheduledSessionOmitsStatusSlot } from '../src/client/native-group-actions.ts'
 
 test('会话更多操作的无障碍标签提供中英文模板', () => {
   assert.equal(en['session.moreActions'], 'More actions for {title}')
@@ -379,43 +379,6 @@ test('删除任务后仍保留会话文件夹', () => {
 })
 
 
-test('同一时间只允许一条定时会话菜单打开', () => {
-  assert.equal(nextOpenSessionMenuId(null, 'sess-a'), 'sess-a')
-  assert.equal(nextOpenSessionMenuId('sess-a', 'sess-a'), null)
-  assert.equal(nextOpenSessionMenuId('sess-a', 'sess-b'), 'sess-b')
-})
-
-test('点第二条会话标题或更多按钮时应关闭第一条菜单', () => {
-  const firstRow = {
-    nodeType: 1,
-    contains(other: { id?: string }): boolean { return other.id === 'first-btn' },
-  }
-  const firstBtn = { id: 'first-btn', nodeType: 1, parentElement: firstRow }
-  const secondTitleText = {
-    nodeType: 3,
-    parentElement: { id: 'second-title', nodeType: 1, parentElement: { nodeType: 1 } },
-  }
-  const secondBtn = { id: 'second-btn', nodeType: 1, parentElement: { nodeType: 1 } }
-  assert.equal(shouldCloseNativeSessionMenu(firstBtn, [firstRow]), false)
-  assert.equal(shouldCloseNativeSessionMenu(secondTitleText, [firstRow]), true)
-  assert.equal(shouldCloseNativeSessionMenu(secondBtn, [firstRow]), true)
-})
-
-test('菜单定位使用视口固定坐标，避免被侧栏裁切后叠在下一条上', () => {
-  const style = nativeSessionMenuStyle({ x: 280, y: 120 }, { width: 218, height: 176 }, { width: 1000, height: 800 })
-  assert.equal(style.position, 'fixed')
-  assert.equal(style.left, '280px')
-  assert.equal(style.top, '120px')
-})
-
-test('右键菜单落在指针处，并被限制在视口内', () => {
-  assert.deepEqual(pointerPoint({ clientX: 40, clientY: 80 }), { x: 40, y: 80 })
-  assert.deepEqual(clampMenuPoint(990, 790, 218, 176, { width: 1000, height: 800 }), { x: 774, y: 616 })
-  const next = nextOpenSessionMenu(null, 'sess-a', { x: 40, y: 80 })
-  assert.deepEqual(next, { id: 'sess-a', x: 40, y: 80 })
-  assert.equal(nextOpenSessionMenu(next, 'sess-a', { x: 41, y: 81 }), null)
-})
-
 test('当前会话所属文件夹即使折叠也保持官方高亮', () => {
   assert.equal(scheduledGroupShowsActiveFolder(['session-a', 'session-b'], 'session-b'), true)
   assert.equal(scheduledGroupShowsActiveFolder(['session-a'], 'session-b'), false)
@@ -447,6 +410,32 @@ test('有归档插件且宿主提供删除时才出现删除会话', () => {
   assert.equal(canDeleteScheduledSession(true, undefined), false)
   assert.deepEqual(scheduledSessionMenuActions(false), ['rename', 'fork', 'archive'])
   assert.deepEqual(scheduledSessionMenuActions(true), ['rename', 'fork', 'archive', 'delete-session'])
+})
+
+test('页签渲染和自绘回退共用宿主会话操作，而不是只在有 registry 时转发', () => {
+  const renameSession = () => undefined
+  const archiveSession = () => undefined
+  const deleteSession = () => undefined
+  const forkSession = () => undefined
+  const actions = scheduledListHostActions({
+    renameSession,
+    archiveSession,
+    deleteSession,
+    forkSession,
+    openSession: () => undefined,
+    useSessions: () => undefined,
+  })
+  assert.equal(actions.renameSession, renameSession)
+  assert.equal(actions.archiveSession, archiveSession)
+  assert.equal(actions.deleteSession, deleteSession)
+  assert.equal(actions.forkSession, forkSession)
+  assert.deepEqual(scheduledListHostActions({ renameSession: 'nope', archiveSession: 1 }), {})
+  assert.deepEqual(scheduledListHostActions(undefined), {})
+  const rail = readFileSync(new URL('../src/client/ScheduleRail.tsx', import.meta.url), 'utf8')
+  const index = readFileSync(new URL('../src/client/index.ts', import.meta.url), 'utf8')
+  assert.match(rail, /scheduledListHostActions\(hostProps\)/)
+  assert.match(index, /scheduledListHostActions\(/)
+  assert.doesNotMatch(index, /props\.renameSession as any/)
 })
 
 test('定时文件夹和会话菜单跟随官方尺寸，不再使用 dense/compact', () => {

@@ -6,6 +6,35 @@ export function hasArchiveManagerPlugin(root: { querySelector(selector: string):
 
 export type ScheduledSessionMenuAction = 'rename' | 'fork' | 'archive' | 'delete-session'
 
+export interface ScheduledListHostActions {
+  readonly renameSession?: (sessionId: string, title: string) => void | Promise<void>
+  readonly archiveSession?: (sessionId: string) => void | Promise<void>
+  readonly deleteSession?: (sessionId: string) => void | Promise<void>
+  readonly forkSession?: (sessionId: string) => void | Promise<void>
+}
+
+function asSessionAction<Args extends readonly unknown[]>(
+  value: unknown,
+): ((...args: Args) => void | Promise<void>) | undefined {
+  return typeof value === 'function' ? (value as (...args: Args) => void | Promise<void>) : undefined
+}
+
+/** 官方 WorkspaceBrowser 会把这四个操作放进列表 props；页签渲染和自绘回退必须抽同一份。 */
+export function scheduledListHostActions(props?: Record<string, unknown> | null): ScheduledListHostActions {
+  const source = props ?? {}
+  const renameSession = asSessionAction<[string, string]>(source.renameSession)
+  const archiveSession = asSessionAction<[string]>(source.archiveSession)
+  const deleteSession = asSessionAction<[string]>(source.deleteSession)
+  const forkSession = asSessionAction<[string]>(source.forkSession)
+  return {
+    ...(renameSession === undefined ? {} : { renameSession }),
+    ...(archiveSession === undefined ? {} : { archiveSession }),
+    ...(deleteSession === undefined ? {} : { deleteSession }),
+    ...(forkSession === undefined ? {} : { forkSession }),
+  }
+}
+
+/** 官方任务树本身没有删除；删除项由 archive-manager 补进菜单。没装归档插件时即使宿主传入 deleteSession 也不展示。 */
 export function canDeleteScheduledSession(
   archiveManagerInstalled: boolean,
   deleteSession?: (sessionId: string) => void | Promise<void>,

@@ -4,12 +4,13 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
-## Unreleased
+## 0.1.45 - 2026-09-18
 
 - Support DSH `0.1.6-alpha.2` while keeping older hosts. Open scheduled sessions through `uiWorkspace.openSession` when present, and fall back to `sessions.open` on older clients.
 - Fix scheduled sessions that could not be opened from the sidebar on alpha.2: probe official `openSession` with `reflect.get('uiWorkspace')` instead of reading `ctx.uiWorkspace` (Cordis throws without inject) or the removed `sessions.open`.
 - Resolve the selected session from `retainedBy.mainView` when the session list no longer exposes `current`.
 - Align the scheduled session list with official WorkspaceBrowser chrome (indent, hover folder-to-chevron, scrollbar gutter, search and empty states). With archive-manager installed, session menus can delete.
+- Forward host rename/archive/delete/fork onto the self-drawn scheduled list when no tab registry is present, so those menus match the hosted tab path.
 
 ## 0.1.44 - 2026-09-16
 

@@ -20,6 +20,7 @@ import {
   type NativeSidebarTab,
   type NativeWorkspaceLike,
 } from './schedule-rail-model.js'
+import { scheduledListHostActions } from './native-group-actions.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
 import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import type { NativeSidebarTab as ExtraSidebarTab, NativeTabRegistry } from './native-tabs.js'
@@ -227,7 +228,7 @@ export function NativeScheduleShell({
   })
   const hostedSchedule = extraTabs.find(item => item.id === 'schedule')
   const scheduleBody = hostedSchedule === undefined
-    ? <NativeScheduleSessionList t={t} runtime={runtime} {...(openSession === undefined ? {} : { openSession })} {...(openTaskSettings === undefined ? {} : { openTaskSettings })} {...(useSessions === undefined ? {} : { useSessions })} {...(useWorkspaces === undefined ? {} : { useWorkspaces })} />
+    ? <NativeScheduleSessionList t={t} runtime={runtime} {...(openSession === undefined ? {} : { openSession })} {...(openTaskSettings === undefined ? {} : { openTaskSettings })} {...(useSessions === undefined ? {} : { useSessions })} {...(useWorkspaces === undefined ? {} : { useWorkspaces })} {...scheduledListHostActions(hostProps)} />
     : hostedSchedule.render({ ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true }) as ReactNode
   return (
     <div className="dsh-st-shell-rail">

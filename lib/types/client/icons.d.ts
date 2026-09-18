@@ -26,10 +26,7 @@ export declare function FolderOpenIcon(props: IconProps): JSX.Element;
 export declare function PlayOutlineIcon(props: IconProps): JSX.Element;
 export declare function TreeCornerIcon(props: IconProps): JSX.Element;
 export declare function ChevronIcon(props: IconProps): JSX.Element;
-export declare function EllipsisIcon(props: IconProps): JSX.Element;
 export declare function PencilIcon(props: IconProps): JSX.Element;
-export declare function BranchIcon(props: IconProps): JSX.Element;
-export declare function ArchiveIcon(props: IconProps): JSX.Element;
 /** 复刻官方任务树 running StateDot：3x3 像素绕圈。 */
 export declare function RunningStateDot(): JSX.Element;
 export {};

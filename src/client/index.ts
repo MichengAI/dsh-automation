@@ -10,6 +10,7 @@ import {
 } from './native-tabs.js'
 import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
+import { scheduledListHostActions } from './native-group-actions.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
 import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
 import { AUTOMATION_SESSION_PREFIX, canOpenClientSession, ensureOpenScheduledSession, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
@@ -210,10 +211,7 @@ export function apply(ctx: ClientContext): void {
             openSession: opener,
             ...(isSessionSelector(props.useSessions) ? { useSessions: props.useSessions } : {}),
             ...(isWorkspaceSelector(props.useWorkspaces) ? { useWorkspaces: props.useWorkspaces } : {}),
-            ...(typeof props.renameSession === 'function' ? { renameSession: props.renameSession as any } : {}),
-            ...(typeof props.archiveSession === 'function' ? { archiveSession: props.archiveSession as any } : {}),
-            ...(typeof props.deleteSession === 'function' ? { deleteSession: props.deleteSession as any } : {}),
-            ...(typeof props.forkSession === 'function' ? { forkSession: props.forkSession as any } : {}),
+            ...scheduledListHostActions(props as Record<string, unknown>),
             openTaskSettings,
           })
         },

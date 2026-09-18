@@ -30,16 +30,6 @@ import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './sched
 import { WorkspaceToolbar } from './workspace-toolbar.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
-export {
-  nativeSessionMenuStyle,
-  nextOpenSessionMenu,
-  nextOpenSessionMenuId,
-  pointerPoint,
-  relativeTime,
-  resolveEventElement,
-  shouldCloseNativeSessionMenu,
-} from './native-session-menu.js'
-
 const EMPTY_SESSION_BY_ID: Record<string, NativeSessionLike> = {}
 
 export function NativeScheduleSessionList(props: {
@@ -320,7 +310,7 @@ function NativeScheduleGroupRow(props: {
             className='dsh-st-n-ico'
             aria-label={t('session.groupActions', { name })}
             onMouseDown={(event) => { event.stopPropagation() }}
-            onClick={(event) => { event.stopPropagation(); onMenuChange(!menuOpen) }}
+            onClick={(event) => { event.stopPropagation(); onMenuChange(!menuOpen) /* 官方 Menu 受控，不会自己开；官方行也是锚点 toggle */ }}
           ><IconEllipsisOutline16 size={16} /></button>}
         />
       </span>
@@ -427,7 +417,7 @@ function NativeSessionRow(props: {
             className='dsh-st-n-ico'
             aria-label={t('session.moreActions', { title })}
             onMouseDown={(event) => { event.stopPropagation() }}
-            onClick={(event) => { event.stopPropagation(); hideHover(); onMenuChange(!menuOpen) }}
+            onClick={(event) => { event.stopPropagation(); hideHover(); onMenuChange(!menuOpen) /* 官方 Menu 受控，不会自己开；官方行也是锚点 toggle */ }}
           ><IconEllipsisOutline16 size={16} /></button>}
         />
       </span>
