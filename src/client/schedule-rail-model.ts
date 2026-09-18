@@ -34,6 +34,7 @@ export interface NativeSessionLike {
   readonly origin?: string
   readonly updatedAt?: number | string
   readonly running?: boolean
+  readonly retainedBy?: { readonly mainView?: number }
 }
 
 export interface NativeWorkspaceLike {
@@ -322,6 +323,72 @@ export function filterTaskSessionState<T extends SessionListState>(state: T | un
 export interface WorkspaceListState {
   readonly items?: readonly NativeWorkspaceLike[]
   readonly archivedSessionIds?: readonly string[]
+}
+
+/** 旧宿主读 list.current；alpha.2 主视图改由 retainedBy.mainView 标记。 */
+export function resolveCurrentSessionId(snapshot: SessionListState | undefined): string | null {
+  const current = snapshot?.current
+  if (typeof current === 'string' && current !== '') return current
+  const byId = snapshot?.byId ?? {}
+  for (const [id, session] of Object.entries(byId)) {
+    if ((session?.retainedBy?.mainView ?? 0) > 0) {
+      const explicit = session.id?.trim()
+      return explicit !== undefined && explicit !== '' ? explicit : id
+    }
+  }
+  return null
+}
+
+export interface ClientSessionOpenAccess {
+  readonly uiWorkspace?: { openSession(id: string): void }
+  readonly sessions?: { open?(id: string): void }
+  readonly get?: (name: string) => unknown
+  readonly reflect?: { get?: (name: string) => unknown }
+}
+
+function asUiWorkspace(value: unknown): { openSession(id: string): void } | undefined {
+  if (value === null || typeof value !== 'object') return undefined
+  const openSession = (value as { openSession?: unknown }).openSession
+  if (typeof openSession !== 'function') return undefined
+  return { openSession: (id: string) => { (openSession as (id: string) => void).call(value, id) } }
+}
+
+function probeService(ctx: ClientSessionOpenAccess, name: string): unknown {
+  const reflectGet = ctx.reflect?.get
+  if (typeof reflectGet === 'function') {
+    try { return reflectGet.call(ctx.reflect, name) } catch { /* 未提供时不让点击崩掉 */ }
+  }
+  if (typeof ctx.get === 'function') {
+    try { return ctx.get(name) } catch { /* 未注入时 Cordis get 也可能抛 */ }
+  }
+  return undefined
+}
+
+/** 不硬读 ctx.uiWorkspace：Cordis 未 inject 时读属性会抛，只能 reflect.get / get。 */
+export function resolveClientSessionOpenAccess(ctx: ClientSessionOpenAccess): ClientSessionOpenAccess {
+  const uiWorkspace = asUiWorkspace(probeService(ctx, 'uiWorkspace'))
+  return {
+    ...(uiWorkspace === undefined ? {} : { uiWorkspace }),
+    ...(ctx.sessions === undefined ? {} : { sessions: ctx.sessions }),
+  }
+}
+
+export function canOpenClientSession(access: ClientSessionOpenAccess): boolean {
+  return typeof access.uiWorkspace?.openSession === 'function'
+    || typeof access.sessions?.open === 'function'
+}
+
+/** 官方 alpha.2 走 uiWorkspace.openSession；旧宿主继续 sessions.open。不硬注入 uiWorkspace。 */
+export function openClientSession(access: ClientSessionOpenAccess, id: string): void {
+  if (typeof access.uiWorkspace?.openSession === 'function') {
+    access.uiWorkspace.openSession(id)
+    return
+  }
+  if (typeof access.sessions?.open === 'function') {
+    access.sessions.open(id)
+    return
+  }
+  throw new Error('no client session opener')
 }
 
 export function openScheduledSession(

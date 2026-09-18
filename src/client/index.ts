@@ -12,7 +12,7 @@ import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefi
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
 import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
-import { AUTOMATION_SESSION_PREFIX, ensureOpenScheduledSession, hasCodexUiSidebar, pickWrappableWorkspacesEntry, resolveOfficialTreeComponent } from './schedule-rail-model.js'
+import { AUTOMATION_SESSION_PREFIX, canOpenClientSession, ensureOpenScheduledSession, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
 import { installStyles } from './styles.js'
 import { openSettingsSection } from './settings-navigation.js'
 import { requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
@@ -326,15 +326,16 @@ function createScheduledSessionOpener(
   hostOpen?: (sessionId: string) => void,
 ): (sessionId: string) => void {
   return (sessionId) => {
+    const access = resolveClientSessionOpenAccess(ctx)
     void ensureOpenScheduledSession({
       id: sessionId,
       adopt: (id) => runtime.adoptSession(id),
       listed: (id) => {
         const snap = ctx.sessions?.list?.getSnapshot()
-        return snap?.byId?.[id] !== undefined || (snap?.ids ?? []).some(item => item === id)
+        return (snap?.ids ?? []).includes(id) || snap?.byId?.[id] !== undefined
       },
       ...(ctx.sessions?.refresh === undefined ? {} : { refresh: () => ctx.sessions!.refresh!() }),
-      ...(ctx.sessions === undefined ? {} : { openRuntime: (id) => { ctx.sessions!.open(id) } }),
+      ...(canOpenClientSession(access) ? { openRuntime: (id: string) => { openClientSession(access, id) } } : {}),
       ...(hostOpen === undefined ? {} : { openHost: hostOpen }),
     })
   }

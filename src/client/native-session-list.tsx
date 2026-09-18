@@ -1,36 +1,31 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Button,
   IconArchiveOutline20,
+  IconBranchOutline16,
+  IconEditOutline16,
   IconEllipsisOutline16,
   IconSettingsOutline16,
+  IconTrashOutline16,
   Menu,
   Modal,
   type MenuEntry,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import {
-  ArchiveIcon,
-  BranchIcon,
-  EllipsisIcon,
+  ChevronIcon,
   FolderClosedIcon,
   FolderOpenIcon,
-  PencilIcon,
   RunningStateDot,
 } from './icons.js'
 import {
   nativeSessionHoverStyle,
-  nativeSessionMenuStyle,
-  nextOpenSessionMenu,
-  pointerPoint,
   relativeTime,
-  shouldCloseNativeSessionMenu,
-  type NativeSessionMenuState,
 } from './native-session-menu.js'
-import { archiveScheduledGroup, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder } from './native-group-actions.js'
+import { archiveScheduledGroup, canDeleteScheduledSession, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder, scheduledSessionMenuActions, scheduledSessionOmitsStatusSlot } from './native-group-actions.js'
 import type { AutomationRuntime } from './runtime.js'
-import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, keepScheduledSessionLink, scheduledSessionNeedsSnapshotRefresh, type NativeSessionLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
+import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, keepScheduledSessionLink, resolveCurrentSessionId, scheduledSessionNeedsSnapshotRefresh, type NativeSessionLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
 import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import { WorkspaceToolbar } from './workspace-toolbar.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
@@ -59,19 +54,22 @@ export function NativeScheduleSessionList(props: {
   readonly forkSession?: (sessionId: string) => void | Promise<void>
   readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
 }): JSX.Element {
-  const { t, runtime, openSession, useSessions, useWorkspaces, renameSession, archiveSession, forkSession, openTaskSettings } = props
+  const { t, runtime, openSession, useSessions, useWorkspaces, renameSession, archiveSession, deleteSession, forkSession, openTaskSettings } = props
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
-  const selectedId = useSessions ? useSessions(snap => snap.current ?? null) : null
+  const selectedId = useSessions ? useSessions(snap => resolveCurrentSessionId(snap)) : null
   const sessionById: Record<string, NativeSessionLike> = useSessions
     ? useSessions(snap => snap.byId ?? EMPTY_SESSION_BY_ID)
     : EMPTY_SESSION_BY_ID
   const archivedIds: readonly string[] = useWorkspaces ? useWorkspaces(snap => snap.archivedSessionIds ?? []) : []
   const [folded, setFolded] = useState<Record<string, boolean>>({})
-  const [openMenu, setOpenMenu] = useState<NativeSessionMenuState>(null)
+  const [openMenu, setOpenMenu] = useState<string>()
   const [openGroupMenu, setOpenGroupMenu] = useState<string>()
   const [archiveGroupTarget, setArchiveGroupTarget] = useState<{ readonly id: string; readonly name: string; readonly sessionIds: readonly string[] }>()
   const [archiveGroupBusy, setArchiveGroupBusy] = useState(false)
   const [archiveGroupError, setArchiveGroupError] = useState<string>()
+  const [deleteSessionTarget, setDeleteSessionTarget] = useState<{ readonly id: string; readonly title: string }>()
+  const [deleteSessionBusy, setDeleteSessionBusy] = useState(false)
+  const [deleteSessionError, setDeleteSessionError] = useState<string>()
   const [archiveManagerInstalled, setArchiveManagerInstalled] = useState(() => typeof document !== 'undefined' && hasArchiveManagerPlugin(document))
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<WorkspaceListSort>('time')
@@ -123,6 +121,7 @@ export function NativeScheduleSessionList(props: {
     return () => { observer.disconnect() }
   }, [])
   const canArchiveGroup = archiveManagerInstalled && archiveSession !== undefined
+  const canDeleteSession = canDeleteScheduledSession(archiveManagerInstalled, deleteSession)
   const confirmArchiveGroup = (): void => {
     if (archiveGroupTarget === undefined || archiveSession === undefined || archiveGroupBusy) return
     const target = archiveGroupTarget
@@ -132,6 +131,16 @@ export function NativeScheduleSessionList(props: {
       .then(() => { setArchiveGroupTarget(undefined) })
       .catch((caught: unknown) => { setArchiveGroupError(caught instanceof Error ? caught.message : t('error.action')) })
       .finally(() => { setArchiveGroupBusy(false) })
+  }
+  const confirmDeleteSession = (): void => {
+    if (deleteSessionTarget === undefined || deleteSession === undefined || deleteSessionBusy) return
+    const target = deleteSessionTarget
+    setDeleteSessionBusy(true)
+    setDeleteSessionError(undefined)
+    void Promise.resolve(deleteSession(target.id))
+      .then(() => { setDeleteSessionTarget(undefined) })
+      .catch((caught: unknown) => { setDeleteSessionError(caught instanceof Error ? caught.message : t('error.action')) })
+      .finally(() => { setDeleteSessionBusy(false) })
   }
   return (
     <div className='dsh-st-n'>
@@ -148,12 +157,13 @@ export function NativeScheduleSessionList(props: {
             />
         : <>
             <WorkspaceToolbar t={t} query={query} sort={sort} groupMode={groupMode} onQueryChange={setQuery} onSortChange={setSort} onGroupModeChange={setGroupMode} />
+            <div className='dsh-st-n-list-area'>
             <div className='dsh-st-n-tree' role='tree'>
               {state.phase === 'loading' && visibleGroups.length === 0 && <div className='dsh-st-n-empty'>{t('loading')}</div>}
               {visibleGroups.length === 0 && state.phase !== 'loading' && <div className='dsh-st-n-empty'>{t('sidebar.empty')}</div>}
               {visibleGroups.map((group) => {
                 const expanded = folded[group.id] !== true
-                const hasCurrentSession = scheduledGroupShowsActiveFolder(expanded, group.sessions.map(session => session.id), selectedId)
+                const hasCurrentSession = scheduledGroupShowsActiveFolder(group.sessions.map(session => session.id), selectedId)
                 return (
                   <div key={group.id} className='dsh-st-n-group'>
                     {groupMode === 'workspace' && <NativeScheduleGroupRow
@@ -167,7 +177,7 @@ export function NativeScheduleSessionList(props: {
                       canArchiveGroup={canArchiveGroup}
                       onToggle={() => setFolded((current) => ({ ...current, [group.id]: expanded }))}
                       onMenuChange={(open) => {
-                        setOpenMenu(null)
+                        setOpenMenu(undefined)
                         setOpenGroupMenu(open ? group.id : undefined)
                       }}
                       onTaskSettings={() => {
@@ -182,22 +192,29 @@ export function NativeScheduleSessionList(props: {
                       <NativeSessionRow
                         key={session.id}
                         t={t}
+                        flat={groupMode === 'list'}
                         id={session.id}
                         title={session.title}
                         hoverTitle={String(sessionById[session.id]?.displayTitle ?? sessionById[session.id]?.title ?? group.name)}
                         updatedAt={session.updatedAt}
                         running={session.running}
                         selected={selectedId === session.id}
-                        menuOpen={openMenu?.id === session.id}
-                        menuPoint={openMenu === null || openMenu.id !== session.id ? { x: 8, y: 8 } : { x: openMenu.x, y: openMenu.y }}
-                        onToggleMenu={(event) => {
+                        menuOpen={openMenu === session.id}
+                        canDelete={canDeleteSession}
+                        onMenuChange={(open) => {
                           setOpenGroupMenu(undefined)
-                          setOpenMenu((current) => nextOpenSessionMenu(current, session.id, pointerPoint(event)))
+                          setOpenMenu(open ? session.id : undefined)
                         }}
-                        onCloseMenu={() => setOpenMenu((current) => current?.id === session.id ? null : current)}
                         onOpen={() => {
-                          setOpenMenu(null)
+                          setOpenMenu(undefined)
                           openSession?.(session.id)
+                        }}
+                        onDeleteSession={() => {
+                          setDeleteSessionError(undefined)
+                          setDeleteSessionTarget({
+                            id: session.id,
+                            title: String(sessionById[session.id]?.displayTitle ?? sessionById[session.id]?.title ?? session.title),
+                          })
                         }}
                         {...(renameSession === undefined ? {} : { renameSession })}
                         {...(archiveSession === undefined ? {} : { archiveSession })}
@@ -207,6 +224,7 @@ export function NativeScheduleSessionList(props: {
                   </div>
                 )
               })}
+            </div>
             </div>
           </>}
       <Modal
@@ -226,6 +244,24 @@ export function NativeScheduleSessionList(props: {
         <p className='dsh-st-n-dialog-copy'>{archiveGroupTarget === undefined ? '' : t('session.archiveGroupDescription', { name: archiveGroupTarget.name, count: archiveGroupTarget.sessionIds.length })}</p>
         {archiveGroupBusy && <div className='dsh-st-n-dialog-status' role='status'>{t('session.archiveGroupPending')}</div>}
         {archiveGroupError !== undefined && <div className='dsh-st-n-dialog-error' role='alert'>{t('session.archiveGroupFailed', { message: archiveGroupError })}</div>}
+      </Modal>
+      <Modal
+        open={deleteSessionTarget !== undefined}
+        onClose={() => {
+          if (deleteSessionBusy) return
+          setDeleteSessionTarget(undefined)
+          setDeleteSessionError(undefined)
+        }}
+        closeLabel={t('session.deleteSessionClose')}
+        title={t('session.deleteSession')}
+        footer={<div className='dsh-st-n-dialog-actions'>
+          <Button variant='outline' disabled={deleteSessionBusy} onClick={() => { setDeleteSessionTarget(undefined); setDeleteSessionError(undefined) }}>{t('session.deleteSessionCancel')}</Button>
+          <Button variant='outline' className='dsh-st-n-danger-button' disabled={deleteSessionBusy} onClick={confirmDeleteSession}>{t('session.deleteSessionConfirm')}</Button>
+        </div>}
+      >
+        <p className='dsh-st-n-dialog-copy'>{deleteSessionTarget === undefined ? '' : t('session.deleteSessionDescription', { name: deleteSessionTarget.title })}</p>
+        {deleteSessionBusy && <div className='dsh-st-n-dialog-status' role='status'>{t('session.deleteSessionPending')}</div>}
+        {deleteSessionError !== undefined && <div className='dsh-st-n-dialog-error' role='alert'>{t('session.deleteSessionFailed', { message: deleteSessionError })}</div>}
       </Modal>
     </div>
   )
@@ -265,7 +301,8 @@ function NativeScheduleGroupRow(props: {
       onClick={onToggle}
     >
       <span className='dsh-st-n-slot dsh-st-n-folder'>{expanded ? <FolderOpenIcon width={16} height={16} /> : <FolderClosedIcon width={16} height={16} />}</span>
-      <span className='dsh-st-n-title'>{name}</span>
+      <span className='dsh-st-n-slot dsh-st-n-chevron'><ChevronIcon width={14} height={14} className={'dsh-st-n-arrow' + (expanded ? ' is-open' : '')} /></span>
+      <span className='dsh-st-n-project-text'><span className='dsh-st-n-title'>{name}</span></span>
       <span className='dsh-st-n-acts'>
         <Menu
           open={menuOpen}
@@ -277,8 +314,7 @@ function NativeScheduleGroupRow(props: {
             if (action === 'archive-group') onArchiveGroup()
           }}
           portal
-          dense
-          compact
+          closeOnPointerLeave
           anchor={<button
             type='button'
             className='dsh-st-n-ico'
@@ -294,6 +330,7 @@ function NativeScheduleGroupRow(props: {
 
 function NativeSessionRow(props: {
   readonly t: Translate
+  readonly flat: boolean
   readonly id: string
   readonly title: string
   readonly hoverTitle?: string
@@ -301,56 +338,24 @@ function NativeSessionRow(props: {
   readonly running: boolean
   readonly selected: boolean
   readonly menuOpen: boolean
-  readonly menuPoint: { readonly x: number; readonly y: number }
-  readonly onToggleMenu: (event: { readonly clientX?: number; readonly clientY?: number }) => void
-  readonly onCloseMenu: () => void
+  readonly canDelete: boolean
+  readonly onMenuChange: (open: boolean) => void
   readonly onOpen: () => void
+  readonly onDeleteSession?: () => void
   readonly renameSession?: (sessionId: string, title: string) => void | Promise<void>
   readonly archiveSession?: (sessionId: string) => void | Promise<void>
   readonly forkSession?: (sessionId: string) => void | Promise<void>
 }): JSX.Element {
-  const { t, id, title, hoverTitle, updatedAt, running, selected, menuOpen, menuPoint, onToggleMenu, onCloseMenu, onOpen, renameSession, archiveSession, forkSession } = props
+  const { t, flat, id, title, hoverTitle, updatedAt, running, selected, menuOpen, canDelete, onMenuChange, onOpen, onDeleteSession, renameSession, archiveSession, forkSession } = props
+  const omitStatusSlot = scheduledSessionOmitsStatusSlot(flat, running)
   const rowRef = useRef<HTMLDivElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
   const hoverRef = useRef<HTMLDivElement>(null)
   const [hoverOpen, setHoverOpen] = useState(false)
   const [hoverStyle, setHoverStyle] = useState<CSSProperties>({})
   const hoverTimer = useRef<number | undefined>(undefined)
   const [renaming, setRenaming] = useState(false)
   const [draft, setDraft] = useState(title)
-  const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
   useEffect(() => { setDraft(title) }, [title])
-  useEffect(() => {
-    if (!menuOpen) return
-    const close = (event: MouseEvent): void => {
-      if (!shouldCloseNativeSessionMenu(event.target, [rowRef.current, menuRef.current])) return
-      onCloseMenu()
-    }
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') onCloseMenu()
-    }
-    document.addEventListener('mousedown', close)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', close)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [menuOpen, onCloseMenu])
-  useLayoutEffect(() => {
-    if (!menuOpen) return
-    const update = (): void => {
-      const el = menuRef.current
-      const size = el === null ? { width: 218, height: 176 } : { width: el.offsetWidth, height: el.offsetHeight }
-      setMenuStyle(nativeSessionMenuStyle(menuPoint, size, { width: window.innerWidth, height: window.innerHeight }))
-    }
-    update()
-    window.addEventListener('resize', update)
-    document.addEventListener('scroll', update, true)
-    return () => {
-      window.removeEventListener('resize', update)
-      document.removeEventListener('scroll', update, true)
-    }
-  }, [menuOpen, menuPoint])
   useEffect(() => {
     if (!hoverOpen || menuOpen) return
     const update = (): void => {
@@ -381,7 +386,7 @@ function NativeSessionRow(props: {
     if (hoverTimer.current !== undefined) window.clearTimeout(hoverTimer.current)
     setHoverOpen(false)
   }
-  const rowClass = 'dsh-st-n-sess' + (selected ? ' is-on' : '') + (menuOpen ? ' is-menu' : '')
+  const rowClass = 'dsh-st-n-sess' + (selected ? ' is-on' : '') + (menuOpen ? ' is-menu' : '') + (omitStatusSlot ? ' is-flat-idle' : '')
   if (renaming) {
     return (
       <div className={rowClass} ref={rowRef}>
@@ -392,34 +397,40 @@ function NativeSessionRow(props: {
       </div>
     )
   }
-  const menuItems = [
-    { id: 'rename', label: t('session.rename'), icon: <PencilIcon width={16} height={16} />, go: () => { setRenaming(true) } },
-    { id: 'fork', label: t('session.fork'), icon: <BranchIcon width={16} height={16} />, go: () => run(() => forkSession?.(id)) },
-    { id: 'archive', label: t('session.archive'), icon: <ArchiveIcon width={16} height={16} />, go: () => run(() => archiveSession?.(id)) },
-  ]
-  const menu = menuOpen && typeof document !== 'undefined'
-    ? createPortal(
-      <div ref={menuRef} className='dsh-st-n-menu is-float' data-n-menu={id} style={menuStyle} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}>
-        {menuItems.map((item) => (
-          <button key={item.id} type='button' className={undefined} onClick={() => { onCloseMenu(); item.go() }}>
-            <span className='dsh-st-n-mi'>{item.icon}</span>{item.label}
-          </button>
-        ))}
-      </div>,
-      document.body,
-    )
-    : null
+  const items: MenuEntry[] = scheduledSessionMenuActions(canDelete).map((action) => {
+    if (action === 'rename') return { id: action, label: t('session.rename'), icon: <IconEditOutline16 /> }
+    if (action === 'fork') return { id: action, label: t('session.fork'), icon: <IconBranchOutline16 /> }
+    if (action === 'archive') return { id: action, label: t('session.archive'), icon: <IconArchiveOutline20 size={16} /> }
+    return { id: action, label: t('session.deleteSession'), icon: <IconTrashOutline16 />, danger: true }
+  })
   return (
-    <div className={rowClass} ref={rowRef} role='treeitem' tabIndex={0} aria-selected={selected} data-n-menu-root={id} onClick={onOpen} onMouseEnter={showHover} onMouseLeave={hideHover} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); onToggleMenu(event) }}>
-      <span className='dsh-st-n-slot'>{running ? <RunningStateDot /> : null}</span>
+    <div className={rowClass} ref={rowRef} role='treeitem' tabIndex={0} aria-selected={selected} data-n-menu-root={id} onClick={onOpen} onMouseEnter={showHover} onMouseLeave={hideHover} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); hideHover(); onMenuChange(true) }}>
+      {!omitStatusSlot && <span className='dsh-st-n-slot'>{running ? <RunningStateDot /> : null}</span>}
       <span className='dsh-st-n-title'>{title}</span>
       <span className='dsh-st-n-time'>{relativeTime(updatedAt, t)}</span>
       <span className='dsh-st-n-acts'>
-        <button type='button' className='dsh-st-n-ico' aria-label={t('session.moreActions', { title })} onMouseDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); hideHover(); onToggleMenu(event) }}>
-          <EllipsisIcon width={16} height={16} />
-        </button>
+        <Menu
+          open={menuOpen}
+          onClose={() => { onMenuChange(false) }}
+          items={items}
+          onSelect={(action) => {
+            onMenuChange(false)
+            if (action === 'rename') setRenaming(true)
+            if (action === 'fork') run(() => forkSession?.(id))
+            if (action === 'archive') run(() => archiveSession?.(id))
+            if (action === 'delete-session') onDeleteSession?.()
+          }}
+          portal
+          closeOnPointerLeave
+          anchor={<button
+            type='button'
+            className='dsh-st-n-ico'
+            aria-label={t('session.moreActions', { title })}
+            onMouseDown={(event) => { event.stopPropagation() }}
+            onClick={(event) => { event.stopPropagation(); hideHover(); onMenuChange(!menuOpen) }}
+          ><IconEllipsisOutline16 size={16} /></button>}
+        />
       </span>
-      {menu}
       {hoverOpen && !menuOpen && typeof document !== 'undefined' && createPortal(
         <div ref={hoverRef} className='dsh-st-n-hover' style={hoverStyle} onMouseEnter={showHover} onMouseLeave={hideHover}>
           <div className='dsh-st-n-hover-title'>{(hoverTitle ?? title).trim() || title}</div>

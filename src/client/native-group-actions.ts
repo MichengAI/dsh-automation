@@ -4,12 +4,30 @@ export function hasArchiveManagerPlugin(root: { querySelector(selector: string):
   return root?.querySelector(`[data-plugin="${ARCHIVE_MANAGER_PLUGIN}"]`) != null
 }
 
+export type ScheduledSessionMenuAction = 'rename' | 'fork' | 'archive' | 'delete-session'
+
+export function canDeleteScheduledSession(
+  archiveManagerInstalled: boolean,
+  deleteSession?: (sessionId: string) => void | Promise<void>,
+): boolean {
+  return archiveManagerInstalled && deleteSession !== undefined
+}
+
+export function scheduledSessionMenuActions(canDelete: boolean): readonly ScheduledSessionMenuAction[] {
+  return canDelete
+    ? ['rename', 'fork', 'archive', 'delete-session']
+    : ['rename', 'fork', 'archive']
+}
+
 export function scheduledGroupShowsActiveFolder(
-  expanded: boolean,
   sessionIds: readonly string[],
   selectedId: string | null,
 ): boolean {
-  return expanded && selectedId !== null && sessionIds.includes(selectedId)
+  return selectedId !== null && sessionIds.includes(selectedId)
+}
+
+export function scheduledSessionOmitsStatusSlot(flat: boolean, running: boolean): boolean {
+  return flat && !running
 }
 
 /** 串行归档，避免多个 workspace 状态写入相互覆盖。 */

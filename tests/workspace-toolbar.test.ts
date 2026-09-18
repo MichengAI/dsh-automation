@@ -31,9 +31,42 @@ test('任务总览标题与工作区共用弱化颜色，排序使用同款图�
   assert.match(overview, /<SortMenu[\s\S]*?compact[\s\S]*?iconOnly[\s\S]*?className="dsh-st-overview-sort"/)
 })
 
-test('定时文件夹与宿主任务文件夹使用相同的 8px 行内起点', () => {
+test('定时文件夹与宿主任务文件夹使用官方 padding-inline-start', () => {
   const css = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
-  assert.match(css, /\.dsh-st-n-row\{[^}]*padding-left:8px/)
+  assert.match(css, /\.dsh-st-n-row,\.dsh-st-n-sess\{[^}]*padding:0 8px;[^}]*padding-inline-start:calc\(8px \+ var\(--dsh-workspace-indent,0px\)\)/)
+  assert.doesNotMatch(css, /\.dsh-st-n-row\{padding-left:8px\}/)
+  assert.doesNotMatch(css, /\.dsh-st-n-sess\{padding-left:8px\}/)
+  assert.doesNotMatch(css, /\.dsh-st-n-row,\.dsh-st-n-sess\{[^}]*padding:0 8px 0 12px/)
+})
+
+test('定时会话列表跟随官方文件夹悬停、滚动槽和悬停卡片', () => {
+  const css = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
+  const nativeList = readFileSync(new URL('../src/client/native-session-list.tsx', import.meta.url), 'utf8')
+  assert.match(css, /\.dsh-st-n-row:hover \.dsh-st-n-folder/)
+  assert.match(css, /\.dsh-st-n-folder\{display:none\}/)
+  assert.match(css, /\.dsh-st-n-row:hover \.dsh-st-n-chevron/)
+  assert.match(css, /\.dsh-st-n-chevron\{display:inline-flex\}/)
+  assert.doesNotMatch(css, /\.dsh-st-n-row\.is-menu \.dsh-st-n-chevron/)
+  assert.doesNotMatch(css, /\.dsh-st-n-row\.is-menu \.dsh-st-n-folder/)
+  assert.match(css, /\.dsh-st-n-row\.has-current-session \.dsh-st-n-folder\{color:var\(--dsw-alias-state-business-primary/)
+  assert.match(css, /\.dsh-st-n-sess\.is-flat-idle \.dsh-st-n-title\{margin-left:0\}/)
+  assert.match(css, /\.dsh-st-n\{[^}]*--dsh-session-list-edge-inset:var\(--dsh-sidebar-inline-padding/)
+  assert.match(css, /\.dsh-st-n-list-area\{[^}]*margin-right:calc\(-1 \* var\(--dsh-session-list-edge-inset\)\)/)
+  assert.match(css, /\.dsh-st-n-tree\{[^}]*scrollbar-gutter:stable/)
+  assert.doesNotMatch(css, /\.dsh-st-n-tree\{[^}]*margin-right:calc\(-1 \* var\(--dsh-session-list-edge-inset\)/)
+  assert.match(css, /\.dsh-st-n-hover\{[^}]*width:244px;[^}]*padding:12px 16px;[^}]*background:#2C2C2E/)
+  assert.match(css, /\.dsh-st-n-toolbar\.is-search \.dsh-st-n-search\{border:\.5px solid var\(--dsw-alias-border-l4\)/)
+  assert.match(css, /\.dsh-st-n-toolbar\.is-search \.dsh-st-n-search\{[^}]*color:var\(--dsw-alias-label-caption/)
+  assert.match(css, /\.dsh-st-n-empty\{padding:16px 12px;[^}]*font-size:13px\}/)
+  assert.match(css, /\.dsh-st-n-hover-dot\{width:10px;height:10px/)
+  assert.match(css, /\.dsh-st-n-group\{[^}]*position:relative/)
+  assert.match(nativeList, /dsh-st-n-list-area/)
+})
+
+test('定时文件夹与会话选中条跟随官方 2px 行距', () => {
+  const css = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
+  assert.match(css, /\.dsh-st-n-group>\*\+\*\{margin-top:2px\}/)
+  assert.match(css, /\.dsh-st-n-group\+\.dsh-st-n-group\{margin-top:4px\}/)
 })
 
 test('任务总览开关按当前状态选择暂停或恢复操作', () => {

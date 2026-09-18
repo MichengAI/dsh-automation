@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
   AUTOMATION_SESSION_PREFIX,
@@ -11,8 +12,12 @@ import {
   scheduledSessionNeedsSnapshotRefresh,
   scheduledSessionTitle,
   sessionUpdatedAtIso,
+  canOpenClientSession,
   ensureOpenScheduledSession,
+  openClientSession,
   openScheduledSession,
+  resolveClientSessionOpenAccess,
+  resolveCurrentSessionId,
   hasCodexUiSidebar,
   isNativeTaskSession,
   readNativeSidebarTab,
@@ -29,7 +34,7 @@ import {
 } from '../src/client/schedule-rail-model.ts'
 import { relativeTime, nextOpenSessionMenuId, nextOpenSessionMenu, shouldCloseNativeSessionMenu, nativeSessionMenuStyle, nativeSessionHoverStyle, pointerPoint, clampMenuPoint, } from '../src/client/native-session-menu.ts'
 import { en, zh } from '../src/client/locales.ts'
-import { archiveScheduledGroup, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder } from '../src/client/native-group-actions.ts'
+import { archiveScheduledGroup, canDeleteScheduledSession, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder, scheduledSessionMenuActions, scheduledSessionOmitsStatusSlot } from '../src/client/native-group-actions.ts'
 
 test('会话更多操作的无障碍标签提供中英文模板', () => {
   assert.equal(en['session.moreActions'], 'More actions for {title}')
@@ -254,6 +259,89 @@ test('打开定时会话前先挂载并刷新，未入簿时不会空点', async
   assert.deepEqual(steps, ['adopt:dsh-automation-session-abc', 'refresh', 'open:dsh-automation-session-abc'])
 })
 
+test('旧宿主仍用 list.current 作为当前会话', () => {
+  assert.equal(resolveCurrentSessionId({ current: 'legacy-current', byId: {} }), 'legacy-current')
+})
+
+test('alpha.2 无 current 时按 retainedBy.mainView 反查主视图会话', () => {
+  assert.equal(resolveCurrentSessionId({
+    byId: {
+      parked: { retainedBy: {} },
+      main: { id: 'main-view', retainedBy: { mainView: 1 } },
+    },
+  }), 'main-view')
+  assert.equal(resolveCurrentSessionId({
+    byId: { parked: { retainedBy: {} } },
+  }), null)
+  assert.equal(resolveCurrentSessionId({
+    current: 'legacy-current',
+    byId: { main: { id: 'main-view', retainedBy: { mainView: 1 } } },
+  }), 'legacy-current')
+})
+
+test('打开定时会话优先走官方 uiWorkspace.openSession', () => {
+  const opened: string[] = []
+  const legacy: string[] = []
+  openClientSession({
+    uiWorkspace: { openSession: (id) => { opened.push(id) } },
+    sessions: { open: (id) => { legacy.push(id) } },
+  }, 'dsh-automation-session-abc')
+  assert.deepEqual(opened, ['dsh-automation-session-abc'])
+  assert.deepEqual(legacy, [])
+})
+
+test('没有 uiWorkspace 时回退 sessions.open', () => {
+  const legacy: string[] = []
+  openClientSession({
+    sessions: { open: (id) => { legacy.push(id) } },
+  }, 'dsh-automation-session-abc')
+  assert.deepEqual(legacy, ['dsh-automation-session-abc'])
+})
+
+test('官方 sessions 已无 open 且没有 uiWorkspace 时抛错，交给宿主兜底', () => {
+  assert.throws(
+    () => openClientSession({ sessions: {} }, 'dsh-automation-session-abc'),
+    /no client session opener/,
+  )
+})
+
+test('alpha.2 未注入 uiWorkspace 时从 ctx.get 取官方 openSession', () => {
+  const opened: string[] = []
+  const access = resolveClientSessionOpenAccess({
+    sessions: {},
+    get: (name) => name === 'uiWorkspace' ? { openSession: (id: string) => { opened.push(id) } } : undefined,
+  })
+  assert.equal(typeof access.uiWorkspace?.openSession, 'function')
+  assert.equal(canOpenClientSession(access), true)
+  openClientSession(access, 'dsh-automation-session-abc')
+  assert.deepEqual(opened, ['dsh-automation-session-abc'])
+})
+
+test('读取 ctx.uiWorkspace 抛 without inject 时改走 reflect.get', () => {
+  const opened: string[] = []
+  const ctx = {
+    get uiWorkspace(): { openSession(id: string): void } { throw new Error('cannot get property "uiWorkspace" without inject') },
+    get: () => { throw new Error('should prefer reflect.get') },
+    reflect: { get: (name: string) => name === 'uiWorkspace' ? { openSession: (id: string) => { opened.push(id) } } : undefined },
+    sessions: {},
+  }
+  const access = resolveClientSessionOpenAccess(ctx)
+  openClientSession(access, 'dsh-automation-session-abc')
+  assert.deepEqual(opened, ['dsh-automation-session-abc'])
+})
+
+test('reflect.get 与 get 都在时优先 reflect.get', () => {
+  const viaReflect: string[] = []
+  const viaGet: string[] = []
+  const access = resolveClientSessionOpenAccess({
+    get: (name) => name === 'uiWorkspace' ? { openSession: (id: string) => { viaGet.push(id) } } : undefined,
+    reflect: { get: (name) => name === 'uiWorkspace' ? { openSession: (id: string) => { viaReflect.push(id) } } : undefined },
+  })
+  openClientSession(access, 'dsh-automation-session-abc')
+  assert.deepEqual(viaReflect, ['dsh-automation-session-abc'])
+  assert.deepEqual(viaGet, [])
+})
+
 test('刷新后仍未入簿则回退到宿主打开', async () => {
   const steps: string[] = []
   await ensureOpenScheduledSession({
@@ -328,11 +416,20 @@ test('右键菜单落在指针处，并被限制在视口内', () => {
   assert.equal(nextOpenSessionMenu(next, 'sess-a', { x: 41, y: 81 }), null)
 })
 
-test('仅展开的当前会话所属文件夹标记蓝色图标，折叠后恢复官方中性色', () => {
-  assert.equal(scheduledGroupShowsActiveFolder(true, ['session-a', 'session-b'], 'session-b'), true)
-  assert.equal(scheduledGroupShowsActiveFolder(false, ['session-a', 'session-b'], 'session-b'), false)
-  assert.equal(scheduledGroupShowsActiveFolder(true, ['session-a'], 'session-b'), false)
-  assert.equal(scheduledGroupShowsActiveFolder(true, ['session-a'], null), false)
+test('当前会话所属文件夹即使折叠也保持官方高亮', () => {
+  assert.equal(scheduledGroupShowsActiveFolder(['session-a', 'session-b'], 'session-b'), true)
+  assert.equal(scheduledGroupShowsActiveFolder(['session-a'], 'session-b'), false)
+  assert.equal(scheduledGroupShowsActiveFolder(['session-a'], null), false)
+})
+
+test('平铺列表空闲会话去掉状态槽，和工作区树对齐官方', () => {
+  assert.equal(scheduledSessionOmitsStatusSlot(true, false), true)
+  assert.equal(scheduledSessionOmitsStatusSlot(true, true), false)
+  assert.equal(scheduledSessionOmitsStatusSlot(false, false), false)
+  const nativeList = readFileSync(new URL('../src/client/native-session-list.tsx', import.meta.url), 'utf8')
+  assert.match(nativeList, /dsh-st-n-chevron/)
+  assert.match(nativeList, /dsh-st-n-project-text/)
+  assert.match(nativeList, /is-flat-idle/)
 })
 
 test('只有归档插件标记存在时才显示整组归档能力', () => {
@@ -341,6 +438,25 @@ test('只有归档插件标记存在时才显示整组归档能力', () => {
   assert.equal(hasArchiveManagerPlugin(root), true)
   assert.equal(hasArchiveManagerPlugin({ querySelector() { return null } }), false)
   assert.equal(seen.length, 1)
+})
+
+test('有归档插件且宿主提供删除时才出现删除会话', () => {
+  const deleteSession = async () => undefined
+  assert.equal(canDeleteScheduledSession(true, deleteSession), true)
+  assert.equal(canDeleteScheduledSession(false, deleteSession), false)
+  assert.equal(canDeleteScheduledSession(true, undefined), false)
+  assert.deepEqual(scheduledSessionMenuActions(false), ['rename', 'fork', 'archive'])
+  assert.deepEqual(scheduledSessionMenuActions(true), ['rename', 'fork', 'archive', 'delete-session'])
+})
+
+test('定时文件夹和会话菜单跟随官方尺寸，不再使用 dense/compact', () => {
+  const nativeList = readFileSync(new URL('../src/client/native-session-list.tsx', import.meta.url), 'utf8')
+  assert.doesNotMatch(nativeList, /\bdense\b/)
+  assert.doesNotMatch(nativeList, /\bcompact\b/)
+  assert.match(nativeList, /closeOnPointerLeave/)
+  assert.match(nativeList, /session\.deleteSession/)
+  assert.equal(en['session.deleteSession'], 'Delete session')
+  assert.equal(zh['session.deleteSession'], '删除会话')
 })
 
 test('整组归档串行执行，避免工作区状态写入互相覆盖', async () => {

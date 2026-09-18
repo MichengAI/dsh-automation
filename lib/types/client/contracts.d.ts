@@ -33,11 +33,15 @@ export interface SlotRegisterOptions {
 }
 export interface ClientContext {
     effect(factory: () => void | (() => void), label?: string): void;
+    get?(name: string): unknown;
+    reflect?: {
+        get?(name: string): unknown;
+    };
     connection: {
         readonly rpc: ClientRpc;
     };
     sessions?: {
-        open(id: string): void;
+        open?(id: string): void;
         refresh?: () => Promise<void>;
         list?: {
             getSnapshot(): {
@@ -46,6 +50,9 @@ export interface ClientContext {
                 current?: string | null;
             };
         };
+    };
+    uiWorkspace?: {
+        openSession(id: string): void;
     };
     locale: {
         register(namespace: string, dictionaries: {

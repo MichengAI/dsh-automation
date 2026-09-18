@@ -15,6 +15,7 @@ import {
   resolveVisibleSidebarTab,
   shouldFollowSessionTab,
   tabForSessionId,
+  resolveCurrentSessionId,
   type NativeSessionLike,
   type NativeSidebarTab,
   type NativeWorkspaceLike,
@@ -154,7 +155,7 @@ export function NativeScheduleShell({
     },
     () => false,
   )
-  const currentId = useSessions?.((state) => state?.current ?? null)
+  const currentId = useSessions?.((state) => resolveCurrentSessionId(state))
   const automationState = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const scheduledIds = useMemo(() => collectScheduledSessionIds(automationState.snapshot?.runs), [automationState.snapshot])
   const snapshotRefreshFor = useRef<string | null>(null)
@@ -277,6 +278,7 @@ function NativeTaskRail({
     ? undefined
     : useWorkspaces(state => state ?? { items: [], archivedSessionIds: [] })
   const groups = groupNativeTaskSessions(snap, workspaces, t('sidebar.ungrouped'))
+  const currentId = resolveCurrentSessionId(snap)
   if (groups.length === 0) return <div className="dsh-st-rail-empty">{t('sidebar.tasksEmpty')}</div>
   return (
     <div className="dsh-st-rail">
@@ -289,7 +291,7 @@ function NativeTaskRail({
             <button
               key={item.id}
               type="button"
-              className={`dsh-st-rail-session${snap.current === item.id ? ' is-on' : ''}`}
+              className={`dsh-st-rail-session${currentId === item.id ? ' is-on' : ''}`}
               onClick={() => { if (item.id !== undefined) openSession?.(item.id) }}
             >
               <span>{item.title || item.id}</span>

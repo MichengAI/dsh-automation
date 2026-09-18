@@ -4,6 +4,13 @@
 
 以下记录待发布变更及近期已发布版本。Git 标签与 GitHub Release 现已和这些条目同步；历史条目继续保留原始发布提交链接。
 
+## 未发布
+
+- 支持 DSH `0.1.6-alpha.2`，继续兼容旧宿主。打开定时会话优先走官方 `uiWorkspace.openSession`，旧客户端回退 `sessions.open`。
+- 修复 alpha.2 侧栏定时会话点不进去：不再依赖已删除的 `sessions.open`，点击时用 `reflect.get('uiWorkspace')` 取官方 `openSession`，禁止直接读 `ctx.uiWorkspace`（未 inject 会抛错）。
+- 会话列表不再提供 `current` 时，按 `retainedBy.mainView` 识别当前主视图会话。
+- 定时会话列表对齐官方工作区样式（缩进、悬停箭头、滚动槽、搜索/空态）。安装归档插件后，会话菜单支持删除。
+
 ## 0.1.44 - 2026-09-16
 
 - 运行摘要增量只保留 turn 边界事件，不再缓存 request/header 和工具结果。

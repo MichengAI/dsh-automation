@@ -52,7 +52,7 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/dsh-agent"],
-    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1",
+    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2",
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/dsh-client-runtime"],
@@ -68,11 +68,11 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/dsh-client-ui-primitives"],
-    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1",
+    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2",
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/dsh-permission-presets"],
-    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1",
+    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2",
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/schemastery"],
@@ -80,17 +80,17 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
   );
   assert.equal(
     manifest.devDependencies?.["@deepseek-ai/dsh-agent"],
-    "0.1.6-alpha.1",
+    "0.1.6-alpha.2",
   );
   assert.equal(
     manifest.devDependencies?.["@deepseek-ai/dsh-client-ui-primitives"],
-    "0.1.6-alpha.1",
+    "0.1.6-alpha.2",
   );
   for (const [name, range] of Object.entries(manifest.peerDependencies ?? {})) {
     if (name.startsWith("@deepseek-ai/dsh-")) {
       assert.equal(
         range,
-        "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1",
+        "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2",
         name,
       );
     }
@@ -99,7 +99,7 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
     manifest.devDependencies ?? {},
   )) {
     if (name.startsWith("@deepseek-ai/dsh-"))
-      assert.equal(version, "0.1.6-alpha.1", name);
+      assert.equal(version, "0.1.6-alpha.2", name);
   }
   assert.deepEqual(manifest.peerDependenciesMeta?.react, { optional: true });
 
@@ -152,4 +152,6 @@ test("客户端入口在插件生命周期内安装常驻会话同步桥", async
     source,
     /ctx\.effect\(\(\) => installAutomationSessionSync\(runtime, \(\) => ctx\.sessions\), 'dsh-automation: session sync'\)/,
   );
+  assert.match(source, /resolveClientSessionOpenAccess\(ctx\)/);
+  assert.match(source, /openClientSession\(access, id\)/);
 });
