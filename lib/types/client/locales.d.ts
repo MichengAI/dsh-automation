@@ -47,8 +47,6 @@ export declare const en: {
     readonly "menu.delete": "Delete task";
     readonly "session.rename": "Rename";
     readonly "session.fork": "Fork session";
-    readonly "session.pin": "Pin";
-    readonly "session.unpin": "Unpin";
     readonly "session.archive": "Archive session";
     readonly "session.unarchive": "Restore";
     readonly "session.moreActions": "More actions for {title}";

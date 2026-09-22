@@ -9,7 +9,6 @@ import {
   groupNativeTaskSessions,
   groupScheduledSessions,
   keepScheduledSessionLink,
-  leadWithPinnedSessions,
   scheduledSessionVisible,
   scheduledSessionNeedsSnapshotRefresh,
   scheduledSessionTitle,
@@ -412,12 +411,10 @@ test('有归档插件且宿主提供删除时才出现删除会话', () => {
   assert.equal(canDeleteScheduledSession(true, deleteSession), true)
   assert.equal(canDeleteScheduledSession(false, deleteSession), false)
   assert.equal(canDeleteScheduledSession(true, undefined), false)
-  const idle = { canDelete: false, archived: false, pinned: false, canPin: false, canUnarchive: false }
+  const idle = { canDelete: false, archived: false, canUnarchive: false }
   assert.deepEqual(scheduledSessionMenuActions(idle), ['rename', 'fork', 'archive'])
   assert.deepEqual(scheduledSessionMenuActions({ ...idle, canDelete: true }), ['rename', 'fork', 'archive', 'delete-session'])
-  assert.deepEqual(scheduledSessionMenuActions({ ...idle, canPin: true }), ['rename', 'fork', 'archive'])
-  assert.deepEqual(scheduledSessionMenuActions({ ...idle, canPin: true, pinned: true }), ['rename', 'fork', 'archive'])
-  assert.deepEqual(scheduledSessionMenuActions({ ...idle, archived: true, canPin: true, canUnarchive: true }), ['rename', 'fork', 'unarchive'])
+  assert.deepEqual(scheduledSessionMenuActions({ ...idle, archived: true, canUnarchive: true }), ['rename', 'fork', 'unarchive'])
 })
 
 test('页签渲染和自绘回退共用宿主会话操作，而不是只在有 registry 时转发', () => {
@@ -437,11 +434,9 @@ test('页签渲染和自绘回退共用宿主会话操作，而不是只在有 r
   assert.equal(actions.archiveSession, archiveSession)
   assert.equal(actions.deleteSession, deleteSession)
   assert.equal(actions.forkSession, forkSession)
-  const pinSession = () => undefined
   const unarchiveSession = () => undefined
   const notifyArchivedNotOpenable = () => undefined
-  const extended = scheduledListHostActions({ pinSession, unpinSession: pinSession, unarchiveSession, notifyArchivedNotOpenable })
-  assert.equal(extended.pinSession, pinSession)
+  const extended = scheduledListHostActions({ unarchiveSession, notifyArchivedNotOpenable })
   assert.equal(extended.unarchiveSession, unarchiveSession)
   assert.equal(extended.notifyArchivedNotOpenable, notifyArchivedNotOpenable)
   assert.deepEqual(scheduledListHostActions({ renameSession: 'nope', archiveSession: 1 }), {})
@@ -523,20 +518,14 @@ test('定时页只立刻隐藏已归档会话，宿主会话簿滞后时仍显�
   assert.equal(keepScheduledSessionLink('', archived, present), false)
 })
 
-test('归档筛选和置顶顺序对齐官方会话列表', () => {
+test('归档筛选对齐会话列表，定时列表不把置顶排到前面', () => {
   const archived = new Set(['gone'])
-  const pinned = new Set(['pin-b'])
   assert.equal(scheduledSessionVisible('live', archived, 'default'), true)
   assert.equal(scheduledSessionVisible('gone', archived, 'default'), false)
   assert.equal(scheduledSessionVisible('gone', archived, 'show'), true)
   assert.equal(scheduledSessionVisible('live', archived, 'only'), false)
   assert.equal(scheduledSessionVisible('gone', archived, 'only'), true)
   assert.equal(scheduledSessionVisible('', archived, 'show'), false)
-  assert.deepEqual(leadWithPinnedSessions([
-    { id: 'a' },
-    { id: 'pin-b' },
-    { id: 'c' },
-  ], pinned).map(item => item.id), ['pin-b', 'a', 'c'])
 })
 
 test('按工作区树把子目录挂到路径最长的父工作区下', () => {

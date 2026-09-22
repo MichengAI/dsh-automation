@@ -4,7 +4,7 @@ export function hasArchiveManagerPlugin(root: { querySelector(selector: string):
   return root?.querySelector(`[data-plugin="${ARCHIVE_MANAGER_PLUGIN}"]`) != null
 }
 
-export type ScheduledSessionMenuAction = 'pin' | 'unpin' | 'rename' | 'fork' | 'archive' | 'unarchive' | 'delete-session'
+export type ScheduledSessionMenuAction = 'rename' | 'fork' | 'archive' | 'unarchive' | 'delete-session'
 
 export interface ScheduledListHostActions {
   readonly renameSession?: (sessionId: string, title: string) => void | Promise<void>
@@ -12,16 +12,12 @@ export interface ScheduledListHostActions {
   readonly unarchiveSession?: (sessionId: string) => void | Promise<void>
   readonly deleteSession?: (sessionId: string) => void | Promise<void>
   readonly forkSession?: (sessionId: string) => void | Promise<void>
-  readonly pinSession?: (sessionId: string) => void | Promise<void>
-  readonly unpinSession?: (sessionId: string) => void | Promise<void>
   readonly notifyArchivedNotOpenable?: () => void
 }
 
 export interface ScheduledSessionMenuState {
   readonly canDelete: boolean
   readonly archived: boolean
-  readonly pinned: boolean
-  readonly canPin: boolean
   readonly canUnarchive: boolean
 }
 
@@ -39,8 +35,6 @@ export function scheduledListHostActions(props?: Record<string, unknown> | null)
   const unarchiveSession = asSessionAction<[string]>(source.unarchiveSession)
   const deleteSession = asSessionAction<[string]>(source.deleteSession)
   const forkSession = asSessionAction<[string]>(source.forkSession)
-  const pinSession = asSessionAction<[string]>(source.pinSession)
-  const unpinSession = asSessionAction<[string]>(source.unpinSession)
   const notifyArchivedNotOpenable = asSessionAction<[]>(source.notifyArchivedNotOpenable)
   return {
     ...(renameSession === undefined ? {} : { renameSession }),
@@ -48,8 +42,6 @@ export function scheduledListHostActions(props?: Record<string, unknown> | null)
     ...(unarchiveSession === undefined ? {} : { unarchiveSession }),
     ...(deleteSession === undefined ? {} : { deleteSession }),
     ...(forkSession === undefined ? {} : { forkSession }),
-    ...(pinSession === undefined ? {} : { pinSession }),
-    ...(unpinSession === undefined ? {} : { unpinSession }),
     ...(notifyArchivedNotOpenable === undefined ? {} : { notifyArchivedNotOpenable }),
   }
 }

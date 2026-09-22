@@ -8,7 +8,7 @@ import {
   StateDot,
   type MenuEntry,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { IconArchiveOutline, IconBranchOutline, IconEditOutline, IconEllipsisOutline, IconSettingsOutline, IconTrashOutline } from './host-icons.js'
+import { hostMenuRendersChildren, IconArchiveOutline, IconBranchOutline, IconEditOutline, IconEllipsisOutline, IconSettingsOutline, IconTrashOutline } from './host-icons.js'
 import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import {
   ChevronIcon,
@@ -50,8 +50,6 @@ export function NativeScheduleSessionList(props: {
   readonly unarchiveSession?: (sessionId: string) => void | Promise<void>
   readonly deleteSession?: (sessionId: string) => void | Promise<void>
   readonly forkSession?: (sessionId: string) => void | Promise<void>
-  readonly pinSession?: (sessionId: string) => void | Promise<void>
-  readonly unpinSession?: (sessionId: string) => void | Promise<void>
   readonly notifyArchivedNotOpenable?: () => void
   readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
   readonly renderSlot?: (name: string, props?: Record<string, unknown>, opts?: { readonly hookContext?: unknown; readonly only?: string }) => ReactNode
@@ -171,7 +169,11 @@ export function NativeScheduleSessionList(props: {
                 const hasCurrentSession = scheduledGroupShowsActiveFolder(group.sessions.map(session => session.id), selectedId)
                 const depth = 'depth' in group ? group.depth : 0
                 const automationIds = [...new Set(group.sessions.flatMap((session) => 'automationId' in session && typeof session.automationId === 'string' ? [session.automationId] : []))]
-                const taskAutomationId: string | undefined = groupMode === 'workspace-tree' ? automationIds[0] : group.id
+                const treeTask = groupMode === 'workspace-tree' && automationIds.length === 1
+                  ? state.snapshot?.automations.find(item => item.id === automationIds[0])
+                  : undefined
+                const taskAutomationId: string | undefined = groupMode === 'workspace-tree' ? treeTask?.id : group.id
+                const taskSettingsName = groupMode === 'workspace-tree' ? treeTask?.name : group.name
                 return (
                   <div key={group.id === '' ? 'ungrouped' : group.id} className='dsh-st-n-group' style={depth > 0 ? { paddingLeft: depth * 16 } : undefined}>
                     {groupMode !== 'list' && <NativeScheduleGroupRow
@@ -191,7 +193,7 @@ export function NativeScheduleSessionList(props: {
                       }}
                       onTaskSettings={() => {
                         if (taskAutomationId === undefined) return
-                        openTaskSettings?.({ automationId: taskAutomationId, name: group.name, sessionIds: group.sessions.map(session => session.id) })
+                        openTaskSettings?.({ automationId: taskAutomationId, name: taskSettingsName ?? group.name, sessionIds: group.sessions.map(session => session.id) })
                       }}
                       onArchiveGroup={() => {
                         setArchiveGroupError(undefined)
@@ -429,11 +431,11 @@ function NativeSessionRow(props: {
     )
   }
   const displayTitle = (hoverTitle ?? title).trim() || title
-  const menuSlot = renderSlot === undefined ? undefined : ['rename', 'fork', 'archive', 'archive-manager.delete-session'].map((only) => renderSlot('sidebar.workspaces.session.menu.item', {
+  const menuSlot = renderSlot !== undefined && hostMenuRendersChildren() ? ['rename', 'fork', 'archive', 'archive-manager.delete-session'].map((only) => renderSlot('sidebar.workspaces.session.menu.item', {
     sessionId: id,
     displayTitle,
-  }, { hookContext: [menuOpen, (open: boolean) => onMenuChange(open)], only }))
-  const items: MenuEntry[] = menuSlot !== undefined ? [] : scheduledSessionMenuActions({ canDelete, archived, pinned: false, canPin: false, canUnarchive }).map((action) => {
+  }, { hookContext: [menuOpen, (open: boolean) => onMenuChange(open)], only })) : undefined
+  const items: MenuEntry[] = menuSlot !== undefined ? [] : scheduledSessionMenuActions({ canDelete, archived, canUnarchive }).map((action) => {
     if (action === 'rename') return { id: action, label: t('session.rename'), icon: <IconEditOutline /> }
     if (action === 'fork') return { id: action, label: t('session.fork'), icon: <IconBranchOutline /> }
     if (action === 'archive') return { id: action, label: t('session.archive'), icon: <IconArchiveOutline size={16} /> }

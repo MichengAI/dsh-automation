@@ -1,7 +1,6 @@
 export type HostIcon = (props: { readonly size?: number; readonly className?: string }) => JSX.Element | null
 
-/** 0.1.7 把尺寸从组件名里拿掉了。旧宿主仍导出带尺寸的名字，缺哪个就用另一个。 */
-/** 旧宿主没有这个导出时返回 undefined，调用方再退回自绘。 */
+/** 0.1.7 把尺寸从组件名里拿掉了。旧宿主仍导出带尺寸的名字，缺哪个就用另一个。没有对应导出时返回 undefined，调用方再退回自绘。 */
 export function pickHostExport(source: Readonly<Record<string, unknown>>, name: string): unknown {
   const value = source[name]
   return typeof value === 'function' ? value : undefined

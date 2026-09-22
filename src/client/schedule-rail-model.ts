@@ -153,20 +153,6 @@ export function scheduledSessionVisible(
   return !isArchived
 }
 
-/** 置顶会话留在原有相对顺序里，整段排到分组前面。 */
-export function leadWithPinnedSessions<T extends { readonly id?: string }>(
-  sessions: readonly T[],
-  pinned: ReadonlySet<string>,
-): T[] {
-  const head: T[] = []
-  const tail: T[] = []
-  for (const session of sessions) {
-    if (session.id !== undefined && pinned.has(session.id)) head.push(session)
-    else tail.push(session)
-  }
-  return head.length === 0 ? [...sessions] : [...head, ...tail]
-}
-
 /** 归档立即摘掉。宿主会话簿经常晚于自动化快照，缺席不能当成已删除。 */
 export function keepScheduledSessionLink(
   sessionId: string | undefined,
@@ -352,7 +338,6 @@ export function filterTaskSessionState<T extends SessionListState>(state: T | un
 export interface WorkspaceListState {
   readonly items?: readonly NativeWorkspaceLike[]
   readonly archivedSessionIds?: readonly string[]
-  readonly pinnedSessionIds?: readonly string[]
 }
 
 /** 旧宿主读 list.current；alpha.2 主视图改由 retainedBy.mainView 标记。 */

@@ -29,6 +29,7 @@ import {
   ClockIcon,
   GithubIcon,
   InfoIcon,
+  MoreIcon,
   PlusIcon,
   RefreshIcon,
 } from './icons.js'
@@ -390,7 +391,7 @@ function TaskCard({
               ],
             }}
           >
-            <Button type="text" aria-label={t('card.more')}>···</Button>
+            <Button type="text" aria-label={t('card.more')} icon={<MoreIcon width={16} height={16} />} />
           </Dropdown>
         </span>
       </div>

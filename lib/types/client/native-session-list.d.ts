@@ -20,8 +20,6 @@ export declare function NativeScheduleSessionList(props: {
     readonly unarchiveSession?: (sessionId: string) => void | Promise<void>;
     readonly deleteSession?: (sessionId: string) => void | Promise<void>;
     readonly forkSession?: (sessionId: string) => void | Promise<void>;
-    readonly pinSession?: (sessionId: string) => void | Promise<void>;
-    readonly unpinSession?: (sessionId: string) => void | Promise<void>;
     readonly notifyArchivedNotOpenable?: () => void;
     readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void;
     readonly renderSlot?: (name: string, props?: Record<string, unknown>, opts?: {

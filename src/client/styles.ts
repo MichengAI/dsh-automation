@@ -79,6 +79,7 @@ const CSS_TEXT = `
 .dsh-st-overview-title{display:flex;align-items:baseline;min-width:0;gap:6px;color:var(--dsw-alias-label-tertiary,#81858C)}
 .dsh-st-overview-title strong{font-size:14px;font-weight:400;line-height:20px}
 .dsh-st-overview-title span{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,.1));color:var(--dsw-alias-label-tertiary,#8b8f98);font-size:11px;line-height:18px}
+.dsh-st-overview-sort{display:flex;align-items:center}
 .dsh-st-overview-row{position:relative;width:100%;min-height:56px;margin:0 0 8px;border:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,.1));border-radius:9px;background:var(--dsw-alias-bg-layer-2,rgba(255,255,255,.035));color:var(--dsw-alias-label-primary,inherit);box-shadow:inset 0 1px rgba(255,255,255,.025);transition:background .14s ease,border-color .14s ease;overflow:hidden}
 .dsh-st-overview-row:hover{border-color:var(--dsw-alias-border-inverted,rgba(255,255,255,.18));background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,.06))}
 .dsh-st-overview-open{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:18px 18px;align-items:center;gap:4px 8px;width:100%;min-height:56px;padding:8px 9px;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}

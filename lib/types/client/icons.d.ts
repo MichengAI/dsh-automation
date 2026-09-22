@@ -19,8 +19,6 @@ export declare function FolderIcon(props: IconProps): JSX.Element;
 export declare function SparkleIcon(props: IconProps): JSX.Element;
 export declare function CloseOutlineIcon(props: IconProps): JSX.Element;
 export declare function CheckOutlineIcon(props: IconProps): JSX.Element;
-export declare function PinOutlineIcon(props: IconProps): JSX.Element;
-export declare function UnpinOutlineIcon(props: IconProps): JSX.Element;
 export declare function UnarchiveOutlineIcon(props: IconProps): JSX.Element;
 export declare function SearchOutlineIcon(props: IconProps): JSX.Element;
 export declare function SlidersIcon(props: IconProps): JSX.Element;

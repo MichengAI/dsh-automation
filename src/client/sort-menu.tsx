@@ -25,6 +25,7 @@ export function SortMenu({
   sortDirection,
   onSelect,
   iconOnly = false,
+  className,
 }: {
   readonly t: Translate
   readonly storage?: SortPreferenceStorage
@@ -60,16 +61,18 @@ export function SortMenu({
   if (iconOnly) {
     return (
       <AntdProvider>
-        <Dropdown menu={{ selectable: true, selectedKeys: [`${sortKey}-${sortDirection}`], items }}>
-          <Button type="text" shape="default" aria-label={currentLabel}>↕</Button>
-        </Dropdown>
+        <span className={className}>
+          <Dropdown menu={{ selectable: true, selectedKeys: [`${sortKey}-${sortDirection}`], items }}>
+            <Button type="text" shape="default" aria-label={currentLabel} icon={<SortMark />} />
+          </Dropdown>
+        </span>
       </AntdProvider>
     )
   }
   return (
     <AntdProvider>
       <Select
-        className="dsh-st-sort-select"
+        className={className ?? 'dsh-st-sort-select'}
         value={`${sortKey}-${sortDirection}`}
         popupMatchSelectWidth={false}
         options={SORT_OPTIONS.map(([key, direction]) => ({
@@ -90,5 +93,13 @@ export function SortMenu({
         ) })}
       />
     </AntdProvider>
+  )
+}
+
+function SortMark(): JSX.Element {
+  return (
+    <svg width={16} height={16} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4.5 3v10M4.5 3 2.5 5.2M4.5 3l2 2.2M11.5 13V3M11.5 13l-2-2.2M11.5 13l2-2.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }

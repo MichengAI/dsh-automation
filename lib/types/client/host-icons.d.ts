@@ -19,3 +19,5 @@ export declare const IconFlatListOutline: HostIcon;
 export declare const IconChevronsUpDownOutline: HostIcon;
 export declare const IconClockOutline: HostIcon;
 export declare const IconArchiveCheckOutline: HostIcon;
+/** 0.1.7 的 Menu 会渲染 children。同一版才出现不带尺寸的图标名，旧 Menu 只认 items。 */
+export declare function hostMenuRendersChildren(): boolean;

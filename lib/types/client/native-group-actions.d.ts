@@ -2,22 +2,18 @@ export declare const ARCHIVE_MANAGER_PLUGIN = "@michengai/dsh-archive-manager";
 export declare function hasArchiveManagerPlugin(root: {
     querySelector(selector: string): unknown;
 } | undefined): boolean;
-export type ScheduledSessionMenuAction = 'pin' | 'unpin' | 'rename' | 'fork' | 'archive' | 'unarchive' | 'delete-session';
+export type ScheduledSessionMenuAction = 'rename' | 'fork' | 'archive' | 'unarchive' | 'delete-session';
 export interface ScheduledListHostActions {
     readonly renameSession?: (sessionId: string, title: string) => void | Promise<void>;
     readonly archiveSession?: (sessionId: string) => void | Promise<void>;
     readonly unarchiveSession?: (sessionId: string) => void | Promise<void>;
     readonly deleteSession?: (sessionId: string) => void | Promise<void>;
     readonly forkSession?: (sessionId: string) => void | Promise<void>;
-    readonly pinSession?: (sessionId: string) => void | Promise<void>;
-    readonly unpinSession?: (sessionId: string) => void | Promise<void>;
     readonly notifyArchivedNotOpenable?: () => void;
 }
 export interface ScheduledSessionMenuState {
     readonly canDelete: boolean;
     readonly archived: boolean;
-    readonly pinned: boolean;
-    readonly canPin: boolean;
     readonly canUnarchive: boolean;
 }
 /** 官方 WorkspaceBrowser 会把这四个操作放进列表 props；页签渲染和自绘回退必须抽同一份。 */

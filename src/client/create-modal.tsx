@@ -48,6 +48,7 @@ export function CreateModal({
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
+      if (document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden), .ant-dropdown:not(.ant-dropdown-hidden)') !== null) return
       event.preventDefault()
       event.stopPropagation()
       event.stopImmediatePropagation()
@@ -114,10 +115,10 @@ export function CreateModal({
         destroyOnHidden
         footer={[
           <Button key="cancel" disabled={busy} onClick={onClose}>{t('form.cancel')}</Button>,
-          <Button key="save" type="primary" disabled={busy} onClick={() => { void handleSubmit() }}>{t('modal.save')}</Button>,
+          <Button key="save" htmlType="submit" form="dsh-st-create-form" type="primary" disabled={busy}>{t('modal.save')}</Button>,
         ]}
       >
-        <form className="dsh-st-form" onSubmit={(event) => { void handleSubmit(event) }}>
+        <form id="dsh-st-create-form" className="dsh-st-form" onSubmit={(event) => { void handleSubmit(event) }}>
           <p>{t('form.subtitle')}</p>
           <label className="dsh-st-field">
             {t('form.name')}

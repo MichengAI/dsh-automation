@@ -67,10 +67,6 @@ export declare function deriveTaskOverviewRows(automations: readonly OverviewAut
 export type ArchivedSessionFilter = 'default' | 'show' | 'only';
 /** 默认隐藏已归档；显示和仅归档跟官方筛选同一套规则。空 id 一律不展示。 */
 export declare function scheduledSessionVisible(sessionId: string | undefined, archived: ReadonlySet<string>, filter: ArchivedSessionFilter): boolean;
-/** 置顶会话留在原有相对顺序里，整段排到分组前面。 */
-export declare function leadWithPinnedSessions<T extends {
-    readonly id?: string;
-}>(sessions: readonly T[], pinned: ReadonlySet<string>): T[];
 /** 归档立即摘掉。宿主会话簿经常晚于自动化快照，缺席不能当成已删除。 */
 export declare function keepScheduledSessionLink(sessionId: string | undefined, archived: ReadonlySet<string>, _presentIds?: ReadonlySet<string>): boolean;
 /** 当前打开的是定时会话，但快照还没有这条执行记录时，侧栏应立刻再拉一次。 */
@@ -120,7 +116,6 @@ export declare function filterTaskSessionState<T extends SessionListState>(state
 export interface WorkspaceListState {
     readonly items?: readonly NativeWorkspaceLike[];
     readonly archivedSessionIds?: readonly string[];
-    readonly pinnedSessionIds?: readonly string[];
 }
 /** 旧宿主读 list.current；alpha.2 主视图改由 retainedBy.mainView 标记。 */
 export declare function resolveCurrentSessionId(snapshot: SessionListState | undefined): string | null;
