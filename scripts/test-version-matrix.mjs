@@ -66,8 +66,11 @@ for (const version of versions) {
   const cwd = join(directory, version)
   await mkdir(cwd)
   try {
-    const dependencies = { [manifest.name]: `file:${join(directory, archive)}`, '@deepseek-ai/cordis': version === currentHost ? '4.0.3' : '4.0.2', '@deepseek-ai/schemastery': '3.18.2', react: '18.3.1', 'react-dom': '18.3.1', tsx: '4.23.12', ...manifest.dependencies }
-    for (const name of ['js-yaml', '@deepseek-ai/cordis-plugin-include']) dependencies[name] = manifest.devDependencies[name]
+    const toolchain = version === currentHost
+      ? { '@deepseek-ai/cordis': '4.0.4', '@deepseek-ai/schemastery': '3.18.4', '@deepseek-ai/cordis-plugin-loader': '1.0.5', '@deepseek-ai/cordis-plugin-include': '1.0.9', '@deepseek-ai/cordis-plugin-group': '1.0.4' }
+      : { '@deepseek-ai/cordis': '4.0.2', '@deepseek-ai/schemastery': '3.18.2', '@deepseek-ai/cordis-plugin-loader': '1.0.3', '@deepseek-ai/cordis-plugin-include': '1.0.7', '@deepseek-ai/cordis-plugin-group': '1.0.2' }
+    const dependencies = { [manifest.name]: `file:${join(directory, archive)}`, react: '18.3.1', 'react-dom': '18.3.1', tsx: '4.23.12', ...manifest.dependencies, ...toolchain }
+    for (const name of ['js-yaml']) dependencies[name] = manifest.devDependencies[name]
     for (const name of Object.keys(manifest.devDependencies)) {
       if (!name.startsWith('@deepseek-ai/dsh-')) continue
       if (name === legacyPreset && version === currentHost) {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { pickHostExport, pickHostIcon } from '../src/client/host-icon-resolve.ts'
+import { hostOrFallback, pickHostExport, pickHostIcon } from '../src/client/host-icon-resolve.ts'
 
 const modern = () => null
 const legacy = () => null
@@ -21,6 +21,12 @@ test('旧宿主没有 Regular 导出名时回退尺寸后缀', () => {
 test('旧宿主没有官方组件时不拿 undefined 去渲染', () => {
   assert.equal(pickHostExport({}, 'Button'), undefined)
   assert.equal(typeof pickHostExport({ Button: modern }, 'Button'), 'function')
+})
+
+test('宿主图标返回 null 时改用自绘兜底', () => {
+  const fallback = () => 'local'
+  assert.equal(hostOrFallback(() => null, fallback)({}), 'local')
+  assert.equal(hostOrFallback(() => 'host', fallback)({}), 'host')
 })
 
 test('两个导出名都不存在时不把 undefined 交给 React', () => {

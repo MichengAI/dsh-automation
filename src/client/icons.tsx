@@ -22,16 +22,8 @@ export function RefreshIcon(props: IconProps): JSX.Element {
   return <IconFrame {...props}><path d="M19 7v5h-5" /><path d="M18.1 15.5A7.5 7.5 0 1 1 19 12" /></IconFrame>
 }
 
-export function PlayIcon(props: IconProps): JSX.Element {
-  return <svg viewBox='0 0 16 16' width={16} height={16} fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' {...props}><path d='M4.6 3.4 11.7 8l-7.1 4.6V3.4Z' fill='currentColor' stroke='currentColor' strokeWidth='1.6' strokeLinejoin='round' /></svg>
-}
-
 export function PauseIcon(props: IconProps): JSX.Element {
   return <IconFrame {...props}><path d="M9 7v10M15 7v10" /></IconFrame>
-}
-
-export function TrashIcon(props: IconProps): JSX.Element {
-  return <FillIcon {...props}><path fill='currentColor' d='M14.478 4.841 14.214 10.115c-.104 2.072-.147 2.896-.827 3.846a3.53 3.53 0 0 1-1.044.993c-.519.333-1.101.478-1.784.546-.671.067-1.509.066-2.559.066s-1.887.001-2.558-.066c-.683-.068-1.266-.213-1.784-.546a3.53 3.53 0 0 1-1.044-.993c-.681-.95-.724-1.774-.828-3.846L1.522 4.841l1.368-.068.263 5.273c.109 2.176.171 2.556.573 3.117a2.16 2.16 0 0 0 .673.64c.263.169.603.277 1.179.334.587.059 1.345.06 2.422.06s1.834-.001 2.422-.06c.575-.057.916-.165 1.179-.335.262-.168.49-.386.672-.64.402-.56.464-.94.573-3.116l.263-5.273 1.369.068ZM5.43 6.228h1.37v5.163H5.43V6.228Zm3.77 0h1.37v5.163H9.2V6.228ZM8.536.434c.644 0 1.116-.007 1.56.137.14.045.276.101.406.168.416.212.745.552 1.2 1.007l.796.795h2.876v1.37H.626V2.541h2.876l.796-.795c.456-.455.784-.795 1.2-1.007.13-.067.266-.123.405-.168C6.348.427 6.82.434 7.464.434h1.072Zm-1.072 1.37c-.732 0-.948.008-1.138.07a2.2 2.2 0 0 0-.206.085c-.156.08-.296.204-.678.583h5.117c-.382-.379-.522-.503-.679-.583a2.2 2.2 0 0 0-.205-.085c-.191-.062-.406-.07-1.138-.07H7.464Z' /></FillIcon>
 }
 
 export function ShieldIcon(props: IconProps): JSX.Element {
@@ -82,24 +74,8 @@ function FillIcon({ children, width = 16, height = 16 }: IconProps & { children:
   return <svg viewBox='0 0 16 16' width={width} height={height} fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>{children}</svg>
 }
 
-export function CloseOutlineIcon(props: IconProps): JSX.Element {
-  return <FillIcon {...props}><path fill='currentColor' d='M14.1168 13.197L13.197 14.1167L1.8833 2.80303L2.80309 1.88324L14.1168 13.197Z' /><path fill='currentColor' d='M13.197 1.88326L14.1168 2.80305L2.80309 14.1168L1.8833 13.197L13.197 1.88326Z' /></FillIcon>
-}
-
-export function CheckOutlineIcon(props: IconProps): JSX.Element {
-  return <FillIcon {...props}><path fill='currentColor' d='M15.0498 3.92579L8.49512 12.3818C8.25774 12.6881 8.04517 12.9645 7.84668 13.1689C7.63957 13.3823 7.38732 13.5841 7.04492 13.6719C6.86373 13.7183 6.6757 13.7346 6.48926 13.7197C6.13666 13.6915 5.8528 13.5355 5.6123 13.3604C5.38201 13.1926 5.12573 12.9567 4.83984 12.6953L1.03125 9.21289L1.96875 8.1875L5.77734 11.6699C6.08684 11.9529 6.27773 12.1249 6.43066 12.2363C6.50183 12.2882 6.54699 12.3135 6.57324 12.3252C6.58525 12.3305 6.59269 12.3322 6.5957 12.333C6.59802 12.3336 6.59961 12.334 6.59961 12.334C6.63317 12.3367 6.66758 12.3335 6.7002 12.3252C6.7002 12.3252 6.70211 12.3251 6.7041 12.3242C6.70698 12.3229 6.71348 12.319 6.72461 12.3115C6.74849 12.2956 6.78843 12.2642 6.84961 12.2012C6.98138 12.0654 7.13957 11.8628 7.39648 11.5313L13.9502 3.07422L15.0498 3.92579Z' /></FillIcon>
-}
-
 export function UnarchiveOutlineIcon(props: IconProps): JSX.Element {
   return <FillIcon {...props}><path fill='currentColor' d='M2 6.2h12v7.2H2V6.2Zm1.2 1.2v4.8h9.6V7.4H3.2ZM6.1 9.2h3.8v1.2H6.1V9.2ZM3.4 2.2h9.2L14 4.6H2L3.4 2.2Z' /></FillIcon>
-}
-
-export function SearchOutlineIcon(props: IconProps): JSX.Element {
-  return <FillIcon {...props}><path fill='currentColor' d='M11.894845 6.647401C11.894845 3.725463 9.534486 1.356779 6.623219 1.35657C3.711786 1.35657 1.351635 3.725338 1.351635 6.647401C1.351843 9.569296 3.711911 11.938273 6.623219 11.938273C9.534361 11.938064 11.894637 9.569171 11.894845 6.647401ZM13.245462 6.647401C13.245254 10.317935 10.280401 13.293613 6.623219 13.293821C2.965871 13.293821 0.000204 10.31806 0 6.647401C0 2.976574 2.965746 0 6.623219 0C10.280526 0.000205 13.245462 2.9767 13.245462 6.647401Z' /><path fill='currentColor' d='M16.000417 15.041079L15.044449 16.000433L11.530434 12.473588L12.486298 11.514234L16.000417 15.041079Z' /></FillIcon>
-}
-
-export function SlidersIcon(props: IconProps): JSX.Element {
-  return <FillIcon {...props}><path fill='currentColor' d='M2.2 3.4h6.05a1.85 1.85 0 0 0 3.5 0H13.8v1.3H11.75a1.85 1.85 0 0 0-3.5 0H2.2V3.4Zm8.6 1.15A.75.75 0 1 1 10.05 4.55.75.75 0 0 1 10.8 4.55ZM2.2 7.35h2.35a1.85 1.85 0 0 0 3.5 0H13.8v1.3H8.05a1.85 1.85 0 0 0-3.5 0H2.2V7.35Zm4.1 1.15A.75.75 0 1 1 5.55 8.5a.75.75 0 0 1 .75-.75ZM2.2 11.3h7.35a1.85 1.85 0 0 0 3.5 0H13.8v1.3h-.75a1.85 1.85 0 0 0-3.5 0H2.2v-1.3Zm9.9 1.15a.75.75 0 1 1-.75-.75.75.75 0 0 1 .75.75Z' /></FillIcon>
 }
 
 export function FolderClosedIcon(props: IconProps): JSX.Element {
@@ -120,10 +96,6 @@ export function TreeCornerIcon(props: IconProps): JSX.Element {
 
 export function ChevronIcon(props: IconProps): JSX.Element {
   return <svg viewBox='0 0 14 14' width={props.width || 14} height={props.height || 14} fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' {...props}><path fill='currentColor' d='M4.25 2.828v8.344c0 .49.592.735.939.389l4.172-4.172a.55.55 0 0 0 0-.778L5.189 2.439c-.347-.347-.939-.101-.939.389Z' /></svg>
-}
-
-export function PencilIcon(props: IconProps): JSX.Element {
-  return <FillIcon {...props}><path fill='currentColor' d='M9.941 1.349a2.54 2.54 0 0 1 2.473 0c.292.171.555.442.897.784.341.341.612.604.783.896a2.54 2.54 0 0 1 0 2.473c-.171.292-.442.555-.784.896L6.659 13.05c-.378.378-.652.661-.994.86-.341.199-.722.298-1.238.44l-1.183.326c-.469.13-.899.25-1.243.292-.349.043-.821.033-1.19-.336-.369-.369-.379-.841-.336-1.19.042-.344.163-.774.292-1.243l.326-1.183c.143-.516.242-.897.44-1.238.199-.342.482-.615.86-.994l6.652-6.651c.341-.342.604-.613.896-.784Zm1.759 1.222a1.16 1.16 0 0 0-1.045 0c-.095.056-.206.158-.61.562L9.456 3.721l2.265 2.265.589-.588c.404-.403.507-.515.562-.61a1.16 1.16 0 0 0 0-1.045c-.056-.095-.158-.206-.562-.61-.404-.404-.515-.507-.61-.562ZM3.394 9.784c-.429.429-.551.56-.637.706-.085.147-.138.318-.3.903l-.326 1.183c-.129.468-.209.766-.242.978.212-.033.51-.112.979-.241l1.183-.327c.585-.161.756-.214.902-.3.147-.085.277-.208.706-.636l5.062-5.063-2.265-2.265-5.062 5.062Z' /></FillIcon>
 }
 
 const RUNNING_CELLS: readonly (readonly [number, number])[] = [

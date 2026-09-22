@@ -35,7 +35,7 @@ import {
   shouldFollowSessionTab,
   tabForSessionId,
 } from '../src/client/schedule-rail-model.ts'
-import { relativeTime, nativeSessionHoverStyle, scheduledSessionChildRows, scheduledSessionHoverStatuses } from '../src/client/native-session-menu.ts'
+import { relativeTime, nativeSessionHoverStyle, scheduledSessionHoverStatuses } from '../src/client/native-session-menu.ts'
 import { en, zh } from '../src/client/locales.ts'
 import { archiveScheduledGroup, canDeleteScheduledSession, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder, scheduledListHostActions, scheduledSessionMenuActions, scheduledSessionOmitsStatusSlot } from '../src/client/native-group-actions.ts'
 
@@ -473,14 +473,6 @@ test('整组归档串行执行，避免工作区状态写入互相覆盖', async
 
 
 
-
-test('子代理挂在父会话下，标题用标签和会话名', () => {
-  assert.deepEqual(scheduledSessionChildRows([
-    { id: 'child-1', label: '功能', createdAt: Date.parse('2026-09-18T00:00:00.000Z') },
-  ], {
-    'child-1': { displayTitle: '会话标题生成', updatedAt: '2026-09-19T00:00:00.000Z' },
-  }), [{ id: 'child-1', title: '功能 | 会话标题生成', updatedAt: '2026-09-19T00:00:00.000Z' }])
-})
 
 test('会话悬停卡列出完成、待处理和已归档，而不只剩空闲', () => {
   const t = (key: string, params?: Record<string, unknown>) => params?.count === undefined ? key : `${key}:${String(params.count)}`

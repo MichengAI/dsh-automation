@@ -52,37 +52,6 @@ export function scheduledSessionHoverStatuses(input: {
   return visible
 }
 
-export interface ScheduledChildRow {
-  readonly id: string
-  readonly title: string
-  readonly updatedAt: string
-}
-
-/** 官方任务行把子代理挂在父会话下面，标题是「标签 | 会话名」。 */
-export function scheduledSessionChildRows(
-  catalog: readonly { readonly id?: string; readonly label?: string; readonly createdAt?: number }[] | undefined,
-  summaries: Readonly<Record<string, { readonly title?: string; readonly displayTitle?: string; readonly updatedAt?: number | string } | undefined>>,
-): ScheduledChildRow[] {
-  const rows: ScheduledChildRow[] = []
-  for (const entry of catalog ?? []) {
-    if (entry.id === undefined || entry.id === '') continue
-    const summary = summaries[entry.id]
-    const sessionTitle = (summary?.displayTitle ?? summary?.title ?? '').trim()
-    const label = (entry.label ?? '').trim()
-    const title = label !== '' && sessionTitle !== '' && sessionTitle !== label
-      ? `${label} | ${sessionTitle}`
-      : sessionTitle || label || entry.id
-    const updated = summary?.updatedAt
-    const updatedAt = typeof updated === 'number'
-      ? new Date(updated).toISOString()
-      : typeof updated === 'string' && updated !== ''
-        ? updated
-        : entry.createdAt === undefined ? '' : new Date(entry.createdAt).toISOString()
-    rows.push({ id: entry.id, title, updatedAt })
-  }
-  return rows
-}
-
 function sessionAge(value: string, now: number): { readonly unit: 'now' | 'minutes' | 'hours' | 'days'; readonly count: number } | undefined {
   const ts = Date.parse(value || '')
   if (!Number.isFinite(ts)) return undefined

@@ -1,17 +1,11 @@
 import { createElement } from 'react'
 import * as primitives from '@deepseek-ai/dsh-client-ui-primitives'
-import { pickHostIcon, type HostIcon } from './host-icon-resolve.js'
+import { hostOrFallback, pickHostIcon, type HostIcon } from './host-icon-resolve.js'
 
 export type { HostIcon }
 export { pickHostIcon }
 
 const icons = primitives as unknown as Readonly<Record<string, unknown>>
-
-function hostOrFallback(icon: HostIcon, fallback: HostIcon): HostIcon {
-  return function HostOrFallback(props) {
-    return icon(props) ?? fallback(props)
-  }
-}
 
 function treeFallback(): JSX.Element {
   return createElement('svg', { viewBox: '0 0 16 16', width: 16, height: 16, fill: 'none', 'aria-hidden': true },

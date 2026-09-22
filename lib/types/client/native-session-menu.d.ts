@@ -23,21 +23,6 @@ export declare function scheduledSessionHoverStatuses(input: {
     readonly runningSubagentCount?: number;
     readonly completed?: boolean;
 }, t: Translate): SessionHoverStatus[];
-export interface ScheduledChildRow {
-    readonly id: string;
-    readonly title: string;
-    readonly updatedAt: string;
-}
-/** 官方任务行把子代理挂在父会话下面，标题是「标签 | 会话名」。 */
-export declare function scheduledSessionChildRows(catalog: readonly {
-    readonly id?: string;
-    readonly label?: string;
-    readonly createdAt?: number;
-}[] | undefined, summaries: Readonly<Record<string, {
-    readonly title?: string;
-    readonly displayTitle?: string;
-    readonly updatedAt?: number | string;
-} | undefined>>): ScheduledChildRow[];
 /** 行内时间不带「前」，和官方 timeLabel 一样。 */
 export declare function sessionRowTime(value: string, t: Translate, now?: number): string;
 /** 悬停卡用官方 hoverTimeLabel：刚刚保持原样，其余套「前」。 */

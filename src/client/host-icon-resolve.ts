@@ -6,6 +6,13 @@ export function pickHostExport(source: Readonly<Record<string, unknown>>, name: 
   return typeof value === 'function' ? value : undefined
 }
 
+/** 宿主图标渲染出 null 时改用自绘。 */
+export function hostOrFallback(icon: HostIcon, fallback: HostIcon): HostIcon {
+  return function HostOrFallback(props) {
+    return icon(props) ?? fallback(props)
+  }
+}
+
 export function pickHostIcon(source: Readonly<Record<string, unknown>>, ...names: readonly string[]): HostIcon {
   for (const name of names) {
     const icon = source[name]
