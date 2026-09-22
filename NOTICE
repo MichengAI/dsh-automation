@@ -8,7 +8,7 @@ Copyright 2026 MichengAI contributors
 
 上述参考实现的许可证与版权仍归其原作者所有；本仓库实现为独立编写，不复制其专有代码。
 
-发布包 lib/ 内联了下列第三方软件，均为 MIT License。React 由宿主提供，没有打进包里。每份软件都适用下面这份 MIT 许可声明，版权归各自权利人所有。
+发布包 lib/ 会按实际引用内联下列第三方软件（下表覆盖可能被内联的集合），均为 MIT License。React 由宿主提供，没有打进包里。每份软件都适用下面这份 MIT 许可声明，版权归各自权利人所有。
 
 Copyright notices:
 
@@ -18,12 +18,17 @@ Copyright notices:
 - @ant-design/cssinjs, @rc-component/input, @rc-component/motion, @rc-component/overflow, @rc-component/resize-observer — Copyright (c) 2019-present afc163
 - @ant-design/cssinjs-utils, @ant-design/fast-color — Copyright (c) 2015-present Alipay.com, https://www.alipay.com/
 - @babel/runtime — Copyright (c) 2014-present Sebastian McKenzie and other contributors
+- @emotion/hash, @emotion/unitless — Copyright (c) Emotion team and other contributors
 - @rc-component/async-validator, collapse, context, dialog, input-number, pagination, rate, switch, util — Copyright (c) 2014-present yiminghe
+- @rc-component/checkbox — Copyright (c) 2016 React Components
 - @rc-component/color-picker — Copyright (c) 2019-present alipay.com
 - @rc-component/drawer, dropdown, listy, qrcode, slider, tooltip, trigger, virtual-list — Copyright (c) 2015-present Alipay.com, https://www.alipay.com/
 - @rc-component/cascader, form, image, mentions, menu, mini-decimal, mutate-observer, notification, picker, portal, progress, segmented, select, steps, table, tabs, tour, tree, tree-select — Copyright (c) 2019-present react-component
 - @rc-component/upload — Copyright (c) 2016-present react-component
+- clsx — Copyright (c) Luke Edwards <luke.edwards05@gmail.com> (lukeed.com)
+- is-mobile — Copyright (c) Julian Gruber <julian@juliangruber.com>；该包未附 LICENSE 文件，MIT 由 package.json 声明
 - luxon — Copyright 2019 JS Foundation and other contributors
+- react-is — Copyright (c) Meta Platforms, Inc. and affiliates.
 - stylis — Copyright (c) 2016-present Sultan Tarimo
 - zod — Copyright (c) 2025 Colin McDonnell
 
