@@ -228,7 +228,7 @@ export function NativeScheduleShell({
   })
   const hostedSchedule = extraTabs.find(item => item.id === 'schedule')
   const scheduleBody = hostedSchedule === undefined
-    ? <NativeScheduleSessionList t={t} runtime={runtime} {...(openSession === undefined ? {} : { openSession })} {...(openTaskSettings === undefined ? {} : { openTaskSettings })} {...(useSessions === undefined ? {} : { useSessions })} {...(useWorkspaces === undefined ? {} : { useWorkspaces })} {...scheduledListHostActions(hostProps)} />
+    ? <NativeScheduleSessionList t={t} runtime={runtime} {...(openSession === undefined ? {} : { openSession })} {...(openTaskSettings === undefined ? {} : { openTaskSettings })} {...(useSessions === undefined ? {} : { useSessions })} {...(useWorkspaces === undefined ? {} : { useWorkspaces })} {...(renderSlot === undefined ? {} : { renderSlot })} {...scheduledListHostActions(hostProps)} {...(typeof hostProps?.useSessionStatus === 'function' ? { useSessionStatus: hostProps.useSessionStatus as NonNullable<Parameters<typeof NativeScheduleSessionList>[0]['useSessionStatus']> } : {})} />
     : hostedSchedule.render({ ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true }) as ReactNode
   return (
     <div className="dsh-st-shell-rail">

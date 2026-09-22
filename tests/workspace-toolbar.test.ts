@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { automationToggleMutation } from '../src/client/schedule-rail-model.ts'
-import { officialSearchIconSize } from '../src/client/workspace-toolbar.tsx'
+import { officialSearchIconSize } from '../src/client/workspace-toolbar-metrics.ts'
 
 test('官方搜索图标折叠 14px、展开 11px', () => {
   assert.equal(officialSearchIconSize(false), 14)
@@ -58,7 +58,6 @@ test('定时会话列表跟随官方文件夹悬停、滚动槽和悬停卡片',
   assert.match(css, /\.dsh-st-n-toolbar\.is-search \.dsh-st-n-search\{border:\.5px solid var\(--dsw-alias-border-l4\)/)
   assert.match(css, /\.dsh-st-n-toolbar\.is-search \.dsh-st-n-search\{[^}]*color:var\(--dsw-alias-label-caption/)
   assert.match(css, /\.dsh-st-n-empty\{padding:16px 12px;[^}]*font-size:13px\}/)
-  assert.match(css, /\.dsh-st-n-hover-dot\{width:10px;height:10px/)
   assert.match(css, /\.dsh-st-n-group\{[^}]*position:relative/)
   assert.match(nativeList, /dsh-st-n-list-area/)
 })
@@ -79,8 +78,8 @@ test('任务总览使用独立开关控制状态且不再显示状态徽标', ()
   const rail = readFileSync(new URL('../src/client/ScheduleRail.tsx', import.meta.url), 'utf8')
   const nativeList = readFileSync(new URL('../src/client/native-session-list.tsx', import.meta.url), 'utf8')
 
-  assert.match(overview, /role="switch"/)
-  assert.match(overview, /aria-checked=\{!paused\}/)
+  assert.match(overview, /<Switch/)
+  assert.match(overview, /checked=\{!paused\}/)
   assert.match(overview, /onToggleAutomation\?\.\(row\.id, automationToggleMutation\(row\.status\)\)/)
   assert.doesNotMatch(overview, /dsh-st-overview-status/)
   assert.match(rail, /onToggleAutomation=\{\(automationId, mutation\) => runtime\.mutateAutomation\(automationId, mutation\)\}/)
@@ -102,7 +101,8 @@ test('任务总览卡片点击打开任务设置并让下次运行贴右显示',
   assert.match(css, /\.dsh-st-overview-schedule>span\{[^}]*overflow:hidden;[^}]*text-overflow:ellipsis/)
   assert.match(css, /\.dsh-st-overview-next\{[^}]*grid-column:2;[^}]*grid-row:2;[^}]*justify-self:end;[^}]*align-items:center/)
   assert.doesNotMatch(css, /\.dsh-st-overview-chevron/)
-  assert.match(css, /\.dsh-st-overview-toggle\{[^}]*position:absolute;[^}]*top:3px;[^}]*right:2px;[^}]*width:44px;[^}]*height:28px/)
+  assert.match(css, /\.dsh-st-overview-toggle\{[^}]*position:absolute;[^}]*top:4px;[^}]*right:6px/)
+  assert.doesNotMatch(css, /\.dsh-st-overview-toggle>span::after/)
   assert.match(overview, /<div className=\{`dsh-st-overview-row/)
   assert.match(overview, /<button[\s\S]*?className="dsh-st-overview-open"/)
   assert.match(overview, /onClick=\{\(\) => \{ openTaskSettings\?\.\(\{ automationId: row\.id, name: row\.name, sessionIds: \[\] \}\) \}\}/)

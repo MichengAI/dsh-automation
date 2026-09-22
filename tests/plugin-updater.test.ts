@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
-import { handlePluginUpdateEscape, manualPluginUpdateCommand } from '../src/client/plugin-update-ui.ts'
+import { handlePluginUpdateEscape, manualPluginUpdateCommand } from '../src/client/plugin-update-model.ts'
 import { isDshCliEntry, isNewerVersion, isTrustedUpdateRequest, PLUGIN_UPDATE_HEADER } from '../src/plugin-updater.ts'
 
 test('定时任务独立更新只接受同源专用请求', () => {
@@ -45,12 +45,9 @@ test('定时任务客户端与 Host 绑定自身更新入口', async () => {
   assert.doesNotMatch(client, /react-dom\/client/)
   assert.ok(manifest.dsh?.client?.inject?.includes('@deepseek-ai/dsh-client-ui-primitives'))
   assert.match(updateUi, /data-mpi-label/)
-  assert.match(updateUi, /overlay\.addEventListener\('keydown'/)
-  assert.match(updateUi, /<header class="mpi-head"><h2><\/h2><button type="button" class="mpi-dialog-close" data-action="close"><\/button><\/header>/)
-  assert.match(updateUi, /<footer class="mpi-actions"><div class="mpi-actions-group">/)
-  assert.match(updateUi, /background:var\(--dsw-alias-bg-layer-2/)
-  assert.match(updateUi, /box-shadow:var\(--dsw-shadow-lv3/)
-  assert.match(updateUi, /border-radius:14px/)
+  assert.match(updateUi, /size: 'small', shape: 'default'/)
+  assert.match(updateUi, /className: 'mpi-dialog'/)
+  assert.match(updateUi, /document\.addEventListener\('keydown', onKey, true\)/)
   assert.match(updateUi, /if \(version\.textContent !== versionLabel\)/)
   assert.match(updateUi, /else if \(payload\.latestCheckFailed\)/)
   assert.match(host, /endpoint: '\/api\/michengai\/dsh-automation\/update'/)

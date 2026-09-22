@@ -53,10 +53,13 @@ declare module '@deepseek-ai/dsh-llm' {
 declare module '@deepseek-ai/dsh-client-ui-primitives' {
   import type { ReactNode } from 'react'
   export type MenuEntry =
-    | { readonly id: string; readonly label: string; readonly icon?: ReactNode; readonly danger?: boolean }
+    | { readonly id: string; readonly label: ReactNode; readonly icon?: ReactNode; readonly danger?: boolean }
     | { readonly id: string; readonly type: 'separator' }
+    | { readonly id: string; readonly type: 'label'; readonly text: string }
   export function Button(props: { readonly variant?: string; readonly className?: string; readonly disabled?: boolean; readonly onClick?: () => void; readonly children?: ReactNode }): JSX.Element
-  export function Menu(props: { readonly open: boolean; readonly onClose: () => void; readonly items: readonly MenuEntry[]; readonly onSelect: (id: string) => void; readonly anchor: ReactNode; readonly portal?: boolean; readonly dense?: boolean; readonly compact?: boolean; readonly closeOnPointerLeave?: boolean }): JSX.Element
+  export function HoverCard(props: { readonly anchor: ReactNode; readonly content: ReactNode; readonly openDelayMs?: number; readonly disabled?: boolean; readonly copyText?: string; readonly copyLabel?: string; readonly copiedLabel?: string }): JSX.Element
+  export function StateDot(props: { readonly state: 'done' | 'warning' | 'ongoing' | 'error' | 'idle'; readonly size?: number }): JSX.Element
+  export function Menu(props: { readonly open: boolean; readonly onClose: () => void; readonly items?: readonly MenuEntry[]; readonly children?: ReactNode; readonly onSelect: (id: string) => void; readonly anchor: ReactNode; readonly portal?: boolean; readonly dense?: boolean; readonly compact?: boolean; readonly closeOnPointerLeave?: boolean; readonly selectedId?: string; readonly selectedIds?: readonly string[]; readonly align?: 'start' | 'end'; readonly listClassName?: string }): JSX.Element
   export function Modal(props: { readonly open: boolean; readonly onClose: () => void; readonly closeLabel: string; readonly title: string; readonly footer?: ReactNode; readonly children?: ReactNode }): JSX.Element
   export function IconArchiveOutline20(props: { readonly size?: number }): JSX.Element
   export function IconBranchOutline16(props: { readonly size?: number }): JSX.Element

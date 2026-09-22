@@ -8,4 +8,4 @@ export declare function DeleteConfirmation({ target, t, busy, onCancel, onConfir
     readonly busy: boolean;
     readonly onCancel: () => void;
     readonly onConfirm: () => void;
-}): JSX.Element | null;
+}): JSX.Element;

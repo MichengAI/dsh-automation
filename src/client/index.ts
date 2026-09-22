@@ -211,6 +211,8 @@ export function apply(ctx: ClientContext): void {
             openSession: opener,
             ...(isSessionSelector(props.useSessions) ? { useSessions: props.useSessions } : {}),
             ...(isWorkspaceSelector(props.useWorkspaces) ? { useWorkspaces: props.useWorkspaces } : {}),
+            ...(typeof props.renderSlot === 'function' ? { renderSlot: props.renderSlot as (name: string, owner?: Record<string, unknown>, opts?: { readonly hookContext?: unknown }) => ReturnType<typeof createElement> } : {}),
+            ...(typeof props.useSessionStatus === 'function' ? { useSessionStatus: props.useSessionStatus as NonNullable<Parameters<typeof NativeScheduleSessionList>[0]['useSessionStatus']> } : {}),
             ...scheduledListHostActions(props as Record<string, unknown>),
             openTaskSettings,
           })

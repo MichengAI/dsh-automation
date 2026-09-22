@@ -1,36 +1,43 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Button,
-  IconArchiveOutline20,
-  IconBranchOutline16,
-  IconEditOutline16,
-  IconEllipsisOutline16,
-  IconSettingsOutline16,
-  IconTrashOutline16,
+  HoverCard,
   Menu,
   Modal,
+  StateDot,
   type MenuEntry,
 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconArchiveOutline, IconBranchOutline, IconEditOutline, IconEllipsisOutline, IconSettingsOutline, IconTrashOutline } from './host-icons.js'
 import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import {
   ChevronIcon,
   FolderClosedIcon,
   FolderOpenIcon,
   RunningStateDot,
+  UnarchiveOutlineIcon,
 } from './icons.js'
 import {
   nativeSessionHoverStyle,
-  relativeTime,
+  scheduledSessionHoverStatuses,
+  sessionHoverTime,
+  sessionRowTime,
 } from './native-session-menu.js'
 import { archiveScheduledGroup, canDeleteScheduledSession, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder, scheduledSessionMenuActions, scheduledSessionOmitsStatusSlot } from './native-group-actions.js'
 import type { AutomationRuntime } from './runtime.js'
-import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, keepScheduledSessionLink, resolveCurrentSessionId, scheduledSessionNeedsSnapshotRefresh, type NativeSessionLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
+import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, groupScheduledSessionsByWorkspaceTree, resolveCurrentSessionId, scheduledSessionNeedsSnapshotRefresh, scheduledSessionVisible, type ArchivedSessionFilter, type NativeSessionLike, type NativeWorkspaceLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
 import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import { WorkspaceToolbar } from './workspace-toolbar.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
+interface SessionStatusLike {
+  readonly running?: boolean
+  readonly completionUnread?: boolean
+  readonly pendingInteraction?: { readonly kind?: string }
+}
+
 const EMPTY_SESSION_BY_ID: Record<string, NativeSessionLike> = {}
+const EMPTY_WORKSPACES: readonly NativeWorkspaceLike[] = []
 
 export function NativeScheduleSessionList(props: {
   readonly t: Translate
@@ -40,17 +47,26 @@ export function NativeScheduleSessionList(props: {
   readonly useWorkspaces?: WorkspaceSelector
   readonly renameSession?: (sessionId: string, title: string) => void | Promise<void>
   readonly archiveSession?: (sessionId: string) => void | Promise<void>
+  readonly unarchiveSession?: (sessionId: string) => void | Promise<void>
   readonly deleteSession?: (sessionId: string) => void | Promise<void>
   readonly forkSession?: (sessionId: string) => void | Promise<void>
+  readonly pinSession?: (sessionId: string) => void | Promise<void>
+  readonly unpinSession?: (sessionId: string) => void | Promise<void>
+  readonly notifyArchivedNotOpenable?: () => void
   readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
+  readonly renderSlot?: (name: string, props?: Record<string, unknown>, opts?: { readonly hookContext?: unknown; readonly only?: string }) => ReactNode
+  readonly useSessionStatus?: <T>(selector: (state: ReadonlyMap<string, SessionStatusLike>) => T) => T
 }): JSX.Element {
-  const { t, runtime, openSession, useSessions, useWorkspaces, renameSession, archiveSession, deleteSession, forkSession, openTaskSettings } = props
+  const { t, runtime, openSession, useSessions, useWorkspaces, renameSession, archiveSession, unarchiveSession, deleteSession, forkSession, notifyArchivedNotOpenable, openTaskSettings, renderSlot, useSessionStatus } = props
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const selectedId = useSessions ? useSessions(snap => resolveCurrentSessionId(snap)) : null
   const sessionById: Record<string, NativeSessionLike> = useSessions
     ? useSessions(snap => snap.byId ?? EMPTY_SESSION_BY_ID)
     : EMPTY_SESSION_BY_ID
   const archivedIds: readonly string[] = useWorkspaces ? useWorkspaces(snap => snap.archivedSessionIds ?? []) : []
+  const workspaceItems = useWorkspaces ? useWorkspaces(snap => snap.items ?? EMPTY_WORKSPACES) : EMPTY_WORKSPACES
+  const sessionStatuses = useSessionStatus ? useSessionStatus(state => state) : undefined
+  const projections = useSessions ? useSessions(snap => (snap as { projectionsBySession?: Record<string, { values?: { subagentCatalog?: readonly { id?: string }[] } }> }).projectionsBySession) : undefined
   const [folded, setFolded] = useState<Record<string, boolean>>({})
   const [openMenu, setOpenMenu] = useState<string>()
   const [openGroupMenu, setOpenGroupMenu] = useState<string>()
@@ -61,27 +77,20 @@ export function NativeScheduleSessionList(props: {
   const [deleteSessionBusy, setDeleteSessionBusy] = useState(false)
   const [deleteSessionError, setDeleteSessionError] = useState<string>()
   const [archiveManagerInstalled, setArchiveManagerInstalled] = useState(() => typeof document !== 'undefined' && hasArchiveManagerPlugin(document))
+  const [archivedFilter, setArchivedFilter] = useState<ArchivedSessionFilter>('default')
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<WorkspaceListSort>('time')
   const [groupMode, setGroupMode] = useState<WorkspaceGroupMode>('workspace')
   const [view, setView] = useState<ScheduleView>('runs')
   const snapshotRefreshFor = useRef<string | null>(null)
   const archived = useMemo(() => new Set(archivedIds), [archivedIds])
-  const listedIds: readonly string[] | undefined = useSessions
-    ? useSessions(snap => Array.isArray(snap.ids) ? snap.ids : undefined)
-    : undefined
-  const presentIds = useMemo(() => {
-    if (listedIds !== undefined) return new Set(listedIds)
-    const keys = Object.keys(sessionById)
-    return keys.length > 0 ? new Set(keys) : undefined
-  }, [listedIds, sessionById])
   const groups = useMemo(() => {
     const snapshot = state.snapshot
     if (snapshot === undefined) return []
     const timeZoneById = new Map(snapshot.automations.map(item => [item.id, item.timeZone]))
     return groupScheduledSessions(snapshot.automations, snapshot.runs).map((group) => ({
       ...group,
-      sessions: group.sessions.filter((session) => keepScheduledSessionLink(session.id, archived, presentIds)).map((session) => {
+      sessions: group.sessions.filter((session) => scheduledSessionVisible(session.id, archived, archivedFilter)).map((session) => {
         const run = snapshot.runs.find((item) => item.sessionId === session.id)
         return {
           ...session,
@@ -91,7 +100,7 @@ export function NativeScheduleSessionList(props: {
         }
       }),
     })).filter((group) => group.sessions.length > 0)
-  }, [archived, presentIds, sessionById, state.snapshot])
+  }, [archived, archivedFilter, sessionById, state.snapshot])
   useEffect(() => {
     if (!scheduledSessionNeedsSnapshotRefresh(selectedId, state.snapshot?.runs)) {
       snapshotRefreshFor.current = null
@@ -101,7 +110,12 @@ export function NativeScheduleSessionList(props: {
     snapshotRefreshFor.current = selectedId
     void runtime.refresh().catch(() => undefined)
   }, [runtime, selectedId, state.snapshot?.runs])
-  const visibleGroups = useMemo(() => applyWorkspaceBrowserQuery(groups.map((group) => ({ ...group, name: group.name })), query, sort, groupMode), [groups, query, sort, groupMode])
+  const visibleGroups = useMemo(() => {
+    const source = groupMode === 'workspace-tree'
+      ? groupScheduledSessionsByWorkspaceTree(groups.flatMap((group) => group.sessions.map((session) => ({ ...session, automationId: group.id }))), workspaceItems, t('sidebar.ungrouped'))
+      : groups
+    return applyWorkspaceBrowserQuery(source.map((group) => ({ ...group, name: group.name })), query, sort, groupMode)
+  }, [groupMode, groups, query, sort, t, workspaceItems])
   useEffect(() => {
     if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return
     const refresh = (): void => { setArchiveManagerInstalled(hasArchiveManagerPlugin(document)) }
@@ -112,6 +126,7 @@ export function NativeScheduleSessionList(props: {
   }, [])
   const canArchiveGroup = archiveManagerInstalled && archiveSession !== undefined
   const canDeleteSession = canDeleteScheduledSession(archiveManagerInstalled, deleteSession)
+  const canUnarchive = unarchiveSession !== undefined
   const confirmArchiveGroup = (): void => {
     if (archiveGroupTarget === undefined || archiveSession === undefined || archiveGroupBusy) return
     const target = archiveGroupTarget
@@ -146,7 +161,7 @@ export function NativeScheduleSessionList(props: {
               {...(state.snapshot.serverNow === undefined ? {} : { serverNow: state.snapshot.serverNow })}
             />
         : <>
-            <WorkspaceToolbar t={t} query={query} sort={sort} groupMode={groupMode} onQueryChange={setQuery} onSortChange={setSort} onGroupModeChange={setGroupMode} />
+            <WorkspaceToolbar t={t} query={query} sort={sort} groupMode={groupMode} archivedFilter={archivedFilter} onQueryChange={setQuery} onSortChange={setSort} onGroupModeChange={setGroupMode} onArchivedFilterChange={setArchivedFilter} />
             <div className='dsh-st-n-list-area'>
             <div className='dsh-st-n-tree' role='tree'>
               {state.phase === 'loading' && visibleGroups.length === 0 && <div className='dsh-st-n-empty'>{t('loading')}</div>}
@@ -154,9 +169,12 @@ export function NativeScheduleSessionList(props: {
               {visibleGroups.map((group) => {
                 const expanded = folded[group.id] !== true
                 const hasCurrentSession = scheduledGroupShowsActiveFolder(group.sessions.map(session => session.id), selectedId)
+                const depth = 'depth' in group ? group.depth : 0
+                const automationIds = [...new Set(group.sessions.flatMap((session) => 'automationId' in session && typeof session.automationId === 'string' ? [session.automationId] : []))]
+                const taskAutomationId: string | undefined = groupMode === 'workspace-tree' ? automationIds[0] : group.id
                 return (
-                  <div key={group.id} className='dsh-st-n-group'>
-                    {groupMode === 'workspace' && <NativeScheduleGroupRow
+                  <div key={group.id === '' ? 'ungrouped' : group.id} className='dsh-st-n-group' style={depth > 0 ? { paddingLeft: depth * 16 } : undefined}>
+                    {groupMode !== 'list' && <NativeScheduleGroupRow
                       t={t}
                       id={group.id}
                       name={group.name}
@@ -165,13 +183,15 @@ export function NativeScheduleSessionList(props: {
                       hasCurrentSession={hasCurrentSession}
                       menuOpen={openGroupMenu === group.id}
                       canArchiveGroup={canArchiveGroup}
+                      showTaskSettings={taskAutomationId !== undefined}
                       onToggle={() => setFolded((current) => ({ ...current, [group.id]: expanded }))}
                       onMenuChange={(open) => {
                         setOpenMenu(undefined)
                         setOpenGroupMenu(open ? group.id : undefined)
                       }}
                       onTaskSettings={() => {
-                        openTaskSettings?.({ automationId: group.id, name: group.name, sessionIds: group.sessions.map(session => session.id) })
+                        if (taskAutomationId === undefined) return
+                        openTaskSettings?.({ automationId: taskAutomationId, name: group.name, sessionIds: group.sessions.map(session => session.id) })
                       }}
                       onArchiveGroup={() => {
                         setArchiveGroupError(undefined)
@@ -188,15 +208,29 @@ export function NativeScheduleSessionList(props: {
                         hoverTitle={String(sessionById[session.id]?.displayTitle ?? sessionById[session.id]?.title ?? group.name)}
                         updatedAt={session.updatedAt}
                         running={session.running}
+                        archived={archived.has(session.id)}
                         selected={selectedId === session.id}
                         menuOpen={openMenu === session.id}
                         canDelete={canDeleteSession}
+                        canUnarchive={canUnarchive}
+                        hoverStatuses={scheduledSessionHoverStatuses({
+                          running: session.running || sessionStatuses?.get(session.id)?.running === true,
+                          archived: archived.has(session.id),
+                          completed: sessionStatuses?.get(session.id)?.completionUnread === true,
+                          ...(sessionStatuses?.get(session.id)?.pendingInteraction?.kind === undefined ? {} : { pendingKind: sessionStatuses.get(session.id)?.pendingInteraction?.kind ?? '' }),
+                          runningSubagentCount: (projections?.[session.id]?.values?.subagentCatalog ?? []).filter((child) => child.id !== undefined && sessionStatuses?.get(child.id)?.running === true).length,
+                        }, t)}
+                        {...(renderSlot === undefined ? {} : { renderSlot })}
                         onMenuChange={(open) => {
                           setOpenGroupMenu(undefined)
                           setOpenMenu(open ? session.id : undefined)
                         }}
                         onOpen={() => {
                           setOpenMenu(undefined)
+                          if (archived.has(session.id)) {
+                            notifyArchivedNotOpenable?.()
+                            return
+                          }
                           openSession?.(session.id)
                         }}
                         onDeleteSession={() => {
@@ -208,6 +242,7 @@ export function NativeScheduleSessionList(props: {
                         }}
                         {...(renameSession === undefined ? {} : { renameSession })}
                         {...(archiveSession === undefined ? {} : { archiveSession })}
+                        {...(unarchiveSession === undefined ? {} : { unarchiveSession })}
                         {...(forkSession === undefined ? {} : { forkSession })}
                       />
                     ))}
@@ -266,18 +301,19 @@ function NativeScheduleGroupRow(props: {
   readonly hasCurrentSession: boolean
   readonly menuOpen: boolean
   readonly canArchiveGroup: boolean
+  readonly showTaskSettings: boolean
   readonly onToggle: () => void
   readonly onMenuChange: (open: boolean) => void
   readonly onTaskSettings: () => void
   readonly onArchiveGroup: () => void
 }): JSX.Element {
-  const { t, id, name, expanded, hasCurrentSession, menuOpen, canArchiveGroup, onToggle, onMenuChange, onTaskSettings, onArchiveGroup } = props
+  const { t, id, name, expanded, hasCurrentSession, menuOpen, canArchiveGroup, showTaskSettings, onToggle, onMenuChange, onTaskSettings, onArchiveGroup } = props
   const items: MenuEntry[] = [
-    { id: 'task-settings', label: t('session.taskSettings'), icon: <IconSettingsOutline16 size={16} /> },
+    ...(showTaskSettings ? [{ id: 'task-settings', label: t('session.taskSettings'), icon: <IconSettingsOutline size={16} /> }] : []),
     ...(canArchiveGroup
       ? [
-          { type: 'separator' as const, id: 'archive-separator' },
-          { id: 'archive-group', label: t('session.archiveGroup'), icon: <IconArchiveOutline20 size={16} />, danger: true },
+          ...(showTaskSettings ? [{ type: 'separator' as const, id: 'archive-separator' }] : []),
+          { id: 'archive-group', label: t('session.archiveGroup'), icon: <IconArchiveOutline size={16} />, danger: true },
         ]
       : []),
   ]
@@ -311,7 +347,7 @@ function NativeScheduleGroupRow(props: {
             aria-label={t('session.groupActions', { name })}
             onMouseDown={(event) => { event.stopPropagation() }}
             onClick={(event) => { event.stopPropagation(); onMenuChange(!menuOpen) /* 官方 Menu 受控，不会自己开；官方行也是锚点 toggle */ }}
-          ><IconEllipsisOutline16 size={16} /></button>}
+          ><IconEllipsisOutline size={16} /></button>}
         />
       </span>
     </div>
@@ -326,17 +362,22 @@ function NativeSessionRow(props: {
   readonly hoverTitle?: string
   readonly updatedAt: string
   readonly running: boolean
+  readonly archived: boolean
   readonly selected: boolean
   readonly menuOpen: boolean
   readonly canDelete: boolean
+  readonly canUnarchive: boolean
+  readonly hoverStatuses: readonly { readonly state: 'ongoing' | 'warning' | 'done' | 'idle' | 'archived'; readonly label: string; readonly trailing?: string }[]
+  readonly renderSlot?: (name: string, props?: Record<string, unknown>, opts?: { readonly hookContext?: unknown; readonly only?: string }) => ReactNode
   readonly onMenuChange: (open: boolean) => void
   readonly onOpen: () => void
   readonly onDeleteSession?: () => void
   readonly renameSession?: (sessionId: string, title: string) => void | Promise<void>
   readonly archiveSession?: (sessionId: string) => void | Promise<void>
+  readonly unarchiveSession?: (sessionId: string) => void | Promise<void>
   readonly forkSession?: (sessionId: string) => void | Promise<void>
 }): JSX.Element {
-  const { t, flat, id, title, hoverTitle, updatedAt, running, selected, menuOpen, canDelete, onMenuChange, onOpen, onDeleteSession, renameSession, archiveSession, forkSession } = props
+  const { t, flat, id, title, hoverTitle, updatedAt, running, archived, selected, menuOpen, canDelete, canUnarchive, hoverStatuses, renderSlot, onMenuChange, onOpen, onDeleteSession, renameSession, archiveSession, unarchiveSession, forkSession } = props
   const omitStatusSlot = scheduledSessionOmitsStatusSlot(flat, running)
   const rowRef = useRef<HTMLDivElement>(null)
   const hoverRef = useRef<HTMLDivElement>(null)
@@ -376,7 +417,7 @@ function NativeSessionRow(props: {
     if (hoverTimer.current !== undefined) window.clearTimeout(hoverTimer.current)
     setHoverOpen(false)
   }
-  const rowClass = 'dsh-st-n-sess' + (selected ? ' is-on' : '') + (menuOpen ? ' is-menu' : '') + (omitStatusSlot ? ' is-flat-idle' : '')
+  const rowClass = 'dsh-st-n-sess' + (selected ? ' is-on' : '') + (menuOpen ? ' is-menu' : '') + (omitStatusSlot ? ' is-flat-idle' : '') + (archived ? ' is-archived' : '')
   if (renaming) {
     return (
       <div className={rowClass} ref={rowRef}>
@@ -387,18 +428,44 @@ function NativeSessionRow(props: {
       </div>
     )
   }
-  const items: MenuEntry[] = scheduledSessionMenuActions(canDelete).map((action) => {
-    if (action === 'rename') return { id: action, label: t('session.rename'), icon: <IconEditOutline16 /> }
-    if (action === 'fork') return { id: action, label: t('session.fork'), icon: <IconBranchOutline16 /> }
-    if (action === 'archive') return { id: action, label: t('session.archive'), icon: <IconArchiveOutline20 size={16} /> }
-    return { id: action, label: t('session.deleteSession'), icon: <IconTrashOutline16 />, danger: true }
+  const displayTitle = (hoverTitle ?? title).trim() || title
+  const menuSlot = renderSlot === undefined ? undefined : ['rename', 'fork', 'archive', 'archive-manager.delete-session'].map((only) => renderSlot('sidebar.workspaces.session.menu.item', {
+    sessionId: id,
+    displayTitle,
+  }, { hookContext: [menuOpen, (open: boolean) => onMenuChange(open)], only }))
+  const items: MenuEntry[] = menuSlot !== undefined ? [] : scheduledSessionMenuActions({ canDelete, archived, pinned: false, canPin: false, canUnarchive }).map((action) => {
+    if (action === 'rename') return { id: action, label: t('session.rename'), icon: <IconEditOutline /> }
+    if (action === 'fork') return { id: action, label: t('session.fork'), icon: <IconBranchOutline /> }
+    if (action === 'archive') return { id: action, label: t('session.archive'), icon: <IconArchiveOutline size={16} /> }
+    if (action === 'unarchive') return { id: action, label: t('session.unarchive'), icon: <UnarchiveOutlineIcon width={16} height={16} /> }
+    return { id: action, label: t('session.deleteSession'), icon: <IconTrashOutline />, danger: true }
   })
-  return (
+  const primary = hoverStatuses.find((status) => status.state !== 'archived')
+  const showDot = !archived && primary !== undefined && primary.state !== 'idle'
+  const trailing = primary?.trailing
+  const hoverBody = (
+    <>
+      <div className='dsh-st-n-hover-title'>{displayTitle}</div>
+      <div className='dsh-st-n-hover-time'>{sessionHoverTime(updatedAt, t)}</div>
+      {hoverStatuses.map((status) => (
+        <div key={status.label} className='dsh-st-n-hover-state'>
+          {status.state === 'archived'
+            ? <IconArchiveOutline size={14} />
+            : <StateDot state={status.state === 'ongoing' ? 'ongoing' : status.state === 'warning' ? 'warning' : status.state === 'done' ? 'done' : 'idle'} size={10} />}
+          {status.label}
+        </div>
+      ))}
+    </>
+  )
+  const row = (
     <div className={rowClass} ref={rowRef} role='treeitem' tabIndex={0} aria-selected={selected} data-n-menu-root={id} onClick={onOpen} onMouseEnter={showHover} onMouseLeave={hideHover} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); hideHover(); onMenuChange(true) }}>
-      {!omitStatusSlot && <span className='dsh-st-n-slot'>{running ? <RunningStateDot /> : null}</span>}
-      <span className='dsh-st-n-title'>{title}</span>
-      <span className='dsh-st-n-time'>{relativeTime(updatedAt, t)}</span>
+      {!omitStatusSlot && <span className='dsh-st-n-slot'>{showDot && primary !== undefined ? <StateDot state={primary.state === 'ongoing' ? 'ongoing' : primary.state === 'warning' ? 'warning' : 'done'} size={10} /> : running ? <RunningStateDot /> : null}</span>}
+      <span className='dsh-st-n-title' onDoubleClick={(event) => { if (renameSession === undefined) return; event.stopPropagation(); setRenaming(true) }}>{title}</span>
+      <span className='dsh-st-n-time' aria-hidden={trailing === undefined ? undefined : true}>{trailing ?? sessionRowTime(updatedAt, t)}</span>
       <span className='dsh-st-n-acts'>
+        {menuSlot === undefined && archived && canUnarchive && (
+          <button type='button' className='dsh-st-n-restore' onMouseDown={(event) => { event.stopPropagation() }} onClick={(event) => { event.stopPropagation(); run(() => unarchiveSession?.(id)) }}>{t('session.unarchive')}</button>
+        )}
         <Menu
           open={menuOpen}
           onClose={() => { onMenuChange(false) }}
@@ -408,6 +475,7 @@ function NativeSessionRow(props: {
             if (action === 'rename') setRenaming(true)
             if (action === 'fork') run(() => forkSession?.(id))
             if (action === 'archive') run(() => archiveSession?.(id))
+            if (action === 'unarchive') run(() => unarchiveSession?.(id))
             if (action === 'delete-session') onDeleteSession?.()
           }}
           portal
@@ -418,20 +486,30 @@ function NativeSessionRow(props: {
             aria-label={t('session.moreActions', { title })}
             onMouseDown={(event) => { event.stopPropagation() }}
             onClick={(event) => { event.stopPropagation(); hideHover(); onMenuChange(!menuOpen) /* 官方 Menu 受控，不会自己开；官方行也是锚点 toggle */ }}
-          ><IconEllipsisOutline16 size={16} /></button>}
-        />
+          ><IconEllipsisOutline size={16} /></button>}
+        >
+          {menuSlot}
+        </Menu>
+        {renderSlot?.('sidebar.workspaces.session.row.action', { sessionId: id, displayTitle }, { only: 'archive' })}
       </span>
-      {hoverOpen && !menuOpen && typeof document !== 'undefined' && createPortal(
+      {typeof HoverCard !== 'function' && hoverOpen && !menuOpen && typeof document !== 'undefined' && createPortal(
         <div ref={hoverRef} className='dsh-st-n-hover' style={hoverStyle} onMouseEnter={showHover} onMouseLeave={hideHover}>
-          <div className='dsh-st-n-hover-title'>{(hoverTitle ?? title).trim() || title}</div>
-          <div className='dsh-st-n-hover-time'>{relativeTime(updatedAt, t)}</div>
-          <div className='dsh-st-n-hover-state'>
-            <span className={running ? 'dsh-st-n-hover-dot is-run' : 'dsh-st-n-hover-dot'} />
-            {running ? t('session.runningStatus') : t('session.idle')}
-          </div>
+          {hoverBody}
         </div>,
         document.body,
       )}
     </div>
+  )
+  if (typeof HoverCard !== 'function') return row
+  return (
+    <HoverCard
+      anchor={row}
+      content={hoverBody}
+      openDelayMs={800}
+      disabled={menuOpen}
+      copyText={displayTitle}
+      copyLabel={t('session.copy')}
+      copiedLabel={t('session.copied')}
+    />
   )
 }

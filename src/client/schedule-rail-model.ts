@@ -138,6 +138,35 @@ export function deriveTaskOverviewRows(
   }))
 }
 
+export type ArchivedSessionFilter = 'default' | 'show' | 'only'
+
+/** 默认隐藏已归档；显示和仅归档跟官方筛选同一套规则。空 id 一律不展示。 */
+export function scheduledSessionVisible(
+  sessionId: string | undefined,
+  archived: ReadonlySet<string>,
+  filter: ArchivedSessionFilter,
+): boolean {
+  if (sessionId === undefined || sessionId === '') return false
+  const isArchived = archived.has(sessionId)
+  if (filter === 'only') return isArchived
+  if (filter === 'show') return true
+  return !isArchived
+}
+
+/** 置顶会话留在原有相对顺序里，整段排到分组前面。 */
+export function leadWithPinnedSessions<T extends { readonly id?: string }>(
+  sessions: readonly T[],
+  pinned: ReadonlySet<string>,
+): T[] {
+  const head: T[] = []
+  const tail: T[] = []
+  for (const session of sessions) {
+    if (session.id !== undefined && pinned.has(session.id)) head.push(session)
+    else tail.push(session)
+  }
+  return head.length === 0 ? [...sessions] : [...head, ...tail]
+}
+
 /** 归档立即摘掉。宿主会话簿经常晚于自动化快照，缺席不能当成已删除。 */
 export function keepScheduledSessionLink(
   sessionId: string | undefined,
@@ -323,6 +352,7 @@ export function filterTaskSessionState<T extends SessionListState>(state: T | un
 export interface WorkspaceListState {
   readonly items?: readonly NativeWorkspaceLike[]
   readonly archivedSessionIds?: readonly string[]
+  readonly pinnedSessionIds?: readonly string[]
 }
 
 /** 旧宿主读 list.current；alpha.2 主视图改由 retainedBy.mainView 标记。 */
@@ -532,12 +562,121 @@ export function pickWrappableWorkspacesEntry(entries: readonly unknown[]): unkno
 
 
 
-export type WorkspaceGroupMode = 'workspace' | 'list'
+export type WorkspaceGroupMode = 'workspace' | 'workspace-tree' | 'list'
+
+function folderPath(path: string): string {
+  return path.replace(/\\/g, '/').replace(/\/+$/, '')
+}
+
+/** 官方按工作区树：子目录挂到路径最长的已打开工作区下面。 */
+export function owningParentFolder(path: string, candidates: readonly string[]): string | undefined {
+  const child = folderPath(path)
+  let owner: string | undefined
+  let length = -1
+  for (const parent of candidates) {
+    const root = folderPath(parent)
+    if (root.length > length && child !== root && child.startsWith(`${root}/`)) {
+      owner = parent
+      length = root.length
+    }
+  }
+  return owner
+}
+
+export interface WorkspaceTreeGroup<T> {
+  readonly id: string
+  readonly name: string
+  readonly depth: number
+  readonly keep?: boolean
+  readonly sessions: readonly T[]
+}
+
+/** 定时会话按宿主工作区归组，工作区路径嵌套时缩进。没有工作区的会话进未分组。 */
+export function groupScheduledSessionsByWorkspaceTree<T extends { readonly id?: string }>(
+  sessions: readonly T[],
+  workspaces: readonly NativeWorkspaceLike[],
+  ungroupedLabel: string,
+): WorkspaceTreeGroup<T>[] {
+  const bySession = new Map<string, NativeWorkspaceLike>()
+  for (const workspace of workspaces) {
+    for (const sessionId of workspace.sessionIds ?? []) bySession.set(sessionId, workspace)
+  }
+  const buckets = new Map<string, T[]>()
+  const ungrouped: T[] = []
+  for (const session of sessions) {
+    const workspace = session.id === undefined ? undefined : bySession.get(session.id)
+    const key = workspace?.workspaceId ?? workspace?.id ?? workspace?.path
+    if (workspace === undefined || key === undefined || key === '') {
+      ungrouped.push(session)
+      continue
+    }
+    const bucket = buckets.get(key) ?? []
+    bucket.push(session)
+    buckets.set(key, bucket)
+  }
+  const byPath = new Map<string, NativeWorkspaceLike>()
+  for (const workspace of workspaces) {
+    if (workspace.path !== undefined && workspace.path !== '') byPath.set(folderPath(workspace.path), workspace)
+  }
+  const included = new Map<string, NativeWorkspaceLike>()
+  for (const workspace of workspaces) {
+    const key = workspace.workspaceId ?? workspace.id ?? workspace.path
+    if (key === undefined || key === '' || !buckets.has(key)) continue
+    included.set(key, workspace)
+    let path = workspace.path
+    const seen = new Set<string>()
+    while (path !== undefined && path !== '' && !seen.has(path)) {
+      seen.add(path)
+      const parentPath = owningParentFolder(path, [...byPath.keys()])
+      if (parentPath === undefined) break
+      const parent = byPath.get(folderPath(parentPath))
+      const parentKey = parent?.workspaceId ?? parent?.id ?? parent?.path
+      if (parent === undefined || parentKey === undefined || parentKey === '') break
+      included.set(parentKey, parent)
+      path = parent.path
+    }
+  }
+  const present = [...included.values()]
+  const paths = present.map((workspace) => workspace.path).filter((path): path is string => path !== undefined && path !== '')
+  const keyOf = (workspace: NativeWorkspaceLike): string => workspace.workspaceId ?? workspace.id ?? workspace.path ?? ''
+  const children = new Map<string, NativeWorkspaceLike[]>()
+  const roots: NativeWorkspaceLike[] = []
+  for (const workspace of present) {
+    const parentPath = workspace.path === undefined ? undefined : owningParentFolder(workspace.path, paths)
+    const parent = parentPath === undefined ? undefined : present.find((item) => item.path !== undefined && folderPath(item.path) === folderPath(parentPath))
+    const parentKey = parent === undefined ? undefined : keyOf(parent)
+    if (parent === undefined || parentKey === undefined || parentKey === '') roots.push(workspace)
+    else {
+      const list = children.get(parentKey) ?? []
+      list.push(workspace)
+      children.set(parentKey, list)
+    }
+  }
+  const byName = (left: NativeWorkspaceLike, right: NativeWorkspaceLike): number => (left.title || left.path || '').localeCompare(right.title || right.path || '')
+  const groups: WorkspaceTreeGroup<T>[] = []
+  const walk = (workspace: NativeWorkspaceLike, depth: number): void => {
+    const key = keyOf(workspace)
+    const sessionsInWorkspace = buckets.get(key) ?? []
+    groups.push({
+      id: key,
+      name: workspace.title || workspace.path || ungroupedLabel,
+      depth,
+      keep: sessionsInWorkspace.length === 0,
+      sessions: sessionsInWorkspace,
+    })
+    for (const child of (children.get(key) ?? []).sort(byName)) walk(child, depth + 1)
+  }
+  for (const root of roots.sort(byName)) walk(root, 0)
+  if (ungrouped.length > 0) groups.push({ id: '', name: ungroupedLabel, depth: 0, sessions: ungrouped })
+  return groups
+}
 export type WorkspaceListSort = 'manual' | 'time'
 
 export interface SearchableRailGroup {
   readonly name: string
   readonly sessions: readonly { readonly title?: string; readonly label?: string; readonly updatedAt?: string }[]
+  /** 按工作区树时，没有自己的会话、只用来托住子工作区的父级也要留着。 */
+  readonly keep?: boolean
 }
 
 export function applyWorkspaceBrowserQuery<T extends SearchableRailGroup>(
@@ -552,13 +691,13 @@ export function applyWorkspaceBrowserQuery<T extends SearchableRailGroup>(
     if (group.name.toLocaleLowerCase().includes(needle)) return group
     const sessions = group.sessions.filter((session) => `${session.title ?? ''} ${session.label ?? ''}`.toLocaleLowerCase().includes(needle))
     return { ...group, sessions }
-  }).filter((group) => group.sessions.length > 0 || (needle !== '' && group.name.toLocaleLowerCase().includes(needle)))
+  }).filter((group) => group.sessions.length > 0 || (needle === '' && group.keep === true) || (needle !== '' && group.name.toLocaleLowerCase().includes(needle)))
   if (groupMode === 'list') {
     const sessions = filtered.flatMap((group) => [...group.sessions])
     if (sort === 'time') sessions.sort((left, right) => sessionTime(right) - sessionTime(left))
     return sessions.length === 0 ? [] : [{ ...(filtered[0] as T), name: '', sessions }]
   }
-  if (sort === 'manual') return filtered
+  if (groupMode === 'workspace-tree' || sort === 'manual') return filtered
   return [...filtered].sort((left, right) => latestSessionTime(right) - latestSessionTime(left))
 }
 

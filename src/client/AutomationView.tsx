@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
-import { IconListPenOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { IconListPenOutline } from './host-icons.js'
 import type { AutomationViewProps, Translate } from './contracts.js'
 import {
   AutomationFormError,
@@ -29,16 +29,12 @@ import {
   ClockIcon,
   GithubIcon,
   InfoIcon,
-  MoreIcon,
-  PencilIcon,
-  PlayIcon,
   PlusIcon,
   RefreshIcon,
-  TrashIcon,
 } from './icons.js'
+import { AntdProvider, Button, Dropdown, Input, Select, Switch, Tabs } from './antd-ui.js'
 import { CreateModal } from './create-modal.js'
 import { DeleteConfirmation } from './delete-confirmation.js'
-import { DropdownMenu } from './dropdown-menu.js'
 import { setChatPrefill } from './prefill.js'
 import { isTransportError } from './runtime.js'
 import { SortMenu } from './sort-menu.js'
@@ -159,26 +155,27 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
   }, [snapshot, taskSettingsRequest, t])
 
   return (
+    <AntdProvider>
     <div className="dsh-st-shell">
       <header className="dsh-st-top">
         <div className="dsh-st-heading">
           <div className="dsh-st-heading-row">
             <h1>{t('tab')}</h1>
             <div className="dsh-st-heading-links">
-              <a className="dsh-st-heading-link" href="https://github.com/MichengAI/dsh-automation" target="_blank" rel="noreferrer" aria-label={t('header.githubProject')}><GithubIcon />{t('header.githubProject')}</a>
-              <a className="dsh-st-heading-link" href="https://github.com/MichengAI/dsh-automation/issues" target="_blank" rel="noreferrer" aria-label={t('header.githubFeedback')}><IconListPenOutline16 />{t('header.githubFeedback')}</a>
+              <Button size="small" shape="default" href="https://github.com/MichengAI/dsh-automation" target="_blank" rel="noreferrer" aria-label={t('header.githubProject')} icon={<GithubIcon />}>{t('header.githubProject')}</Button>
+              <Button size="small" shape="default" href="https://github.com/MichengAI/dsh-automation/issues" target="_blank" rel="noreferrer" aria-label={t('header.githubFeedback')} icon={<IconListPenOutline />}>{t('header.githubFeedback')}</Button>
             </div>
           </div>
           <p>{t('header.lead')}</p>
         </div>
         <div className="dsh-st-toolbar">
-          <input className="dsh-st-search" value={query} placeholder={t('search.placeholder')} onChange={event => setQuery(event.target.value)} />
-          <button type="button" className="dsh-st-btn" onClick={() => {
+          <Input className="dsh-st-search" allowClear value={query} placeholder={t('search.placeholder')} onChange={event => setQuery(event.target.value)} />
+          <Button icon={<ChatIcon />} onClick={() => {
             setChatPrefill(t('chat.prompt'))
             closeSettings?.()
-          }}><ChatIcon />{t('action.chatCreate')}</button>
-          <button type="button" className="dsh-st-btn dsh-st-btn--primary" disabled={defaultPermission === '' || permissions.length === 0} onClick={() => openCreate()}><PlusIcon />{t('action.create')}</button>
-          <button type="button" className="dsh-st-icon" onClick={() => { void runtime.refresh() }} aria-label={t('section.refresh')}><RefreshIcon /></button>
+          }}>{t('action.chatCreate')}</Button>
+          <Button type="primary" icon={<PlusIcon />} disabled={defaultPermission === '' || permissions.length === 0} onClick={() => openCreate()}>{t('action.create')}</Button>
+          <Button icon={<RefreshIcon />} aria-label={t('section.refresh')} onClick={() => { void runtime.refresh() }} />
         </div>
       </header>
 
@@ -219,13 +216,23 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
         <div className="dsh-st-empty">
           <h3>{t('error.title')}</h3>
           <p>{state.error}</p>
-          <button type="button" className="dsh-st-btn dsh-st-btn--primary" onClick={() => { void runtime.refresh() }}>{t('error.retry')}</button>
+          <Button type="primary" onClick={() => { void runtime.refresh() }}>{t('error.retry')}</Button>
         </div>
       )}
 
       <div className="dsh-st-tabs">
-        <button type="button" className={tab === 'mine' ? 'is-on' : ''} onClick={() => setTab('mine')}>{t('tabs.mine')}</button>
-        <button type="button" className={tab === 'runs' ? 'is-on' : ''} onClick={() => setTab('runs')}>{t('tabs.runs')}</button>
+        <Tabs
+          className="dsh-st-settings-tabs"
+          activeKey={tab}
+          onChange={key => setTab(key as Tab)}
+          items={[{ key: 'mine', label: t('tabs.mine') }, { key: 'runs', label: t('tabs.runs') }]}
+          styles={{
+            header: { margin: 0, height: 40 },
+            item: { height: 40, padding: 0, display: 'flex', alignItems: 'center' },
+            body: { display: 'none' },
+            content: { display: 'none' },
+          }}
+        />
         {tab === 'mine' && (
           <div className="dsh-st-sort-wrap">
             <SortMenu
@@ -243,34 +250,32 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
         )}
         {tab === 'runs' && (
           <div className="dsh-st-filters">
-            {(['day', 'week', 'month'] as const).map(range => (
-              <button key={range} type="button" className={historyRange === range ? 'is-on' : ''} onClick={() => setHistoryRange(range)}>
-                {t(`history.range.${range}`)}
-              </button>
-            ))}
-            <DropdownMenu
-              ariaLabel={t('history.allTasks')}
-              options={[
-                { key: 'all', label: t('history.allTasks'), selected: historyTask === 'all', onSelect: () => setHistoryTask('all') },
-                ...(snapshot?.automations ?? []).map(item => ({
-                  key: item.id,
-                  label: item.name,
-                  selected: historyTask === item.id,
-                  onSelect: () => setHistoryTask(item.id),
-                })),
-              ]}
+            <Select
+              className="dsh-st-filter-range"
+              value={historyRange}
+              popupMatchSelectWidth={false}
+              options={(['day', 'week', 'month'] as const).map(range => ({ value: range, label: t(`history.range.${range}`) }))}
+              onChange={setHistoryRange}
             />
-            <DropdownMenu
-              ariaLabel={t('history.allStatus')}
+            <Select
+              className="dsh-st-filter-task"
+              value={historyTask}
+              popupMatchSelectWidth={false}
               options={[
-                { key: 'all', label: t('history.allStatus'), selected: historyStatus === 'all', onSelect: () => setHistoryStatus('all') },
-                ...HISTORY_STATUS_OPTIONS.map(status => ({
-                  key: status,
-                  label: t(`status.${status}`),
-                  selected: historyStatus === status,
-                  onSelect: () => setHistoryStatus(status),
-                })),
+                { value: 'all', label: t('history.allTasks') },
+                ...(snapshot?.automations ?? []).map(item => ({ value: item.id, label: item.name })),
               ]}
+              onChange={setHistoryTask}
+            />
+            <Select
+              className="dsh-st-filter-status"
+              value={historyStatus}
+              popupMatchSelectWidth={false}
+              options={[
+                { value: 'all', label: t('history.allStatus') },
+                ...HISTORY_STATUS_OPTIONS.map(status => ({ value: status, label: t(`status.${status}`) })),
+              ]}
+              onChange={value => setHistoryStatus(value)}
             />
           </div>
         )}
@@ -353,6 +358,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
         }}
       />
     </div>
+    </AntdProvider>
   )
 }
 
@@ -368,29 +374,25 @@ function TaskCard({
   readonly onRun: () => void
   readonly onDelete: () => void
 }): JSX.Element {
-  const [menu, setMenu] = useState(false)
-  const root = useRef<HTMLElement>(null)
-  useEffect(() => {
-    if (!menu) return
-    const close = (event: MouseEvent): void => {
-      if (root.current !== null && !root.current.contains(event.target as Node)) setMenu(false)
-    }
-    document.addEventListener('mousedown', close)
-    return () => { document.removeEventListener('mousedown', close) }
-  }, [menu])
-
   return (
-    <article className="dsh-st-card" ref={root} onClick={onEdit}>
+    <article className="dsh-st-card" onClick={onEdit}>
       <div className="dsh-st-card-head">
-        <button type="button" className={`dsh-st-switch ${item.status === 'active' ? 'is-on' : ''}`} role="switch" aria-checked={item.status === 'active'} disabled={busy} onClick={(event) => { event.stopPropagation(); onToggle() }} />
-        <button type="button" className="dsh-st-more" onClick={(event) => { event.stopPropagation(); setMenu(value => !value) }} aria-label={t('card.more')}><MoreIcon /></button>
-        {menu && (
-          <div className="dsh-st-menu" onClick={event => event.stopPropagation()}>
-            <button type="button" disabled={busy} onClick={() => { setMenu(false); onRun() }}><PlayIcon width={16} height={16} />{t('menu.run')}</button>
-            <button type="button" disabled={busy} onClick={() => { setMenu(false); onEdit() }}><PencilIcon width={16} height={16} />{t('menu.edit')}</button>
-            <button type="button" className="is-danger" disabled={busy} onClick={() => { setMenu(false); onDelete() }}><TrashIcon width={16} height={16} />{t('menu.delete')}</button>
-          </div>
-        )}
+        <span onClick={(event) => event.stopPropagation()}>
+          <Switch checked={item.status === 'active'} disabled={busy} aria-label={item.status === 'active' ? t('card.pause') : t('card.resume')} onChange={() => onToggle()} />
+        </span>
+        <span onClick={(event) => event.stopPropagation()}>
+          <Dropdown
+            menu={{
+              items: [
+                { key: 'run', label: t('menu.run'), disabled: busy, onClick: onRun },
+                { key: 'edit', label: t('menu.edit'), disabled: busy, onClick: onEdit },
+                { key: 'delete', label: t('menu.delete'), danger: true, disabled: busy, onClick: onDelete },
+              ],
+            }}
+          >
+            <Button type="text" aria-label={t('card.more')}>···</Button>
+          </Dropdown>
+        </span>
       </div>
       <h3>{item.name}</h3>
       <p>{item.prompt}</p>

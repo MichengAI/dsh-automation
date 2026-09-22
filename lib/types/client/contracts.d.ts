@@ -75,5 +75,7 @@ export interface NativeSwitcherProps {
     readonly open?: (sessionId: string) => void;
     readonly useSessions?: SessionSelector;
     readonly useWorkspaces?: WorkspaceSelector;
-    readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode;
+    readonly renderSlot?: (name: string, props?: Record<string, unknown>, opts?: {
+        readonly hookContext?: unknown;
+    }) => ReactNode;
 }

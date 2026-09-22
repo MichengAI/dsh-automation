@@ -14,6 +14,7 @@ import {
 } from './helpers.js'
 import type { AutomationViewModel } from './protocol.js'
 import { automationToggleMutation, deriveTaskOverviewRows, type TaskOverviewRow } from './schedule-rail-model.js'
+import { AntdProvider, Segmented, Switch } from './antd-ui.js'
 import { SortMenu } from './sort-menu.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
@@ -31,10 +32,19 @@ export function ScheduleViewSwitch({
   readonly onChange: (view: ScheduleView) => void
 }): JSX.Element {
   return (
-    <div className="dsh-st-rail-views" role="tablist" aria-label={t('sidebar.views')}>
-      <button type="button" role="tab" aria-selected={view === 'runs'} className={view === 'runs' ? 'is-on' : undefined} onClick={() => onChange('runs')}>{t('tabs.runs')}</button>
-      <button type="button" role="tab" aria-selected={view === 'overview'} className={view === 'overview' ? 'is-on' : undefined} onClick={() => onChange('overview')}>{t('sidebar.viewOverview')}</button>
-    </div>
+    <AntdProvider>
+      <Segmented
+        block
+        className="dsh-st-rail-views"
+        aria-label={t('sidebar.views')}
+        value={view}
+        options={[
+          { value: 'runs', label: t('tabs.runs') },
+          { value: 'overview', label: t('sidebar.viewOverview') },
+        ]}
+        onChange={value => onChange(value as ScheduleView)}
+      />
+    </AntdProvider>
   )
 }
 
@@ -77,6 +87,7 @@ export function ScheduleOverview({
   }
 
   return (
+    <AntdProvider>
     <div className="dsh-st-overview">
       <div className="dsh-st-overview-head">
         <div className="dsh-st-overview-title">
@@ -111,6 +122,7 @@ export function ScheduleOverview({
             {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
           />)}
     </div>
+    </AntdProvider>
   )
 }
 
@@ -150,18 +162,15 @@ function OverviewRow({
         </span>
         <span className="dsh-st-overview-next" title={nextRunLabel} aria-label={nextRunLabel}><strong>{nextRunCompact}</strong></span>
       </button>
-      <label className="dsh-st-overview-toggle" title={toggleLabel}>
-        <input
-          type="checkbox"
-          role="switch"
+      <span className="dsh-st-overview-toggle" title={toggleLabel}>
+        <Switch
+          size="small"
           checked={!paused}
-          aria-checked={!paused}
-          aria-label={toggleLabel}
           disabled={toggleDisabled}
+          aria-label={toggleLabel}
           onChange={() => { onToggleAutomation?.(row.id, automationToggleMutation(row.status)) }}
         />
-        <span aria-hidden="true" />
-      </label>
+      </span>
     </div>
   )
 }

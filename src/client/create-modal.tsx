@@ -6,15 +6,14 @@ import {
   AutomationFormError,
   defaultFormState,
   insertSkillGesture,
-  prettyModelName,
   skillGestureToken,
   type AutomationFormState,
   type ScheduleKind,
 } from './helpers.js'
 import { shouldConfirmFullAccess } from './create-modal-logic.js'
-import { CloseOutlineIcon, FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
-import { MenuHostProvider, MenuPanel, MenuPopup, MenuRow, MenuSelect, useMenuState } from './menu.js'
-import { IconCheckOutline16, IconChevronDownOutline14, RiskConfirmation } from '@deepseek-ai/dsh-client-ui-primitives'
+import { FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
+import type { TextAreaRef } from 'antd/es/input/TextArea.js'
+import { AntdProvider, Button, Checkbox, Dropdown, Input, Modal, Select } from './antd-ui.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom']
@@ -44,6 +43,24 @@ export function CreateModal({
   const [validationError, setValidationError] = useState<string>()
   const [confirmingPermission, setConfirmingPermission] = useState<string>()
   const [fullAccessAcknowledged, setFullAccessAcknowledged] = useState(false)
+  const promptRef = useRef<TextAreaRef>(null)
+  const caretRef = useRef(0)
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      if (confirmingPermission !== undefined) {
+        setFullAccessAcknowledged(false)
+        setConfirmingPermission(undefined)
+        return
+      }
+      onClose()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [confirmingPermission, onClose])
   const update = (patch: Partial<AutomationFormState>): void => {
     setForm(current => ({ ...current, ...patch }))
     setValidationError(undefined)
@@ -56,31 +73,8 @@ export function CreateModal({
     }
     update({ permission })
   }
-  const cancelFullAccessConfirmation = (): void => {
-    setFullAccessAcknowledged(false)
-    setConfirmingPermission(undefined)
-  }
-  const confirmFullAccess = (): void => {
-    if (!fullAccessAcknowledged || confirmingPermission === undefined) return
-    update({ permission: confirmingPermission })
-    cancelFullAccessConfirmation()
-  }
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape') return
-      if (document.querySelector('.dsh-st-model-select-menu') !== null) return
-      event.preventDefault()
-      event.stopPropagation()
-      event.stopImmediatePropagation()
-      onClose()
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => { window.removeEventListener('keydown', onKey, true) }
-  }, [onClose])
-
-  const handleSubmit = async (event: FormEvent): Promise<void> => {
-    event.preventDefault()
+  const handleSubmit = async (event?: FormEvent): Promise<void> => {
+    event?.preventDefault()
     try {
       await onSubmit(form)
     } catch (caught) {
@@ -91,80 +85,76 @@ export function CreateModal({
       setValidationError(caught instanceof Error ? caught.message : t('error.action'))
     }
   }
-
   const datePart = form.onceAt.slice(0, 10)
   const timePart = form.onceAt.slice(11, 16) || '09:00'
   const today = localDateValue(new Date())
-  const minOnceTime = datePart === today ? localTimeValue(new Date()) : undefined
-  const [menuHost, setMenuHost] = useState<HTMLDivElement | null>(null)
-  const workspace = workspaces.find(item => item.id === form.workspaceId)
-  const promptRef = useRef<HTMLTextAreaElement>(null)
-  const caretRef = useRef(0)
-  const rememberCaret = (): void => {
-    const el = promptRef.current
-    if (el !== null) caretRef.current = el.selectionStart
-  }
+  const selected = models.find(item => `${item.provider}::${item.model}` === form.modelKey)
+  const reasoning = selected?.reasoning
   const insertSkill = (skill: { id: string; name: string }): void => {
     const next = insertSkillGesture(form.prompt, skillGestureToken(skill), caretRef.current)
     update({ prompt: next.text })
     queueMicrotask(() => {
-      const el = promptRef.current
-      if (el === null) return
+      const el = promptRef.current?.resizableTextArea?.textArea
+      if (el == null) return
       el.focus()
       el.setSelectionRange(next.caret, next.caret)
       caretRef.current = next.caret
     })
   }
+
   return (
-    <div className="dsh-st-mask" role="presentation">
-      <MenuHostProvider host={menuHost}>
-      <form className="dsh-st-modal" onClick={event => event.stopPropagation()} onSubmit={handleSubmit}>
-        <div className="dsh-st-modal-head">
-          <div>
-            <h2>{editing === true ? t('modal.edit') : t('modal.title')}</h2>
-            <p>{t('form.subtitle')}</p>
-          </div>
-          <button type="button" className="dsh-st-modal-close" onClick={onClose} aria-label={t('form.cancel')}><CloseOutlineIcon width={14} height={14} /></button>
-        </div>
-
-        <label className="dsh-st-field">
-          {t('form.name')}
-          <input value={form.name} placeholder={t('form.namePlaceholder')} onChange={event => update({ name: event.target.value })} />
-        </label>
-
-        <div className="dsh-st-plan-row">
-          <div className="dsh-st-field">
-            {t('form.planTime')}
-            <div className="dsh-st-inline">
-              <MenuSelect
-                value={form.scheduleKind}
-                options={KINDS.map(kind => ({ value: kind, label: t(`form.${kind}`) }))}
-                onChange={value => update({ scheduleKind: value })}
-              />
-              {form.scheduleKind === 'once' && (
-                <>
-                  <input type="date" min={today} value={datePart} onChange={event => update({ onceAt: clampOnceAt(`${event.target.value}T${timePart}`) })} />
-                  <TimeSelect value={timePart} {...(minOnceTime === undefined ? {} : { minTime: minOnceTime })} onChange={value => update({ onceAt: clampOnceAt(`${datePart}T${value}`) })} />
-                </>
-              )}
-              {form.scheduleKind === 'interval' && (
-                <>
-                  <input className="is-narrow" type="number" min={1} value={form.everyMinutes} onChange={event => update({ everyMinutes: event.target.value })} />
-                  <span className="dsh-st-suffix">{t('form.minutesShort')}</span>
-                </>
-              )}
-              {form.scheduleKind === 'hourly' && (
-                <>
-                  <MenuSelect value={form.hourlyMinute} options={MINUTES.map(item => ({ value: item, label: item }))} onChange={value => update({ hourlyMinute: value })} />
-                  <span className="dsh-st-suffix">{t('form.minutesShort')}</span>
-                </>
-              )}
-              {(form.scheduleKind === 'daily' || form.scheduleKind === 'weekly') && (
-                <TimeSelect value={form.time} onChange={value => update({ time: value })} />
-              )}
-              {form.scheduleKind === 'monthly' && (
-                <>
-                  <MenuSelect
+    <AntdProvider>
+      <Modal
+        open
+        title={editing === true ? t('modal.edit') : t('modal.title')}
+        onCancel={onClose}
+        maskClosable={false}
+        keyboard={false}
+        width={720}
+        destroyOnHidden
+        footer={[
+          <Button key="cancel" disabled={busy} onClick={onClose}>{t('form.cancel')}</Button>,
+          <Button key="save" type="primary" disabled={busy} onClick={() => { void handleSubmit() }}>{t('modal.save')}</Button>,
+        ]}
+      >
+        <form className="dsh-st-form" onSubmit={(event) => { void handleSubmit(event) }}>
+          <p>{t('form.subtitle')}</p>
+          <label className="dsh-st-field">
+            {t('form.name')}
+            <Input value={form.name} placeholder={t('form.namePlaceholder')} onChange={event => update({ name: event.target.value })} />
+          </label>
+          <div className="dsh-st-plan-row">
+            <div className="dsh-st-field">
+              {t('form.planTime')}
+              <div className="dsh-st-inline">
+                <Select
+                  value={form.scheduleKind}
+                  options={KINDS.map(kind => ({ value: kind, label: t(`form.${kind}`) }))}
+                  onChange={value => update({ scheduleKind: value })}
+                />
+                {form.scheduleKind === 'once' && (
+                  <Input type="date" min={today} value={datePart} onChange={event => update({ onceAt: clampOnceAt(`${event.target.value}T${timePart}`) })} />
+                )}
+                {(form.scheduleKind === 'once' || form.scheduleKind === 'daily' || form.scheduleKind === 'weekly' || form.scheduleKind === 'monthly' || form.scheduleKind === 'custom') && (
+                  <TimeSelect
+                    value={form.scheduleKind === 'once' ? timePart : form.time}
+                    onChange={value => {
+                      if (form.scheduleKind === 'once') update({ onceAt: clampOnceAt(`${datePart}T${value}`) })
+                      else update({ time: value })
+                    }}
+                  />
+                )}
+                {form.scheduleKind === 'interval' && (
+                  <Input type="number" min={1} value={form.everyMinutes} addonAfter={t('form.minutesShort')} onChange={event => update({ everyMinutes: event.target.value })} />
+                )}
+                {form.scheduleKind === 'hourly' && (
+                  <>
+                    <Select value={form.hourlyMinute} options={MINUTES.map(item => ({ value: item, label: item }))} onChange={value => update({ hourlyMinute: value })} />
+                    <span className="dsh-st-suffix">{t('form.minutesShort')}</span>
+                  </>
+                )}
+                {form.scheduleKind === 'monthly' && (
+                  <Select
                     value={form.monthDay}
                     options={Array.from({ length: 31 }, (_, index) => {
                       const day = String(index + 1)
@@ -172,331 +162,140 @@ export function CreateModal({
                     })}
                     onChange={value => update({ monthDay: value })}
                   />
-                  <TimeSelect value={form.time} onChange={value => update({ time: value })} />
-                </>
-              )}
-              {form.scheduleKind === 'custom' && (
-                <>
-                  <input className="is-narrow" type="number" min={1} value={form.customDays} onChange={event => update({ customDays: event.target.value })} />
-                  <span className="dsh-st-suffix">{t('form.daysShort')}</span>
-                  <TimeSelect value={form.time} onChange={value => update({ time: value })} />
-                </>
-              )}
-            </div>
-          </div>
-          <label className="dsh-st-field dsh-st-concurrency" title={t('form.maxConcurrentRunsHint')}>
-            <span>{t('form.maxConcurrentRuns')}</span>
-            <input type="number" min={1} step={1} required value={form.maxConcurrentRuns} onChange={event => update({ maxConcurrentRuns: event.target.value })} />
-          </label>
-        </div>
-
-        {form.scheduleKind === 'weekly' && (
-          <div className="dsh-st-weekdays">
-            {WEEKDAYS.map(day => (
-              <button
-                key={day}
-                type="button"
-                className={form.weekdays.includes(day) ? 'is-on' : ''}
-                onClick={() => update({
-                  weekdays: form.weekdays.includes(day) ? form.weekdays.filter(value => value !== day) : [...form.weekdays, day],
-                })}
-              >
-                {t(`day.${day}`)}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="dsh-st-field">
-          <span>{t('form.prompt')}</span>
-          <div className="dsh-st-prompt-card">
-            <textarea ref={promptRef} value={form.prompt} placeholder={t('form.promptPlaceholder')} onChange={event => { rememberCaret(); update({ prompt: event.target.value }) }} onSelect={rememberCaret} onClick={rememberCaret} onKeyUp={rememberCaret} />
-            <div className="dsh-st-composer">
-              <div className="dsh-st-composer-left">
-                <MenuPanel ghost up label={<><FolderIcon width={14} height={14} />{workspace?.title || t('form.workspace')}</>}>
-                  {workspaces.length === 0 && <div className="dsh-st-select-empty">{t('form.error.workspace')}</div>}
-                  {workspaces.map(item => (
-                    <MenuRow
-                      key={item.id}
-                      icon={<FolderIcon width={14} height={14} />}
-                      label={item.title}
-                      active={item.id === form.workspaceId}
-                      onClick={() => update({ workspaceId: item.id })}
-                    />
-                  ))}
-                </MenuPanel>
-                <MenuPanel ghost up label={<><SparkleIcon width={14} height={14} />{t('form.skills')}</>}>
-                  {skills.length === 0 && <div className="dsh-st-select-empty">{t('form.skillsEmpty')}</div>}
-                  {skills.map(item => (
-                    <MenuRow
-                      key={item.id}
-                      icon={<SparkleIcon width={14} height={14} />}
-                      label={item.name}
-                      onClick={() => insertSkill(item)}
-                    />
-                  ))}
-                </MenuPanel>
-                <MenuSelect
-                  pill
-                  up
-                  icon={<ShieldIcon width={14} height={14} />}
-                  value={form.permission}
-                  options={permissions.map(option => ({
-                    value: option.value,
-                    label: permissionLabel(option, t),
-                    icon: <ShieldIcon width={14} height={14} />,
-                  }))}
-                  onChange={choosePermission}
-                />
-              </div>
-              <div className="dsh-st-composer-right">
-                <ModelPicker
-                  modelT={modelT}
-                  models={models}
-                  failures={modelFailures}
-                  modelKey={form.modelKey}
-                  reasoningEffort={form.reasoningEffort}
-                  onSelection={(modelKey, reasoningEffort) => update({ modelKey, reasoningEffort })}
-                />
+                )}
+                {form.scheduleKind === 'custom' && (
+                  <Input type="number" min={1} value={form.customDays} addonAfter={t('form.daysShort')} onChange={event => update({ customDays: event.target.value })} />
+                )}
               </div>
             </div>
+            <label className="dsh-st-field dsh-st-concurrency" title={t('form.maxConcurrentRunsHint')}>
+              {t('form.maxConcurrentRuns')}
+              <Input type="number" min={1} step={1} value={form.maxConcurrentRuns} onChange={event => update({ maxConcurrentRuns: event.target.value })} />
+            </label>
           </div>
-        </div>
-
-
-        {validationError !== undefined && <p className="dsh-st-error">{validationError}</p>}
-        <div className="dsh-st-modal-actions">
-          <button type="button" className="dsh-st-btn" onClick={onClose} disabled={busy}>{t('form.cancel')}</button>
-          <button type="submit" className="dsh-st-btn dsh-st-btn--primary" disabled={busy}>{t('modal.save')}</button>
-        </div>
-      </form>
-      <div className="dsh-st-flyout-root" ref={setMenuHost} />
-      <RiskConfirmation
-        open={confirmingPermission !== undefined}
-        title={permissionT('confirm.title')}
-        description={permissionT('confirm.description')}
-        acknowledgeLabel={permissionT('confirm.acknowledge')}
-        cancelLabel={permissionT('confirm.cancel')}
-        confirmLabel={permissionT('confirm.enable')}
-        acknowledged={fullAccessAcknowledged}
-        onAcknowledgedChange={setFullAccessAcknowledged}
-        onCancel={cancelFullAccessConfirmation}
-        onConfirm={confirmFullAccess}
-      />
-      </MenuHostProvider>
-    </div>
-  )
-}
-
-function ModelPicker({
-  modelT, models, failures, modelKey, reasoningEffort, onSelection,
-}: {
-  readonly modelT: ModelTranslate
-  readonly models: readonly ModelOption[]
-  readonly failures: readonly ModelCatalogFailure[]
-  readonly modelKey: string
-  readonly reasoningEffort: string
-  readonly onSelection: (modelKey: string, reasoningEffort: string) => void
-}): JSX.Element {
-  const menu = useMenuState()
-  const [pane, setPane] = useState<'root' | 'model' | 'effort'>('root')
-  const selected = models.find(item => `${item.provider}::${item.model}` === modelKey)
-  const reasoning = selected?.reasoning
-  const effectiveEffort = reasoningEffort === 'none'
-    ? reasoning?.defaultEffort
-    : reasoningEffort
-  const effortLabel = reasoning === undefined
-    ? undefined
-    : effectiveEffort === undefined
-      ? modelT('effort.providerDefault')
-      : reasoning.efforts.find(item => item.id === effectiveEffort)?.name ?? effectiveEffort
-  const trigger = selected?.label ?? modelT('trigger.fallback')
-  const modelGroups = Array.from(models.reduce((groups, item) => {
-    const group = groups.get(item.provider) ?? { label: item.providerLabel, models: [] }
-    group.models.push(item)
-    groups.set(item.provider, group)
-    return groups
-  }, new Map<string, { label: string; models: ModelOption[] }>()))
-
-  useEffect(() => {
-    if (!menu.open) return
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      event.stopPropagation()
-      event.stopImmediatePropagation()
-      if (pane !== 'root') setPane('root')
-      else menu.setOpen(false)
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => { window.removeEventListener('keydown', onKey, true) }
-  }, [menu.open, menu.setOpen, pane])
-
-  const selectModel = (item: ModelOption): void => {
-    onSelection(
-      `${item.provider}::${item.model}`,
-      item.reasoning?.defaultEffort ?? 'none',
-    )
-    menu.setOpen(false)
-    setPane('root')
-  }
-
-  const selectEffort = (effort: string): void => {
-    onSelection(modelKey, effort)
-    menu.setOpen(false)
-    setPane('root')
-  }
-
-  return (
-    <div className={`dsh-st-model-select${menu.open ? " is-open" : ""}`} ref={menu.root}>
-      <button
-        type="button"
-        className="dsh-st-model-select-trigger"
-        aria-label={selected === undefined
-          ? modelT('trigger.selectAria')
-          : effortLabel === undefined
-            ? modelT('trigger.aria', { model: selected.label })
-            : modelT('trigger.ariaEffort', { model: selected.label, effort: effortLabel })}
-        onMouseDown={event => event.stopPropagation()}
-        onClick={() => {
-          if (menu.open) {
-            menu.setOpen(false)
-            return
-          }
-          setPane('root')
-          menu.setOpen(true)
-        }}
-      >
-        <span>{trigger}</span>
-        {effortLabel !== undefined && <span className="dsh-st-model-trigger-effort">{effortLabel}</span>}
-        <IconChevronDownOutline14 className={`dsh-st-model-trigger-chevron${menu.open ? ' is-open' : ''}`} />
-      </button>
-      <MenuPopup open={menu.open} anchor={menu.root} menuRef={menu.menu} up end className="dsh-st-model-select-menu is-up is-end" ariaLabel={modelT('menu.aria')}>
-        {pane === 'root' && (
-          <>
-            <MenuRow
-              kv
-              label={modelT('menu.model')}
-              hint={selected?.label ?? modelT('trigger.fallback')}
-              chevron
-              onClick={() => setPane('model')}
+          {form.scheduleKind === 'weekly' && (
+            <Checkbox.Group
+              options={WEEKDAYS.map(day => ({ label: t(`day.${day}`), value: String(day) }))}
+              value={form.weekdays.map(String)}
+              onChange={value => update({ weekdays: value.map(item => Number(item)) })}
             />
-            {reasoning !== undefined && (
-              <MenuRow
-                kv
-                label={modelT('menu.effort')}
-                hint={effortLabel ?? modelT('effort.providerDefault')}
-                chevron
-                onClick={() => setPane('effort')}
+          )}
+          <div className="dsh-st-field">
+            <span>{t('form.prompt')}</span>
+            <div className="dsh-st-prompt-card">
+              <Input.TextArea
+                ref={promptRef}
+                variant="borderless"
+                value={form.prompt}
+                placeholder={t('form.promptPlaceholder')}
+                autoSize={{ minRows: 4, maxRows: 10 }}
+                onChange={event => { caretRef.current = event.target.selectionStart; update({ prompt: event.target.value }) }}
+                onSelect={event => { caretRef.current = event.currentTarget.selectionStart }}
               />
-            )}
-          </>
-        )}
-        {pane === 'model' && (
-          <>
-            {failures.map(failure => (
-              <div key={failure.provider} className="dsh-st-model-warning">
-                {modelT('warning.groupLoad', { name: failure.providerLabel, message: failure.message })}
+              <div className="dsh-st-composer">
+                <div className="dsh-st-composer-left">
+                  <Select
+                    variant="borderless"
+                    size="small"
+                    prefix={<FolderIcon width={14} height={14} />}
+                    value={form.workspaceId}
+                    placeholder={t('form.workspace')}
+                    popupMatchSelectWidth={false}
+                    options={workspaces.map(item => ({ value: item.id, label: item.title }))}
+                    onChange={value => update({ workspaceId: value })}
+                  />
+                  <Dropdown
+                    menu={{ items: skills.length === 0 ? [{ key: 'empty', label: t('form.skillsEmpty'), disabled: true }] : skills.map(item => ({ key: item.id, label: item.name, onClick: () => insertSkill(item) })) }}
+                  >
+                    <Button type="text" icon={<SparkleIcon width={14} height={14} />}>{t('form.skills')}</Button>
+                  </Dropdown>
+                  <Select
+                    variant="borderless"
+                    size="small"
+                    prefix={<ShieldIcon width={14} height={14} />}
+                    value={form.permission}
+                    popupMatchSelectWidth={false}
+                    options={permissions.map(option => ({ value: option.value, label: permissionLabel(option, t) }))}
+                    onChange={value => choosePermission(value)}
+                  />
+                </div>
+                <div className="dsh-st-composer-right">
+                  <Select
+                    variant="borderless"
+                    size="small"
+                    value={form.modelKey}
+                    popupMatchSelectWidth={false}
+                    options={Array.from(models.reduce((groups, item) => {
+                      const group = groups.get(item.provider) ?? { label: item.providerLabel, options: [] as { value: string; label: string }[] }
+                      group.options.push({ value: `${item.provider}::${item.model}`, label: item.label })
+                      groups.set(item.provider, group)
+                      return groups
+                    }, new Map<string, { label: string; options: { value: string; label: string }[] }>()), ([, group]) => group)}
+                    onChange={value => {
+                      const item = models.find(model => `${model.provider}::${model.model}` === value)
+                      update({ modelKey: value, reasoningEffort: item?.reasoning?.defaultEffort ?? 'none' })
+                    }}
+                  />
+                  {reasoning !== undefined && (
+                    <Select
+                      variant="borderless"
+                      size="small"
+                      value={form.reasoningEffort}
+                      popupMatchSelectWidth={false}
+                      options={[
+                        ...(reasoning.defaultEffort === undefined ? [{ value: 'none', label: modelT('effort.providerDefault') }] : []),
+                        ...reasoning.efforts.map(item => ({ value: item.id, label: item.name })),
+                      ]}
+                      onChange={value => update({ reasoningEffort: value })}
+                    />
+                  )}
+                </div>
               </div>
-            ))}
-            {modelGroups.map(([provider, group]) => (
-          <section key={provider} role="group" aria-label={group.label} className="dsh-st-model-group">
-            <div className="dsh-st-model-group-title">{group.label}</div>
-            {group.models.map(item => {
-              const value = `${item.provider}::${item.model}`
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={value === modelKey}
-                  className="dsh-st-model-option"
-                  title={item.label}
-                  onClick={() => selectModel(item)}
-                >
-                  <span className="dsh-st-model-option-copy">
-                    <span className="dsh-st-model-name">{item.label}</span>
-                  </span>
-                  <span className="dsh-st-model-check">{value === modelKey && <IconCheckOutline16 />}</span>
-                </button>
-              )
-            })}
-          </section>
-            ))}
-            {modelGroups.length === 0 && failures.length === 0 && <div className="dsh-st-model-empty">{modelT('empty.models')}</div>}
-          </>
-        )}
-        {pane === 'effort' && reasoning !== undefined && (
-          <>
-            {reasoning.defaultEffort === undefined && (
-              <button
-                type="button"
-                role="menuitemradio"
-                aria-checked={reasoningEffort === 'none'}
-                className="dsh-st-model-option"
-                onClick={() => selectEffort('none')}
-              >
-                <span className="dsh-st-model-option-copy"><span className="dsh-st-model-name">{modelT('effort.providerDefault')}</span></span>
-                <span className="dsh-st-model-check">{reasoningEffort === 'none' && <IconCheckOutline16 />}</span>
-              </button>
-            )}
-            {reasoning.efforts.map(item => (
-              <button
-                key={item.id}
-                type="button"
-                role="menuitemradio"
-                aria-checked={effectiveEffort === item.id}
-                className="dsh-st-model-option"
-                onClick={() => selectEffort(item.id)}
-              >
-                <span className="dsh-st-model-option-copy">
-                  <span className="dsh-st-model-name">{item.name}</span>
-                  {item.description !== undefined && <span className="dsh-st-model-description">{item.description}</span>}
-                </span>
-                <span className="dsh-st-model-check">{effectiveEffort === item.id && <IconCheckOutline16 />}</span>
-              </button>
-            ))}
-            {reasoning.efforts.length === 0 && reasoning.defaultEffort !== undefined && <div className="dsh-st-model-empty">{modelT('empty.efforts')}</div>}
-          </>
-        )}
-      </MenuPopup>
-    </div>
+            </div>
+          </div>
+          {modelFailures.map(failure => (
+            <p key={failure.provider} className="dsh-st-error">{modelT('warning.groupLoad', { name: failure.providerLabel, message: failure.message })}</p>
+          ))}
+          {validationError !== undefined && <p className="dsh-st-error">{validationError}</p>}
+        </form>
+        <Modal
+          open={confirmingPermission !== undefined}
+          title={permissionT('confirm.title')}
+          keyboard={false}
+          maskClosable={false}
+          okText={permissionT('confirm.enable')}
+          cancelText={permissionT('confirm.cancel')}
+          okButtonProps={{ disabled: !fullAccessAcknowledged }}
+          onCancel={() => { setFullAccessAcknowledged(false); setConfirmingPermission(undefined) }}
+          onOk={() => {
+            if (!fullAccessAcknowledged || confirmingPermission === undefined) return
+            update({ permission: confirmingPermission })
+            setFullAccessAcknowledged(false)
+            setConfirmingPermission(undefined)
+          }}
+        >
+          <p>{permissionT('confirm.description')}</p>
+          <Checkbox checked={fullAccessAcknowledged} onChange={event => setFullAccessAcknowledged(event.target.checked)}>{permissionT('confirm.acknowledge')}</Checkbox>
+        </Modal>
+      </Modal>
+    </AntdProvider>
   )
 }
 
-
-function TimeSelect({
-  value,
-  onChange,
-  minTime,
-}: {
-  readonly value: string
-  readonly onChange: (value: string) => void
-  readonly minTime?: string
-}): JSX.Element {
-  const hour = value.slice(0, 2) || '09'
-  const minute = value.slice(3, 5) || '00'
-  const minHour = minTime?.slice(0, 2)
-  const minMinute = minTime?.slice(3, 5)
-  const hours = HOURS.filter(item => minHour === undefined || item >= minHour)
-  const minutes = MINUTES.filter(item => minHour === undefined || hour > minHour || minMinute === undefined || item >= minMinute)
+function TimeSelect({ value, onChange }: { readonly value: string; readonly onChange: (value: string) => void }): JSX.Element {
+  const [hour, minute] = [value.slice(0, 2) || '09', value.slice(3, 5) || '00']
   return (
-    <div className="dsh-st-time">
-      <MenuSelect value={hour} options={hours.map(item => ({ value: item, label: item }))} onChange={next => onChange(`${next}:${minute}`)} />
+    <span className="dsh-st-time">
+      <Select value={hour} options={HOURS.map(item => ({ value: item, label: item }))} onChange={next => onChange(`${next}:${minute}`)} />
       <span className="dsh-st-time-sep">:</span>
-      <MenuSelect value={minute} options={minutes.map(item => ({ value: item, label: item }))} onChange={next => onChange(`${hour}:${next}`)} />
-    </div>
+      <Select value={minute} options={MINUTES.map(item => ({ value: item, label: item }))} onChange={next => onChange(`${hour}:${next}`)} />
+    </span>
   )
 }
 
 function localDateValue(now: Date): string {
   const offset = now.getTimezoneOffset() * 60_000
   return new Date(now.getTime() - offset).toISOString().slice(0, 10)
-}
-
-function localTimeValue(now: Date): string {
-  const offset = now.getTimezoneOffset() * 60_000
-  return new Date(now.getTime() - offset).toISOString().slice(11, 16)
 }
 
 function clampOnceAt(value: string): string {
@@ -508,4 +307,3 @@ function clampOnceAt(value: string): string {
   const offset = next.getTimezoneOffset() * 60_000
   return new Date(next.getTime() - offset).toISOString().slice(0, 16)
 }
-

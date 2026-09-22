@@ -8,10 +8,22 @@ import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
-const versions = ['0.1.0-rc.8', '0.1.1-rc.2', '0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.6-alpha.1', '0.1.6-alpha.2']
+const versions = ['0.1.0-rc.8', '0.1.1-rc.2', '0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1']
+const legacyPreset = '@deepseek-ai/dsh-agent-presets'
+const presetRegistry = '@deepseek-ai/dsh-agent-preset-registry'
+const currentHost = '0.1.7-alpha.1'
 const range = versions.join(' || ')
+const legacyRange = versions.filter(version => version !== currentHost).join(' || ')
 for (const [name, value] of Object.entries(manifest.peerDependencies)) {
-  if (name.startsWith('@deepseek-ai/dsh-')) assert.equal(value, range, name)
+  if (!name.startsWith('@deepseek-ai/dsh-')) continue
+  if (name === legacyPreset) {
+    assert.equal(value, legacyRange, name)
+    continue
+  }
+  if (name === presetRegistry) {
+    assert.fail(`${name} 不写入 peer，避免本机 pnpm 去解析当天的 0.1.7 依赖图`)
+  }
+  assert.equal(value, range, name)
 }
 const directory = await mkdtemp(join(tmpdir(), 'dsh-automation-matrix-'))
 console.log(`矩阵证据目录：${directory}`)
@@ -54,10 +66,15 @@ for (const version of versions) {
   const cwd = join(directory, version)
   await mkdir(cwd)
   try {
-    const dependencies = { [manifest.name]: `file:${join(directory, archive)}`, '@deepseek-ai/cordis': '4.0.2', '@deepseek-ai/schemastery': '3.18.2', react: '18.3.1', tsx: '4.23.12', ...manifest.dependencies }
+    const dependencies = { [manifest.name]: `file:${join(directory, archive)}`, '@deepseek-ai/cordis': version === currentHost ? '4.0.3' : '4.0.2', '@deepseek-ai/schemastery': '3.18.2', react: '18.3.1', tsx: '4.23.12', ...manifest.dependencies }
     for (const name of ['js-yaml', '@deepseek-ai/cordis-plugin-include']) dependencies[name] = manifest.devDependencies[name]
     for (const name of Object.keys(manifest.devDependencies)) {
-      if (name.startsWith('@deepseek-ai/dsh-')) dependencies[name] = version
+      if (!name.startsWith('@deepseek-ai/dsh-')) continue
+      if (name === legacyPreset && version === currentHost) {
+        dependencies[presetRegistry] = version
+        continue
+      }
+      dependencies[name] = version
     }
     await pinOfficialDependencies(dependencies, version)
     await writeFile(join(cwd, 'package.json'), JSON.stringify({ private: true, type: 'module', dependencies }, null, 2))

@@ -1,13 +1,15 @@
 import type { Translate } from './contracts.js';
-import type { WorkspaceGroupMode, WorkspaceListSort } from './schedule-rail-model.js';
-/** 官方 WorkspaceBrowser：折叠 14px，展开 11px。 */
-export declare function officialSearchIconSize(expanded: boolean): 11 | 14;
-export declare function WorkspaceToolbar({ t, query, sort, groupMode, onQueryChange, onSortChange, onGroupModeChange, }: {
+import type { ArchivedSessionFilter, WorkspaceGroupMode, WorkspaceListSort } from './schedule-rail-model.js';
+import { officialSearchIconSize } from './workspace-toolbar-metrics.js';
+export { officialSearchIconSize };
+export declare function WorkspaceToolbar({ t, query, sort, groupMode, archivedFilter, onQueryChange, onSortChange, onGroupModeChange, onArchivedFilterChange, }: {
     readonly t: Translate;
     readonly query: string;
     readonly sort: WorkspaceListSort;
     readonly groupMode: WorkspaceGroupMode;
+    readonly archivedFilter?: ArchivedSessionFilter;
     readonly onQueryChange: (query: string) => void;
     readonly onSortChange: (sort: WorkspaceListSort) => void;
     readonly onGroupModeChange: (mode: WorkspaceGroupMode) => void;
+    readonly onArchivedFilterChange?: (filter: ArchivedSessionFilter) => void;
 }): JSX.Element;

@@ -9,6 +9,8 @@ import {
   groupNativeTaskSessions,
   groupScheduledSessions,
   keepScheduledSessionLink,
+  leadWithPinnedSessions,
+  scheduledSessionVisible,
   scheduledSessionNeedsSnapshotRefresh,
   scheduledSessionTitle,
   sessionUpdatedAtIso,
@@ -27,12 +29,14 @@ import {
   pickWrappableWorkspacesEntry,
   resolveOfficialTreeComponent,
   applyWorkspaceBrowserQuery,
+  groupScheduledSessionsByWorkspaceTree,
+  owningParentFolder,
   ownedSidebarTabIds,
   resolveVisibleSidebarTab,
   shouldFollowSessionTab,
   tabForSessionId,
 } from '../src/client/schedule-rail-model.ts'
-import { relativeTime, nativeSessionHoverStyle } from '../src/client/native-session-menu.ts'
+import { relativeTime, nativeSessionHoverStyle, scheduledSessionChildRows, scheduledSessionHoverStatuses } from '../src/client/native-session-menu.ts'
 import { en, zh } from '../src/client/locales.ts'
 import { archiveScheduledGroup, canDeleteScheduledSession, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder, scheduledListHostActions, scheduledSessionMenuActions, scheduledSessionOmitsStatusSlot } from '../src/client/native-group-actions.ts'
 
@@ -408,8 +412,12 @@ test('有归档插件且宿主提供删除时才出现删除会话', () => {
   assert.equal(canDeleteScheduledSession(true, deleteSession), true)
   assert.equal(canDeleteScheduledSession(false, deleteSession), false)
   assert.equal(canDeleteScheduledSession(true, undefined), false)
-  assert.deepEqual(scheduledSessionMenuActions(false), ['rename', 'fork', 'archive'])
-  assert.deepEqual(scheduledSessionMenuActions(true), ['rename', 'fork', 'archive', 'delete-session'])
+  const idle = { canDelete: false, archived: false, pinned: false, canPin: false, canUnarchive: false }
+  assert.deepEqual(scheduledSessionMenuActions(idle), ['rename', 'fork', 'archive'])
+  assert.deepEqual(scheduledSessionMenuActions({ ...idle, canDelete: true }), ['rename', 'fork', 'archive', 'delete-session'])
+  assert.deepEqual(scheduledSessionMenuActions({ ...idle, canPin: true }), ['rename', 'fork', 'archive'])
+  assert.deepEqual(scheduledSessionMenuActions({ ...idle, canPin: true, pinned: true }), ['rename', 'fork', 'archive'])
+  assert.deepEqual(scheduledSessionMenuActions({ ...idle, archived: true, canPin: true, canUnarchive: true }), ['rename', 'fork', 'unarchive'])
 })
 
 test('页签渲染和自绘回退共用宿主会话操作，而不是只在有 registry 时转发', () => {
@@ -429,6 +437,13 @@ test('页签渲染和自绘回退共用宿主会话操作，而不是只在有 r
   assert.equal(actions.archiveSession, archiveSession)
   assert.equal(actions.deleteSession, deleteSession)
   assert.equal(actions.forkSession, forkSession)
+  const pinSession = () => undefined
+  const unarchiveSession = () => undefined
+  const notifyArchivedNotOpenable = () => undefined
+  const extended = scheduledListHostActions({ pinSession, unpinSession: pinSession, unarchiveSession, notifyArchivedNotOpenable })
+  assert.equal(extended.pinSession, pinSession)
+  assert.equal(extended.unarchiveSession, unarchiveSession)
+  assert.equal(extended.notifyArchivedNotOpenable, notifyArchivedNotOpenable)
   assert.deepEqual(scheduledListHostActions({ renameSession: 'nope', archiveSession: 1 }), {})
   assert.deepEqual(scheduledListHostActions(undefined), {})
   const rail = readFileSync(new URL('../src/client/ScheduleRail.tsx', import.meta.url), 'utf8')
@@ -464,6 +479,21 @@ test('整组归档串行执行，避免工作区状态写入互相覆盖', async
 
 
 
+test('子代理挂在父会话下，标题用标签和会话名', () => {
+  assert.deepEqual(scheduledSessionChildRows([
+    { id: 'child-1', label: '功能', createdAt: Date.parse('2026-09-18T00:00:00.000Z') },
+  ], {
+    'child-1': { displayTitle: '会话标题生成', updatedAt: '2026-09-19T00:00:00.000Z' },
+  }), [{ id: 'child-1', title: '功能 | 会话标题生成', updatedAt: '2026-09-19T00:00:00.000Z' }])
+})
+
+test('会话悬停卡列出完成、待处理和已归档，而不只剩空闲', () => {
+  const t = (key: string, params?: Record<string, unknown>) => params?.count === undefined ? key : `${key}:${String(params.count)}`
+  assert.deepEqual(scheduledSessionHoverStatuses({ running: false, archived: false, completed: true }, t as never).map(item => item.label), ['session.completed'])
+  assert.deepEqual(scheduledSessionHoverStatuses({ running: true, archived: false, pendingKind: 'approval', runningSubagentCount: 2 }, t as never).map(item => item.state), ['warning', 'ongoing'])
+  assert.deepEqual(scheduledSessionHoverStatuses({ running: false, archived: true, completed: true }, t as never).map(item => item.state), ['archived'])
+})
+
 test('会话悬停预览卡贴在行右侧，避免挡住列表', () => {
   const style = nativeSessionHoverStyle({ right: 240, top: 80 }, { width: 200, height: 90 }, { width: 1000, height: 800 })
   assert.equal(style.left, '248px')
@@ -491,6 +521,39 @@ test('定时页只立刻隐藏已归档会话，宿主会话簿滞后时仍显�
   assert.equal(keepScheduledSessionLink('gone-archived', archived, present), false)
   assert.equal(keepScheduledSessionLink('unknown-but-no-presence-map', archived), true)
   assert.equal(keepScheduledSessionLink('', archived, present), false)
+})
+
+test('归档筛选和置顶顺序对齐官方会话列表', () => {
+  const archived = new Set(['gone'])
+  const pinned = new Set(['pin-b'])
+  assert.equal(scheduledSessionVisible('live', archived, 'default'), true)
+  assert.equal(scheduledSessionVisible('gone', archived, 'default'), false)
+  assert.equal(scheduledSessionVisible('gone', archived, 'show'), true)
+  assert.equal(scheduledSessionVisible('live', archived, 'only'), false)
+  assert.equal(scheduledSessionVisible('gone', archived, 'only'), true)
+  assert.equal(scheduledSessionVisible('', archived, 'show'), false)
+  assert.deepEqual(leadWithPinnedSessions([
+    { id: 'a' },
+    { id: 'pin-b' },
+    { id: 'c' },
+  ], pinned).map(item => item.id), ['pin-b', 'a', 'c'])
+})
+
+test('按工作区树把子目录挂到路径最长的父工作区下', () => {
+  assert.equal(owningParentFolder('D:/repo/plugin', ['D:/repo', 'D:/other']), 'D:/repo')
+  assert.equal(owningParentFolder('D:/repo', ['D:/repo']), undefined)
+  const groups = groupScheduledSessionsByWorkspaceTree(
+    [{ id: 'run-child' }],
+    [
+      { workspaceId: 'parent', title: 'repo', path: 'D:/repo', sessionIds: [] },
+      { workspaceId: 'child', title: 'plugin', path: 'D:/repo/plugin', sessionIds: ['run-child'] },
+    ],
+    '未分组',
+  )
+  assert.deepEqual(groups.map((group) => [group.name, group.depth, group.sessions.map((session) => session.id)]), [
+    ['repo', 0, []],
+    ['plugin', 1, ['run-child']],
+  ])
 })
 
 test('当前已打开的定时会话若还没进快照，应立刻再拉一次执行记录', () => {

@@ -4,6 +4,16 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 0.1.46 - 2026-09-22
+
+- Support DSH `0.1.7-alpha.1` while keeping older hosts. `@deepseek-ai/dsh-agent-presets` stays an optional peer through `0.1.6-alpha.2`; `0.1.7` hosts provide the same `agentPresets` service from `@deepseek-ai/dsh-agent-preset-registry`. Session logs on `0.1.7` are V4.
+- Match the self-drawn scheduled session list to the `0.1.7` sidebar: pin and unpin, show or only-archived filters, restore from visible archived rows including search, and leave stop-and-archive plus undo to the host callbacks.
+- Keep the sidebar mounted on `0.1.7`. Product icons no longer use size suffixes (`IconEllipsisOutline16` and the rest); rendering those missing exports crashed `sidebar.workspaces` with React #130. Older hosts still resolve the previous names.
+- Match the scheduled-list view menu to the `0.1.7` task sidebar: row icons, Workspace Tree, Filter sessions, and “Archived only”. Workspace Tree nests host workspaces by path.
+- Scheduled-session hover cards now include completion, pending work, subagents, and archived. Delete comes from the official session menu slot, so it shows when archive-manager is installed.
+- Scheduled session rows now include the official trailing row actions and list subagents under the parent as `label | session name`.
+- Settings, create and delete dialogs, sort menus, and the sidebar overview switch now use Ant Design 6. Custom button, input, select, switch, modal, and dropdown styles are gone. The scheduled session list still follows the host sidebar.
+
 ## 0.1.45 - 2026-09-18
 
 - Support DSH `0.1.6-alpha.2` while keeping older hosts. Open scheduled sessions through `uiWorkspace.openSession` when present, and fall back to `sessions.open` on older clients.

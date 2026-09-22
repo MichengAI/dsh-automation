@@ -52,7 +52,7 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/dsh-agent"],
-    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2",
+    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2 || 0.1.7-alpha.1",
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/dsh-client-runtime"],
@@ -68,11 +68,11 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/dsh-client-ui-primitives"],
-    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2",
+    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2 || 0.1.7-alpha.1",
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/dsh-permission-presets"],
-    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2",
+    "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2 || 0.1.7-alpha.1",
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/schemastery"],
@@ -86,14 +86,15 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
     manifest.devDependencies?.["@deepseek-ai/dsh-client-ui-primitives"],
     "0.1.6-alpha.2",
   );
+  const hostRange = "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2 || 0.1.7-alpha.1";
+  const legacyPresetRange = "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2";
   for (const [name, range] of Object.entries(manifest.peerDependencies ?? {})) {
-    if (name.startsWith("@deepseek-ai/dsh-")) {
-      assert.equal(
-        range,
-        "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.6-alpha.1 || 0.1.6-alpha.2",
-        name,
-      );
+    if (!name.startsWith("@deepseek-ai/dsh-")) continue;
+    if (name === "@deepseek-ai/dsh-agent-presets") {
+      assert.equal(range, legacyPresetRange, name);
+      continue;
     }
+    assert.equal(range, hostRange, name);
   }
   for (const [name, version] of Object.entries(
     manifest.devDependencies ?? {},
@@ -102,6 +103,8 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
       assert.equal(version, "0.1.6-alpha.2", name);
   }
   assert.deepEqual(manifest.peerDependenciesMeta?.react, { optional: true });
+  assert.deepEqual(manifest.peerDependenciesMeta?.["@deepseek-ai/dsh-agent-presets"], { optional: true });
+  assert.equal(manifest.peerDependencies?.["@deepseek-ai/dsh-agent-preset-registry"], undefined);
 
   const patch = await readFile(new URL("cordis.patch.yml", root), "utf8");
   const entries = load(patch) as Array<{

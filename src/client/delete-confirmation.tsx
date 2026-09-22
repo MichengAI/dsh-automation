@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { AntdProvider, Button, Modal } from './antd-ui.js'
 import type { Translate } from './contracts.js'
 
 export function DeleteConfirmation({
@@ -13,37 +14,35 @@ export function DeleteConfirmation({
   readonly busy: boolean
   readonly onCancel: () => void
   readonly onConfirm: () => void
-}): JSX.Element | null {
+}): JSX.Element {
   useEffect(() => {
-    if (target === undefined || busy) return
-    const onKeyDown = (event: KeyboardEvent): void => {
+    if (target === undefined) return
+    const onKey = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
       event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
       onCancel()
     }
-    document.addEventListener('keydown', onKeyDown)
-    return () => { document.removeEventListener('keydown', onKeyDown) }
-  }, [busy, onCancel, target])
-
-  if (target === undefined) return null
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [onCancel, target])
   return (
-    <div className="dsh-st-mask" onMouseDown={event => event.stopPropagation()}>
-      <section
-        className="dsh-st-confirm-modal"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="dsh-st-confirm-delete-title"
-        aria-describedby="dsh-st-confirm-delete-description"
-        onMouseDown={event => event.stopPropagation()}
+    <AntdProvider>
+      <Modal
+        open={target !== undefined}
+        title={t('card.confirmDelete')}
+        onCancel={onCancel}
+        maskClosable={false}
+        keyboard={false}
+        footer={[
+          <Button key="cancel" disabled={busy} onClick={onCancel}>{t('card.cancel')}</Button>,
+          <Button key="delete" danger type="primary" disabled={busy} onClick={onConfirm}>{t('card.confirm')}</Button>,
+        ]}
       >
-        <h2 id="dsh-st-confirm-delete-title">{t('card.confirmDelete')}</h2>
-        <p className="dsh-st-confirm-target">{target.name}</p>
-        <p id="dsh-st-confirm-delete-description">{t('card.confirmDeleteHint')}</p>
-        <div className="dsh-st-modal-actions">
-          <button type="button" className="dsh-st-btn" autoFocus disabled={busy} onClick={onCancel}>{t('card.cancel')}</button>
-          <button type="button" className="dsh-st-btn dsh-st-btn--danger" disabled={busy} onClick={onConfirm}>{t('card.confirm')}</button>
-        </div>
-      </section>
-    </div>
+        {target !== undefined && <p>{target.name}</p>}
+        <p>{t('card.confirmDeleteHint')}</p>
+      </Modal>
+    </AntdProvider>
   )
 }

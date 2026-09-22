@@ -39,7 +39,8 @@ class FixedAdapter extends LlmAdapter {
 }
 
 const hostVersion = process.env.DSH_TEST_VERSION ?? "0.1.6-alpha.2";
-const explicitAgent = ["0.1.5-rc.1", "0.1.5-rc.2", "0.1.6-alpha.1", "0.1.6-alpha.2"].includes(hostVersion);
+const explicitAgent = ["0.1.5-rc.1", "0.1.5-rc.2", "0.1.6-alpha.1", "0.1.6-alpha.2", "0.1.7-alpha.1"].includes(hostVersion);
+const sessionHeaderVersion = hostVersion === "0.1.7-alpha.1" ? 4 : explicitAgent ? 3 : 0;
 
 test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动化 RPC`, async (t) => {
   const ctx = new Context();
@@ -211,7 +212,7 @@ test(`${hostVersion} 真实 AgentLoop 执行自动化、保留权限日志并释
     typeof session.snapshotEvents === "function"
       ? session.snapshotEvents()
       : session.events;
-  assert.equal(session.header.version, explicitAgent ? 3 : 0);
+  assert.equal(session.header.version, sessionHeaderVersion);
   assert.equal(
     events.findLast((event) => event.type === "permission/preset")?.data.preset,
     "danger-full-access",
