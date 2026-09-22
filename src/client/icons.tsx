@@ -10,10 +10,6 @@ function IconFrame({ children, ...props }: IconProps): JSX.Element {
   )
 }
 
-export function AutomationIcon(props: IconProps): JSX.Element {
-  return <IconFrame {...props}><circle cx="12" cy="12" r="8.25" /><path d="M12 7.7v4.7l3.15 1.85" /><path d="M5.6 4.9 4.2 6.3M18.4 4.9l1.4 1.4" /></IconFrame>
-}
-
 export function PlusIcon(props: IconProps): JSX.Element {
   return <IconFrame {...props}><path d="M12 5v14M5 12h14" /></IconFrame>
 }
@@ -22,24 +18,12 @@ export function RefreshIcon(props: IconProps): JSX.Element {
   return <IconFrame {...props}><path d="M19 7v5h-5" /><path d="M18.1 15.5A7.5 7.5 0 1 1 19 12" /></IconFrame>
 }
 
-export function PauseIcon(props: IconProps): JSX.Element {
-  return <IconFrame {...props}><path d="M9 7v10M15 7v10" /></IconFrame>
-}
-
 export function ShieldIcon(props: IconProps): JSX.Element {
   return <IconFrame {...props}><path d="M12 3.8 19 6v5.1c0 4.3-2.6 7.4-7 9.1-4.4-1.7-7-4.8-7-9.1V6l7-2.2Z" /><path d="m9.4 12 1.7 1.7 3.7-4" /></IconFrame>
 }
 
 export function CalendarIcon(props: IconProps): JSX.Element {
   return <IconFrame {...props}><rect x="4" y="5.5" width="16" height="14" rx="2" /><path d="M8 3.8v3.4M16 3.8v3.4M4 9.5h16" /></IconFrame>
-}
-
-export function CheckIcon(props: IconProps): JSX.Element {
-  return <IconFrame {...props}><path d="m5.5 12.5 4 4 9-9" /></IconFrame>
-}
-
-export function AlertIcon(props: IconProps): JSX.Element {
-  return <IconFrame {...props}><path d="M12 4.2 21 19H3L12 4.2Z" /><path d="M12 9v4.5M12 16.5h.01" /></IconFrame>
 }
 
 export function MoreIcon(props: IconProps): JSX.Element {
@@ -84,14 +68,6 @@ export function FolderClosedIcon(props: IconProps): JSX.Element {
 
 export function FolderOpenIcon(props: IconProps): JSX.Element {
   return <FillIcon {...props}><path fill='currentColor' d='M5.19629 1.57104C5.81144 1.5711 6.38623 1.8786 6.72754 2.39038L7.19922 3.09839C7.28454 3.22635 7.42824 3.30344 7.58203 3.30347H12.1699C13.5039 3.30348 14.5859 4.38548 14.5859 5.71948V6.62671C15.2694 7.02689 15.6605 7.85012 15.4385 8.68726L14.3848 12.658C14.1037 13.7164 13.1449 14.4527 12.0498 14.4529H2.91699C1.51651 14.4529 0.451662 13.2814 0.501954 11.9519V3.98706C0.501954 2.65305 1.58396 1.57104 2.91797 1.57104H5.19629ZM3.7793 7.75562C3.30994 7.75562 2.89883 8.07153 2.77832 8.52515L1.91602 11.7722C1.74167 12.4291 2.23734 13.073 2.91699 13.073H12.0498C12.5191 13.0728 12.9304 12.757 13.0508 12.3035L14.1045 8.33374C14.1819 8.04202 13.9619 7.756 13.6602 7.75562H3.7793ZM2.91797 2.9519C2.34625 2.9519 1.88281 3.41534 1.88281 3.98706V7.2937C2.33068 6.7269 3.02249 6.37476 3.7793 6.37476H13.2051V5.71948C13.2051 5.14777 12.7416 4.68434 12.1699 4.68433H7.58203C6.96675 4.6843 6.39209 4.37595 6.05078 3.86401L5.5791 3.15601C5.49379 3.02821 5.34995 2.95196 5.19629 2.9519H2.91797Z' /><path fill='currentColor' opacity='0.2' d='M13.6602 7.75525C13.9618 7.7556 14.1815 8.04179 14.1045 8.33337L13.0508 12.3031C12.9304 12.7567 12.5191 13.0725 12.0498 13.0726H2.91701C2.23744 13.0725 1.7417 12.4287 1.91603 11.7719L2.77834 8.52478C2.89898 8.07146 3.31018 7.75532 3.77931 7.75525H13.6602ZM5.1963 2.95154C5.34985 2.95159 5.49377 3.02803 5.57912 3.15564L6.0508 3.86365C6.39205 4.37553 6.96685 4.68385 7.58205 4.68396H12.1699C12.7416 4.68396 13.2049 5.14754 13.2051 5.71912V6.37439H3.77931C3.02267 6.37444 2.33067 6.72671 1.88283 7.29333V3.98669C1.88299 3.4152 2.34649 2.95168 2.91798 2.95154H5.1963Z' /></FillIcon>
-}
-
-export function PlayOutlineIcon(props: IconProps): JSX.Element {
-  return <FillIcon {...props}><path fill='currentColor' d='M14.1446 8C14.1446 4.6062 11.3938 1.85539 8 1.85539C4.6062 1.85539 1.85539 4.6062 1.85539 8C1.85539 11.3938 4.6062 14.1446 8 14.1446C11.3938 14.1446 14.1446 11.3938 14.1446 8ZM15.511 8C15.511 12.148 12.148 15.511 8 15.511C3.85202 15.511 0.489014 12.148 0.489014 8C0.489014 3.85202 3.85202 0.489014 8 0.489014C12.148 0.489014 15.511 3.85202 15.511 8Z' /><path fill='currentColor' d='M10.5617 8.42578C10.852 8.21614 10.852 7.78386 10.5617 7.57422L7.25708 5.18751C6.90974 4.93666 6.42436 5.18484 6.42436 5.61329V10.3867C6.42436 10.8152 6.90974 11.0633 7.25708 10.8125L10.5617 8.42578Z' /></FillIcon>
-}
-
-export function TreeCornerIcon(props: IconProps): JSX.Element {
-  return <svg viewBox='-0.5 0 8.5 10.5' width={8} height={10} fill='none' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' {...props}><path fill='currentColor' d='M0 0L-0.5 0L-0.5 7L0 7L0.5 7L0.5 0L0 0ZM3 10L3 10.5L8 10.5L8 10L8 9.5L3 9.5L3 10ZM0 7L-0.5 7C-0.5 8.933 1.067 10.5 3 10.5L3 10L3 9.5C1.61929 9.5 0.5 8.38071 0.5 7L0 7Z' /></svg>
 }
 
 export function ChevronIcon(props: IconProps): JSX.Element {

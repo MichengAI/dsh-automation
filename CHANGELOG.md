@@ -12,7 +12,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Match the scheduled-list view menu to the `0.1.7` task sidebar: row icons, Workspace Tree, Filter sessions, and “Archived only”. Workspace Tree nests host workspaces by path.
 - Scheduled-session hover cards now include completion, pending work, subagents, and archived. Delete comes from the official session menu slot, so it shows when archive-manager is installed.
 - Scheduled session rows include the official trailing row actions except pin. Subagent counts stay on the hover card.
-- Settings, create and delete dialogs, sort menus, and the sidebar overview switch now use Ant Design 6. Custom button, input, select, switch, modal, and dropdown styles are gone. The scheduled session list still follows the host sidebar.
+- Settings, create and delete dialogs, sort menus, and the sidebar overview switch now use Ant Design 6. Custom button, input, select, switch, modal, and dropdown styles are gone. The scheduled session list still follows the host sidebar. Ant Design stays inside the web client bundle, and that bundle is minified.
 
 ## 0.1.45 - 2026-09-18
 

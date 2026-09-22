@@ -1,13 +1,9 @@
 import type { SVGProps } from 'react';
 type IconProps = SVGProps<SVGSVGElement>;
-export declare function AutomationIcon(props: IconProps): JSX.Element;
 export declare function PlusIcon(props: IconProps): JSX.Element;
 export declare function RefreshIcon(props: IconProps): JSX.Element;
-export declare function PauseIcon(props: IconProps): JSX.Element;
 export declare function ShieldIcon(props: IconProps): JSX.Element;
 export declare function CalendarIcon(props: IconProps): JSX.Element;
-export declare function CheckIcon(props: IconProps): JSX.Element;
-export declare function AlertIcon(props: IconProps): JSX.Element;
 export declare function MoreIcon(props: IconProps): JSX.Element;
 export declare function InfoIcon(props: IconProps): JSX.Element;
 export declare function ClockIcon(props: IconProps): JSX.Element;
@@ -18,8 +14,6 @@ export declare function SparkleIcon(props: IconProps): JSX.Element;
 export declare function UnarchiveOutlineIcon(props: IconProps): JSX.Element;
 export declare function FolderClosedIcon(props: IconProps): JSX.Element;
 export declare function FolderOpenIcon(props: IconProps): JSX.Element;
-export declare function PlayOutlineIcon(props: IconProps): JSX.Element;
-export declare function TreeCornerIcon(props: IconProps): JSX.Element;
 export declare function ChevronIcon(props: IconProps): JSX.Element;
 /** 复刻官方任务树 running StateDot：3x3 像素绕圈。 */
 export declare function RunningStateDot(): JSX.Element;

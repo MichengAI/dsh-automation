@@ -57,6 +57,9 @@ await build({
   target: 'es2022',
   outfile: 'lib/client.js',
   sourcemap: true,
+  sourcesContent: false,
+  minify: true,
+  legalComments: 'none',
   external: [
     'react',
     'react-dom',
