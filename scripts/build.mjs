@@ -59,7 +59,6 @@ await build({
   sourcemap: true,
   sourcesContent: false,
   minify: true,
-  legalComments: 'none',
   external: [
     'react',
     'react-dom',
