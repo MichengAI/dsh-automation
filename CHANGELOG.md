@@ -4,15 +4,13 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
-## 0.1.46 - 2026-09-22
+## 0.1.46 - 2026-09-23
 
-- Support DSH `0.1.7-alpha.1` while keeping older hosts. `@deepseek-ai/dsh-agent-presets` stays an optional peer through `0.1.6-alpha.2`; `0.1.7` hosts provide the same `agentPresets` service from `@deepseek-ai/dsh-agent-preset-registry`. Session logs on `0.1.7` are V4.
-- Match archived filters on the self-drawn scheduled session list: show archived or archived only, and restore a visible archived row from search. The scheduled list does not offer pin. Stop-and-archive and undo stay on the host callbacks.
-- Keep the sidebar mounted on `0.1.7`. Product icons no longer use size suffixes (`IconEllipsisOutline16` and the rest); rendering those missing exports crashed `sidebar.workspaces` with React #130. Older hosts still resolve the previous names.
-- Match the scheduled-list view menu to the `0.1.7` task sidebar: row icons, Workspace Tree, Filter sessions, and “Archived only”. Workspace Tree nests host workspaces by path.
-- Scheduled-session hover cards now include completion, pending work, subagents, and archived. Delete comes from the official session menu slot, so it shows when archive-manager is installed.
-- Scheduled session rows include the official trailing row actions except pin. Subagent counts stay on the hover card.
-- Settings, create and delete dialogs, sort menus, and the sidebar overview switch now use Ant Design 6. Custom button, input, select, switch, modal, and dropdown styles are gone. The scheduled session list still follows the host sidebar. Ant Design stays inside the minified web client bundle. NOTICE lists the MIT copyrights for that inlined code. React stays external.
+- Works on DeepSeek Harness 0.1.7, and still works on older hosts. The scheduled sidebar stays visible on 0.1.7.
+- The scheduled session list now matches the official task sidebar: workspace tree, archived filters, and hover cards for completed, pending, subagent, and archived sessions. Pin is not offered.
+- Session menus can delete when archive-manager is installed. Stop-and-archive and undo still use the host actions.
+- Settings, create and delete dialogs, sort, and the overview switch share one interface. Escape closes only the current dialog, not the whole settings page.
+- Check for updates uses the same dialog as skills. The web client loads a smaller package.
 
 ## 0.1.45 - 2026-09-18
 
