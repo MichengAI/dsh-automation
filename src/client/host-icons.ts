@@ -41,17 +41,7 @@ export const IconChevronsUpDownOutline = pickHostIcon(icons, 'IconChevronsUpDown
 export const IconClockOutline = pickHostIcon(icons, 'IconClockOutlineRegular', 'IconClockOutline16')
 export const IconArchiveCheckOutline = hostOrFallback(pickHostIcon(icons, 'IconArchiveCheckOutlineRegular'), archiveCheckFallback)
 
-/** 0.1.7 的 Menu 会渲染 children。同一版才出现不带尺寸的图标名，旧 Menu 只认 items。 */
+/** 0.1.7 的 Menu 会渲染 children。更早的 Menu 只认 items。样式和列表功能不再按宿主版本分叉。 */
 export function hostMenuRendersChildren(): boolean {
   return typeof icons.IconEllipsisOutlineRegular === 'function'
-}
-
-/** 0.1.6-alpha.2 才导出 isDarwinDesktop，同时没有 0.1.7 的 Regular 图标。alpha.1 和 0.1.5 没有这套缩进和标题滚动。 */
-export function hostSessionList016(): boolean {
-  return typeof icons.isDarwinDesktop === 'function' && !hostMenuRendersChildren()
-}
-
-/** 工作区树从 0.1.6-alpha.2 开始。归档筛选和双击重命名只在 0.1.7。 */
-export function hostHasWorkspaceTree(): boolean {
-  return hostSessionList016() || hostMenuRendersChildren()
 }

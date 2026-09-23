@@ -6,9 +6,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
-- On DSH 0.1.7, scheduled rows use the host session metrics: 5px scrollbar, 10px caption time, 10px action gap, archived caption color, 12px workspace-tree indent, and long titles scroll on hover. Earlier hosts keep the 8px scrollbar, 12px time, and 12px action gap. Relative time now includes months and years. Pin and manual sort stay unavailable.
-- On DSH 0.1.6-alpha.2, scheduled rows use that host's list: 12px workspace-tree indent, a long title jumps to its end on hover, and the hover card waits 500ms. 0.1.7 still animates the title and waits 800ms. 0.1.6-alpha.1 and earlier keep the 16px indent and ellipsis titles.
-- Workspace tree is offered only on 0.1.6-alpha.2 and 0.1.7. Archived filters and double-click rename are offered only on 0.1.7. Older hosts keep workspace or list grouping, hide archived sessions, and rename from the menu.
+- Scheduled rows always use the 0.1.7 session list: 5px scrollbar, 10px caption time, 10px action gap, 12px workspace-tree indent, archived caption color, animated title scroll, 800ms hover cards, workspace tree, archived filters, and double-click rename. Older hosts still open menus through the items API those menus actually have. Relative time includes months and years. Pin and manual sort stay unavailable.
 
 ## 0.1.46 - 2026-09-23
 

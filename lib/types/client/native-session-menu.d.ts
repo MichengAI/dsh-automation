@@ -23,6 +23,15 @@ export declare function scheduledSessionHoverStatuses(input: {
     readonly runningSubagentCount?: number;
     readonly completed?: boolean;
 }, t: Translate): SessionHoverStatus[];
+/** 0.1.7 会话标题在悬停时匀速滚到末尾，并交给样式做两端淡出。 */
+export declare function placeSessionTitle(title: HTMLElement, left: number, range: number): void;
+export declare function restSessionTitle(title: HTMLElement): void;
+export declare function startSessionTitleMarquee(title: HTMLElement | null, frame: {
+    id: number;
+}): void;
+export declare function stopSessionTitleMarquee(title: HTMLElement | null, frame: {
+    id: number;
+}): void;
 /** 行内时间不带「前」，和官方 timeLabel 一样。 */
 export declare function sessionRowTime(value: string, t: Translate, now?: number): string;
 /** 悬停卡用官方 hoverTimeLabel：刚刚保持原样，其余套「前」。 */

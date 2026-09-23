@@ -232,6 +232,8 @@ export declare const en: {
     readonly "time.minutes": "{count}m";
     readonly "time.hours": "{count}h";
     readonly "time.days": "{count}d";
+    readonly "time.months": "{count}mo";
+    readonly "time.years": "{count}y";
     readonly "time.ago": "{text} ago";
     readonly "time.now": "now";
     readonly "session.copy": "Copy";

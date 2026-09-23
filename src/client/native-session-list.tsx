@@ -8,7 +8,7 @@ import {
   StateDot,
   type MenuEntry,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { hostHasWorkspaceTree, hostMenuRendersChildren, hostSessionList016, IconArchiveOutline, IconBranchOutline, IconEditOutline, IconEllipsisOutline, IconSettingsOutline, IconTrashOutline } from './host-icons.js'
+import { hostMenuRendersChildren, IconArchiveOutline, IconBranchOutline, IconEditOutline, IconEllipsisOutline, IconSettingsOutline, IconTrashOutline } from './host-icons.js'
 import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import {
   ChevronIcon,
@@ -22,7 +22,6 @@ import {
   scheduledSessionHoverStatuses,
   sessionHoverTime,
   sessionRowTime,
-  revealSessionTitle,
   startSessionTitleMarquee,
   stopSessionTitleMarquee,
 } from './native-session-menu.js'
@@ -91,7 +90,7 @@ export function NativeScheduleSessionList(props: {
     const timeZoneById = new Map(snapshot.automations.map(item => [item.id, item.timeZone]))
     return groupScheduledSessions(snapshot.automations, snapshot.runs).map((group) => ({
       ...group,
-      sessions: group.sessions.filter((session) => scheduledSessionVisible(session.id, archived, hostMenuRendersChildren() ? archivedFilter : 'default')).map((session) => {
+      sessions: group.sessions.filter((session) => scheduledSessionVisible(session.id, archived, archivedFilter)).map((session) => {
         const run = snapshot.runs.find((item) => item.sessionId === session.id)
         return {
           ...session,
@@ -111,7 +110,7 @@ export function NativeScheduleSessionList(props: {
     snapshotRefreshFor.current = selectedId
     void runtime.refresh().catch(() => undefined)
   }, [runtime, selectedId, state.snapshot?.runs])
-  const effectiveGroup = groupMode === 'workspace-tree' && !hostHasWorkspaceTree() ? 'workspace' : groupMode
+  const effectiveGroup = groupMode
   const visibleGroups = useMemo(() => {
     const source = effectiveGroup === 'workspace-tree'
       ? groupScheduledSessionsByWorkspaceTree(groups.flatMap((group) => group.sessions.map((session) => ({ ...session, automationId: group.id }))), workspaceItems, t('sidebar.ungrouped'))
@@ -150,7 +149,7 @@ export function NativeScheduleSessionList(props: {
       .finally(() => { setDeleteSessionBusy(false) })
   }
   return (
-    <div className={hostMenuRendersChildren() ? 'dsh-st-n is-017' : hostSessionList016() ? 'dsh-st-n is-016' : 'dsh-st-n'}>
+    <div className='dsh-st-n'>
       <ScheduleViewSwitch t={t} view={view} onChange={setView} />
       {view === 'overview'
         ? state.snapshot === undefined
@@ -163,7 +162,7 @@ export function NativeScheduleSessionList(props: {
               {...(state.snapshot.serverNow === undefined ? {} : { serverNow: state.snapshot.serverNow })}
             />
         : <>
-            <WorkspaceToolbar t={t} query={query} sort={sort} groupMode={effectiveGroup} archivedFilter={archivedFilter} onQueryChange={setQuery} onSortChange={setSort} onGroupModeChange={setGroupMode} {...(hostMenuRendersChildren() ? { onArchivedFilterChange: setArchivedFilter } : {})} />
+            <WorkspaceToolbar t={t} query={query} sort={sort} groupMode={effectiveGroup} archivedFilter={archivedFilter} onQueryChange={setQuery} onSortChange={setSort} onGroupModeChange={setGroupMode} onArchivedFilterChange={setArchivedFilter} />
             <div className='dsh-st-n-list-area'>
             <div className='dsh-st-n-tree' role='tree'>
               {state.phase === 'loading' && visibleGroups.length === 0 && <div className='dsh-st-n-empty'>{t('loading')}</div>}
@@ -179,7 +178,7 @@ export function NativeScheduleSessionList(props: {
                 const taskAutomationId: string | undefined = effectiveGroup === 'workspace-tree' ? treeTask?.id : group.id
                 const taskSettingsName = effectiveGroup === 'workspace-tree' ? treeTask?.name : group.name
                 return (
-                  <div key={group.id === '' ? 'ungrouped' : group.id} className='dsh-st-n-group' style={depth > 0 ? (hostMenuRendersChildren() || hostSessionList016() ? { ['--dsh-workspace-indent' as string]: `${depth * 12}px` } : { paddingLeft: depth * 16 }) : undefined}>
+                  <div key={group.id === '' ? 'ungrouped' : group.id} className='dsh-st-n-group' style={depth > 0 ? { ['--dsh-workspace-indent' as string]: `${depth * 12}px` } : undefined}>
                     {effectiveGroup !== 'list' && <NativeScheduleGroupRow
                       t={t}
                       id={group.id}
@@ -467,9 +466,9 @@ function NativeSessionRow(props: {
     </>
   )
   const row = (
-    <div className={rowClass} ref={rowRef} role='treeitem' tabIndex={0} aria-selected={selected} data-n-menu-root={id} onClick={onOpen} onMouseEnter={() => { if (hostMenuRendersChildren()) startSessionTitleMarquee(titleRef.current, titleFrame.current); else if (hostSessionList016()) revealSessionTitle(titleRef.current, true); showHover() }} onMouseLeave={() => { if (hostMenuRendersChildren()) stopSessionTitleMarquee(titleRef.current, titleFrame.current); else if (hostSessionList016()) revealSessionTitle(titleRef.current, false); hideHover() }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); hideHover(); onMenuChange(true) }}>
+    <div className={rowClass} ref={rowRef} role='treeitem' tabIndex={0} aria-selected={selected} data-n-menu-root={id} onClick={onOpen} onMouseEnter={() => { startSessionTitleMarquee(titleRef.current, titleFrame.current); showHover() }} onMouseLeave={() => { stopSessionTitleMarquee(titleRef.current, titleFrame.current); hideHover() }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); hideHover(); onMenuChange(true) }}>
       {!omitStatusSlot && <span className='dsh-st-n-slot'>{showDot && primary !== undefined ? <StateDot state={primary.state === 'ongoing' ? 'ongoing' : primary.state === 'warning' ? 'warning' : 'done'} size={10} /> : running ? <RunningStateDot /> : null}</span>}
-      <span ref={titleRef} className='dsh-st-n-title' onDoubleClick={hostMenuRendersChildren() ? (event) => { if (renameSession === undefined) return; event.stopPropagation(); setRenaming(true) } : undefined}>{title}</span>
+      <span ref={titleRef} className='dsh-st-n-title' onDoubleClick={(event) => { if (renameSession === undefined) return; event.stopPropagation(); setRenaming(true) }}>{title}</span>
       <span className='dsh-st-n-time' aria-hidden={trailing === undefined ? undefined : true}>{trailing ?? sessionRowTime(updatedAt, t)}</span>
       <span className='dsh-st-n-acts'>
         {menuSlot === undefined && archived && canUnarchive && (
@@ -514,7 +513,7 @@ function NativeSessionRow(props: {
     <HoverCard
       anchor={row}
       content={hoverBody}
-      openDelayMs={hostMenuRendersChildren() ? 800 : 500}
+      openDelayMs={800}
       disabled={menuOpen}
       copyText={displayTitle}
       copyLabel={t('session.copy')}

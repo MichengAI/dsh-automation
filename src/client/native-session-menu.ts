@@ -116,17 +116,6 @@ export function stopSessionTitleMarquee(title: HTMLElement | null, frame: { id: 
   if (title !== null) restSessionTitle(title)
 }
 
-/** 0.1.6-alpha.2 悬停时一次滚到标题末尾，离开时立刻回到开头。 */
-export function revealSessionTitle(title: HTMLElement | null, revealed: boolean): void {
-  if (title === null) return
-  if (revealed) {
-    title.scrollLeft = title.scrollWidth - title.clientWidth
-    return
-  }
-  if (typeof title.scrollTo === 'function') title.scrollTo({ left: 0, behavior: 'instant' })
-  else title.scrollLeft = 0
-}
-
 /** 行内时间不带「前」，和官方 timeLabel 一样。 */
 export function sessionRowTime(value: string, t: Translate, now = Date.now()): string {
   const age = sessionAge(value, now)

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Menu, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { Translate } from './contracts.js'
-import { hostHasWorkspaceTree, hostMenuRendersChildren, IconArchiveCheckOutline, IconArchiveOutline, IconClockOutline, IconCloseFill, IconFlatListOutline, IconFolderClose, IconSearchOutline, IconSlidersTwoOutline, IconWorkspaceTreeOutline } from './host-icons.js'
+import { IconArchiveCheckOutline, IconArchiveOutline, IconClockOutline, IconCloseFill, IconFlatListOutline, IconFolderClose, IconSearchOutline, IconSlidersTwoOutline, IconWorkspaceTreeOutline } from './host-icons.js'
 import type { ArchivedSessionFilter, WorkspaceGroupMode, WorkspaceListSort } from './schedule-rail-model.js'
 import { officialSearchIconSize } from './workspace-toolbar-metrics.js'
 
@@ -46,12 +46,12 @@ export function WorkspaceToolbar({
   const items: MenuEntry[] = [
     { type: 'label', id: 'group-by', text: t('sidebar.groupBy') },
     { id: 'workspace', label: t('sidebar.groupWorkspace'), icon: <IconFolderClose /> },
-    ...(hostHasWorkspaceTree() ? [{ id: 'workspace-tree', label: t('sidebar.groupWorkspaceTree'), icon: <IconWorkspaceTreeOutline /> }] : []),
+    { id: 'workspace-tree', label: t('sidebar.groupWorkspaceTree'), icon: <IconWorkspaceTreeOutline /> },
     { id: 'flat', label: t('sidebar.groupList'), icon: <IconFlatListOutline /> },
     { type: 'separator', id: 'order-by-separator' },
     { type: 'label', id: 'order-by', text: t('sidebar.sortBy') },
     { id: 'updated', label: t('sidebar.sortTime'), icon: <IconClockOutline /> },
-    ...(hostMenuRendersChildren() && onArchivedFilterChange !== undefined ? [
+    ...(onArchivedFilterChange !== undefined ? [
       { type: 'separator' as const, id: 'archived-filter-separator' },
       { type: 'label' as const, id: 'filter-by', text: t('sidebar.filterBy') },
       { id: 'show-archived', label: t('sidebar.showArchived'), icon: <IconArchiveOutline /> },
