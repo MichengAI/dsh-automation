@@ -35,7 +35,7 @@ import {
   shouldFollowSessionTab,
   tabForSessionId,
 } from '../src/client/schedule-rail-model.ts'
-import { relativeTime, nativeSessionHoverStyle, scheduledSessionHoverStatuses } from '../src/client/native-session-menu.ts'
+import { relativeTime, nativeSessionHoverStyle, scheduledSessionHoverStatuses, sessionRowTime } from '../src/client/native-session-menu.ts'
 import { en, zh } from '../src/client/locales.ts'
 import { archiveScheduledGroup, canDeleteScheduledSession, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder, scheduledListHostActions, scheduledSessionMenuActions, scheduledSessionOmitsStatusSlot } from '../src/client/native-group-actions.ts'
 
@@ -228,6 +228,12 @@ test('native session relative time matches official labels', () => {
   const now = Date.parse('2026-08-26T12:00:00.000Z')
   assert.equal(relativeTime('2026-08-26T11:59:30.000Z', translate(zh) as never, now), '刚刚')
   assert.equal(relativeTime('2026-08-26T11:55:00.000Z', translate(en) as never, now), '5m ago')
+  const row = (key: string, params?: Record<string, unknown>) => {
+    const dict: Record<string, string> = { 'time.now': '刚刚', 'time.months': '{count}个月', 'time.years': '{count}年' }
+    return (dict[key] ?? key).replace('{count}', String(params?.count ?? ''))
+  }
+  assert.equal(sessionRowTime('2026-06-26T12:00:00.000Z', row as never, now), '2个月')
+  assert.equal(sessionRowTime('2024-08-26T12:00:00.000Z', row as never, now), '2年')
 })
 
 test('scheduled sessions open through the runtime, not the filtered host tree', () => {

@@ -52,22 +52,79 @@ export function scheduledSessionHoverStatuses(input: {
   return visible
 }
 
-function sessionAge(value: string, now: number): { readonly unit: 'now' | 'minutes' | 'hours' | 'days'; readonly count: number } | undefined {
+function sessionAge(value: string, now: number): { readonly unit: 'now' | 'minutes' | 'hours' | 'days' | 'months' | 'years'; readonly count: number } | undefined {
   const ts = Date.parse(value || '')
   if (!Number.isFinite(ts)) return undefined
-  const min = Math.floor(Math.max(0, now - ts) / 60000)
-  if (min < 1) return { unit: 'now', count: 0 }
-  if (min < 60) return { unit: 'minutes', count: min }
-  const hour = Math.floor(min / 60)
-  if (hour < 24) return { unit: 'hours', count: hour }
-  return { unit: 'days', count: Math.floor(hour / 24) }
+  const minMs = 6e4
+  const hourMs = 36e5
+  const dayMs = 864e5
+  const diff = Math.max(0, now - ts)
+  if (diff < minMs) return { unit: 'now', count: 0 }
+  if (diff < hourMs) return { unit: 'minutes', count: Math.floor(diff / minMs) }
+  if (diff < dayMs) return { unit: 'hours', count: Math.floor(diff / hourMs) }
+  if (diff < 30 * dayMs) return { unit: 'days', count: Math.floor(diff / dayMs) }
+  if (diff < 365 * dayMs) return { unit: 'months', count: Math.floor(diff / (30 * dayMs)) }
+  return { unit: 'years', count: Math.floor(diff / (365 * dayMs)) }
 }
 
-function ageText(age: { readonly unit: 'now' | 'minutes' | 'hours' | 'days'; readonly count: number }, t: Translate): string {
+function ageText(age: { readonly unit: 'now' | 'minutes' | 'hours' | 'days' | 'months' | 'years'; readonly count: number }, t: Translate): string {
   if (age.unit === 'now') return t('time.now')
   if (age.unit === 'minutes') return t('time.minutes', { count: age.count })
   if (age.unit === 'hours') return t('time.hours', { count: age.count })
-  return t('time.days', { count: age.count })
+  if (age.unit === 'days') return t('time.days', { count: age.count })
+  if (age.unit === 'months') return t('time.months', { count: age.count })
+  return t('time.years', { count: age.count })
+}
+
+/** 0.1.7 会话标题在悬停时匀速滚到末尾，并交给样式做两端淡出。 */
+export function placeSessionTitle(title: HTMLElement, left: number, range: number): void {
+  title.scrollLeft = left
+  if (left > 0) title.dataset.scrolled = ''
+  else delete title.dataset.scrolled
+  if (left < range) title.dataset.clipped = ''
+  else delete title.dataset.clipped
+}
+
+export function restSessionTitle(title: HTMLElement): void {
+  title.scrollLeft = 0
+  delete title.dataset.scrolled
+  delete title.dataset.clipped
+}
+
+export function startSessionTitleMarquee(title: HTMLElement | null, frame: { id: number }): void {
+  if (title === null) return
+  const range = title.scrollWidth - title.clientWidth
+  if (range <= 8) return
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    placeSessionTitle(title, range, range)
+    return
+  }
+  cancelAnimationFrame(frame.id)
+  let previous: number | undefined
+  let position = 0
+  const step = (now: number): void => {
+    position += previous === undefined ? 0 : (now - previous) * 0.03
+    previous = now
+    placeSessionTitle(title, Math.min(position, range), range)
+    if (position < range) frame.id = requestAnimationFrame(step)
+  }
+  frame.id = requestAnimationFrame(step)
+}
+
+export function stopSessionTitleMarquee(title: HTMLElement | null, frame: { id: number }): void {
+  cancelAnimationFrame(frame.id)
+  if (title !== null) restSessionTitle(title)
+}
+
+/** 0.1.6-alpha.2 悬停时一次滚到标题末尾，离开时立刻回到开头。 */
+export function revealSessionTitle(title: HTMLElement | null, revealed: boolean): void {
+  if (title === null) return
+  if (revealed) {
+    title.scrollLeft = title.scrollWidth - title.clientWidth
+    return
+  }
+  if (typeof title.scrollTo === 'function') title.scrollTo({ left: 0, behavior: 'instant' })
+  else title.scrollLeft = 0
 }
 
 /** 行内时间不带「前」，和官方 timeLabel 一样。 */

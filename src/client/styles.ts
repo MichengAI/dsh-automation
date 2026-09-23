@@ -135,6 +135,17 @@ const CSS_TEXT = `
 .dsh-st-n-danger-button:hover{background:var(--dsw-alias-interactive-bg-hover-danger,rgba(248,81,73,.12))!important}
 .dsh-st-n-restore{flex:none;border:0;background:transparent;color:var(--dsw-alias-label-secondary,#c9cdd4);font:12px/16px inherit;padding:2px 4px;cursor:pointer}
 .dsh-st-n-sess.is-archived .dsh-st-n-title{color:var(--dsw-alias-label-tertiary,#81858C)}
+.dsh-st-n.is-017{--dsh-session-list-scrollbar-width:5px}
+.dsh-st-n.is-017 .dsh-st-n-time{font-size:10px;line-height:16px;color:var(--dsw-alias-label-caption,#ADB2B8)}
+.dsh-st-n.is-017 .dsh-st-n-acts{gap:10px}
+.dsh-st-n.is-017 .dsh-st-n-sess.is-archived .dsh-st-n-title,.dsh-st-n.is-017 .dsh-st-n-sess.is-archived .dsh-st-n-time{color:var(--dsw-alias-label-caption,#ADB2B8)}
+.dsh-st-n.is-017 .dsh-st-n-sess .dsh-st-n-title[data-scrolled]{mask-image:linear-gradient(90deg,#0000,#000 12px)}
+.dsh-st-n.is-017 .dsh-st-n-sess .dsh-st-n-title[data-clipped]{mask-image:linear-gradient(270deg,#0000,#000 12px)}
+.dsh-st-n.is-017 .dsh-st-n-sess .dsh-st-n-title[data-scrolled][data-clipped]{mask-image:linear-gradient(90deg,#0000,#000 12px calc(100% - 12px),#0000)}
+@media (hover:hover){.dsh-st-n.is-017 .dsh-st-n-sess:hover .dsh-st-n-title,.dsh-st-n.is-017 .dsh-st-n-sess.is-menu .dsh-st-n-title{text-overflow:clip}}
+.dsh-st-n.is-016 .dsh-st-n-sess .dsh-st-n-title{scroll-behavior:smooth}
+@media (hover:hover){.dsh-st-n.is-016 .dsh-st-n-sess:hover .dsh-st-n-title,.dsh-st-n.is-016 .dsh-st-n-sess.is-menu .dsh-st-n-title{text-overflow:clip}}
+@media (prefers-reduced-motion:reduce){.dsh-st-n.is-016 .dsh-st-n-sess .dsh-st-n-title{scroll-behavior:auto}}
 `
 
 export function installStyles(): () => void {

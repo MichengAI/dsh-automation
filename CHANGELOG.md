@@ -4,6 +4,12 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## Unreleased
+
+- On DSH 0.1.7, scheduled rows use the host session metrics: 5px scrollbar, 10px caption time, 10px action gap, archived caption color, 12px workspace-tree indent, and long titles scroll on hover. Earlier hosts keep the 8px scrollbar, 12px time, and 12px action gap. Relative time now includes months and years. Pin and manual sort stay unavailable.
+- On DSH 0.1.6-alpha.2, scheduled rows use that host's list: 12px workspace-tree indent, a long title jumps to its end on hover, and the hover card waits 500ms. 0.1.7 still animates the title and waits 800ms. 0.1.6-alpha.1 and earlier keep the 16px indent and ellipsis titles.
+- Workspace tree is offered only on 0.1.6-alpha.2 and 0.1.7. Archived filters and double-click rename are offered only on 0.1.7. Older hosts keep workspace or list grouping, hide archived sessions, and rename from the menu.
+
 ## 0.1.46 - 2026-09-23
 
 - Works on DeepSeek Harness 0.1.7, and still works on older hosts. The scheduled sidebar stays visible on 0.1.7.
