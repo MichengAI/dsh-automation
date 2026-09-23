@@ -6,7 +6,11 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
-- Support DSH `0.1.7-rc.1` and pin development dependencies to that release. Drop `0.1.6-alpha.1`, `0.1.6-alpha.2`, `0.1.7-alpha.1`, and `0.1.7-alpha.2`. The `0.1.6` line will not get a release candidate, and `0.1.7` already has `0.1.7-rc.1`. Hosts still on a `0.1.6` alpha need `0.1.7-rc.1` before the next plugin release. `0.1.7` still writes V4 sessions.
+## 0.1.48 - 2026-09-23
+
+- Supports DeepSeek Harness 0.1.7-rc.1. Versions 0.1.0-rc.8, 0.1.1-rc.2, 0.1.2-rc.1, 0.1.5-rc.1, and 0.1.5-rc.2 still work.
+- If your host is still on 0.1.6, upgrade it to 0.1.7-rc.1 before installing this version.
+- 0.1.7 stores sessions as V4. Those sessions cannot be opened after you downgrade the host. Restart DSH and refresh the page after upgrading.
 
 ## 0.1.47 - 2026-09-23
 
