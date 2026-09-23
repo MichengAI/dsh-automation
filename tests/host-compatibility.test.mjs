@@ -38,9 +38,9 @@ class FixedAdapter extends LlmAdapter {
   }
 }
 
-const hostVersion = process.env.DSH_TEST_VERSION ?? "0.1.6-alpha.2";
-const explicitAgent = ["0.1.5-rc.1", "0.1.5-rc.2", "0.1.6-alpha.1", "0.1.6-alpha.2", "0.1.7-alpha.1"].includes(hostVersion);
-const sessionHeaderVersion = hostVersion === "0.1.7-alpha.1" ? 4 : explicitAgent ? 3 : 0;
+const hostVersion = process.env.DSH_TEST_VERSION ?? "0.1.7-rc.1";
+const explicitAgent = ["0.1.5-rc.1", "0.1.5-rc.2", "0.1.6-alpha.1", "0.1.6-alpha.2", "0.1.7-alpha.1", "0.1.7-alpha.2", "0.1.7-rc.1"].includes(hostVersion);
+const sessionHeaderVersion = hostVersion.startsWith("0.1.7-") ? 4 : explicitAgent ? 3 : 0;
 
 test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动化 RPC`, async (t) => {
   const ctx = new Context();

@@ -8,12 +8,12 @@ import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
-const versions = ['0.1.0-rc.8', '0.1.1-rc.2', '0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1']
+const versions = ['0.1.0-rc.8', '0.1.1-rc.2', '0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.6-alpha.1', '0.1.6-alpha.2', '0.1.7-alpha.1', '0.1.7-alpha.2', '0.1.7-rc.1']
 const legacyPreset = '@deepseek-ai/dsh-agent-presets'
 const presetRegistry = '@deepseek-ai/dsh-agent-preset-registry'
-const currentHost = '0.1.7-alpha.1'
+const modernHosts = new Set(['0.1.7-alpha.1', '0.1.7-alpha.2', '0.1.7-rc.1'])
 const range = versions.join(' || ')
-const legacyRange = versions.filter(version => version !== currentHost).join(' || ')
+const legacyRange = versions.filter(version => !modernHosts.has(version)).join(' || ')
 for (const [name, value] of Object.entries(manifest.peerDependencies)) {
   if (!name.startsWith('@deepseek-ai/dsh-')) continue
   if (name === legacyPreset) {
@@ -66,15 +66,15 @@ for (const version of versions) {
   const cwd = join(directory, version)
   await mkdir(cwd)
   try {
-    const toolchain = version === currentHost
+    const toolchain = modernHosts.has(version)
       ? { '@deepseek-ai/cordis': '4.0.4', '@deepseek-ai/schemastery': '3.18.4', '@deepseek-ai/cordis-plugin-loader': '1.0.5', '@deepseek-ai/cordis-plugin-include': '1.0.9', '@deepseek-ai/cordis-plugin-group': '1.0.4' }
       : { '@deepseek-ai/cordis': '4.0.2', '@deepseek-ai/schemastery': '3.18.2', '@deepseek-ai/cordis-plugin-loader': '1.0.3', '@deepseek-ai/cordis-plugin-include': '1.0.7', '@deepseek-ai/cordis-plugin-group': '1.0.2' }
     const dependencies = { [manifest.name]: `file:${join(directory, archive)}`, react: '18.3.1', 'react-dom': '18.3.1', tsx: '4.23.12', ...manifest.dependencies, ...toolchain }
     for (const name of ['js-yaml']) dependencies[name] = manifest.devDependencies[name]
     for (const name of Object.keys(manifest.devDependencies)) {
       if (!name.startsWith('@deepseek-ai/dsh-')) continue
-      if (name === legacyPreset && version === currentHost) {
-        dependencies[presetRegistry] = version
+      if (name === presetRegistry || name === legacyPreset) {
+        if (modernHosts.has(version)) dependencies[presetRegistry] = version
         continue
       }
       dependencies[name] = version
