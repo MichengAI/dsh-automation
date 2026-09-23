@@ -6,6 +6,11 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.49 - 2026-09-24
+
+- On older DeepSeek Harness hosts, the Scheduled tab opens again. It no longer fails when the host has no inline session action slot.
+- Restart DSH and refresh the page after upgrading.
+
 ## 0.1.48 - 2026-09-23
 
 - Supports DeepSeek Harness 0.1.7-rc.1. Versions 0.1.0-rc.8, 0.1.1-rc.2, 0.1.2-rc.1, 0.1.5-rc.1, and 0.1.5-rc.2 still work.

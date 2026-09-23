@@ -19,6 +19,7 @@ import {
 } from './icons.js'
 import {
   nativeSessionHoverStyle,
+  renderOwnedSlot,
   scheduledSessionHoverStatuses,
   sessionHoverTime,
   sessionRowTime,
@@ -497,7 +498,7 @@ function NativeSessionRow(props: {
         >
           {menuSlot}
         </Menu>
-        {renderSlot?.('sidebar.workspaces.session.row.action', { sessionId: id, displayTitle }, { only: 'archive' })}
+        {renderOwnedSlot(renderSlot, 'sidebar.workspaces.session.row.action', { sessionId: id, displayTitle }, { only: 'archive' })}
       </span>
       {typeof HoverCard !== 'function' && hoverOpen && !menuOpen && typeof document !== 'undefined' && createPortal(
         <div ref={hoverRef} className='dsh-st-n-hover' style={hoverStyle} onMouseEnter={showHover} onMouseLeave={hideHover}>

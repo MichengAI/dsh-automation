@@ -1,5 +1,25 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import type { Translate } from './contracts.js'
+
+type SlotRenderer = (name: string, props?: Record<string, unknown>, opts?: { readonly hookContext?: unknown; readonly only?: string }) => ReactNode
+
+/** 旧宿主的 renderSlot 在条目未声明该子插槽时抛 SlotOwnershipError。接住它，避免定时页整页失败。 */
+export function renderOwnedSlot(renderSlot: SlotRenderer | undefined, name: string, props?: Record<string, unknown>, opts?: { readonly hookContext?: unknown; readonly only?: string }): ReactNode {
+  if (renderSlot === undefined) return null
+  try {
+    return renderSlot(name, props, opts) ?? null
+  } catch (error) {
+    if (!isUndeclaredSlot(error)) throw error
+    return null
+  }
+}
+
+function isUndeclaredSlot(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  if ('name' in error && error.name === 'SlotOwnershipError') return true
+  const message = error instanceof Error ? error.message : ''
+  return message.includes('not declared by this entry')
+}
 
 export function nativeSessionHoverStyle(
   row: { readonly right: number; readonly top: number },

@@ -35,7 +35,7 @@ import {
   shouldFollowSessionTab,
   tabForSessionId,
 } from '../src/client/schedule-rail-model.ts'
-import { relativeTime, nativeSessionHoverStyle, scheduledSessionHoverStatuses, sessionRowTime } from '../src/client/native-session-menu.ts'
+import { relativeTime, nativeSessionHoverStyle, renderOwnedSlot, scheduledSessionHoverStatuses, sessionRowTime } from '../src/client/native-session-menu.ts'
 import { en, zh } from '../src/client/locales.ts'
 import { archiveScheduledGroup, canDeleteScheduledSession, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder, scheduledListHostActions, scheduledSessionMenuActions, scheduledSessionOmitsStatusSlot } from '../src/client/native-group-actions.ts'
 
@@ -452,6 +452,17 @@ test('页签渲染和自绘回退共用宿主会话操作，而不是只在有 r
   assert.match(rail, /scheduledListHostActions\(hostProps\)/)
   assert.match(index, /scheduledListHostActions\(/)
   assert.doesNotMatch(index, /props\.renameSession as any/)
+})
+
+test('旧宿主未声明行内插槽时定时页不崩溃', () => {
+  const undeclared = new Error("slot 'sidebar.workspaces.session.row.action' is not declared by this entry's children")
+  undeclared.name = 'SlotOwnershipError'
+  assert.equal(renderOwnedSlot(() => { throw undeclared }, 'sidebar.workspaces.session.row.action'), null)
+  assert.equal(renderOwnedSlot(undefined, 'sidebar.workspaces.session.row.action'), null)
+  assert.equal(renderOwnedSlot(() => 'archive', 'sidebar.workspaces.session.row.action'), 'archive')
+  assert.throws(() => renderOwnedSlot(() => { throw new Error('boom') }, 'sidebar.workspaces.session.row.action'), /boom/)
+  const nativeList = readFileSync(new URL('../src/client/native-session-list.tsx', import.meta.url), 'utf8')
+  assert.match(nativeList, /renderOwnedSlot\(renderSlot, 'sidebar\.workspaces\.session\.row\.action'/)
 })
 
 test('定时文件夹和会话菜单跟随官方尺寸，不再使用 dense/compact', () => {

@@ -1,5 +1,14 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { Translate } from './contracts.js';
+type SlotRenderer = (name: string, props?: Record<string, unknown>, opts?: {
+    readonly hookContext?: unknown;
+    readonly only?: string;
+}) => ReactNode;
+/** 旧宿主的 renderSlot 在条目未声明该子插槽时抛 SlotOwnershipError。接住它，避免定时页整页失败。 */
+export declare function renderOwnedSlot(renderSlot: SlotRenderer | undefined, name: string, props?: Record<string, unknown>, opts?: {
+    readonly hookContext?: unknown;
+    readonly only?: string;
+}): ReactNode;
 export declare function nativeSessionHoverStyle(row: {
     readonly right: number;
     readonly top: number;
@@ -37,3 +46,4 @@ export declare function sessionRowTime(value: string, t: Translate, now?: number
 /** 悬停卡用官方 hoverTimeLabel：刚刚保持原样，其余套「前」。 */
 export declare function sessionHoverTime(value: string, t: Translate, now?: number): string;
 export declare function relativeTime(value: string, t: Translate, now?: number): string;
+export {};
