@@ -6,7 +6,10 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.47 - 2026-09-23
+
 - Scheduled rows always use the 0.1.7 session list: 5px scrollbar, 10px caption time, 10px action gap, 12px workspace-tree indent, archived caption color, animated title scroll, 800ms hover cards, workspace tree, archived filters, and double-click rename. Older hosts still open menus through the items API those menus actually have. Relative time includes months and years. Pin and manual sort stay unavailable.
+- Restart DSH and refresh the page after upgrading.
 
 ## 0.1.46 - 2026-09-23
 

@@ -1,6 +1,6 @@
 {
   "name": "@michengai/dsh-automation",
-  "version": "0.1.46",
+  "version": "0.1.47",
   "description": "DSH Automation — 在独立 DSH Session 中按计划执行和管理编码任务 · Schedule and manage coding tasks in isolated DSH sessions",
   "type": "module",
   "packageManager": "pnpm@11.22.0",
