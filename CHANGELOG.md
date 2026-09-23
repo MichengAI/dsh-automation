@@ -6,7 +6,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
-- Support DSH `0.1.7-alpha.2` and `0.1.7-rc.1`, and pin development dependencies to `0.1.7-rc.1`. Older declared hosts stay in the peer range. `0.1.7` still writes V4 sessions.
+- Support DSH `0.1.7-rc.1` and pin development dependencies to that release. Drop `0.1.6-alpha.1`, `0.1.6-alpha.2`, `0.1.7-alpha.1`, and `0.1.7-alpha.2` from the compatibility range. `0.1.7` still writes V4 sessions.
 
 ## 0.1.47 - 2026-09-23
 
