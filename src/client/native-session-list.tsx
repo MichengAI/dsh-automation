@@ -110,13 +110,12 @@ export function NativeScheduleSessionList(props: {
     snapshotRefreshFor.current = selectedId
     void runtime.refresh().catch(() => undefined)
   }, [runtime, selectedId, state.snapshot?.runs])
-  const effectiveGroup = groupMode
   const visibleGroups = useMemo(() => {
-    const source = effectiveGroup === 'workspace-tree'
+    const source = groupMode === 'workspace-tree'
       ? groupScheduledSessionsByWorkspaceTree(groups.flatMap((group) => group.sessions.map((session) => ({ ...session, automationId: group.id }))), workspaceItems, t('sidebar.ungrouped'))
       : groups
-    return applyWorkspaceBrowserQuery(source.map((group) => ({ ...group, name: group.name })), query, sort, effectiveGroup)
-  }, [effectiveGroup, groups, query, sort, t, workspaceItems])
+    return applyWorkspaceBrowserQuery(source.map((group) => ({ ...group, name: group.name })), query, sort, groupMode)
+  }, [groupMode, groups, query, sort, t, workspaceItems])
   useEffect(() => {
     if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return
     const refresh = (): void => { setArchiveManagerInstalled(hasArchiveManagerPlugin(document)) }
@@ -162,7 +161,7 @@ export function NativeScheduleSessionList(props: {
               {...(state.snapshot.serverNow === undefined ? {} : { serverNow: state.snapshot.serverNow })}
             />
         : <>
-            <WorkspaceToolbar t={t} query={query} sort={sort} groupMode={effectiveGroup} archivedFilter={archivedFilter} onQueryChange={setQuery} onSortChange={setSort} onGroupModeChange={setGroupMode} onArchivedFilterChange={setArchivedFilter} />
+            <WorkspaceToolbar t={t} query={query} sort={sort} groupMode={groupMode} archivedFilter={archivedFilter} onQueryChange={setQuery} onSortChange={setSort} onGroupModeChange={setGroupMode} onArchivedFilterChange={setArchivedFilter} />
             <div className='dsh-st-n-list-area'>
             <div className='dsh-st-n-tree' role='tree'>
               {state.phase === 'loading' && visibleGroups.length === 0 && <div className='dsh-st-n-empty'>{t('loading')}</div>}
@@ -172,14 +171,14 @@ export function NativeScheduleSessionList(props: {
                 const hasCurrentSession = scheduledGroupShowsActiveFolder(group.sessions.map(session => session.id), selectedId)
                 const depth = 'depth' in group ? group.depth : 0
                 const automationIds = [...new Set(group.sessions.flatMap((session) => 'automationId' in session && typeof session.automationId === 'string' ? [session.automationId] : []))]
-                const treeTask = effectiveGroup === 'workspace-tree' && automationIds.length === 1
+                const treeTask = groupMode === 'workspace-tree' && automationIds.length === 1
                   ? state.snapshot?.automations.find(item => item.id === automationIds[0])
                   : undefined
-                const taskAutomationId: string | undefined = effectiveGroup === 'workspace-tree' ? treeTask?.id : group.id
-                const taskSettingsName = effectiveGroup === 'workspace-tree' ? treeTask?.name : group.name
+                const taskAutomationId: string | undefined = groupMode === 'workspace-tree' ? treeTask?.id : group.id
+                const taskSettingsName = groupMode === 'workspace-tree' ? treeTask?.name : group.name
                 return (
                   <div key={group.id === '' ? 'ungrouped' : group.id} className='dsh-st-n-group' style={depth > 0 ? { ['--dsh-workspace-indent' as string]: `${depth * 12}px` } : undefined}>
-                    {effectiveGroup !== 'list' && <NativeScheduleGroupRow
+                    {groupMode !== 'list' && <NativeScheduleGroupRow
                       t={t}
                       id={group.id}
                       name={group.name}
@@ -203,11 +202,11 @@ export function NativeScheduleSessionList(props: {
                         setArchiveGroupTarget({ id: group.id, name: group.name, sessionIds: group.sessions.map(session => session.id) })
                       }}
                     />}
-                    {(effectiveGroup === 'list' || expanded) && group.sessions.map((session) => (
+                    {(groupMode === 'list' || expanded) && group.sessions.map((session) => (
                       <NativeSessionRow
                         key={session.id}
                         t={t}
-                        flat={effectiveGroup === 'list'}
+                        flat={groupMode === 'list'}
                         id={session.id}
                         title={session.title}
                         hoverTitle={String(sessionById[session.id]?.displayTitle ?? sessionById[session.id]?.title ?? group.name)}
@@ -396,7 +395,7 @@ function NativeSessionRow(props: {
   const [draft, setDraft] = useState(title)
   useEffect(() => { setDraft(title) }, [title])
   useEffect(() => {
-    if (!hoverOpen || menuOpen) return
+    if (typeof HoverCard === 'function' || !hoverOpen || menuOpen) return
     const update = (): void => {
       const row = rowRef.current?.getBoundingClientRect()
       const card = hoverRef.current
@@ -417,7 +416,7 @@ function NativeSessionRow(props: {
   }, [])
   const run = (action: () => void | Promise<void>): void => { void Promise.resolve(action()).catch(() => undefined) }
   const showHover = (): void => {
-    if (menuOpen) return
+    if (typeof HoverCard === 'function' || menuOpen) return
     if (hoverTimer.current !== undefined) window.clearTimeout(hoverTimer.current)
     hoverTimer.current = window.setTimeout(() => setHoverOpen(true), 500)
   }
