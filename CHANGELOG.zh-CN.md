@@ -6,6 +6,12 @@
 
 ## 未发布
 
+## 0.1.50 - 2026-09-24
+
+- DeepSeek Harness 0.1.7-rc.1 可以重新安装本插件。宿主安装门会检查每一个 `@deepseek-ai/dsh-*` peer，包括可选 peer，所以旧的 `@deepseek-ai/dsh-agent-presets` 范围把 0.1.49 拒掉了。
+- 该包不再作为 peer。旧包名和 `@deepseek-ai/dsh-agent-preset-registry` 都不能写入，否则另一条宿主线会被拒。定时任务仍使用宿主的 `agentPresets` 服务。已支持的旧宿主不变。
+- 升级后请重启 DSH 并刷新页面。
+
 ## 0.1.49 - 2026-09-24
 
 - 较旧的 DeepSeek Harness 上，定时页可以重新打开。宿主没有行内操作插槽时，页面不再整页失败。

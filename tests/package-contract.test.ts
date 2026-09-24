@@ -87,13 +87,10 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
     "0.1.7-rc.1",
   );
   const hostRange = "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.7-rc.1";
-  const legacyPresetRange = "0.1.0-rc.8 || 0.1.1-rc.2 || 0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2";
+  assert.equal(manifest.peerDependencies?.["@deepseek-ai/dsh-agent-presets"], undefined);
+  assert.equal(manifest.peerDependenciesMeta?.["@deepseek-ai/dsh-agent-presets"], undefined);
   for (const [name, range] of Object.entries(manifest.peerDependencies ?? {})) {
     if (!name.startsWith("@deepseek-ai/dsh-")) continue;
-    if (name === "@deepseek-ai/dsh-agent-presets") {
-      assert.equal(range, legacyPresetRange, name);
-      continue;
-    }
     assert.equal(range, hostRange, name);
   }
   for (const [name, version] of Object.entries(
@@ -103,7 +100,6 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
       assert.equal(version, "0.1.7-rc.1", name);
   }
   assert.deepEqual(manifest.peerDependenciesMeta?.react, { optional: true });
-  assert.deepEqual(manifest.peerDependenciesMeta?.["@deepseek-ai/dsh-agent-presets"], { optional: true });
   assert.equal(manifest.peerDependencies?.["@deepseek-ai/dsh-agent-preset-registry"], undefined);
 
   const patch = await readFile(new URL("cordis.patch.yml", root), "utf8");

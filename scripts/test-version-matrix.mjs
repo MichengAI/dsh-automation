@@ -13,16 +13,10 @@ const legacyPreset = '@deepseek-ai/dsh-agent-presets'
 const presetRegistry = '@deepseek-ai/dsh-agent-preset-registry'
 const modernHosts = new Set(['0.1.7-rc.1'])
 const range = versions.join(' || ')
-const legacyRange = versions.filter(version => !modernHosts.has(version)).join(' || ')
+assert.equal(manifest.peerDependencies[legacyPreset], undefined, '旧包名不能进 peer，安装门不看 optional')
+assert.equal(manifest.peerDependencies[presetRegistry], undefined, '新包名也不能进 peer，否则旧宿主会被拒')
 for (const [name, value] of Object.entries(manifest.peerDependencies)) {
   if (!name.startsWith('@deepseek-ai/dsh-')) continue
-  if (name === legacyPreset) {
-    assert.equal(value, legacyRange, name)
-    continue
-  }
-  if (name === presetRegistry) {
-    assert.fail(`${name} 不写入 peer，避免本机 pnpm 去解析当天的 0.1.7 依赖图`)
-  }
   assert.equal(value, range, name)
 }
 const directory = await mkdtemp(join(tmpdir(), 'dsh-automation-matrix-'))

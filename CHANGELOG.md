@@ -6,6 +6,12 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.50 - 2026-09-24
+
+- DeepSeek Harness 0.1.7-rc.1 can install this plugin again. The host install gate checks every `@deepseek-ai/dsh-*` peer, including optional ones, so the old `@deepseek-ai/dsh-agent-presets` range rejected 0.1.49.
+- That package is no longer a peer. Listing either the old name or `@deepseek-ai/dsh-agent-preset-registry` would fail the other host line. Scheduled tasks still use the host `agentPresets` service. Supported older hosts are unchanged.
+- Restart DSH and refresh the page after upgrading.
+
 ## 0.1.49 - 2026-09-24
 
 - On older DeepSeek Harness hosts, the Scheduled tab opens again. It no longer fails when the host has no inline session action slot.
