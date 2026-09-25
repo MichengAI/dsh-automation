@@ -6,6 +6,12 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.51 - 2026-09-25
+
+- Supports DeepSeek Harness `0.1.7-rc.2`. `0.1.7-rc.1`, `0.1.5-rc.2`, `0.1.5-rc.1`, `0.1.2-rc.1`, `0.1.1-rc.2`, and `0.1.0-rc.8` still work.
+- No plugin behavior changes were needed: the host exports and interfaces `0.1.7-rc.2` removed or renamed are ones this plugin does not use.
+- `0.1.7` stores sessions as V4. Those sessions cannot be opened after you downgrade the host. Restart DSH and refresh the page after upgrading.
+
 ## 0.1.50 - 2026-09-24
 
 - DeepSeek Harness 0.1.7-rc.1 can install this plugin again. The host install gate checks every `@deepseek-ai/dsh-*` peer, including optional ones, so the old `@deepseek-ai/dsh-agent-presets` range rejected 0.1.49.
