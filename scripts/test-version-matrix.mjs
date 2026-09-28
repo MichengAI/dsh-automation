@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
-const versions = ['0.1.0-rc.8', '0.1.1-rc.2', '0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1']
+const versions = ['0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.5-rc.3', '0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1']
 const legacyPreset = '@deepseek-ai/dsh-agent-presets'
 const presetRegistry = '@deepseek-ai/dsh-agent-preset-registry'
 const modernHosts = new Set(['0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1'])
