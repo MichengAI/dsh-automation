@@ -6,6 +6,12 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.52 - 2026-09-28
+
+- Supports DeepSeek Harness `0.2.0-rc.1`. `0.1.7-rc.2`, `0.1.7-rc.1`, `0.1.5-rc.2`, `0.1.5-rc.1`, `0.1.2-rc.1`, `0.1.1-rc.2`, and `0.1.0-rc.8` still work.
+- Scheduled tasks keep using this plugin's own timer. The official Schedule bundle is optional and is not required.
+- `0.2.0-rc.1` still stores sessions as V4. Those sessions cannot be opened after you downgrade the host. Restart DSH and refresh the page after upgrading.
+
 ## 0.1.51 - 2026-09-25
 
 - Supports DeepSeek Harness `0.1.7-rc.2`. `0.1.7-rc.1`, `0.1.5-rc.2`, `0.1.5-rc.1`, `0.1.2-rc.1`, `0.1.1-rc.2`, and `0.1.0-rc.8` still work.
