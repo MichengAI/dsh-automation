@@ -119,12 +119,46 @@ export class AutomationRequestError extends Error {
   override readonly name = "AutomationRequestError";
 }
 
-function validateModelPair(input: { readonly provider?: string | null; readonly model?: string | null }): void {
+function trimmedModelId(value: string | null | undefined): string | null | undefined {
+  return typeof value === "string" ? value.trim() : value;
+}
+
+function normalizeModelFields<T extends { provider?: string | null | undefined; model?: string | null | undefined }>(input: T): T {
+  return {
+    ...input,
+    ...(input.provider === undefined ? {} : { provider: trimmedModelId(input.provider) }),
+    ...(input.model === undefined ? {} : { model: trimmedModelId(input.model) }),
+  };
+}
+
+function completeSelection(
+  selection: { readonly provider?: string | null | undefined; readonly model?: string | null | undefined } | null | undefined,
+): { readonly provider: string; readonly model: string } | null {
+  const provider = typeof selection?.provider === "string" ? selection.provider.trim() : "";
+  const model = typeof selection?.model === "string" ? selection.model.trim() : "";
+  return provider !== "" && model !== "" ? { provider, model } : null;
+}
+
+function validateModelPair(input: { readonly provider?: string | null | undefined; readonly model?: string | null | undefined }): void {
   if (input.provider === undefined && input.model === undefined) return;
   if (input.provider === null && input.model === null) return;
-  if (typeof input.provider === "string" && input.provider.trim() !== "" &&
-      typeof input.model === "string" && input.model.trim() !== "") return;
+  if (typeof input.provider === "string" && input.provider !== "" &&
+      typeof input.model === "string" && input.model !== "") return;
   throw new AutomationRequestError("provider 与 model 必须同时指定非空 ID 或同时为 null。");
+}
+
+function assertInheritedPair(
+  omitted: boolean,
+  provider: string | null,
+  model: string | null,
+  consultedSession: boolean,
+): void {
+  if (!omitted || (provider !== null && model !== null)) return;
+  throw new AutomationRequestError(
+    consultedSession
+      ? "当前会话和全局选择都没有完整的模型配对，请同时指定 provider 和 model，或都设为 null。"
+      : "全局选择没有完整的模型配对，请同时指定 provider 和 model，或都设为 null。",
+  );
 }
 
 function asMessage(error: unknown): string {
@@ -374,7 +408,8 @@ export class AutomationService {
       const current = await this.ownedDefinition(scope, id);
       throwIfCancelled(signal);
       const now = toIso();
-      const { status, ...fields } = input;
+      const { status, ...rawFields } = input;
+      const fields = normalizeModelFields(rawFields);
       validateModelPair(fields);
       let normalizedFields =
         fields.permissionPreset === undefined
@@ -691,13 +726,16 @@ export class AutomationService {
     scope: AutomationScope,
     request: CreateRequest,
   ) {
-    validateModelPair(request);
-    const fallback = this.ctx.agentDefaultModel?.currentSelection?.();
+    const explicit = normalizeModelFields({ provider: request.provider, model: request.model });
+    validateModelPair(explicit);
+    const omitted = explicit.provider === undefined && explicit.model === undefined;
+    const fallbackPair = completeSelection(this.ctx.agentDefaultModel?.currentSelection?.());
     let workspaceId = request.workspaceId?.trim() ?? "";
     let cwd = request.cwd?.trim() ?? "";
     let agentPreset = request.agentPreset?.trim() || "standard";
-    let provider = request.provider === undefined ? fallback?.provider ?? null : request.provider;
-    let model = request.model === undefined ? fallback?.model ?? null : request.model;
+    let provider: string | null = explicit.provider === undefined ? fallbackPair?.provider ?? null : explicit.provider;
+    let model: string | null = explicit.model === undefined ? fallbackPair?.model ?? null : explicit.model;
+    let consultedSession = false;
     if (workspaceId !== "" || cwd !== "") {
       const registry = this.ctx.workspaceRegistry as {
         get?: (id: unknown) => any;
@@ -734,11 +772,16 @@ export class AutomationService {
         this.ctx.agentPresets.composedPreset(resolved.agent.ctx) ??
         resolved.agent.session.header.agentPreset ??
         agentPreset;
-      const loggedSelection = resolved.agent.session.requestHeader()?.config;
-      if (request.provider === undefined) provider = loggedSelection?.provider ?? provider;
-      if (request.model === undefined) model = loggedSelection?.model ?? model;
+      consultedSession = true;
+      if (omitted) {
+        const sessionPair = completeSelection(resolved.agent.session.requestHeader()?.config);
+        if (sessionPair !== null) {
+          provider = sessionPair.provider;
+          model = sessionPair.model;
+        }
+      }
     }
-    validateModelPair({ provider, model });
+    assertInheritedPair(omitted, provider, model, consultedSession);
     return { workspaceId, cwd, agentPreset, provider, model };
   }
 

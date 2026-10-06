@@ -223,6 +223,65 @@ test("创建和更新拒绝不完整模型配对且不写库，切换模型清�
   } finally { await service.dispose(); }
 });
 
+function selectionAgent(config: Record<string, unknown>) {
+  const agent = {
+    session: {
+      header: { cwd: "D:\\work\\demo", agentPreset: "standard" },
+      requestHeader: () => ({ config }),
+    },
+    ctx: {},
+  };
+  return { get: () => agent };
+}
+
+test("省略模型时整对继承，保存时去掉空白，不拼接不同来源", async () => {
+  const scope = { sessionId: "session_1", creatorKind: "agent" as const };
+  const base = { name: "检查", prompt: "检查", schedule: { kind: "daily" as const, time: "09:00", timeZone: "UTC" } };
+  const partial = await makeService({}, {}, {
+    agents: selectionAgent({ provider: "antigravity", model: "  " }),
+    agentDefaultModel: { currentSelection: () => ({ provider: " deepseek ", model: " v4 " }) },
+  });
+  try {
+    const inherited = await partial.service.create(scope, base);
+    assert.deepEqual([inherited.provider, inherited.model], ["deepseek", "v4"]);
+  } finally { await partial.service.dispose(); }
+
+  const sessionWins = await makeService({}, {}, {
+    agents: selectionAgent({ provider: " antigravity ", model: " gemini " }),
+    agentDefaultModel: { currentSelection: () => ({ provider: "deepseek", model: "v4" }) },
+  });
+  try {
+    const inherited = await sessionWins.service.create(scope, base);
+    assert.deepEqual([inherited.provider, inherited.model], ["antigravity", "gemini"]);
+  } finally { await sessionWins.service.dispose(); }
+
+  const missing = await makeService({}, {}, {
+    agents: selectionAgent({ provider: "antigravity" }),
+    agentDefaultModel: { currentSelection: () => ({ provider: "deepseek" }) },
+  });
+  try {
+    await assert.rejects(missing.service.create(scope, base), /当前会话和全局选择都没有完整的模型配对/);
+    assert.equal(missing.definitions.size, 0);
+    const followed = await missing.service.create(scope, { ...base, provider: null, model: null });
+    assert.equal(followed.provider, null);
+    assert.equal(followed.model, null);
+    await assert.rejects(
+      missing.service.create({ ...scope, creatorKind: "web", hostWide: true }, { ...base, workspaceId: "ws_1" }),
+      /全局选择没有完整的模型配对/,
+    );
+  } finally { await missing.service.dispose(); }
+
+  const { service } = await makeService();
+  try {
+    const created = await service.create(scope, { ...base, provider: " pi-ai ", model: " gemini ", reasoningEffort: "high" });
+    assert.deepEqual([created.provider, created.model, created.reasoningEffort], ["pi-ai", "gemini", "high"]);
+    const kept = await service.update(scope, created.id, { provider: " pi-ai ", model: " gemini " });
+    assert.equal(kept.provider, "pi-ai");
+    assert.equal(kept.model, "gemini");
+    assert.equal(kept.reasoningEffort, "high");
+  } finally { await service.dispose(); }
+});
+
 test("Agent 列表提供模型 ID、推理等级、全局选择和目录故障", async () => {
   const { service } = await makeService({}, {}, {
     llm: {

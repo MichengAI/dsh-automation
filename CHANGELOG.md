@@ -6,8 +6,11 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.55 - 2026-10-07
+
 - Agent automation create/update tools support provider, model, and reasoning effort, including resetting to the runtime global model or model default (#15).
 - Reject incomplete provider/model pairs and preserve explicit null on creation. Switching models clears an omitted reasoning override. `automation_list` now includes model IDs, supported reasoning efforts, the global model, and catalog failures.
+- Trim model IDs on save. Omitted model fields inherit a complete pair and never splice a session provider with the global model.
 
 ## 0.1.54 - 2026-10-06
 

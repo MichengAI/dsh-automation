@@ -123,7 +123,7 @@ dsh --profile web --dump-config
 
 每次派发都使用保存的任务说明、工作区、模型和权限边界，不会复用来源对话中的批准。
 
-`automation_create` 和 `automation_update` 支持与设置页相同的模型参数：`provider`、`model`、`reasoning_effort`。提供方和模型使用 ID，推理等级使用该模型公布的 `reasoningEfforts` 值。创建时省略 provider/model 会继承当前会话选择，取不到时回退全局；省略推理等级使用模型默认。更新时省略字段保持原值。将 `provider` 和 `model` 都设为 `null`，任务就会在每次运行时跟随当时的全局选择；`reasoning_effort=null` 清除固定推理等级，恢复模型默认。创建、更新和 `automation_list` 的返回定义包含保存的目标字段（返回中的推理等级字段为 `reasoningEffort`）。
+`automation_create` 和 `automation_update` 支持与设置页相同的模型参数：`provider`、`model`、`reasoning_effort`。提供方和模型使用 ID，推理等级使用该模型公布的 `reasoningEfforts` 值。创建时省略 provider/model 会继承当前会话的完整配对；会话配对不完整时整对回退全局，不会把两边拼在一起。两边都没有完整配对时拒绝创建，而不是写成跟随全局。保存时去掉 ID 首尾空白。省略推理等级使用模型默认。更新时省略字段保持原值。将 `provider` 和 `model` 都设为 `null`，任务就会在每次运行时跟随当时的全局选择；`reasoning_effort=null` 清除固定推理等级，恢复模型默认。创建、更新和 `automation_list` 的返回定义包含保存的目标字段（返回中的推理等级字段为 `reasoningEffort`）。
 
 指定或修改模型时，必须成对传入非空的 `provider` 和 `model` ID，或两项都设为 `null`，不完整配对会被拒绝。先查询 `automation_list`：`models` 包含可选 ID 和 `reasoning.efforts`，`defaultModel` 是全局选择，`modelFailures` 提示目录加载失败。切换保存的模型配对时，若没有显式传入 `reasoning_effort`，会清除旧等级；重复提交相同配对则保留。保存时不会依据目录校验模型 ID 和推理等级；Agent 可通过目录查询选择宿主公布的选项。
 
