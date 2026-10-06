@@ -42,6 +42,8 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
     types: "./lib/types/client/index.d.ts",
     default: "./lib/client.js",
   });
+  assert.equal(manifest.exports?.["./locale/*.json"], "./locale/*.json");
+  assert.ok(manifest.files?.includes("locale"));
   assert.ok(manifest.files?.includes("lib"));
   assert.ok(manifest.files?.includes("cordis.patch.yml"));
   assert.equal(manifest.scripts?.prepare, undefined);

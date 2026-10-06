@@ -6,6 +6,10 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.54 - 2026-10-06
+
+- The installed-plugin list shows “Automation” and a localized description instead of the package name. Titles and descriptions come from `meta.title` and `meta.description` in `locale/zh.json` and `locale/en.json`.
+
 ## 0.1.53 - 2026-09-30
 
 - Supports DeepSeek Harness `0.2.0-rc.2`. `0.2.0-rc.1`, `0.1.7-rc.2`, `0.1.7-rc.1`, `0.1.5-rc.2`, `0.1.5-rc.1`, `0.1.2-rc.1`, `0.1.1-rc.2`, and `0.1.0-rc.8` still work.

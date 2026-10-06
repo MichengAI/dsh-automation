@@ -1,6 +1,6 @@
 {
   "name": "@michengai/dsh-automation",
-  "version": "0.1.53",
+  "version": "0.1.54",
   "description": "DSH Automation — 在独立 DSH Session 中按计划执行和管理编码任务 · Schedule and manage coding tasks in isolated DSH sessions",
   "type": "module",
   "packageManager": "pnpm@11.22.0",
@@ -15,9 +15,11 @@
       "types": "./lib/types/client/index.d.ts",
       "default": "./lib/client.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
+    "locale",
     "lib",
     "assets",
     "docs",
