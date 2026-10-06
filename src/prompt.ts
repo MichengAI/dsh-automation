@@ -10,6 +10,7 @@ export const AUTOMATION_PROMPT_TEXT = [
   '自然语言映射：每个工作日/周一到周五 → kind=weekly, weekdays=["MO","TU","WE","TH","FR"]；每天 → kind=daily；早上8点 → time="08:00"。',
   '高级计划映射：每小时第15分钟 → kind=hourly, minute=15；每月31日 → kind=monthly, month_day=31；每3天 → kind=custom, every_days=3。monthly/custom 还必须提供 time。',
   '未指定时区时使用 Asia/Shanghai。prompt 必须写成每次独立运行都能看懂的完整任务说明。',
+  'automation_create 和 automation_update 支持 provider、model 和 reasoning_effort。provider/model 使用提供方和模型 ID；推理等级使用该模型公布的 reasoningEfforts 值。将 provider 和 model 都设为 null 可跟随每次运行时的全局模型；reasoning_effort=null 恢复模型默认。更新时省略这些字段保持不变。',
 ].join('\n')
 
 export const AUTOMATION_CREATE_DESCRIPTION = [
@@ -18,6 +19,7 @@ export const AUTOMATION_CREATE_DESCRIPTION = [
   '为当前工作区创建一条独立 DSH 自动化；每次触发开启全新 Session，不继承当前对话。',
   '工作日早上 8 点示例：kind=weekly, weekdays=["MO","TU","WE","TH","FR"], time="08:00", time_zone="Asia/Shanghai"。',
   '同时支持 hourly(minute)、monthly(month_day + time) 和 custom(every_days + time)。',
+  '可用 provider、model、reasoning_effort 固定模型和推理等级。省略模型继承当前会话或全局选择；provider/model 都设为 null 跟随每次运行时的全局选择；省略或清空 reasoning_effort 使用模型默认。返回保存后的完整定义。',
   '必须使用显式 IANA 时区。最短间隔 1 分钟。默认权限来自 Host；不需要写入时应显式选择 read-only，只有需要改文件时才选 workspace-write。',
 ].join('')
 

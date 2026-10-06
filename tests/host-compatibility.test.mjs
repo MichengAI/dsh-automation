@@ -237,6 +237,10 @@ test("真实 DSH Schema 可编译全部自动化管理工具", async () => {
   for (const name of ["automation_create", "automation_update"]) {
     const tool = registered.find(item => item.name === name);
     assert.equal(tool.parameters.properties.max_concurrent_runs.type, "integer");
+    for (const field of ["provider", "model", "reasoning_effort"]) {
+      assert.deepEqual(tool.parameters.properties[field].oneOf, [{ type: "string" }, { type: "null" }]);
+      assert.equal(tool.parameters.required.includes(field), false);
+    }
   }
   dispose();
 });

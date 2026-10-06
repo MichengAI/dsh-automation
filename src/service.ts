@@ -679,8 +679,8 @@ export class AutomationService {
     let workspaceId = request.workspaceId?.trim() ?? "";
     let cwd = request.cwd?.trim() ?? "";
     let agentPreset = request.agentPreset?.trim() || "standard";
-    let provider = request.provider ?? fallback?.provider ?? null;
-    let model = request.model ?? fallback?.model ?? null;
+    let provider = request.provider === undefined ? fallback?.provider ?? null : request.provider;
+    let model = request.model === undefined ? fallback?.model ?? null : request.model;
     if (workspaceId !== "" || cwd !== "") {
       const registry = this.ctx.workspaceRegistry as {
         get?: (id: unknown) => any;
@@ -718,8 +718,8 @@ export class AutomationService {
         resolved.agent.session.header.agentPreset ??
         agentPreset;
       const loggedSelection = resolved.agent.session.requestHeader()?.config;
-      provider = request.provider ?? loggedSelection?.provider ?? provider;
-      model = request.model ?? loggedSelection?.model ?? model;
+      if (request.provider === undefined) provider = loggedSelection?.provider ?? provider;
+      if (request.model === undefined) model = loggedSelection?.model ?? model;
     }
     return { workspaceId, cwd, agentPreset, provider, model };
   }

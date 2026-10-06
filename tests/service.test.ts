@@ -3,6 +3,7 @@ import test from "node:test";
 import { createDefinition, createManualRun } from "../src/domain.ts";
 import { AutomationService, type AutomationConfig } from "../src/service.ts";
 import type { AutomationDefinition, AutomationRun } from "../src/types.ts";
+import { registerAutomationTools } from "../src/tools.ts";
 
 const permissionPresets = {
   names: ["read-only", "workspace-write", "danger-full-access"],
@@ -136,6 +137,63 @@ function sampleDefinition(
     ...overrides,
   });
 }
+
+test("Agent 工具可固定、修复和清空模型目标，省略字段保留原值", async () => {
+  const { service, definitions } = await makeService();
+  const tools = new Map<string, any>();
+  const agent = {
+    id: "session_1",
+    ctx: { tools: { register(tool: any) { tools.set(tool.name, tool); return () => {}; } } },
+  };
+  const dispose = registerAutomationTools(service, agent);
+  const context = { agent, signal: new AbortController().signal };
+  const base = { name: "检查", prompt: "检查测试", kind: "interval", every_minutes: 10, time_zone: "UTC" };
+  const target = (value: any) => [value.provider, value.model, value.reasoningEffort];
+  try {
+    const created = await tools.get("automation_create").execute({ ...base, provider: "custom", model: "old-model", reasoning_effort: "high" }, context);
+    assert.equal(created.ok, true);
+    const id = created.automation.id;
+    assert.deepEqual(target(created.automation), ["custom", "old-model", "high"]);
+    assert.deepEqual(target(definitions.get(id)), ["custom", "old-model", "high"]);
+
+    const repaired = await tools.get("automation_update").execute({ id, model: "new-model", reasoning_effort: "low" }, context);
+    assert.equal(repaired.ok, true);
+    assert.deepEqual(target(repaired.automation), ["custom", "new-model", "low"]);
+    const renamed = await tools.get("automation_update").execute({ id, name: "改名" }, context);
+    assert.deepEqual(target(renamed.automation), ["custom", "new-model", "low"]);
+
+    const cleared = await tools.get("automation_update").execute({ id, provider: null, model: null, reasoning_effort: null }, context);
+    assert.equal(cleared.ok, true);
+    assert.deepEqual(target(cleared.automation), [null, null, null]);
+    assert.deepEqual(target(definitions.get(id)), [null, null, null]);
+    const listing = await tools.get("automation_list").execute({}, context);
+    assert.deepEqual(target(listing.automations.find((item: any) => item.id === id)), [null, null, null]);
+
+    const inherited = await tools.get("automation_create").execute(base, context);
+    assert.deepEqual(target(inherited.automation), ["deepseek", "v4", undefined]);
+    const global = await tools.get("automation_create").execute({ ...base, provider: null, model: null }, context);
+    assert.deepEqual(target(global.automation), [null, null, undefined]);
+  } finally {
+    dispose();
+    await service.dispose();
+  }
+});
+
+test("Web 指定工作区创建时显式 null 不被全局模型覆盖", async () => {
+  const { service } = await makeService();
+  try {
+    const definition = await service.create({ sessionId: "session_1", creatorKind: "web", hostWide: true }, {
+      name: "跟随全局", prompt: "检查测试", workspaceId: "ws_1",
+      schedule: { kind: "interval", everyMinutes: 10, anchor: new Date().toISOString(), timeZone: "UTC" },
+      provider: null, model: null, reasoningEffort: null,
+    });
+    assert.equal(definition.provider, null);
+    assert.equal(definition.model, null);
+    assert.equal(definition.reasoningEffort, null);
+  } finally {
+    await service.dispose();
+  }
+});
 
 test("重启后只把遗留 running 标记为 host_interrupted，并保留尚未启动的 queued", async () => {
   const definition = sampleDefinition();

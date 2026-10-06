@@ -123,6 +123,8 @@ Open **Settings → Scheduled Tasks**, then use the panel as follows:
 
 Each dispatched run uses the saved prompt, workspace, model, and permission boundary. It does not reuse approvals from the source chat.
 
+`automation_create` and `automation_update` support the same model controls as Settings: `provider`, `model`, and `reasoning_effort`. Use provider/model IDs and a reasoning level published by that model in `reasoningEfforts`. On creation, omitted provider/model fields inherit the current session selection, falling back to the global selection; omitted reasoning effort uses the model default. On update, omitted fields keep their saved values. Set both `provider` and `model` to `null` to follow the global selection at each run, and set `reasoning_effort` to `null` to restore the model default. Create/update responses and `automation_list` include the saved target fields in the automation definition (`reasoningEffort` in the response).
+
 ## Safety boundary
 
 | Item | Behavior |

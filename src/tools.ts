@@ -3,7 +3,7 @@
 import { defineTool, type JsonValue, type ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type { AutomationService } from './service.ts'
 import { AUTOMATION_CREATE_DESCRIPTION } from './prompt.ts'
-import type { AutomationSchedule, PermissionPreset, Weekday } from './types.ts'
+import type { AutomationSchedule, PermissionPreset, UpdateAutomationInput, Weekday } from './types.ts'
 
 interface ToolAgent {
   readonly id: string
@@ -26,7 +26,13 @@ interface ScheduleArgs {
   readonly every_days?: number
 }
 
-interface CreateArgs extends ScheduleArgs {
+interface ModelArgs {
+  readonly provider?: string | null
+  readonly model?: string | null
+  readonly reasoning_effort?: string | null
+}
+
+interface CreateArgs extends ScheduleArgs, ModelArgs {
   readonly name: string
   readonly prompt: string
   readonly kind: 'once' | 'interval' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom'
@@ -35,7 +41,7 @@ interface CreateArgs extends ScheduleArgs {
   readonly permission?: PermissionPreset
 }
 
-interface UpdateArgs extends ScheduleArgs {
+interface UpdateArgs extends ScheduleArgs, ModelArgs {
   readonly id: string
   readonly name?: string
   readonly prompt?: string
@@ -58,6 +64,29 @@ const JSON_OUTPUT = {
   schema: { type: 'json' },
   render,
 } as const
+
+const MODEL_PARAMETERS = {
+  provider: {
+    oneOf: [{ type: 'string' }, { type: 'null' }],
+    description: '模型提供方 ID。创建时省略继承当前会话或全局选择；更新时省略保持不变；null 表示每次运行跟随全局选择。',
+  },
+  model: {
+    oneOf: [{ type: 'string' }, { type: 'null' }],
+    description: '模型 ID。创建时省略继承当前会话或全局选择；更新时省略保持不变。跟随全局时将 provider 和 model 都设为 null。',
+  },
+  reasoning_effort: {
+    oneOf: [{ type: 'string' }, { type: 'null' }],
+    description: '该模型公布的 reasoningEfforts 值。创建时省略使用模型默认；更新时省略保持不变；null 清除固定等级，恢复模型默认。',
+  },
+} as const
+
+function modelFromArgs(args: ModelArgs) {
+  return {
+    ...(args.provider === undefined ? {} : { provider: args.provider }),
+    ...(args.model === undefined ? {} : { model: args.model }),
+    ...(args.reasoning_effort === undefined ? {} : { reasoningEffort: args.reasoning_effort }),
+  }
+}
 
 function json(value: unknown): JsonValue {
   return JSON.parse(JSON.stringify(value)) as JsonValue
@@ -142,6 +171,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         every_days: { type: 'integer', description: '自定义计划每隔几天运行，范围 1-365。' },
         max_concurrent_runs: { type: 'integer', description: '同一自动化的并发运行上限，必须为正整数，默认 1' },
         permission: { type: 'string', enum: permissionNames },
+        ...MODEL_PARAMETERS,
       },
       output: JSON_OUTPUT,
       async execute(args: CreateArgs, exec: ToolRunContext) {
@@ -153,6 +183,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
             schedule: scheduleFromArgs(args, new Date().toISOString()),
             ...(args.max_concurrent_runs === undefined ? {} : { maxConcurrentRuns: args.max_concurrent_runs }),
             ...(args.permission === undefined ? {} : { permissionPreset: args.permission }),
+            ...modelFromArgs(args),
           }, exec.signal)
           return json({ ok: true, automation: value })
         } catch (error: unknown) {
@@ -188,7 +219,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_update',
-      description: '更新当前工作区中一条自动化的名称、任务说明、计划、权限或暂停/恢复状态。仅暂停不需要其他字段。',
+      description: '更新当前工作区中一条自动化的名称、任务说明、计划、模型、推理等级、权限或暂停/恢复状态。仅暂停或修改模型不需要其他字段。返回保存后的完整定义；provider 和 model 均为 null 表示跟随运行时全局选择。',
       parameters: {
         id: { type: 'string', required: true },
         name: { type: 'string' },
@@ -205,20 +236,14 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         every_days: { type: 'integer' },
         max_concurrent_runs: { type: 'integer', description: '同一自动化的并发运行上限，必须为正整数，默认 1' },
         permission: { type: 'string', enum: permissionNames },
+        ...MODEL_PARAMETERS,
       },
       output: JSON_OUTPUT,
       async execute(args: UpdateArgs, exec: ToolRunContext) {
         if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
         try {
           validateScheduleSelector(args)
-          const input: {
-            name?: string
-            prompt?: string
-            status?: 'active' | 'paused'
-            schedule?: AutomationSchedule
-            maxConcurrentRuns?: number
-            permissionPreset?: PermissionPreset
-          } = {}
+          const input: { -readonly [K in keyof Omit<UpdateAutomationInput, 'now'>]: UpdateAutomationInput[K] } = { ...modelFromArgs(args) }
           if (args.name !== undefined) input.name = String(args.name)
           if (args.prompt !== undefined) input.prompt = String(args.prompt)
           if (args.status !== undefined) input.status = args.status
