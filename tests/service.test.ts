@@ -156,7 +156,7 @@ test("Agent 工具可固定、修复和清空模型目标，省略字段保留�
     assert.deepEqual(target(created.automation), ["custom", "old-model", "high"]);
     assert.deepEqual(target(definitions.get(id)), ["custom", "old-model", "high"]);
 
-    const repaired = await tools.get("automation_update").execute({ id, model: "new-model", reasoning_effort: "low" }, context);
+    const repaired = await tools.get("automation_update").execute({ id, provider: "custom", model: "new-model", reasoning_effort: "low" }, context);
     assert.equal(repaired.ok, true);
     assert.deepEqual(target(repaired.automation), ["custom", "new-model", "low"]);
     const renamed = await tools.get("automation_update").execute({ id, name: "改名" }, context);
@@ -193,6 +193,59 @@ test("Web 指定工作区创建时显式 null 不被全局模型覆盖", async (
   } finally {
     await service.dispose();
   }
+});
+
+test("创建和更新拒绝不完整模型配对且不写库，切换模型清除陈旧推理等级", async () => {
+  const { service, definitions } = await makeService();
+  const scope = { sessionId: "session_1", creatorKind: "agent" as const };
+  const base = { name: "检查", prompt: "检查", schedule: { kind: "daily" as const, time: "09:00", timeZone: "UTC" } };
+  try {
+    const saved = await service.create(scope, { ...base, provider: "deepseek", model: "v4", reasoningEffort: "high" });
+    for (const partial of [
+      { provider: "pi-ai" }, { model: "gemini" }, { provider: null }, { model: null },
+      { provider: "pi-ai", model: null }, { provider: null, model: "gemini" },
+      { provider: "", model: "gemini" }, { provider: "pi-ai", model: "  " },
+    ]) {
+      await assert.rejects(service.create(scope, { ...base, ...partial }), /provider 与 model 必须同时/);
+      await assert.rejects(service.create({ ...scope, hostWide: true }, { ...base, workspaceId: "ws_1", ...partial }), /provider 与 model 必须同时/);
+      await assert.rejects(service.update(scope, saved.id, partial), /provider 与 model 必须同时/);
+      assert.equal(definitions.size, 1);
+      assert.deepEqual(definitions.get(saved.id), saved);
+    }
+    const unchanged = await service.update(scope, saved.id, { provider: "deepseek", model: "v4" });
+    assert.equal(unchanged.reasoningEffort, "high");
+    const changed = await service.update(scope, saved.id, { provider: "pi-ai", model: "gemini" });
+    assert.equal(changed.reasoningEffort, null);
+    const explicit = await service.update(scope, saved.id, { provider: "deepseek", model: "v4", reasoningEffort: "low" });
+    assert.equal(explicit.reasoningEffort, "low");
+    const global = await service.update(scope, saved.id, { provider: null, model: null });
+    assert.equal(global.reasoningEffort, null);
+  } finally { await service.dispose(); }
+});
+
+test("Agent 列表提供模型 ID、推理等级、全局选择和目录故障", async () => {
+  const { service } = await makeService({}, {}, {
+    llm: {
+      listProviders: () => [{ id: "deepseek" }, { id: "offline" }],
+      async listModels(provider: string) {
+        if (provider === "offline") throw new Error("catalog offline");
+        return [{ id: "v4", name: "V4" }];
+      },
+      async resolveModelInfo() { return { reasoning: { efforts: [{ id: "low", name: "Low" }], defaultEffort: "low" } }; },
+    },
+  });
+  const tools = new Map<string, any>();
+  const agent = { id: "session_1", ctx: { tools: { register(tool: any) { tools.set(tool.name, tool); return () => {}; } } } };
+  const dispose = registerAutomationTools(service, agent);
+  try {
+    const result = await tools.get("automation_list").execute({}, { agent, signal: new AbortController().signal });
+    assert.equal(result.ok, true);
+    assert.equal(result.models[0].provider, "deepseek");
+    assert.equal(result.models[0].model, "v4");
+    assert.deepEqual(result.models[0].reasoning.efforts, [{ id: "low", name: "Low" }]);
+    assert.equal(result.defaultModel.model, "v4");
+    assert.equal(result.modelFailures[0].provider, "offline");
+  } finally { dispose(); await service.dispose(); }
 });
 
 test("重启后只把遗留 running 标记为 host_interrupted，并保留尚未启动的 queued", async () => {

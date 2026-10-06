@@ -11,6 +11,7 @@ export const AUTOMATION_PROMPT_TEXT = [
   '高级计划映射：每小时第15分钟 → kind=hourly, minute=15；每月31日 → kind=monthly, month_day=31；每3天 → kind=custom, every_days=3。monthly/custom 还必须提供 time。',
   '未指定时区时使用 Asia/Shanghai。prompt 必须写成每次独立运行都能看懂的完整任务说明。',
   'automation_create 和 automation_update 支持 provider、model 和 reasoning_effort。provider/model 使用提供方和模型 ID；推理等级使用该模型公布的 reasoningEfforts 值。将 provider 和 model 都设为 null 可跟随每次运行时的全局模型；reasoning_effort=null 恢复模型默认。更新时省略这些字段保持不变。',
+  '指定或修改模型时 provider/model 必须成对传入非空 ID 或成对设为 null。先调用 automation_list 查询 models 和 reasoning.efforts，目录加载失败见 modelFailures。切换模型时未指定 reasoning_effort 会清除旧等级，恢复模型默认。',
 ].join('\n')
 
 export const AUTOMATION_CREATE_DESCRIPTION = [

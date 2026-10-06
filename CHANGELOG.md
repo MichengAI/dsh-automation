@@ -6,6 +6,9 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+- Agent automation create/update tools support provider, model, and reasoning effort, including resetting to the runtime global model or model default (#15).
+- Reject incomplete provider/model pairs and preserve explicit null on creation. Switching models clears an omitted reasoning override. `automation_list` now includes model IDs, supported reasoning efforts, the global model, and catalog failures.
+
 ## 0.1.54 - 2026-10-06
 
 - The installed-plugin list shows “Automation” and a localized description instead of the package name. Titles and descriptions come from `meta.title` and `meta.description` in `locale/zh.json` and `locale/en.json`.

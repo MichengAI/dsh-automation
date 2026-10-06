@@ -6,6 +6,9 @@
 
 ## 未发布
 
+- Agent 创建和更新定时任务支持提供方、模型和推理等级，也可恢复运行时全局模型或模型默认等级（#15）。
+- 拒绝不完整的 provider/model 配对，创建时保留显式 null。切换模型时清除未重新指定的旧推理等级。`automation_list` 返回模型 ID、支持的推理等级、全局模型和目录加载失败信息。
+
 ## 0.1.54 - 2026-10-06
 
 - 已安装插件列表显示「Automation」和中文简介，不再只用包名。显示名来自 `locale/zh.json` 和 `locale/en.json` 的 `meta.title`、`meta.description`。

@@ -68,11 +68,11 @@ const JSON_OUTPUT = {
 const MODEL_PARAMETERS = {
   provider: {
     oneOf: [{ type: 'string' }, { type: 'null' }],
-    description: '模型提供方 ID。创建时省略继承当前会话或全局选择；更新时省略保持不变；null 表示每次运行跟随全局选择。',
+    description: '模型提供方 ID，必须与 model 成对指定非空 ID 或成对设为 null。创建时两项都省略继承当前会话或全局选择；更新时两项都省略保持不变。先用 automation_list 查询 models。',
   },
   model: {
     oneOf: [{ type: 'string' }, { type: 'null' }],
-    description: '模型 ID。创建时省略继承当前会话或全局选择；更新时省略保持不变。跟随全局时将 provider 和 model 都设为 null。',
+    description: '模型 ID，必须与 provider 成对传入。跟随全局时将两项都设为 null。切换模型时省略 reasoning_effort 会清除旧等级，恢复模型默认。',
   },
   reasoning_effort: {
     oneOf: [{ type: 'string' }, { type: 'null' }],
@@ -196,7 +196,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_list',
-      description: '列出当前工作区的自动化规则、下次运行时间和最近一次结果。',
+      description: '列出当前工作区的自动化规则、下次运行时间和最近一次结果，以及可选模型目录 models、各模型 reasoning.efforts、全局 defaultModel 和目录加载失败 modelFailures。指定或修复模型前先查询目录，使用其中的 provider/model ID 和推理等级。',
       parameters: {},
       output: JSON_OUTPUT,
       async execute(_args: Record<string, never>, exec: ToolRunContext) {
@@ -207,6 +207,9 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
             ok: true,
             generatedAt: snapshot.generatedAt,
             workspace: snapshot.workspace,
+            models: snapshot.models,
+            modelFailures: snapshot.modelFailures,
+            defaultModel: snapshot.defaultModel,
             automations: snapshot.definitions,
           })
         } catch (error: unknown) {

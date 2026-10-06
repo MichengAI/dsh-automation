@@ -119,6 +119,14 @@ export class AutomationRequestError extends Error {
   override readonly name = "AutomationRequestError";
 }
 
+function validateModelPair(input: { readonly provider?: string | null; readonly model?: string | null }): void {
+  if (input.provider === undefined && input.model === undefined) return;
+  if (input.provider === null && input.model === null) return;
+  if (typeof input.provider === "string" && input.provider.trim() !== "" &&
+      typeof input.model === "string" && input.model.trim() !== "") return;
+  throw new AutomationRequestError("provider 与 model 必须同时指定非空 ID 或同时为 null。");
+}
+
 function asMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -367,6 +375,7 @@ export class AutomationService {
       throwIfCancelled(signal);
       const now = toIso();
       const { status, ...fields } = input;
+      validateModelPair(fields);
       let normalizedFields =
         fields.permissionPreset === undefined
           ? fields
@@ -374,6 +383,13 @@ export class AutomationService {
               ...fields,
               permissionPreset: this.requirePermission(fields.permissionPreset),
             };
+      if (
+        (fields.provider !== undefined || fields.model !== undefined) &&
+        (fields.provider !== current.provider || fields.model !== current.model) &&
+        fields.reasoningEffort === undefined
+      ) {
+        normalizedFields = { ...normalizedFields, reasoningEffort: null };
+      }
       if (fields.workspaceId !== undefined || fields.cwd !== undefined) {
         const target = await this.resolveUpdateWorkspace(
           current,
@@ -675,6 +691,7 @@ export class AutomationService {
     scope: AutomationScope,
     request: CreateRequest,
   ) {
+    validateModelPair(request);
     const fallback = this.ctx.agentDefaultModel?.currentSelection?.();
     let workspaceId = request.workspaceId?.trim() ?? "";
     let cwd = request.cwd?.trim() ?? "";
@@ -721,6 +738,7 @@ export class AutomationService {
       if (request.provider === undefined) provider = loggedSelection?.provider ?? provider;
       if (request.model === undefined) model = loggedSelection?.model ?? model;
     }
+    validateModelPair({ provider, model });
     return { workspaceId, cwd, agentPreset, provider, model };
   }
 
