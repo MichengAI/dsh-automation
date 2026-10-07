@@ -62,7 +62,7 @@ export declare function resolveUpdateRuntime(ctx: {
     exists?: (path: string) => boolean;
     execPath?: string;
 }): Runtime;
-export declare function shouldNotifyParent(target: Runtime, send?: NodeJS.Process['send']): boolean;
+export declare function shouldNotifyParent(target: Runtime, send?: unknown): boolean;
 export declare function isNewerVersion(currentValue: string, candidateValue: string): boolean;
 export declare function registerPluginUpdater(ctx: Context, options: PluginUpdaterOptions): () => void;
 export {};

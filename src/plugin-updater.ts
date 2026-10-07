@@ -166,7 +166,7 @@ export function resolveUpdateRuntime(ctx: { get?: (name: string) => unknown }, o
   const entry = official ? undefined : cliEntry(argv, cwd, exists)
   return { profileName, profileDir, officialDesktop: official, canAutoUpdate: packageManager !== undefined || pluginManager !== undefined || entry !== undefined, ...(packageManager === undefined ? {} : { packageManager }), ...(pluginManager === undefined ? {} : { pluginManager }), ...(entry === undefined ? {} : { cliEntry: entry }) }
 }
-export function shouldNotifyParent(target: Runtime, send: NodeJS.Process['send'] = process.send): boolean {
+export function shouldNotifyParent(target: Runtime, send: unknown = process.send): boolean {
   // 官方 Host 父进程只接受带 type 的事件，字符串 IPC 会把宿主杀掉。
   return target.officialDesktop !== true && target.desktopPnpm === undefined && target.packageManager === undefined && typeof send === 'function'
 }

@@ -6,7 +6,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
-## 0.1.56 - 2026-10-07
+## 0.1.57 - 2026-10-07
 
 - Official Desktop can update this plugin in place. It no longer targets the web profile by mistake.
 - A new version is marked with a warning color. Version numbers keep their normal color.
