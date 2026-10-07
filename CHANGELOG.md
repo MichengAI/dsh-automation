@@ -6,6 +6,12 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.56 - 2026-10-07
+
+- Official Desktop can update this plugin in place. It no longer targets the web profile by mistake.
+- A new version is marked with a warning color. Version numbers keep their normal color.
+- After updating, fully quit and reopen DSH Desktop.
+
 ## 0.1.55 - 2026-10-07
 
 - Agent automation create/update tools support provider, model, and reasoning effort, including resetting to the runtime global model or model default (#15).

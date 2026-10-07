@@ -38,18 +38,18 @@ const UPDATE_HEADER = 'x-michengai-plugin-update'
 const STYLE_ID = 'michengai-plugin-update-ui'
 const CSS = `
 .mpi-version{margin-left:8px;color:var(--dsw-alias-label-tertiary,#a0a0a0);font-family:inherit;font-size:12px;font-weight:500;line-height:18px;letter-spacing:0;white-space:nowrap;vertical-align:baseline}.mpi-check-host{display:inline-flex;align-items:center}.mpi-icon{display:inline-flex;flex:0 0 auto;width:16px;height:16px;align-items:center;justify-content:center;pointer-events:none}.mpi-icon svg{display:block;width:16px;height:16px}
-.mpi-intro{margin:0 0 16px;color:var(--dsw-alias-label-secondary,#b9b9b9);font-size:13px;line-height:20px}.mpi-meta{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px 18px;margin:0 0 16px;font-size:12px;line-height:18px}.mpi-meta dt{color:var(--dsw-alias-label-secondary,#b9b9b9)}.mpi-meta dd{margin:0}.mpi-mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.mpi-latest{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}.mpi-status{font-size:13px;font-weight:600;line-height:18px}.mpi-status[data-kind=error]{color:var(--dsw-alias-state-error-primary,#ef7272)}.mpi-status[data-kind=success]{color:var(--dsw-alias-state-success-primary,#51b976)}.mpi-manual{border-top:1px solid var(--dsw-alias-border-l2,#494949);padding-top:16px}.mpi-manual h3{margin:0 0 6px;font-size:14px;line-height:20px}.mpi-manual p{margin:0 0 10px;color:var(--dsw-alias-label-secondary,#b9b9b9);font-size:12px;line-height:18px}.mpi-command{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--dsw-alias-border-l2,#494949);border-radius:7px;padding:10px;background:var(--dsw-alias-bg-layer-3,var(--dsw-specific-menu-item-hover,#353638))}.mpi-command code{min-width:0;flex:1;overflow:visible;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:18px;white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:560px){.mpi-meta{grid-template-columns:1fr;gap:2px}.mpi-meta dd{margin-bottom:6px}}
+.mpi-intro{margin:0 0 16px;color:var(--dsw-alias-label-secondary,#b9b9b9);font-size:13px;line-height:20px}.mpi-meta{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px 18px;margin:0 0 16px;font-size:12px;line-height:18px}.mpi-meta dt{color:var(--dsw-alias-label-secondary,#b9b9b9)}.mpi-meta dd{margin:0}.mpi-mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.mpi-latest{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}.mpi-status{font-size:13px;font-weight:600;line-height:18px}.mpi-status[data-kind=error]{color:var(--dsw-alias-state-error-primary,#ef7272)}.mpi-status[data-kind=success]{color:var(--dsw-alias-state-success-primary,#51b976)}.mpi-status[data-kind=update]{color:#e8b15a !important}.mpi-manual{border-top:1px solid var(--dsw-alias-border-l2,#494949);padding-top:16px}.mpi-manual h3{margin:0 0 6px;font-size:14px;line-height:20px}.mpi-manual p{margin:0 0 10px;color:var(--dsw-alias-label-secondary,#b9b9b9);font-size:12px;line-height:18px}.mpi-command{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--dsw-alias-border-l2,#494949);border-radius:7px;padding:10px;background:var(--dsw-alias-bg-layer-3,var(--dsw-specific-menu-item-hover,#353638))}.mpi-command code{min-width:0;flex:1;overflow:visible;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:18px;white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:560px){.mpi-meta{grid-template-columns:1fr;gap:2px}.mpi-meta dd{margin-bottom:6px}}
 `
 
 const ZH = {
   check: '检查更新', update: '更新', close: '关闭', recheck: '重新检查', auto: '自动更新', updating: '正在更新…', copy: '复制命令', copied: '已复制', copyFailed: '复制失败',
   checking: '正在检查更新…', latest: '已是最新版本', found: '发现新版本', failed: '检查更新失败，请稍后重试。', current: '运行版本', latestLabel: '最新版本', profile: '目标 profile', unknown: '未知',
-  manual: '手工更新', manualHint: '自动更新失败时，可在当前 DSH 终端执行以下命令，完成后重启 DSH Web。', intro: '仅检查并更新当前插件，不会联动安装其他插件。', restart: '更新完成，请重启 DSH Web。', restarting: '更新完成，正在重启 DSH Desktop…', unavailable: '当前环境不支持自动更新，请使用手工更新命令。',
+  manual: '手工更新', manualHint: '自动更新失败时，可在当前 DSH 终端执行以下命令，完成后重启 DSH Web。', manualHintDesktop: '自动更新失败时，请先完全退出 DSH Desktop，再用 Desktop 自带的 dsh 执行以下命令。普通 dsh 会拒绝 desktop profile。', intro: '仅检查并更新当前插件，不会联动安装其他插件。', restart: '更新完成，请重启 DSH Web。', restartDesktop: '更新完成，请完全退出并重新打开 DSH Desktop。', restarting: '更新完成，正在重启 DSH Desktop…', unavailable: '当前环境不支持自动更新，请使用手工更新命令。',
 }
 const EN = {
   check: 'Check for updates', update: 'Update', close: 'Close', recheck: 'Check again', auto: 'Update automatically', updating: 'Updating…', copy: 'Copy command', copied: 'Copied', copyFailed: 'Copy failed',
   checking: 'Checking for updates…', latest: 'You are up to date', found: 'New version available', failed: 'Could not check for updates. Try again later.', current: 'Running version', latestLabel: 'Latest version', profile: 'Target profile', unknown: 'Unknown',
-  manual: 'Manual update', manualHint: 'If automatic update fails, run this command in the current DSH terminal, then restart DSH Web.', intro: 'Only this plugin is checked and updated. Other plugins are not changed.', restart: 'Update complete. Restart DSH Web.', restarting: 'Update complete. Restarting DSH Desktop…', unavailable: 'Automatic update is unavailable. Use the manual command.',
+  manual: 'Manual update', manualHint: 'If automatic update fails, run this command in the current DSH terminal, then restart DSH Web.', manualHintDesktop: 'If automatic update fails, fully quit DSH Desktop, then run this command with Desktop\'s own dsh. A regular dsh rejects the desktop profile.', intro: 'Only this plugin is checked and updated. Other plugins are not changed.', restart: 'Update complete. Restart DSH Web.', restartDesktop: 'Update complete. Fully quit and reopen DSH Desktop.', restarting: 'Update complete. Restarting DSH Desktop…', unavailable: 'Automatic update is unavailable. Use the manual command.',
 }
 type UpdateStrings = { [Key in keyof typeof ZH]: string }
 
@@ -58,7 +58,9 @@ function pluginUpdateCopy(lang: string): UpdateStrings {
 }
 
 function describePluginUpdate(lang: string, payload: UpdatePayload | undefined, phase: UpdatePhase, notice: UpdateNotice) {
-  const copy = pluginUpdateCopy(lang)
+  const base = pluginUpdateCopy(lang)
+  const desktop = payload?.profileName === 'desktop'
+  const copy = desktop ? { ...base, manualHint: base.manualHintDesktop, restart: base.restartDesktop } : base
   const busy = phase !== 'idle'
   let message = copy.checking
   let kind = ''
@@ -69,8 +71,8 @@ function describePluginUpdate(lang: string, payload: UpdatePayload | undefined, 
   else if (notice.type === 'restarting') { message = copy.restarting; kind = 'success' }
   else if (payload === undefined) message = copy.checking
   else if (payload.latestCheckFailed) { message = copy.failed; kind = 'error' }
-  else if (!payload.canAutoUpdate && payload.updateAvailable) message = copy.unavailable
-  else if (payload.updateAvailable) message = `${copy.found}: v${payload.latestVersion ?? copy.unknown}`
+  else if (!payload.canAutoUpdate && payload.updateAvailable) { message = copy.unavailable; kind = 'update' }
+  else if (payload.updateAvailable) { message = `${copy.found}: v${payload.latestVersion ?? copy.unknown}`; kind = 'update' }
   else { message = copy.latest; kind = 'success' }
   return {
     copy, busy, message, kind, loading: phase === 'updating',
@@ -183,7 +185,7 @@ function UpdateDialog(props: {
     React.createElement('p', { className: 'mpi-intro' }, view.copy.intro),
     React.createElement('dl', { className: 'mpi-meta' },
       React.createElement('dt', null, view.copy.current), React.createElement('dd', null, React.createElement('span', { className: 'mpi-mono' }, view.currentVersion)),
-      React.createElement('dt', null, view.copy.latestLabel), React.createElement('dd', { className: 'mpi-latest' }, React.createElement('span', { className: 'mpi-mono' }, view.latestVersion), React.createElement('span', { className: 'mpi-status', role: 'status', 'data-kind': view.kind }, view.message)),
+      React.createElement('dt', null, view.copy.latestLabel), React.createElement('dd', { className: 'mpi-latest' }, React.createElement('span', { className: 'mpi-mono' }, view.latestVersion), React.createElement('span', { className: 'mpi-status', role: 'status', 'data-kind': view.kind, ...(view.kind === 'update' ? { style: { color: '#e8b15a' } } : {}) }, view.message)),
       React.createElement('dt', null, view.copy.profile), React.createElement('dd', null, React.createElement('span', { className: 'mpi-mono' }, view.profileName))),
     view.busy ? React.createElement(Progress, { percent: 100, showInfo: false, status: 'active' }) : null,
     React.createElement('section', { className: 'mpi-manual' },
