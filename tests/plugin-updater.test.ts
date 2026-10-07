@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import test from 'node:test'
 import { handlePluginUpdateEscape, manualPluginUpdateCommand } from '../src/client/plugin-update-model.ts'
 import { isDshCliEntry, isNewerVersion, isTrustedUpdateRequest, PLUGIN_UPDATE_HEADER, resolveUpdateRuntime, shouldNotifyParent } from '../src/plugin-updater.ts'
@@ -59,23 +60,24 @@ test('定时任务客户端与 Host 绑定自身更新入口', async () => {
 })
 
 test('官方 Desktop 在线更新指向 desktop profile，且不通知父进程', () => {
+  const profileDir = resolve('/dsh-profile/desktop')
   const runtime = resolveUpdateRuntime({
     get(name) {
       if (name === 'profileContext') return {
         name: 'desktop',
-        dir: 'D:\\profile\\desktop',
-        packageManager: { command: 'D:\\Tools\\DeepSeek Harness\\DeepSeek Harness.exe', args: ['--expose-internals', 'D:\\runtime\\pnpm.mjs'], env: { ELECTRON_RUN_AS_NODE: '1' } },
+        dir: profileDir,
+        packageManager: { command: resolve('/dsh-tools/DeepSeek Harness.exe'), args: ['--expose-internals', resolve('/dsh-runtime/pnpm.mjs')], env: { ELECTRON_RUN_AS_NODE: '1' } },
       }
       return undefined
     },
   }, {
-    argv: ['node', 'D:\\app\\dsh\\node_modules\\@deepseek-ai\\dsh-desktop-host\\lib\\index.js', 'D:\\runtime', 'D:\\profile\\desktop'],
+    argv: ['node', resolve('/dsh-app/node_modules/@deepseek-ai/dsh-desktop-host/lib/index.js'), resolve('/dsh-runtime'), profileDir],
     env: {},
-    cwd: 'D:\\profile\\desktop',
-    homeDir: 'C:\\Users\\YUJIYU',
+    cwd: profileDir,
+    homeDir: resolve('/dsh-home'),
   })
   assert.equal(runtime.profileName, 'desktop')
-  assert.equal(runtime.profileDir, 'D:\\profile\\desktop')
+  assert.equal(runtime.profileDir, profileDir)
   assert.equal(runtime.officialDesktop, true)
   assert.equal(runtime.canAutoUpdate, true)
   assert.equal(shouldNotifyParent(runtime, () => {}), false)
