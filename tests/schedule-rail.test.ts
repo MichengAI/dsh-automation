@@ -132,7 +132,7 @@ test('native tabs follow session prefixes and detect Codex UI sidebar', () => {
   assert.equal(readNativeSidebarTab('nope'), 'tasks')
   assert.equal(tabForSessionId(AUTOMATION_SESSION_PREFIX + 'abc'), 'schedule')
   assert.equal(tabForSessionId('im:wecom:1'), 'channels')
-  assert.equal(tabForSessionId('chat-1'), undefined)
+  assert.equal(tabForSessionId('chat-1'), 'tasks')
   assert.equal(hasCodexUiSidebar([{ options: { locale: 'michengai.codexUi' } }]), true)
   assert.equal(hasCodexUiSidebar([{ options: { locale: 'sidebar' } }]), false)
 })
@@ -182,7 +182,7 @@ test('从定时页移除后，任务树仍不展示自动化会话', () => {
     current: autoId,
   }, new Set())
   if (filtered.ids === undefined || filtered.ids.includes(autoId)) throw new Error('automation session must stay off the task tree')
-  assert.equal(tabForSessionId(autoId, new Set()), undefined)
+  assert.equal(tabForSessionId(autoId, new Set()), 'tasks')
   assert.equal(tabForSessionId(autoId, new Set([autoId])), 'schedule')
 })
 test('workspace wrap skips this plugin shell and keeps official occupant', () => {

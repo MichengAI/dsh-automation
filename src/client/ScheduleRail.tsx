@@ -183,19 +183,31 @@ export function NativeScheduleShell({
     catch { /* 隐私模式或禁用存储时忽略 */ }
   }, [tab])
 
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target.closest('button') : null
+      if (target === null) return
+      const label = `${target.textContent ?? ''} ${target.getAttribute('aria-label') ?? ''}`
+      if (/新会话|新建任务|New chat|New session/i.test(label)) setTab('tasks')
+    }
+    document.addEventListener('click', onClick, true)
+    return () => document.removeEventListener('click', onClick, true)
+  }, [])
   const previousCurrentId = useRef(currentId)
   const tabFollowReady = useRef(false)
   useEffect(() => {
+    const next = tabForSessionId(currentId ?? undefined, scheduledIds)
     if (!tabFollowReady.current) {
       tabFollowReady.current = true
       previousCurrentId.current = currentId
+      if (next === 'tasks') setTab('tasks')
       return
     }
     const previous = previousCurrentId.current
     previousCurrentId.current = currentId
     if (!shouldFollowSessionTab(previous, currentId)) return
-    const next = tabForSessionId(currentId ?? undefined, scheduledIds)
     const extraIds = extraTabs.map(item => item.id)
+    if (next === 'tasks') setTab('tasks')
     if (next === 'channels' && (channelsReady || extraIds.includes('channels'))) setTab('channels')
     const matched = extraTabs.find(item => currentId !== undefined && currentId !== null && item.matchSession?.(String(currentId)) === true)
     if (matched !== undefined && matched.id !== 'schedule') setTab(matched.id)

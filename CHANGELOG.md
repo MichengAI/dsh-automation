@@ -6,6 +6,11 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.59 - 2026-10-08
+
+- Creating a session from the schedule tab returns the sidebar to Tasks. A scheduled session still stays on Schedule.
+- Restart DSH and refresh the page after upgrading.
+
 ## 0.1.58 - 2026-10-07
 
 - Official Desktop can update this plugin in place. It no longer targets the web profile by mistake.

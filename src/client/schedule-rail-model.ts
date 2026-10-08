@@ -273,7 +273,7 @@ export function tabForSessionId(sessionId: string | null | undefined, scheduledI
   if (sessionId === undefined || sessionId === null || sessionId === '') return undefined
   if (scheduledIds !== undefined ? scheduledIds.has(sessionId) : sessionId.startsWith(AUTOMATION_SESSION_PREFIX)) return 'schedule'
   if (sessionId.startsWith('im:')) return 'channels'
-  return undefined
+  return 'tasks'
 }
 
 export function occupantLooksLikeCodexUi(value: unknown): boolean {
