@@ -1,4 +1,5 @@
 const STYLE_ID = 'dsh-automation-styles'
+const STYLE_OWNER = '@michengai/dsh-automation'
 
 const CSS_TEXT = `
 .dsh-st-shell{container-type:inline-size;min-width:0;box-sizing:border-box;max-width:1080px;width:100%;margin:0 auto;padding:0 0 32px;color:var(--dsw-alias-label-primary);font-family:var(--dsw-font-family,system-ui)}
@@ -144,11 +145,29 @@ export function installStyles(): () => void {
   const existing = document.getElementById(STYLE_ID)
   if (existing instanceof HTMLStyleElement) {
     existing.textContent = CSS_TEXT
+    existing.setAttribute('data-plugin', STYLE_OWNER)
     return () => undefined
   }
   const style = document.createElement('style')
   style.id = STYLE_ID
   style.textContent = CSS_TEXT
+  style.setAttribute('data-plugin', STYLE_OWNER)
   document.head.append(style)
   return () => { style.remove() }
+}
+
+const UPDATE_STYLE_ID = 'michengai-plugin-update-ui'
+
+export function installPluginUpdateStyle(css: string): void {
+  const existing = document.getElementById(UPDATE_STYLE_ID)
+  if (existing instanceof HTMLStyleElement) {
+    // 这张表的 id 被多个插件共用。已有归属时不改写，避免本插件重载删掉别人的表。
+    if (existing.getAttribute('data-plugin') === null) existing.setAttribute('data-plugin', STYLE_OWNER)
+    return
+  }
+  const style = document.createElement('style')
+  style.id = UPDATE_STYLE_ID
+  style.textContent = css
+  style.setAttribute('data-plugin', STYLE_OWNER)
+  ;(document.head ?? document.documentElement).append(style)
 }

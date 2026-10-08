@@ -6,6 +6,11 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.60 - 2026-10-08
+
+- The Tasks / Schedule sidebar keeps its layout when another plugin reloads. Its runtime styles now belong to this plugin (#16).
+- Restart DSH and refresh the page after upgrading.
+
 ## 0.1.59 - 2026-10-08
 
 - Creating a session from the schedule tab returns the sidebar to Tasks. A scheduled session still stays on Schedule.
