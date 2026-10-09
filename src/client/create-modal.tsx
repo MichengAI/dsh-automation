@@ -12,7 +12,7 @@ import {
 } from './helpers.js'
 import { shouldConfirmFullAccess } from './create-modal-logic.js'
 import { AddedWorkspaceMissingError } from './workspace-create.js'
-import { FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
+import { FolderIcon, PlusIcon, ShieldIcon, SparkleIcon } from './icons.js'
 import type { TextAreaRef } from 'antd/es/input/TextArea.js'
 import { AntdProvider, Button, Checkbox, Dropdown, Input, Modal, Select } from './antd-ui.js'
 
@@ -224,28 +224,32 @@ export function CreateModal({
                     options={workspaces.map(item => ({ value: item.id, label: item.title }))}
                     onChange={value => update({ workspaceId: value })}
                     dropdownRender={menu => (
-                      <>
+                      <div className="dsh-st-workspace-menu">
                         {menu}
+                        <div className="dsh-st-workspace-menu-rule" />
                         <Button
-                          type="text"
-                          block
+                          type="link"
+                          className="dsh-st-add-workspace"
+                          icon={<PlusIcon width={14} height={14} />}
                           disabled={addingWorkspace}
                           onMouseDown={event => event.preventDefault()}
                           onClick={() => { void handleAddWorkspace() }}
                         >{t('form.addWorkspace')}</Button>
-                      </>
+                      </div>
                     )}
                   />
                   {workspaces.length === 0 && (
-                    <>
+                    <div className="dsh-st-workspace-empty">
                       <Button
-                        type="link"
+                        type="primary"
                         size="small"
+                        className="dsh-st-add-workspace"
+                        icon={<PlusIcon width={14} height={14} />}
                         disabled={addingWorkspace}
                         onClick={() => { void handleAddWorkspace() }}
                       >{t('form.addWorkspace')}</Button>
-                      <span className="dsh-st-error">{t('form.workspaceRequired')}</span>
-                    </>
+                      <span className="dsh-st-workspace-note">{t('form.workspaceRequired')}</span>
+                    </div>
                   )}
                   <Dropdown
                     menu={{ items: skills.length === 0 ? [{ key: 'empty', label: t('form.skillsEmpty'), disabled: true }] : skills.map(item => ({ key: item.id, label: item.name, onClick: () => insertSkill(item) })) }}

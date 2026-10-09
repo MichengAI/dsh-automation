@@ -59,6 +59,11 @@ const CSS_TEXT = `
 .dsh-st-run strong{display:block;margin-bottom:4px;font-size:14px}
 .dsh-st-run p{display:flex;gap:10px;margin:0;color:var(--dsw-alias-label-tertiary);font-size:12px}
 .dsh-st-error{color:#ff6b6b;font-size:12px}
+.dsh-st-workspace-empty{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.dsh-st-workspace-note{color:var(--dsw-alias-state-warning-primary,#d29922);font-size:12px;line-height:1.5}
+.dsh-st-workspace-menu-rule{height:1px;margin:6px 8px;background:var(--dsw-alias-border-l2,rgba(255,255,255,.1))}
+.dsh-st-add-workspace.ant-btn-link{color:var(--dsw-alias-brand-primary,var(--dsh-accent,#4c8dff));font-weight:550}
+.dsh-st-add-workspace.ant-btn-link:not(:disabled):hover{color:var(--dsw-alias-brand-primary-hover,var(--dsh-accent,#4c8dff))}
 .dsh-st-muted{color:var(--dsw-alias-label-secondary)}
 .dsh-st-form{display:flex;flex-direction:column;gap:12px}.dsh-st-form>p{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}
 .dsh-st-field{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:100%;font-size:13px}
