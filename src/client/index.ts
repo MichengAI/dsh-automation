@@ -10,7 +10,7 @@ import {
 } from './native-tabs.js'
 import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
-import { createdWorkspaceId, resolveDirectoryPicker } from './workspace-create.js'
+import { resolveDirectoryPicker } from './workspace-create.js'
 import { scheduledListHostActions } from './native-group-actions.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
 import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
@@ -124,7 +124,7 @@ export function apply(ctx: ClientContext): void {
       return undefined
     }
     const registered = await runtime.registerWorkspace(picked)
-    return createdWorkspaceId(runtime.source.getSnapshot().snapshot?.workspaces ?? [], registered.path)
+    return registered.id
   }
   const openTaskSettings = (request: AutomationTaskSettingsRequest): void => {
     requestAutomationTaskSettings(request)

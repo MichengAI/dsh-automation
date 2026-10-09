@@ -58,11 +58,15 @@ const defaultAlgorithm = unwrap<NonNullable<ConfigProviderProps['theme']> extend
 export function AntdProvider(props: { locale?: Locale; children?: React.ReactNode }): React.ReactElement {
   const dark = useHostDark()
   const active = useHostLocale()
+  const brand = typeof document === 'undefined'
+    ? ''
+    : getComputedStyle(document.documentElement).getPropertyValue('--dsw-alias-brand-primary').trim()
   return React.createElement(ConfigProvider, {
     locale: props.locale ?? antdLocale(active),
     button: { autoInsertSpace: false },
     theme: {
       algorithm: dark ? darkAlgorithm : defaultAlgorithm,
+      ...(brand === '' ? {} : { token: { colorPrimary: brand } }),
       components: { Button: { borderRadius: 8 } },
     },
   }, props.children)

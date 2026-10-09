@@ -46,6 +46,7 @@ export function CreateModal({
   const [confirmingPermission, setConfirmingPermission] = useState<string>()
   const [fullAccessAcknowledged, setFullAccessAcknowledged] = useState(false)
   const [addingWorkspace, setAddingWorkspace] = useState(false)
+  const [workspaceOpen, setWorkspaceOpen] = useState(false)
   const promptRef = useRef<TextAreaRef>(null)
   const caretRef = useRef(0)
   useEffect(() => {
@@ -73,6 +74,7 @@ export function CreateModal({
   const handleAddWorkspace = async (): Promise<void> => {
     if (onAddWorkspace === undefined || addingWorkspace) return
     setAddingWorkspace(true)
+    setWorkspaceOpen(false)
     setValidationError(undefined)
     try {
       const id = await onAddWorkspace()
@@ -221,15 +223,17 @@ export function CreateModal({
                     value={form.workspaceId === '' ? undefined : form.workspaceId}
                     placeholder={t('form.workspace')}
                     popupMatchSelectWidth={false}
+                    open={workspaceOpen}
+                    onOpenChange={setWorkspaceOpen}
+                    getPopupContainer={trigger => trigger.parentElement ?? document.body}
                     options={workspaces.map(item => ({ value: item.id, label: item.title }))}
                     onChange={value => update({ workspaceId: value })}
-                    dropdownRender={menu => (
-                      <div className="dsh-st-workspace-menu">
+                    popupRender={menu => (
+                      <div>
                         {menu}
-                        <div className="dsh-st-workspace-menu-rule" />
+                        <div style={{ height: 1, margin: '6px 8px', background: 'var(--dsw-alias-border-l2, rgba(255,255,255,.1))' }} />
                         <Button
                           type="link"
-                          className="dsh-st-add-workspace"
                           icon={<PlusIcon width={14} height={14} />}
                           disabled={addingWorkspace}
                           onMouseDown={event => event.preventDefault()}
@@ -242,8 +246,6 @@ export function CreateModal({
                     <div className="dsh-st-workspace-empty">
                       <Button
                         type="primary"
-                        size="small"
-                        className="dsh-st-add-workspace"
                         icon={<PlusIcon width={14} height={14} />}
                         disabled={addingWorkspace}
                         onClick={() => { void handleAddWorkspace() }}
