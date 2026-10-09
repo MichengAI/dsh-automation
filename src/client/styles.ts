@@ -84,7 +84,11 @@ const CSS_TEXT = `
 .dsh-st-skill-menu button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;border:0;border-radius:6px;background:transparent;color:inherit;padding:6px 8px;text-align:left;cursor:pointer}
 .dsh-st-skill-menu button[aria-selected="true"],.dsh-st-skill-menu button:hover{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#4b7cff) 16%,transparent)}
 .dsh-st-skill-menu code{color:var(--dsw-alias-label-tertiary);font-size:12px}
-.dsh-st-prompt-card textarea{padding:14px 16px 8px;font-size:14px;line-height:1.65;resize:none}
+.dsh-st-prompt-card textarea{position:relative;z-index:1;padding:14px 16px 8px;font-size:14px;line-height:1.65;resize:none;color:transparent !important;caret-color:var(--dsw-alias-label-primary,currentColor) !important;background:transparent !important}
+.dsh-st-prompt-card textarea::placeholder{color:var(--dsw-alias-label-tertiary)}
+.dsh-st-prompt-card textarea::selection{color:transparent;background:color-mix(in srgb,var(--dsw-alias-state-business-primary,#4b7cff) 28%,transparent)}
+.dsh-st-prompt-backdrop{position:absolute;z-index:0;inset:0;overflow:hidden;padding:14px 16px 8px;font-size:14px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;color:inherit}
+.dsh-st-skill-token{margin:0 -4px;padding:0 4px;border-radius:var(--dsw-radius-sm,4px);color:var(--dsw-alias-state-business-primary,#4b7cff);background:var(--dsw-alias-state-business-tertiary,color-mix(in srgb,var(--dsw-alias-state-business-primary,#4b7cff) 14%,transparent));font-weight:500;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .dsh-st-composer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 8px 6px}
 .dsh-st-composer-left,.dsh-st-composer-right{display:flex;align-items:center;gap:2px;min-width:0}
 .dsh-st-composer-left{flex:1}.dsh-st-composer-right{flex:none}

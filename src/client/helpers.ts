@@ -111,6 +111,28 @@ export function applySlashSkill(
   const next = `${text.slice(0, active.start)}${normalized} ${text.slice(caret)}`
   return { text: next, caret: active.start + normalized.length + 1 }
 }
+
+/** 把正文拆成普通文字和已登记技能标签。未登记的 `/token` 保持纯文本。 */
+export function splitSkillTokens(
+  text: string,
+  skills: readonly { readonly id: string; readonly name: string }[],
+): Array<{ readonly kind: 'text' | 'skill'; readonly text: string }> {
+  const names = new Set(skills.map(skill => skillGestureToken(skill).slice(1)))
+  const parts: Array<{ kind: 'text' | 'skill'; text: string }> = []
+  const pattern = /(^|\s)(\/[a-z0-9]+(?:-[a-z0-9]+)*)(?=\s|$)/gi
+  let cursor = 0
+  for (const match of text.matchAll(pattern)) {
+    const lead = match[1] ?? ''
+    const token = match[2] ?? ''
+    const start = (match.index ?? 0) + lead.length
+    if (!names.has(token.slice(1))) continue
+    if (start > cursor) parts.push({ kind: 'text', text: text.slice(cursor, start) })
+    parts.push({ kind: 'skill', text: token })
+    cursor = start + token.length
+  }
+  if (cursor < text.length || parts.length === 0) parts.push({ kind: 'text', text: text.slice(cursor) })
+  return parts
+}
 export function localDateTimeValue(date = new Date()): string {
   const future = new Date(date.getTime() + 60 * 60 * 1000)
   future.setMinutes(0, 0, 0)

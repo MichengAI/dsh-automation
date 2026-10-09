@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { activeSlashQuery, applySlashSkill, filterSlashSkills } from '../src/client/helpers.ts'
+import { activeSlashQuery, applySlashSkill, filterSlashSkills, splitSkillTokens } from '../src/client/helpers.ts'
 
 const skills = [
   { id: 'web-search', name: '网页搜索' },
@@ -22,4 +22,13 @@ test('召回按名称或 id 过滤，选中后替换正在输入的 /', () => {
   const applied = applySlashSkill('请用 /web', 7, '/web-search')
   assert.equal(applied.text, '请用 /web-search ')
   assert.equal(applied.caret, '请用 /web-search '.length)
+})
+
+test('已登记技能在正文里分成标签，未登记的斜杠保持纯文本', () => {
+  const parts = splitSkillTokens('请用 /web-search 和 /not-a-skill', skills)
+  assert.deepEqual(parts, [
+    { kind: 'text', text: '请用 ' },
+    { kind: 'skill', text: '/web-search' },
+    { kind: 'text', text: ' 和 /not-a-skill' },
+  ])
 })

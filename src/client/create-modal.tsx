@@ -8,6 +8,7 @@ import {
   applySlashSkill,
   defaultFormState,
   filterSlashSkills,
+  splitSkillTokens,
   skillGestureToken,
   type AutomationFormState,
   type ScheduleKind,
@@ -324,14 +325,21 @@ export function CreateModal({
                 </div>
               )}
               <div className="dsh-st-prompt-card">
+              <div className="dsh-st-prompt-backdrop" aria-hidden="true">{splitSkillTokens(form.prompt, skills).map((part, index) => part.kind === 'skill' ? <span key={index} className="dsh-st-skill-token">{part.text}</span> : <span key={index}>{part.text}</span>)}</div>
               <Input.TextArea
                 ref={promptRef}
+                spellCheck={false}
                 variant="borderless"
+                className="dsh-st-prompt-input"
                 value={form.prompt}
                 placeholder={t('form.promptPlaceholder')}
                 autoSize={{ minRows: 4, maxRows: 10 }}
                 onChange={event => { rememberCaret(event.target.selectionStart); update({ prompt: event.target.value }); setSlashDismissed(undefined) }}
                 onSelect={event => rememberCaret(event.currentTarget.selectionStart)}
+                onScroll={event => {
+                  const backdrop = event.currentTarget.closest('.dsh-st-prompt-card')?.querySelector('.dsh-st-prompt-backdrop')
+                  if (backdrop instanceof HTMLElement) backdrop.scrollTop = event.currentTarget.scrollTop
+                }}
                 onKeyDown={event => {
                   if (slash === undefined) return
                   if (event.key === 'Escape') {
