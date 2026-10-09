@@ -10,7 +10,7 @@ import {
 } from './native-tabs.js'
 import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
-import { addRegisteredWorkspace, resolveHostWorkspaceCreator } from './workspace-create.js'
+import { createdWorkspaceId, resolveDirectoryPicker } from './workspace-create.js'
 import { scheduledListHostActions } from './native-group-actions.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
 import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
@@ -116,12 +116,16 @@ export function apply(ctx: ClientContext): void {
   const permissionT = ctx.locale.bind('permission.access')
   const modelT = ctx.locale.bind('model')
   const runtime = createAutomationRuntime(ctx.connection.rpc)
-  const workspaceCreator = resolveHostWorkspaceCreator(ctx)
-  const addWorkspace = workspaceCreator === undefined ? undefined : (): Promise<string | undefined> => addRegisteredWorkspace({
-    creator: workspaceCreator,
-    refresh: () => runtime.refresh(),
-    listed: () => runtime.source.getSnapshot().snapshot?.workspaces ?? [],
-  })
+  const picker = resolveDirectoryPicker(ctx)
+  const addWorkspace = async (): Promise<string | undefined> => {
+    const picked = picker === undefined ? undefined : await picker.pickDirectory()
+    if (picked === undefined) {
+      if (picker === undefined) throw new Error('picker-unavailable')
+      return undefined
+    }
+    const registered = await runtime.registerWorkspace(picked)
+    return createdWorkspaceId(runtime.source.getSnapshot().snapshot?.workspaces ?? [], registered.path)
+  }
   const openTaskSettings = (request: AutomationTaskSettingsRequest): void => {
     requestAutomationTaskSettings(request)
     openSettingsSection(
@@ -145,7 +149,7 @@ export function apply(ctx: ClientContext): void {
       modelT,
       runtime,
       ...(props.close === undefined ? {} : { closeSettings: props.close }),
-      ...(addWorkspace === undefined ? {} : { addWorkspace }),
+      addWorkspace,
     })
   }))
   ctx.slots.inject('sidebar.schedule', () => ctx.slots.register({

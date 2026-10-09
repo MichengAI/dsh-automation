@@ -78,8 +78,8 @@ export function CreateModal({
       const id = await onAddWorkspace()
       if (id !== undefined) update({ workspaceId: id })
     } catch (caught) {
-      setValidationError(caught instanceof AddedWorkspaceMissingError || !(caught instanceof Error) || caught.message === ''
-        ? t('form.addWorkspaceFailed')
+      setValidationError(caught instanceof AddedWorkspaceMissingError || (caught instanceof Error && caught.message === 'picker-unavailable') || !(caught instanceof Error) || caught.message === ''
+        ? t(caught instanceof Error && caught.message === 'picker-unavailable' ? 'form.workspaceUnavailable' : 'form.addWorkspaceFailed')
         : caught.message)
     } finally {
       setAddingWorkspace(false)
@@ -229,8 +229,7 @@ export function CreateModal({
                         <Button
                           type="text"
                           block
-                          disabled={onAddWorkspace === undefined || addingWorkspace}
-                          {...(onAddWorkspace === undefined ? { title: t('form.workspaceUnavailable') } : {})}
+                          disabled={addingWorkspace}
                           onMouseDown={event => event.preventDefault()}
                           onClick={() => { void handleAddWorkspace() }}
                         >{t('form.addWorkspace')}</Button>
@@ -242,8 +241,7 @@ export function CreateModal({
                       <Button
                         type="link"
                         size="small"
-                        disabled={onAddWorkspace === undefined || addingWorkspace}
-                        {...(onAddWorkspace === undefined ? { title: t('form.workspaceUnavailable') } : {})}
+                        disabled={addingWorkspace}
                         onClick={() => { void handleAddWorkspace() }}
                       >{t('form.addWorkspace')}</Button>
                       <span className="dsh-st-error">{t('form.workspaceRequired')}</span>

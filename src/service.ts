@@ -633,6 +633,23 @@ export class AutomationService {
     });
   }
 
+  async registerWorkspaceDirectory(path: string): Promise<{ readonly id: string; readonly path: string }> {
+    const trimmed = path.trim();
+    if (trimmed === "") throw new AutomationRequestError("请选择工作区目录。");
+    const registry = this.ctx.workspaceRegistry as {
+      create?: (directory: string, title?: string) => Promise<{ id?: unknown; path?: unknown }>;
+    };
+    if (typeof registry.create !== "function") {
+      throw new AutomationRequestError("当前宿主不能新建工作区。");
+    }
+    const title = trimmed.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || trimmed;
+    const created = await registry.create(trimmed, title);
+    const id = created?.id === undefined ? "" : String(created.id);
+    const createdPath = typeof created?.path === "string" && created.path.trim() !== "" ? created.path : trimmed;
+    if (id === "") throw new AutomationRequestError("添加工作区失败。");
+    return { id, path: createdPath };
+  }
+
   async adoptSession(sessionId: string): Promise<void> {
     const id = sessionId.trim();
     if (id === "") return;

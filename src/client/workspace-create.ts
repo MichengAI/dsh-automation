@@ -73,21 +73,28 @@ function createdPath(value: unknown): string | undefined {
   return undefined
 }
 
-/** 宿主没有选目录或创建工作区能力时返回 undefined，调用方禁用按钮。 */
-export function resolveHostWorkspaceCreator(ctx: WorkspaceProbe): HostWorkspaceCreator | undefined {
+/** 只探测选目录。新建走 Host RPC，不因为客户端没有 workspaces.create 就把按钮禁用。 */
+export function resolveDirectoryPicker(ctx: WorkspaceProbe): { pickDirectory(): Promise<string | undefined> } | undefined {
   const uiWorkspace = probeService(ctx, 'uiWorkspace')
   const dialog = probeService(ctx, 'dialog')
-  const workspaces = probeService(ctx, 'workspaces')
   const pick = method(uiWorkspace, 'pickDirectory') ?? method(dialog, 'pickDirectory')
-  const create = method(workspaces, 'create')
-  const pickOwner = method(uiWorkspace, 'pickDirectory') === undefined ? dialog : uiWorkspace
-  if (pick === undefined || create === undefined) return undefined
+  const owner = method(uiWorkspace, 'pickDirectory') === undefined ? dialog : uiWorkspace
+  if (pick === undefined) return undefined
   return {
     async pickDirectory() {
-      return pickedPath(await pick.call(pickOwner))
+      return pickedPath(await pick.call(owner))
     },
+  }
+}
+
+/** @deprecated 测试兼容。创建不再要求客户端 workspaces.create。 */
+export function resolveHostWorkspaceCreator(ctx: WorkspaceProbe): HostWorkspaceCreator | undefined {
+  const picker = resolveDirectoryPicker(ctx)
+  if (picker === undefined) return undefined
+  return {
+    pickDirectory: () => picker.pickDirectory(),
     create(path: string) {
-      return Promise.resolve(create.call(workspaces, { path }))
+      return Promise.resolve({ path })
     },
   }
 }

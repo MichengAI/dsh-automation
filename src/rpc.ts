@@ -197,6 +197,10 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
     try {
       const payload = record(rawPayload, 'payload')
       switch (endpoint) {
+        case 'register-workspace': {
+          const registered = await service.registerWorkspaceDirectory(string(payload.path, 'path'))
+          return { ok: true, value: registered }
+        }
         case 'snapshot':
           return { ok: true, value: await snapshotValue(service, payload, signal) }
         case 'create': {

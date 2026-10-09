@@ -58,6 +58,7 @@ export interface AutomationRuntime {
   updateAutomation(automationId: string, input: CreateAutomationInput): Promise<void>
   runNow(automationId: string): Promise<void>
   markRunRead(runId: string): Promise<void>
+  registerWorkspace(path: string): Promise<{ id: string; path: string }>
   adoptSession(sessionId: string): Promise<void>
   forgetSession(sessionId: string): Promise<void>
   forgetAutomationSessions(automationId: string): Promise<void>
@@ -363,6 +364,11 @@ export function createAutomationRuntime(rpc: ClientRpc): AutomationRuntime {
     async markRunRead(runId) {
       const payload: MarkReadRequest = { sessionId: 'settings', runId }
       await mutateThenRefresh('mark-read', payload)
+    },
+    async registerWorkspace(path: string) {
+      const value = unwrapRpcResult<{ id: string; path: string }>(await rpc.call(CHANNEL, 'register-workspace', { path }))
+      await refresh()
+      return value
     },
     async adoptSession(sessionId) {
       unwrapRpcResult<unknown>(await rpc.call(CHANNEL, 'adopt-session', { sessionId }))
