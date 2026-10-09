@@ -46,7 +46,6 @@ export function CreateModal({
   const [confirmingPermission, setConfirmingPermission] = useState<string>()
   const [fullAccessAcknowledged, setFullAccessAcknowledged] = useState(false)
   const [addingWorkspace, setAddingWorkspace] = useState(false)
-  const [workspaceOpen, setWorkspaceOpen] = useState(false)
   const promptRef = useRef<TextAreaRef>(null)
   const caretRef = useRef(0)
   useEffect(() => {
@@ -74,8 +73,8 @@ export function CreateModal({
   const handleAddWorkspace = async (): Promise<void> => {
     if (onAddWorkspace === undefined || addingWorkspace) return
     setAddingWorkspace(true)
-    setWorkspaceOpen(false)
     setValidationError(undefined)
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
     try {
       const id = await onAddWorkspace()
       if (id !== undefined) update({ workspaceId: id })
@@ -223,9 +222,6 @@ export function CreateModal({
                     value={form.workspaceId === '' ? undefined : form.workspaceId}
                     placeholder={t('form.workspace')}
                     popupMatchSelectWidth={false}
-                    open={workspaceOpen}
-                    onOpenChange={setWorkspaceOpen}
-                    getPopupContainer={trigger => trigger.parentElement ?? document.body}
                     options={workspaces.map(item => ({ value: item.id, label: item.title }))}
                     onChange={value => update({ workspaceId: value })}
                     popupRender={menu => (
@@ -234,10 +230,18 @@ export function CreateModal({
                         <div style={{ height: 1, margin: '6px 8px', background: 'var(--dsw-alias-border-l2, rgba(255,255,255,.1))' }} />
                         <Button
                           type="link"
+                          className="dsh-st-add-workspace"
                           icon={<PlusIcon width={14} height={14} />}
                           disabled={addingWorkspace}
-                          onMouseDown={event => event.preventDefault()}
-                          onClick={() => { void handleAddWorkspace() }}
+                          onMouseDown={event => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                          }}
+                          onClick={event => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            void handleAddWorkspace()
+                          }}
                         >{t('form.addWorkspace')}</Button>
                       </div>
                     )}

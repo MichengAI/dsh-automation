@@ -61,6 +61,7 @@ const CSS_TEXT = `
 .dsh-st-error{color:#ff6b6b;font-size:12px}
 .dsh-st-workspace-empty{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .dsh-st-workspace-note{color:var(--dsw-alias-state-warning-primary,#d29922);font-size:12px;line-height:1.5}
+.dsh-st-add-workspace.ant-btn-variant-link,.dsh-st-add-workspace.ant-btn-link{color:var(--dsw-alias-brand-primary,var(--dsh-accent,#4b7cff));font-weight:550}
 .dsh-st-muted{color:var(--dsw-alias-label-secondary)}
 .dsh-st-form{display:flex;flex-direction:column;gap:12px}.dsh-st-form>p{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}
 .dsh-st-field{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:100%;font-size:13px}
