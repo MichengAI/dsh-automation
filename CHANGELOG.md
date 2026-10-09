@@ -6,6 +6,14 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.61 - 2026-10-09
+
+- The new-task form can add a workspace. An existing workspace no longer blocks that action. After you choose a folder, the new workspace is selected and the list closes.
+- Add workspace matches Instant Messaging: a plus icon, and blue at rest instead of only on hover.
+- Workspace, model, reasoning effort, and permission sit in two columns above the prompt. Type / in the prompt to recall a skill. Recalled skills appear as chips, like chat.
+- Interval is a short number: every N minutes. Every few days is every N days at a chosen time, with a one-line explanation.
+- Fully quit and reopen DSH Desktop after upgrading. A refresh is not enough.
+
 ## 0.1.60 - 2026-10-08
 
 - The Tasks / Schedule sidebar keeps its layout when another plugin reloads. Its runtime styles now belong to this plugin (#16).
