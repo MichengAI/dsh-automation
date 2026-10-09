@@ -68,6 +68,9 @@ const CSS_TEXT = `
 .dsh-st-field>.ant-input,.dsh-st-field>.ant-input-affix-wrapper,.dsh-st-field>.ant-input-textarea{width:100%}
 .dsh-st-plan-row{display:flex;align-items:flex-start;gap:16px}.dsh-st-plan-row>.dsh-st-field:first-child{flex:1;min-width:0}.dsh-st-concurrency{flex:0 0 128px}
 .dsh-st-inline{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.dsh-st-inline>.ant-select{flex:0 1 180px;width:auto;min-width:120px}
+.dsh-st-amount{flex:none;width:128px}
+.dsh-st-inline .dsh-st-amount{width:128px !important}
+.dsh-st-plan-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
 .dsh-st-time{display:inline-flex;align-items:center;gap:6px;flex:none}.dsh-st-time .ant-select{width:88px;flex:none}.dsh-st-time-sep{color:var(--dsw-alias-label-secondary)}
 .dsh-st-suffix{color:var(--dsw-alias-label-secondary);font-size:13px;white-space:nowrap}
 .dsh-st-settings{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}

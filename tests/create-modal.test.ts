@@ -76,6 +76,17 @@ test('工作区、模型、推理等级和权限在输入区上方两列排列�
   assert.match(styles, /grid-template-columns:1fr 1fr/)
 })
 
+test('间隔输入是短框，自定义写成每隔几天', () => {
+  const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
+  const styles = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
+  const locales = readFileSync(new URL('../src/client/locales.ts', import.meta.url), 'utf8')
+  assert.match(modal, /dsh-st-amount/)
+  assert.match(modal, /form\.every/)
+  assert.match(modal, /form\.customHint/)
+  assert.match(styles, /\.dsh-st-amount\{[^}]*width:128px/)
+  assert.match(locales, /每隔几天/)
+})
+
 test('删除任务必须先显示确认对话框', () => {
   const view = readFileSync(new URL('../src/client/AutomationView.tsx', import.meta.url), 'utf8')
   const confirmation = readFileSync(new URL('../src/client/delete-confirmation.tsx', import.meta.url), 'utf8')

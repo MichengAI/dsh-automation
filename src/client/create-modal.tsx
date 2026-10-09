@@ -174,7 +174,7 @@ export function CreateModal({
                 {form.scheduleKind === 'once' && (
                   <Input type="date" min={today} value={datePart} onChange={event => update({ onceAt: clampOnceAt(`${event.target.value}T${timePart}`) })} />
                 )}
-                {(form.scheduleKind === 'once' || form.scheduleKind === 'daily' || form.scheduleKind === 'weekly' || form.scheduleKind === 'monthly' || form.scheduleKind === 'custom') && (
+                {(form.scheduleKind === 'once' || form.scheduleKind === 'daily' || form.scheduleKind === 'weekly' || form.scheduleKind === 'monthly') && (
                   <TimeSelect
                     value={form.scheduleKind === 'once' ? timePart : form.time}
                     onChange={value => {
@@ -184,7 +184,10 @@ export function CreateModal({
                   />
                 )}
                 {form.scheduleKind === 'interval' && (
-                  <Input type="number" min={1} value={form.everyMinutes} addonAfter={t('form.minutesShort')} onChange={event => update({ everyMinutes: event.target.value })} />
+                  <>
+                    <span className="dsh-st-suffix">{t('form.every')}</span>
+                    <Input className="dsh-st-amount" type="number" min={1} value={form.everyMinutes} addonAfter={t('form.minutes')} onChange={event => update({ everyMinutes: event.target.value })} />
+                  </>
                 )}
                 {form.scheduleKind === 'hourly' && (
                   <>
@@ -203,9 +206,15 @@ export function CreateModal({
                   />
                 )}
                 {form.scheduleKind === 'custom' && (
-                  <Input type="number" min={1} value={form.customDays} addonAfter={t('form.daysShort')} onChange={event => update({ customDays: event.target.value })} />
+                  <>
+                    <span className="dsh-st-suffix">{t('form.every')}</span>
+                    <Input className="dsh-st-amount" type="number" min={1} value={form.customDays} addonAfter={t('form.daysShort')} onChange={event => update({ customDays: event.target.value })} />
+                    <TimeSelect value={form.time} onChange={value => update({ time: value })} />
+                  </>
                 )}
               </div>
+              {form.scheduleKind === 'interval' && <span className="dsh-st-plan-hint">{t('form.intervalHint')}</span>}
+              {form.scheduleKind === 'custom' && <span className="dsh-st-plan-hint">{t('form.customHint')}</span>}
             </div>
             <label className="dsh-st-field dsh-st-concurrency" title={t('form.maxConcurrentRunsHint')}>
               {t('form.maxConcurrentRuns')}
