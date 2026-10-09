@@ -117,12 +117,16 @@ export function CreateModal({
   const selected = models.find(item => `${item.provider}::${item.model}` === form.modelKey)
   const reasoning = selected?.reasoning
   const slash = activeSlashQuery(form.prompt, caret)
-  const slashMatches = slash === undefined || slashDismissed === slash.query ? [] : filterSlashSkills(skills, slash.query).slice(0, 8)
+  const slashMatches = slash === undefined || slashDismissed === slash.query ? [] : filterSlashSkills(skills, slash.query)
   const slashActive = Math.min(slashIndex, Math.max(slashMatches.length - 1, 0))
   const rememberCaret = (value: number): void => {
     caretRef.current = value
     setCaret(value)
   }
+  useEffect(() => {
+    const selected = document.querySelector('.dsh-st-skill-menu [aria-selected="true"]')
+    if (selected instanceof HTMLElement) selected.scrollIntoView({ block: 'nearest' })
+  }, [slashActive, slash?.query])
   const chooseSlashSkill = (skill: { id: string; name: string }): void => {
     const next = applySlashSkill(form.prompt, caretRef.current, skillGestureToken(skill))
     update({ prompt: next.text })
@@ -301,7 +305,25 @@ export function CreateModal({
           </div>
           <div className="dsh-st-field">
             <span className="dsh-st-prompt-label">{t('form.prompt')}<em>{t('form.slashHint')}</em></span>
-            <div className="dsh-st-prompt-card">
+            <div className="dsh-st-prompt-anchor">
+              {slash !== undefined && slashDismissed !== slash.query && (
+                <div className="dsh-st-skill-menu" role="listbox">
+                  {slashMatches.length === 0 ? <p>{t('form.slashEmpty')}</p> : slashMatches.map((item, index) => (
+                    <button
+                      type="button"
+                      key={item.id}
+                      role="option"
+                      aria-selected={index === slashActive}
+                      onMouseDown={event => event.preventDefault()}
+                      onClick={() => chooseSlashSkill(item)}
+                    >
+                      <span>{item.name}</span>
+                      <code>{skillGestureToken(item)}</code>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="dsh-st-prompt-card">
               <Input.TextArea
                 ref={promptRef}
                 variant="borderless"
@@ -331,23 +353,7 @@ export function CreateModal({
                   }
                 }}
               />
-              {slash !== undefined && slashDismissed !== slash.query && (
-                <div className="dsh-st-skill-menu" role="listbox">
-                  {slashMatches.length === 0 ? <p>{t('form.slashEmpty')}</p> : slashMatches.map((item, index) => (
-                    <button
-                      type="button"
-                      key={item.id}
-                      role="option"
-                      aria-selected={index === slashActive}
-                      onMouseDown={event => event.preventDefault()}
-                      onClick={() => chooseSlashSkill(item)}
-                    >
-                      <span>{item.name}</span>
-                      <code>{skillGestureToken(item)}</code>
-                    </button>
-                  ))}
-                </div>
-              )}
+            </div>
             </div>
           </div>
           {modelFailures.map(failure => (

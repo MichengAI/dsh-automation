@@ -78,7 +78,8 @@ const CSS_TEXT = `
 .dsh-st-prompt-label{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .dsh-st-prompt-label em{color:var(--dsw-alias-label-tertiary);font-size:12px;font-style:normal;font-weight:450}
 .dsh-st-prompt-card{position:relative;display:flex;flex-direction:column;flex:none;border:1px solid var(--dsw-alias-border-l2);border-radius:16px;background:rgba(255,255,255,.03);overflow:hidden}
-.dsh-st-skill-menu{position:absolute;z-index:5;left:8px;right:8px;bottom:8px;max-height:180px;margin:0;padding:4px;overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1,#1c1c1c);box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.dsh-st-prompt-anchor{position:relative}
+.dsh-st-skill-menu{position:absolute;z-index:30;left:0;right:0;bottom:calc(100% + 6px);max-height:320px;margin:0;padding:4px;overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1,#1c1c1c);box-shadow:0 8px 24px rgba(0,0,0,.28)}
 .dsh-st-skill-menu p{margin:6px 8px;color:var(--dsw-alias-label-tertiary);font-size:12px}
 .dsh-st-skill-menu button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;border:0;border-radius:6px;background:transparent;color:inherit;padding:6px 8px;text-align:left;cursor:pointer}
 .dsh-st-skill-menu button[aria-selected="true"],.dsh-st-skill-menu button:hover{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#4b7cff) 16%,transparent)}

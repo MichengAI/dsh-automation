@@ -68,6 +68,8 @@ test('工作区、模型、推理等级和权限在输入区上方两列排列�
   assert.match(modal, /form\.fieldEffort/)
   assert.match(modal, /form\.fieldPermission/)
   assert.match(modal, /dsh-st-skill-menu/)
+  assert.doesNotMatch(modal, /slice\(0,\s*8\)/)
+  assert.match(styles, /\.dsh-st-skill-menu\{[^}]*bottom:calc\(100%/)
   assert.match(modal, /activeSlashQuery/)
   assert.doesNotMatch(modal, /form\.skills/)
   assert.match(styles, /grid-template-columns:1fr 1fr/)
