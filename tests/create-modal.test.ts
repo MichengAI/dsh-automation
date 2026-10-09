@@ -36,7 +36,9 @@ test('权限选择与 Chat 一致，切换到完全访问时要求风险确认',
 
 test('任务表单可以添加工作区，未登记时不能保存', () => {
   const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
+  const styles = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
   assert.match(modal, /PlusIcon/)
+  assert.match(styles, /\.dsh-st-add-workspace\.ant-btn\{[^}]*!important/)
   assert.match(modal, /type="primary"/)
   assert.match(modal, /popupRender/)
   assert.match(modal, /document\.activeElement instanceof HTMLElement/)

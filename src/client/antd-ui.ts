@@ -66,7 +66,7 @@ export function AntdProvider(props: { locale?: Locale; children?: React.ReactNod
     button: { autoInsertSpace: false },
     theme: {
       algorithm: dark ? darkAlgorithm : defaultAlgorithm,
-      ...(brand === '' ? {} : { token: { colorPrimary: brand } }),
+      ...(brand === '' ? {} : { token: { colorPrimary: brand, colorLink: brand, colorLinkHover: brand, colorLinkActive: brand } }),
       components: { Button: { borderRadius: 8 } },
     },
   }, props.children)
