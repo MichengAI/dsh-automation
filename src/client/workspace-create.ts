@@ -73,16 +73,32 @@ function createdPath(value: unknown): string | undefined {
   return undefined
 }
 
-/** 只探测选目录。新建走 Host RPC，不因为客户端没有 workspaces.create 就把按钮禁用。 */
+/** 桌面壳把系统选目录暴露在这个全局对象上，设置弹窗里只能走它才会弹出窗口。 */
+function nativeDirectoryPicker(): { pick(): Promise<string | null> } | undefined {
+  const host = globalThis as { __DSH_DIRECTORY_PICKER__?: { pick?: unknown } }
+  const pick = host.__DSH_DIRECTORY_PICKER__?.pick
+  if (typeof pick !== 'function') return undefined
+  return { pick: () => pick.call(host.__DSH_DIRECTORY_PICKER__) as Promise<string | null> }
+}
+
+/** 只探测选目录。桌面优先用原生窗口；否则再调宿主服务。 */
 export function resolveDirectoryPicker(ctx: WorkspaceProbe): { pickDirectory(): Promise<string | undefined> } | undefined {
+  const native = nativeDirectoryPicker()
+  if (native !== undefined) {
+    return {
+      async pickDirectory() {
+        return pickedPath(await native.pick())
+      },
+    }
+  }
   const uiWorkspace = probeService(ctx, 'uiWorkspace')
   const dialog = probeService(ctx, 'dialog')
-  const pick = method(uiWorkspace, 'pickDirectory') ?? method(dialog, 'pickDirectory')
-  const owner = method(uiWorkspace, 'pickDirectory') === undefined ? dialog : uiWorkspace
-  if (pick === undefined) return undefined
+  const owner = method(uiWorkspace, 'pickDirectory') !== undefined ? uiWorkspace : dialog
+  const pick = method(owner, 'pickDirectory')
+  if (pick === undefined || owner === undefined) return undefined
   return {
     async pickDirectory() {
-      return pickedPath(await pick.call(owner))
+      return pickedPath(await (owner as { pickDirectory(): Promise<unknown> }).pickDirectory())
     },
   }
 }

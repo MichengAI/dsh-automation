@@ -4,6 +4,7 @@ import {
   AddedWorkspaceMissingError,
   addRegisteredWorkspace,
   createdWorkspaceId,
+  resolveDirectoryPicker,
   resolveHostWorkspaceCreator,
   workspaceIdForPath,
 } from '../src/client/workspace-create.ts'
@@ -55,4 +56,28 @@ test('不硬读未注入的 workspaces，只探测 reflect/get', async () => {
   assert.equal(await creator.pickDirectory(), 'D:/repo/app')
   assert.deepEqual(await creator.create('D:/repo/app'), { path: 'D:/repo/app' })
   assert.equal(resolveHostWorkspaceCreator({ get: () => undefined }), undefined)
+})
+
+test('桌面原生选目录会弹出，取消则不创建', async () => {
+  const host = globalThis as { __DSH_DIRECTORY_PICKER__?: { pick(): Promise<string | null> } }
+  const previous = host.__DSH_DIRECTORY_PICKER__
+  let nativeCalls = 0
+  host.__DSH_DIRECTORY_PICKER__ = {
+    async pick() {
+      nativeCalls += 1
+      return 'D:/work/app'
+    },
+  }
+  try {
+    const picker = resolveDirectoryPicker({
+      get() { throw new Error('should not use the in-app picker') },
+    })
+    assert.equal(await picker?.pickDirectory(), 'D:/work/app')
+    assert.equal(nativeCalls, 1)
+    host.__DSH_DIRECTORY_PICKER__ = { async pick() { return null } }
+    assert.equal(await resolveDirectoryPicker({})?.pickDirectory(), undefined)
+  } finally {
+    if (previous === undefined) delete host.__DSH_DIRECTORY_PICKER__
+    else host.__DSH_DIRECTORY_PICKER__ = previous
+  }
 })
