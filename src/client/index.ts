@@ -10,6 +10,7 @@ import {
 } from './native-tabs.js'
 import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
+import { addRegisteredWorkspace, resolveHostWorkspaceCreator } from './workspace-create.js'
 import { scheduledListHostActions } from './native-group-actions.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
 import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
@@ -115,6 +116,12 @@ export function apply(ctx: ClientContext): void {
   const permissionT = ctx.locale.bind('permission.access')
   const modelT = ctx.locale.bind('model')
   const runtime = createAutomationRuntime(ctx.connection.rpc)
+  const workspaceCreator = resolveHostWorkspaceCreator(ctx)
+  const addWorkspace = workspaceCreator === undefined ? undefined : (): Promise<string | undefined> => addRegisteredWorkspace({
+    creator: workspaceCreator,
+    refresh: () => runtime.refresh(),
+    listed: () => runtime.source.getSnapshot().snapshot?.workspaces ?? [],
+  })
   const openTaskSettings = (request: AutomationTaskSettingsRequest): void => {
     requestAutomationTaskSettings(request)
     openSettingsSection(
@@ -132,7 +139,14 @@ export function apply(ctx: ClientContext): void {
     label: () => t('tab'),
     icon: 'schedule',
   }, function ScheduledTasksSettings(props: { close?: () => void }) {
-    return createElement(AutomationView, { t, permissionT, modelT, runtime, ...(props.close === undefined ? {} : { closeSettings: props.close }) })
+    return createElement(AutomationView, {
+      t,
+      permissionT,
+      modelT,
+      runtime,
+      ...(props.close === undefined ? {} : { closeSettings: props.close }),
+      ...(addWorkspace === undefined ? {} : { addWorkspace }),
+    })
   }))
   ctx.slots.inject('sidebar.schedule', () => ctx.slots.register({
     name: 'sidebar.schedule',

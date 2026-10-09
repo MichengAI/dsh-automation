@@ -34,6 +34,13 @@ test('权限选择与 Chat 一致，切换到完全访问时要求风险确认',
   assert.equal(shouldConfirmFullAccess('danger-full-access', 'read-only'), false)
 })
 
+test('任务表单可以添加工作区，未登记时不能保存', () => {
+  const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
+  assert.match(modal, /form\.addWorkspace/)
+  assert.match(modal, /!workspaceReady/)
+  assert.match(modal, /form\.workspaceRequired/)
+})
+
 test('任务模型用分组选择和推理等级选择，不再自绘两层面板', () => {
   const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
   const styles = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')

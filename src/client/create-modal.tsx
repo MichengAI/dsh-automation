@@ -11,6 +11,7 @@ import {
   type ScheduleKind,
 } from './helpers.js'
 import { shouldConfirmFullAccess } from './create-modal-logic.js'
+import { AddedWorkspaceMissingError } from './workspace-create.js'
 import { FolderIcon, ShieldIcon, SparkleIcon } from './icons.js'
 import type { TextAreaRef } from 'antd/es/input/TextArea.js'
 import { AntdProvider, Button, Checkbox, Dropdown, Input, Modal, Select } from './antd-ui.js'
@@ -21,7 +22,7 @@ const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2,
 const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
 
 export function CreateModal({
-  t, permissionT, modelT, busy, workspaces, models, modelFailures, defaultModel, skills, permissions, defaultPermission, draft, editing, onClose, onSubmit,
+  t, permissionT, modelT, busy, workspaces, models, modelFailures, defaultModel, skills, permissions, defaultPermission, draft, editing, onClose, onSubmit, onAddWorkspace,
 }: {
   readonly t: Translate
   readonly permissionT: PermissionTranslate
@@ -38,11 +39,13 @@ export function CreateModal({
   readonly editing?: boolean
   readonly onClose: () => void
   readonly onSubmit: (form: AutomationFormState) => Promise<void>
+  readonly onAddWorkspace?: () => Promise<string | undefined>
 }): JSX.Element {
   const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel, defaultPermission), ...draft }))
   const [validationError, setValidationError] = useState<string>()
   const [confirmingPermission, setConfirmingPermission] = useState<string>()
   const [fullAccessAcknowledged, setFullAccessAcknowledged] = useState(false)
+  const [addingWorkspace, setAddingWorkspace] = useState(false)
   const promptRef = useRef<TextAreaRef>(null)
   const caretRef = useRef(0)
   useEffect(() => {
@@ -65,6 +68,22 @@ export function CreateModal({
   const update = (patch: Partial<AutomationFormState>): void => {
     setForm(current => ({ ...current, ...patch }))
     setValidationError(undefined)
+  }
+  const workspaceReady = workspaces.some(item => item.id === form.workspaceId)
+  const handleAddWorkspace = async (): Promise<void> => {
+    if (onAddWorkspace === undefined || addingWorkspace) return
+    setAddingWorkspace(true)
+    setValidationError(undefined)
+    try {
+      const id = await onAddWorkspace()
+      if (id !== undefined) update({ workspaceId: id })
+    } catch (caught) {
+      setValidationError(caught instanceof AddedWorkspaceMissingError || !(caught instanceof Error) || caught.message === ''
+        ? t('form.addWorkspaceFailed')
+        : caught.message)
+    } finally {
+      setAddingWorkspace(false)
+    }
   }
   const choosePermission = (permission: AutomationFormState['permission']): void => {
     if (shouldConfirmFullAccess(form.permission, permission)) {
@@ -115,7 +134,7 @@ export function CreateModal({
         destroyOnHidden
         footer={[
           <Button key="cancel" disabled={busy} onClick={onClose}>{t('form.cancel')}</Button>,
-          <Button key="save" htmlType="submit" form="dsh-st-create-form" type="primary" disabled={busy}>{t('modal.save')}</Button>,
+          <Button key="save" htmlType="submit" form="dsh-st-create-form" type="primary" disabled={busy || addingWorkspace || !workspaceReady}>{t('modal.save')}</Button>,
         ]}
       >
         <form id="dsh-st-create-form" className="dsh-st-form" onSubmit={(event) => { void handleSubmit(event) }}>
@@ -199,12 +218,37 @@ export function CreateModal({
                     variant="borderless"
                     size="small"
                     prefix={<FolderIcon width={14} height={14} />}
-                    value={form.workspaceId}
+                    value={form.workspaceId === '' ? undefined : form.workspaceId}
                     placeholder={t('form.workspace')}
                     popupMatchSelectWidth={false}
                     options={workspaces.map(item => ({ value: item.id, label: item.title }))}
                     onChange={value => update({ workspaceId: value })}
+                    dropdownRender={menu => (
+                      <>
+                        {menu}
+                        <Button
+                          type="text"
+                          block
+                          disabled={onAddWorkspace === undefined || addingWorkspace}
+                          {...(onAddWorkspace === undefined ? { title: t('form.workspaceUnavailable') } : {})}
+                          onMouseDown={event => event.preventDefault()}
+                          onClick={() => { void handleAddWorkspace() }}
+                        >{t('form.addWorkspace')}</Button>
+                      </>
+                    )}
                   />
+                  {workspaces.length === 0 && (
+                    <>
+                      <Button
+                        type="link"
+                        size="small"
+                        disabled={onAddWorkspace === undefined || addingWorkspace}
+                        {...(onAddWorkspace === undefined ? { title: t('form.workspaceUnavailable') } : {})}
+                        onClick={() => { void handleAddWorkspace() }}
+                      >{t('form.addWorkspace')}</Button>
+                      <span className="dsh-st-error">{t('form.workspaceRequired')}</span>
+                    </>
+                  )}
                   <Dropdown
                     menu={{ items: skills.length === 0 ? [{ key: 'empty', label: t('form.skillsEmpty'), disabled: true }] : skills.map(item => ({ key: item.id, label: item.name, onClick: () => insertSkill(item) })) }}
                   >

@@ -61,7 +61,7 @@ const EXAMPLES: readonly { readonly name: string; readonly scheduleKind: Schedul
   { name: '工作日早报', scheduleKind: 'weekly', time: '08:00', weekdays: [1, 2, 3, 4, 5] },
 ]
 
-export function AutomationView({ t, permissionT, modelT, runtime, closeSettings }: AutomationViewProps): JSX.Element {
+export function AutomationView({ t, permissionT, modelT, runtime, closeSettings, addWorkspace }: AutomationViewProps): JSX.Element {
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const [tab, setTab] = useState<Tab>('mine')
   const [query, setQuery] = useState('')
@@ -332,6 +332,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings 
           editing={editingId !== undefined}
           {...(draft === undefined ? {} : { draft })}
           onClose={closeModal}
+          {...(addWorkspace === undefined ? {} : { onAddWorkspace: addWorkspace })}
           onSubmit={async (form) => {
             const input = buildCreateInput(form, workspaces, models, new Date(), {
               allowPastOnce: editingId !== undefined,
