@@ -79,6 +79,38 @@ export function insertSkillGesture(
   const inserted = `${lead}${normalized} `
   return { text: prefix + inserted + suffix, caret: prefix.length + inserted.length }
 }
+
+/** 光标前正在输入的 `/query`。词中间的斜杠（如网址）不召回。 */
+export function activeSlashQuery(text: string, caret: number): { readonly start: number; readonly query: string } | undefined {
+  const at = Math.min(Math.max(caret, 0), text.length)
+  const match = /(?:^|\s)\/([^\s/]*)$/.exec(text.slice(0, at))
+  if (match === null) return undefined
+  const query = match[1] ?? ''
+  return { start: at - query.length - 1, query }
+}
+
+/** 按技能名或 id 过滤；空查询返回全部。 */
+export function filterSlashSkills<T extends { readonly id: string; readonly name: string }>(
+  skills: readonly T[],
+  query: string,
+): T[] {
+  const needle = query.trim().toLowerCase()
+  if (needle === '') return [...skills]
+  return skills.filter(item => item.id.toLowerCase().includes(needle) || item.name.toLowerCase().includes(needle))
+}
+
+/** 用选中的技能 token 替换光标处正在输入的 `/query`。 */
+export function applySlashSkill(
+  text: string,
+  caret: number,
+  token: string,
+): { readonly text: string; readonly caret: number } {
+  const active = activeSlashQuery(text, caret)
+  const normalized = token.startsWith('/') ? token : `/${token}`
+  if (active === undefined) return insertSkillGesture(text, normalized, caret)
+  const next = `${text.slice(0, active.start)}${normalized} ${text.slice(caret)}`
+  return { text: next, caret: active.start + normalized.length + 1 }
+}
 export function localDateTimeValue(date = new Date()): string {
   const future = new Date(date.getTime() + 60 * 60 * 1000)
   future.setMinutes(0, 0, 0)

@@ -70,7 +70,19 @@ const CSS_TEXT = `
 .dsh-st-inline{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.dsh-st-inline>.ant-select{flex:0 1 180px;width:auto;min-width:120px}
 .dsh-st-time{display:inline-flex;align-items:center;gap:6px;flex:none}.dsh-st-time .ant-select{width:88px;flex:none}.dsh-st-time-sep{color:var(--dsw-alias-label-secondary)}
 .dsh-st-suffix{color:var(--dsw-alias-label-secondary);font-size:13px;white-space:nowrap}
-.dsh-st-prompt-card{display:flex;flex-direction:column;flex:none;border:1px solid var(--dsw-alias-border-l2);border-radius:16px;background:rgba(255,255,255,.03);overflow:hidden}
+.dsh-st-settings{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.dsh-st-picker-field{display:flex;min-width:0;flex-direction:column;gap:6px;font-size:13px}
+.dsh-st-picker-field>span{color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:550}
+.dsh-st-settings .ant-select{width:100%;min-width:0}
+.dsh-st-settings .ant-select-selector{min-height:36px}
+.dsh-st-prompt-label{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.dsh-st-prompt-label em{color:var(--dsw-alias-label-tertiary);font-size:12px;font-style:normal;font-weight:450}
+.dsh-st-prompt-card{position:relative;display:flex;flex-direction:column;flex:none;border:1px solid var(--dsw-alias-border-l2);border-radius:16px;background:rgba(255,255,255,.03);overflow:hidden}
+.dsh-st-skill-menu{position:absolute;z-index:5;left:8px;right:8px;bottom:8px;max-height:180px;margin:0;padding:4px;overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;background:var(--dsw-alias-bg-layer-1,#1c1c1c);box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.dsh-st-skill-menu p{margin:6px 8px;color:var(--dsw-alias-label-tertiary);font-size:12px}
+.dsh-st-skill-menu button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;border:0;border-radius:6px;background:transparent;color:inherit;padding:6px 8px;text-align:left;cursor:pointer}
+.dsh-st-skill-menu button[aria-selected="true"],.dsh-st-skill-menu button:hover{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#4b7cff) 16%,transparent)}
+.dsh-st-skill-menu code{color:var(--dsw-alias-label-tertiary);font-size:12px}
 .dsh-st-prompt-card textarea{padding:14px 16px 8px;font-size:14px;line-height:1.65;resize:none}
 .dsh-st-composer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 8px 6px}
 .dsh-st-composer-left,.dsh-st-composer-right{display:flex;align-items:center;gap:2px;min-width:0}

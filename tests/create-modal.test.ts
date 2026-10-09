@@ -57,6 +57,22 @@ test('任务模型用分组选择和推理等级选择，不再自绘两层面�
   assert.doesNotMatch(styles, /\.dsh-st-select-menu/)
 })
 
+test('工作区、模型、推理等级和权限在输入区上方两列排列，技能用 / 召回', () => {
+  const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
+  const styles = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
+  const settingsAt = modal.indexOf('dsh-st-settings')
+  const promptAt = modal.indexOf("t('form.prompt')")
+  assert.ok(settingsAt >= 0 && promptAt > settingsAt)
+  assert.match(modal, /form\.fieldWorkspace/)
+  assert.match(modal, /form\.fieldModel/)
+  assert.match(modal, /form\.fieldEffort/)
+  assert.match(modal, /form\.fieldPermission/)
+  assert.match(modal, /dsh-st-skill-menu/)
+  assert.match(modal, /activeSlashQuery/)
+  assert.doesNotMatch(modal, /form\.skills/)
+  assert.match(styles, /grid-template-columns:1fr 1fr/)
+})
+
 test('删除任务必须先显示确认对话框', () => {
   const view = readFileSync(new URL('../src/client/AutomationView.tsx', import.meta.url), 'utf8')
   const confirmation = readFileSync(new URL('../src/client/delete-confirmation.tsx', import.meta.url), 'utf8')
