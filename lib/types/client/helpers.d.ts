@@ -38,6 +38,29 @@ export declare function insertSkillGesture(prompt: string, token: string, caret:
     readonly text: string;
     readonly caret: number;
 };
+/** 光标前正在输入的 `/query`。词中间的斜杠（如网址）不召回。 */
+export declare function activeSlashQuery(text: string, caret: number): {
+    readonly start: number;
+    readonly query: string;
+} | undefined;
+/** 按技能名或 id 过滤；空查询返回全部。 */
+export declare function filterSlashSkills<T extends {
+    readonly id: string;
+    readonly name: string;
+}>(skills: readonly T[], query: string): T[];
+/** 用选中的技能 token 替换光标处正在输入的 `/query`。 */
+export declare function applySlashSkill(text: string, caret: number, token: string): {
+    readonly text: string;
+    readonly caret: number;
+};
+/** 把正文拆成普通文字和已登记技能标签。未登记的 `/token` 保持纯文本。 */
+export declare function splitSkillTokens(text: string, skills: readonly {
+    readonly id: string;
+    readonly name: string;
+}[]): Array<{
+    readonly kind: 'text' | 'skill';
+    readonly text: string;
+}>;
 export declare function localDateTimeValue(date?: Date): string;
 export declare function defaultFormState(now?: Date, workspaces?: readonly WorkspaceOption[], defaultModel?: ModelOption | null, defaultPermission?: string): AutomationFormState;
 export declare function buildCreateInput(form: AutomationFormState, workspaces: readonly WorkspaceOption[], models: readonly ModelOption[], now?: Date, options?: {

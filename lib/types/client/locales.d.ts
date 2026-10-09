@@ -107,6 +107,16 @@ export declare const en: {
     readonly "sort.default.save": "Set as default";
     readonly "sort.default.saved": "Default";
     readonly "form.workspace": "Workspace";
+    readonly "form.fieldWorkspace": "Workspace";
+    readonly "form.fieldModel": "Model";
+    readonly "form.fieldEffort": "Reasoning";
+    readonly "form.fieldPermission": "Permission";
+    readonly "form.slashHint": "Type / to insert a skill";
+    readonly "form.slashEmpty": "No matching skills";
+    readonly "form.addWorkspace": "Add workspace";
+    readonly "form.workspaceRequired": "Add a registered workspace before saving.";
+    readonly "form.workspaceUnavailable": "This Host cannot create workspaces.";
+    readonly "form.addWorkspaceFailed": "Could not add the workspace.";
     readonly "form.workspacePath": "Folder path";
     readonly "form.workspacePathPlaceholder": "D:\\work\\project";
     readonly "form.model": "Model";
@@ -153,7 +163,10 @@ export declare const en: {
     readonly "form.planTime": "Schedule";
     readonly "form.hourly": "Hourly";
     readonly "form.monthly": "Monthly";
-    readonly "form.custom": "Custom";
+    readonly "form.custom": "Every few days";
+    readonly "form.intervalHint": "Runs every this many minutes, starting now.";
+    readonly "form.customHint": "Runs every this many days at the selected time.";
+    readonly "form.atTime": "at";
     readonly "form.minutesShort": "min";
     readonly "form.daysShort": "days";
     readonly "form.monthDay": "Day {day} of month";

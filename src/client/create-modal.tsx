@@ -186,7 +186,7 @@ export function CreateModal({
                 {form.scheduleKind === 'interval' && (
                   <>
                     <span className="dsh-st-suffix">{t('form.every')}</span>
-                    <Input className="dsh-st-amount" type="number" min={1} value={form.everyMinutes} addonAfter={t('form.minutes')} onChange={event => update({ everyMinutes: event.target.value })} />
+                    <span className="dsh-st-amount"><Input type="number" min={1} value={form.everyMinutes} addonAfter={t('form.minutes')} onChange={event => update({ everyMinutes: event.target.value })} /></span>
                   </>
                 )}
                 {form.scheduleKind === 'hourly' && (
@@ -208,7 +208,8 @@ export function CreateModal({
                 {form.scheduleKind === 'custom' && (
                   <>
                     <span className="dsh-st-suffix">{t('form.every')}</span>
-                    <Input className="dsh-st-amount" type="number" min={1} value={form.customDays} addonAfter={t('form.daysShort')} onChange={event => update({ customDays: event.target.value })} />
+                    <span className="dsh-st-amount"><Input type="number" min={1} value={form.customDays} addonAfter={t('form.daysShort')} onChange={event => update({ customDays: event.target.value })} /></span>
+                    <span className="dsh-st-suffix">{t('form.atTime')}</span>
                     <TimeSelect value={form.time} onChange={value => update({ time: value })} />
                   </>
                 )}
@@ -257,10 +258,7 @@ export function CreateModal({
                         className="dsh-st-add-workspace"
                         icon={<PlusIcon width={14} height={14} />}
                         disabled={addingWorkspace}
-                        onMouseDown={event => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                        }}
+                        onMouseDown={event => event.preventDefault()}
                         onClick={event => {
                           event.preventDefault()
                           event.stopPropagation()

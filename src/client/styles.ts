@@ -61,16 +61,22 @@ const CSS_TEXT = `
 .dsh-st-error{color:#ff6b6b;font-size:12px}
 .dsh-st-workspace-empty{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .dsh-st-workspace-note{color:var(--dsw-alias-state-warning-primary,#d29922);font-size:12px;line-height:1.5}
-.dsh-st-add-workspace.ant-btn{--ant-btn-text-color:var(--dsw-alias-brand-primary,var(--dsh-accent,#4b7cff));--ant-btn-text-color-hover:var(--dsw-alias-brand-primary,var(--dsh-accent,#4b7cff));--ant-btn-text-color-active:var(--dsw-alias-brand-primary,var(--dsh-accent,#4b7cff));color:var(--dsw-alias-brand-primary,var(--dsh-accent,#4b7cff)) !important;font-weight:550}
-.dsh-st-add-workspace.ant-btn:not(:disabled):hover,.dsh-st-add-workspace.ant-btn:not(:disabled):active{color:var(--dsw-alias-brand-primary,var(--dsh-accent,#4b7cff)) !important}
+.dsh-st-add-workspace.ant-btn,
+.ant-select-dropdown .dsh-st-add-workspace.ant-btn,
+.ant-select-dropdown .dsh-st-add-workspace.ant-btn span,
+.ant-select-dropdown .dsh-st-add-workspace.ant-btn .ant-btn-icon,
+.dsh-st-add-workspace.ant-btn svg{--ant-btn-text-color:var(--dsw-alias-link,#4176e6);--ant-btn-text-color-hover:var(--dsw-alias-link,#4176e6);--ant-btn-text-color-active:var(--dsw-alias-link,#4176e6);color:var(--dsw-alias-link,#4176e6) !important;font-weight:550}
+.dsh-st-add-workspace.ant-btn:not(:disabled):hover,
+.dsh-st-add-workspace.ant-btn:not(:disabled):active,
+.ant-select-dropdown .dsh-st-add-workspace.ant-btn:hover{color:var(--dsw-alias-link,#4176e6) !important}
 .dsh-st-muted{color:var(--dsw-alias-label-secondary)}
 .dsh-st-form{display:flex;flex-direction:column;gap:12px}.dsh-st-form>p{margin:0;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}
 .dsh-st-field{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:100%;font-size:13px}
 .dsh-st-field>.ant-input,.dsh-st-field>.ant-input-affix-wrapper,.dsh-st-field>.ant-input-textarea{width:100%}
 .dsh-st-plan-row{display:flex;align-items:flex-start;gap:16px}.dsh-st-plan-row>.dsh-st-field:first-child{flex:1;min-width:0}.dsh-st-concurrency{flex:0 0 128px}
 .dsh-st-inline{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.dsh-st-inline>.ant-select{flex:0 1 180px;width:auto;min-width:120px}
-.dsh-st-amount{flex:none;width:128px}
-.dsh-st-inline .dsh-st-amount{width:128px !important}
+.dsh-st-amount{flex:none;display:inline-flex;width:128px}
+.dsh-st-amount .ant-input-group-wrapper,.dsh-st-amount .ant-input{width:100%}
 .dsh-st-plan-hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}
 .dsh-st-time{display:inline-flex;align-items:center;gap:6px;flex:none}.dsh-st-time .ant-select{width:88px;flex:none}.dsh-st-time-sep{color:var(--dsw-alias-label-secondary)}
 .dsh-st-suffix{color:var(--dsw-alias-label-secondary);font-size:13px;white-space:nowrap}
@@ -88,7 +94,7 @@ const CSS_TEXT = `
 .dsh-st-skill-menu button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;border:0;border-radius:6px;background:transparent;color:inherit;padding:6px 8px;text-align:left;cursor:pointer}
 .dsh-st-skill-menu button[aria-selected="true"],.dsh-st-skill-menu button:hover{background:color-mix(in srgb,var(--dsw-alias-brand-primary,#4b7cff) 16%,transparent)}
 .dsh-st-skill-menu code{color:var(--dsw-alias-label-tertiary);font-size:12px}
-.dsh-st-prompt-card textarea{position:relative;z-index:1;padding:14px 16px 8px;font-size:14px;line-height:1.65;resize:none;color:transparent !important;caret-color:var(--dsw-alias-label-primary,currentColor) !important;background:transparent !important}
+.dsh-st-prompt-card textarea,.dsh-st-prompt-card .ant-input{position:relative;z-index:1;box-sizing:border-box;width:100%;margin:0;padding:14px 16px 8px !important;border:0;font-size:14px;line-height:1.65;letter-spacing:normal;resize:none;color:transparent !important;caret-color:var(--dsw-alias-label-primary,currentColor) !important;background:transparent !important}
 .dsh-st-prompt-card textarea::placeholder{color:var(--dsw-alias-label-tertiary)}
 .dsh-st-prompt-card textarea::selection{color:transparent;background:color-mix(in srgb,var(--dsw-alias-state-business-primary,#4b7cff) 28%,transparent)}
 .dsh-st-prompt-backdrop{position:absolute;z-index:0;inset:0;overflow:hidden;padding:14px 16px 8px;font-size:14px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;color:inherit}

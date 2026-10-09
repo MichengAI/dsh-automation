@@ -13,6 +13,7 @@ export interface AutomationViewProps {
     readonly modelT: ModelTranslate;
     readonly runtime: AutomationRuntime;
     readonly closeSettings?: () => void;
+    readonly addWorkspace?: () => Promise<string | undefined>;
 }
 export interface ClientRpc {
     call(channel: string, endpoint: string, payload: unknown, signal?: AbortSignal): Promise<unknown>;

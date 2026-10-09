@@ -113,6 +113,10 @@ export declare class AutomationService {
     reconcileMissingSessions(): Promise<void>;
     private knownSessionIds;
     forgetAutomationSessions(automationId: string): Promise<void>;
+    registerWorkspaceDirectory(path: string): Promise<{
+        readonly id: string;
+        readonly path: string;
+    }>;
     adoptSession(sessionId: string): Promise<void>;
     private resolveUpdateWorkspace;
     private collectOptions;

@@ -54,19 +54,25 @@ export const Tabs = unwrap<React.ComponentType<TabsProps>>(TabsImport)
 const darkAlgorithm = unwrap<NonNullable<ConfigProviderProps['theme']> extends { algorithm?: infer Algorithm } ? Algorithm : never>(darkAlgorithmImport)
 const defaultAlgorithm = unwrap<NonNullable<ConfigProviderProps['theme']> extends { algorithm?: infer Algorithm } ? Algorithm : never>(defaultAlgorithmImport)
 
+/** 宿主令牌写在 body 上，documentElement 上经常是空的。 */
+function hostToken(name: string): string {
+  if (typeof document === 'undefined') return ''
+  const body = getComputedStyle(document.body).getPropertyValue(name).trim()
+  if (body !== '') return body
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
 /** 按钮不插汉字空格，亮暗跟随宿主的 data-ds-dark-theme。 */
 export function AntdProvider(props: { locale?: Locale; children?: React.ReactNode }): React.ReactElement {
   const dark = useHostDark()
   const active = useHostLocale()
-  const brand = typeof document === 'undefined'
-    ? ''
-    : getComputedStyle(document.documentElement).getPropertyValue('--dsw-alias-brand-primary').trim()
+  const link = hostToken('--dsw-alias-link')
   return React.createElement(ConfigProvider, {
     locale: props.locale ?? antdLocale(active),
     button: { autoInsertSpace: false },
     theme: {
       algorithm: dark ? darkAlgorithm : defaultAlgorithm,
-      ...(brand === '' ? {} : { token: { colorPrimary: brand, colorLink: brand, colorLinkHover: brand, colorLinkActive: brand } }),
+      ...(link === '' ? {} : { token: { colorLink: link, colorLinkHover: link, colorLinkActive: link } }),
       components: { Button: { borderRadius: 8 } },
     },
   }, props.children)
