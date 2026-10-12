@@ -6,6 +6,10 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.62 - 2026-10-12
+
+- Support DSH `0.2.1-alpha.2` while retaining all existing supported versions.
+
 ## 0.1.61 - 2026-10-09
 
 - The new-task form can add a workspace. An existing workspace no longer blocks that action. After you choose a folder, the new workspace is selected and the list closes.
