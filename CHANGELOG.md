@@ -6,6 +6,12 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.63 - 2026-10-12
+
+- Fix Web startup on DSH `0.2.1-alpha.2` while retaining compatibility with the previously supported Host versions.
+- Preserve the Host’s trusted-address configuration and register scheduled-task requests in the automation plugin’s own scope.
+- Restart DSH and refresh the page after upgrading.
+
 ## 0.1.62 - 2026-10-12
 
 - Support DSH `0.2.1-alpha.2` while retaining all existing supported versions.

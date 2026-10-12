@@ -39,14 +39,15 @@ class FixedAdapter extends LlmAdapter {
 }
 
 const hostVersion = process.env.DSH_TEST_VERSION ?? "0.2.0-rc.2";
-const explicitAgent = ["0.1.5-rc.1", "0.1.5-rc.2", "0.1.5-rc.3", "0.1.7-rc.1", "0.1.7-rc.2", "0.2.0-rc.1", "0.2.0-rc.2"].includes(hostVersion);
-const sessionHeaderVersion = hostVersion.startsWith("0.1.7-") || hostVersion.startsWith("0.2.0-") ? 4 : explicitAgent ? 3 : 0;
+const explicitAgent = ["0.1.5-rc.1", "0.1.5-rc.2", "0.1.5-rc.3", "0.1.7-rc.1", "0.1.7-rc.2", "0.2.0-rc.1", "0.2.0-rc.2", "0.2.1-alpha.2"].includes(hostVersion);
+const sessionHeaderVersion = hostVersion.startsWith("0.1.7-") || hostVersion.startsWith("0.2.") ? 4 : explicitAgent ? 3 : 0;
 
 test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动化 RPC`, async (t) => {
   const ctx = new Context();
   t.after(() => ctx.fiber.dispose());
   const routes = new Set();
-  ctx.provide("webRuntime", { trustedHosts: [] });
+  const startupService = hostVersion === "0.2.1-alpha.2" ? "webStartup" : "webRuntime";
+  ctx.provide(startupService, { trustedHosts: [] });
   // 与真实 Loader 一致：WebServer 来自兄弟插件，不能用根 Context 的无条件提供掩盖缺失注入。
   await ctx.plugin({
     apply(owner) {
@@ -84,7 +85,7 @@ test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动�
     {
       id: "connection",
       name: "@deepseek-ai/dsh-client-connection",
-      inject: ["webRuntime"],
+      inject: [startupService],
     },
   ];
   // 先用官方引擎替换配置，再按 Loader 语义合并插件源码依赖，覆盖两个层次。
@@ -93,8 +94,8 @@ test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动�
   );
   const entry = entries.find((item) => item.id === "connection");
   assert.deepEqual(warnings, []);
-  assert.deepEqual(entry?.inject, ["webServer", "webRuntime"]);
-  assert.deepEqual(base[0].inject, ["webRuntime"], "补丁不可污染原始 bundle");
+  assert.deepEqual(entry?.inject, [startupService], "必须保留官方 Connection 的配置依赖");
+  assert.deepEqual(base[0].inject, [startupService], "补丁不可污染原始 bundle");
   const inject = Inject.resolve(Connection.inject);
   Inject.resolve(entry.inject, inject);
   for (const dependency of Object.keys(Inject.resolve(Connection.inject)))
@@ -112,34 +113,25 @@ test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动�
   assert.ok(![...routes].some((route) => route.path === "/dsh-automation"));
 });
 
-test("Connection 补丁拒绝同 ID 的其他插件，并明确额外配置依赖的替换语义", async () => {
+test("自动化补丁保留新旧 Connection 的配置及自定义注入", async () => {
   const patches = load(
     await readFile(new URL("../cordis.patch.yml", import.meta.url), "utf8"),
   );
   assert.ok(Array.isArray(patches));
-  const patch = patches.find((item) => item.id === "connection");
-  assert.ok(patch, "缺少 Connection 补丁");
-  const warnings = [];
-  const unrelated = [
-    { id: "connection", name: "other-plugin", inject: ["customExtra"] },
-  ];
-  assert.deepEqual(
-    applyEntryPatches(unrelated, [patch], (...args) => warnings.push(args)),
-    unrelated,
-  );
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0][0], /name mismatch/);
-  const custom = [
-    {
+  for (const service of ["webRuntime", "webStartup"]) {
+    const base = [{
       id: "connection",
-      name: patch.name,
-      inject: ["webRuntime", "customExtra"],
-    },
-  ];
-  const applied = applyEntryPatches(custom, [patch], () =>
-    assert.fail("匹配补丁不应告警"),
-  );
-  assert.deepEqual(applied[0].inject, ["webServer", "webRuntime"]);
+      name: "@deepseek-ai/dsh-client-connection",
+      inject: [service, "customExtra"],
+      config: {
+        trustedHosts: { __jsExpr: `ctx.${service}.trustedHosts` },
+        recovery: { maxRetries: 7 },
+      },
+    }];
+    const applied = applyEntryPatches(base, patches, () => assert.fail("补丁不应告警"));
+    assert.deepEqual(applied[0], base[0]);
+    assert.notEqual(applied[0], base[0]);
+  }
 });
 
 test(`${hostVersion} 真实 AgentLoop 执行自动化、保留权限日志并释放 Agent`, {

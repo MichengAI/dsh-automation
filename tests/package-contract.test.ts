@@ -50,7 +50,7 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
   assert.equal(manifest.peerDependencies?.react, "^18.2.0");
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/cordis"],
-    ">=4.0.1 <5.0.0",
+    ">=4.0.1 <5.0.0 || 4.0.5-alpha.1",
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/dsh-agent"],
@@ -78,7 +78,7 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
   );
   assert.equal(
     manifest.peerDependencies?.["@deepseek-ai/schemastery"],
-    ">=3.18.1 <4.0.0",
+    ">=3.18.1 <4.0.0 || 3.18.5-alpha.1",
   );
   assert.equal(
     manifest.devDependencies?.["@deepseek-ai/dsh-agent"],
@@ -114,13 +114,8 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
   assert.ok(Array.isArray(entries));
   assert.deepEqual(
     entries.filter((entry) => entry.id === "connection"),
-    [
-      {
-        id: "connection",
-        name: "@deepseek-ai/dsh-client-connection",
-        inject: ["webServer", "webRuntime"],
-      },
-    ],
+    [],
+    "自动化 bundle 不覆盖官方 Connection 的注入或配置",
   );
   assert.ok(
     entries.some((entry) =>

@@ -193,7 +193,21 @@ async function snapshotValue(service: AutomationService, payload: Record<string,
 }
 
 export function registerAutomationRpc(ctx: RpcContext, service: AutomationService): () => Promise<void> {
-  return ctx.connection.rpc.handle('/dsh-automation', async (endpoint, rawPayload, signal) => {
+  const connection = ctx.connection
+  // Cordis 会给 getter 加 shadow，捕获到服务提供方而非调用方的 Context。
+  // 直接以服务代理调用公开 getter，保留调用方注入和路由卸载归属；普通对象仍走原接口。
+  let prototype: object | null = connection
+  let rpc: RpcContext['connection']['rpc'] | undefined
+  while (prototype !== null) {
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, 'rpc')
+    if (descriptor !== undefined) {
+      rpc = descriptor.get === undefined ? connection.rpc : descriptor.get.call(connection)
+      break
+    }
+    prototype = Object.getPrototypeOf(prototype)
+  }
+  rpc ??= connection.rpc
+  return rpc.handle('/dsh-automation', async (endpoint, rawPayload, signal) => {
     try {
       const payload = record(rawPayload, 'payload')
       switch (endpoint) {

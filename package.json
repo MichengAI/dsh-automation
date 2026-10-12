@@ -1,6 +1,6 @@
 {
   "name": "@michengai/dsh-automation",
-  "version": "0.1.62",
+  "version": "0.1.63",
   "description": "DSH Automation — 在独立 DSH Session 中按计划执行和管理编码任务 · Schedule and manage coding tasks in isolated DSH sessions",
   "type": "module",
   "packageManager": "pnpm@11.22.0",
@@ -63,7 +63,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --import ./tests/register-dsh-stubs.mjs --import tsx --test tests/*.test.ts",
     "check": "pnpm typecheck && pnpm test && pnpm test:host && pnpm build",
-    "test:host": "node --import tsx --test tests/host-compatibility.test.mjs",
+    "test:host": "node --import tsx --test tests/host-compatibility.test.mjs tests/connection-loader.test.mjs",
     "test:composition": "node --import tsx scripts/verify-sidebar-composition.mjs",
     "test:matrix": "pnpm build && node scripts/test-version-matrix.mjs"
   },
@@ -73,7 +73,7 @@
     "zod": "^4.1.5"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": ">=4.0.1 <5.0.0",
+    "@deepseek-ai/cordis": ">=4.0.1 <5.0.0 || 4.0.5-alpha.1",
     "@deepseek-ai/dsh-agent": "0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.5-rc.3 || 0.1.7-rc.1 || 0.1.7-rc.2 || 0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-alpha.2",
     "@deepseek-ai/dsh-agent-default-model": "0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.5-rc.3 || 0.1.7-rc.1 || 0.1.7-rc.2 || 0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-alpha.2",
     "@deepseek-ai/dsh-client-connection": "0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.5-rc.3 || 0.1.7-rc.1 || 0.1.7-rc.2 || 0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-alpha.2",
@@ -89,7 +89,7 @@
     "@deepseek-ai/dsh-tools": "0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.5-rc.3 || 0.1.7-rc.1 || 0.1.7-rc.2 || 0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-alpha.2",
     "@deepseek-ai/dsh-user-approval": "0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.5-rc.3 || 0.1.7-rc.1 || 0.1.7-rc.2 || 0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-alpha.2",
     "@deepseek-ai/dsh-workspace": "0.1.2-rc.1 || 0.1.5-rc.1 || 0.1.5-rc.2 || 0.1.5-rc.3 || 0.1.7-rc.1 || 0.1.7-rc.2 || 0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-alpha.2",
-    "@deepseek-ai/schemastery": ">=3.18.1 <4.0.0",
+    "@deepseek-ai/schemastery": ">=3.18.1 <4.0.0 || 3.18.5-alpha.1",
     "react": "^18.2.0"
   },
   "peerDependenciesMeta": {

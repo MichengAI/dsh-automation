@@ -83,3 +83,6 @@ jobs:
 
       - name: 运行完整检查
         run: pnpm check
+
+      - name: 验证全部声明支持的宿主版本
+        run: pnpm test:matrix
