@@ -138,7 +138,7 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
     id: 'scheduled-tasks',
-    order: 28,
+    order: 35,
     locale: NS,
     label: () => t('tab'),
     icon: 'schedule',
