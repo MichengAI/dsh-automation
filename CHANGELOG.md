@@ -6,6 +6,10 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+## 0.1.64 - 2026-10-14
+
+- Adjust settings navigation section order to ensure stable placement and avoid conflicts with other plugins.
+
 ## 0.1.63 - 2026-10-12
 
 - Fix Web startup on DSH `0.2.1-alpha.2` while retaining compatibility with the previously supported Host versions.
