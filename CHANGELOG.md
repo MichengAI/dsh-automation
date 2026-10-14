@@ -6,10 +6,11 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
-## 0.1.65 - 2026-10-15
+## 0.1.66 - 2026-10-15
 
 - Support DSH `0.2.1-alpha.3` while retaining all existing supported versions; pin development `@deepseek-ai/dsh*` dependencies to host `0.2.1-alpha.3`, Cordis to `4.0.5-alpha.2`, and Schemastery to `3.18.5-alpha.2`.
-- No production plugin API breaks for this release (peer / documentation / development dependency alignment only).
+- Pin `cordis-plugin-timer` in the Host version matrix so `0.2.1-alpha.2` installs stay on `1.1.7-alpha.1` under npm strict peer resolution.
+- No production plugin API breaks for this release (peer / documentation / development dependency / matrix alignment only).
 
 ## 0.1.64 - 2026-10-14
 
