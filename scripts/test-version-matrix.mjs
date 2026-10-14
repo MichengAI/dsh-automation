@@ -8,10 +8,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
-const versions = ['0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.5-rc.3', '0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-alpha.2']
+const versions = ['0.1.2-rc.1', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.5-rc.3', '0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-alpha.2', '0.2.1-alpha.3']
 const legacyPreset = '@deepseek-ai/dsh-agent-presets'
 const presetRegistry = '@deepseek-ai/dsh-agent-preset-registry'
-const modernHosts = new Set(['0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-alpha.2'])
+const modernHosts = new Set(['0.1.7-rc.1', '0.1.7-rc.2', '0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-alpha.2', '0.2.1-alpha.3'])
 const range = versions.join(' || ')
 assert.equal(manifest.peerDependencies[legacyPreset], undefined, '旧包名不能进 peer，安装门不看 optional')
 assert.equal(manifest.peerDependencies[presetRegistry], undefined, '新包名也不能进 peer，否则旧宿主会被拒')
@@ -72,7 +72,9 @@ for (const version of versions) {
   const cwd = join(directory, version)
   await mkdir(cwd)
   try {
-    const toolchain = version === '0.2.1-alpha.2'
+    const toolchain = version === '0.2.1-alpha.3'
+      ? { '@deepseek-ai/cordis': '4.0.5-alpha.2', '@deepseek-ai/schemastery': '3.18.5-alpha.2', '@deepseek-ai/cordis-plugin-loader': '1.0.6-alpha.2', '@deepseek-ai/cordis-plugin-include': '1.0.10-alpha.2', '@deepseek-ai/cordis-plugin-group': '1.0.5-alpha.2' }
+      : version === '0.2.1-alpha.2'
       ? { '@deepseek-ai/cordis': '4.0.5-alpha.1', '@deepseek-ai/schemastery': '3.18.5-alpha.1', '@deepseek-ai/cordis-plugin-loader': '1.0.6-alpha.1', '@deepseek-ai/cordis-plugin-include': '1.0.10-alpha.1', '@deepseek-ai/cordis-plugin-group': '1.0.5-alpha.1' }
       : modernHosts.has(version)
       ? { '@deepseek-ai/cordis': '4.0.4', '@deepseek-ai/schemastery': '3.18.4', '@deepseek-ai/cordis-plugin-loader': '1.0.5', '@deepseek-ai/cordis-plugin-include': '1.0.9', '@deepseek-ai/cordis-plugin-group': '1.0.4' }
