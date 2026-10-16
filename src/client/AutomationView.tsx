@@ -33,7 +33,8 @@ import {
   PlusIcon,
   RefreshIcon,
 } from './icons.js'
-import { AntdProvider, Button, Dropdown, Input, PrimitiveButton, Switch, Tabs } from './antd-ui.js'
+import { AntdProvider, Button, Input, PrimitiveButton, Switch, Tabs } from './antd-ui.js'
+import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import { MenuSelect } from './menu-select.js'
 import { CreateModal } from './create-modal.js'
 import { DeleteConfirmation } from './delete-confirmation.js'
@@ -374,6 +375,7 @@ function TaskCard({
   readonly onRun: () => void
   readonly onDelete: () => void
 }): JSX.Element {
+  const [menuOpen, setMenuOpen] = useState(false)
   return (
     <article className="dsh-st-card" onClick={onEdit}>
       <div className="dsh-st-card-head">
@@ -381,17 +383,34 @@ function TaskCard({
           <Switch checked={item.status === 'active'} disabled={busy} aria-label={item.status === 'active' ? t('card.pause') : t('card.resume')} onChange={() => onToggle()} />
         </span>
         <span onClick={(event) => event.stopPropagation()}>
-          <Dropdown
-            menu={{
-              items: [
-                { key: 'run', label: t('menu.run'), disabled: busy, onClick: onRun },
-                { key: 'edit', label: t('menu.edit'), disabled: busy, onClick: onEdit },
-                { key: 'delete', label: t('menu.delete'), danger: true, disabled: busy, onClick: onDelete },
-              ],
+          {/* 原语菜单替代 Antd Dropdown，对齐技能插件 */}
+          <Menu
+            open={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            align="end"
+            portal
+            dense
+            anchor={
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={t('card.more')}
+                icon={<MoreIcon width={16} height={16} />}
+                onClick={() => setMenuOpen(prev => !prev)}
+              />
+            }
+            items={[
+              { id: 'run', label: t('menu.run'), disabled: busy },
+              { id: 'edit', label: t('menu.edit'), disabled: busy },
+              { id: 'delete', label: t('menu.delete'), danger: true, disabled: busy },
+            ]}
+            onSelect={(id) => {
+              setMenuOpen(false)
+              if (id === 'run') onRun()
+              if (id === 'edit') onEdit()
+              if (id === 'delete') onDelete()
             }}
-          >
-            <Button type="text" aria-label={t('card.more')} icon={<MoreIcon width={16} height={16} />} />
-          </Dropdown>
+          />
         </span>
       </div>
       <h3>{item.name}</h3>
