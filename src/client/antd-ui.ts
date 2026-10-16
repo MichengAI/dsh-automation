@@ -38,9 +38,9 @@ const TextArea = unwrap<React.ForwardRefExoticComponent<TextAreaProps & React.Re
 export const Input = Object.assign(unwrap<React.ComponentType<InputProps>>(InputImport), { TextArea })
 const ButtonBase = unwrap<React.ForwardRefExoticComponent<ButtonProps & React.RefAttributes<HTMLButtonElement>>>(ButtonImport)
 
-/** 操作按钮默认用中等尺寸和圆角。标题栏和小按钮可以传入 size、shape 覆盖。 */
+/** 操作按钮默认用中等尺寸。标题栏和小按钮可以传入 size、shape 覆盖。 */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(props, ref) {
-  return React.createElement(ButtonBase, { shape: 'round', size: 'middle', ...props, ref })
+  return React.createElement(ButtonBase, { size: 'middle', ...props, ref })
 })
 export const Checkbox = unwrap<React.ComponentType<CheckboxProps> & { Group: React.ComponentType<{ options: readonly { label: string; value: string }[]; value: readonly string[]; onChange: (value: string[]) => void }> }>(CheckboxImport)
 export const ConfigProvider = unwrap<React.ComponentType<ConfigProviderProps>>(ConfigProviderImport)
