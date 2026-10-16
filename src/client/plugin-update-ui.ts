@@ -1,6 +1,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { AntdProvider, Button, Modal, Progress } from './antd-ui.js'
+import { AntdProvider, Button, Modal, PrimitiveButton, Progress } from './antd-ui.js'
 import { handlePluginUpdateEscape, manualPluginUpdateCommand } from './plugin-update-model.js'
 import { installPluginUpdateStyle } from './styles.js'
 
@@ -213,9 +213,13 @@ export function observePluginUpdate(options: PluginUpdateUiOptions): () => void 
     if (buttonRoot === undefined) return
     if (iconNode === undefined) iconNode = options.createIcon('refresh')
     const icon = iconNode
-    buttonRoot.render(React.createElement(AntdProvider, null, React.createElement(Button, {
-      size: 'small', shape: 'default', onClick: openDialog, icon: React.createElement(HostIcon, { node: icon }),
-    }, React.createElement('span', { 'data-mpi-label': '' }, pluginUpdateCopy(document.documentElement.lang).check))))
+    const renderOpts: Record<string, unknown> = { size: 'small', shape: 'default' }
+    buttonRoot.render(React.createElement(PrimitiveButton, {
+      variant: 'outline',
+      onClick: openDialog,
+      icon: React.createElement(HostIcon, { node: icon }),
+      ...renderOpts,
+    } as never, React.createElement('span', { 'data-mpi-label': '' }, pluginUpdateCopy(document.documentElement.lang).check)))
   }
   const closeDialog = (): void => { dialogRoot?.unmount(); dialogRoot = undefined; dialogHost?.remove(); dialogHost = undefined }
   function openDialog(): void {

@@ -33,7 +33,8 @@ import {
   PlusIcon,
   RefreshIcon,
 } from './icons.js'
-import { AntdProvider, Button, Dropdown, Input, Select, Switch, Tabs } from './antd-ui.js'
+import { AntdProvider, Button, Dropdown, Input, PrimitiveButton, Switch, Tabs } from './antd-ui.js'
+import { MenuSelect } from './menu-select.js'
 import { CreateModal } from './create-modal.js'
 import { DeleteConfirmation } from './delete-confirmation.js'
 import { setChatPrefill } from './prefill.js'
@@ -163,8 +164,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
           <div className="dsh-st-heading-row">
             <h1>{t('tab')}</h1>
             <div className="dsh-st-heading-links">
-              <Button size="small" shape="default" href="https://github.com/MichengAI/dsh-automation" target="_blank" rel="noreferrer" aria-label={t('header.githubProject')} icon={<GithubIcon />}>{t('header.githubProject')}</Button>
-              <Button size="small" shape="default" href="https://github.com/MichengAI/dsh-automation/issues" target="_blank" rel="noreferrer" aria-label={t('header.githubFeedback')} icon={<IconListPenOutline />}>{t('header.githubFeedback')}</Button>
+              <PrimitiveButton variant="outline" size="sm" aria-label={t('header.githubProject')} icon={<GithubIcon />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation', '_blank', 'noreferrer') }}>{t('header.githubProject')}</PrimitiveButton>
+              <PrimitiveButton variant="outline" size="sm" aria-label={t('header.githubFeedback')} icon={<IconListPenOutline />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation/issues', '_blank', 'noreferrer') }}>{t('header.githubFeedback')}</PrimitiveButton>
             </div>
           </div>
           <p>{t('header.lead')}</p>
@@ -251,32 +252,29 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
         )}
         {tab === 'runs' && (
           <div className="dsh-st-filters">
-            <Select
+            <MenuSelect
               className="dsh-st-filter-range"
               value={historyRange}
-              popupMatchSelectWidth={false}
               options={(['day', 'week', 'month'] as const).map(range => ({ value: range, label: t(`history.range.${range}`) }))}
-              onChange={setHistoryRange}
+              onChange={value => setHistoryRange(value as HistoryRange)}
             />
-            <Select
+            <MenuSelect
               className="dsh-st-filter-task"
               value={historyTask}
-              popupMatchSelectWidth={false}
               options={[
                 { value: 'all', label: t('history.allTasks') },
                 ...(snapshot?.automations ?? []).map(item => ({ value: item.id, label: item.name })),
               ]}
               onChange={setHistoryTask}
             />
-            <Select
+            <MenuSelect
               className="dsh-st-filter-status"
               value={historyStatus}
-              popupMatchSelectWidth={false}
               options={[
                 { value: 'all', label: t('history.allStatus') },
                 ...HISTORY_STATUS_OPTIONS.map(status => ({ value: status, label: t(`status.${status}`) })),
               ]}
-              onChange={value => setHistoryStatus(value)}
+              onChange={value => setHistoryStatus(value as 'all' | AutomationRunStatus)}
             />
           </div>
         )}
