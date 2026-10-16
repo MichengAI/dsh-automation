@@ -172,6 +172,10 @@ const CSS_TEXT = `
 .dsh-st-n-sess .dsh-st-n-title[data-scrolled]{mask-image:linear-gradient(90deg,#0000,#000 12px)}
 .dsh-st-n-sess .dsh-st-n-title[data-clipped]{mask-image:linear-gradient(270deg,#0000,#000 12px)}
 .dsh-st-n-sess .dsh-st-n-title[data-scrolled][data-clipped]{mask-image:linear-gradient(90deg,#0000,#000 12px calc(100% - 12px),#0000)}
+.ant-modal-content{border-radius:var(--dsw-radius-panel,28px) !important;background:var(--dsw-specific-menu,var(--dsw-alias-bg-layer-1)) !important;backdrop-filter:var(--dsw-menu-backdrop-filter,blur(16px)) !important;border:1px solid var(--dsw-alias-border-l2) !important}
+.ant-modal-footer .ant-btn:not(.ant-btn-primary){border:0.5px solid var(--dsw-alias-border-l2) !important;background:var(--dsw-alias-bg-layer-1,transparent) !important}
+.ant-modal-footer .ant-btn:not(.ant-btn-primary):hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover) !important}
+.ant-modal-footer .ant-btn:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary,#4c8dff) !important;outline-offset:2px !important}
 `
 
 export function installStyles(): () => void {
