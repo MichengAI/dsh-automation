@@ -1,8 +1,8 @@
 import type { Locale } from 'antd/es/locale/index.js'
 import darkAlgorithmImport from 'antd/es/theme/themes/dark/index.js'
 import defaultAlgorithmImport from 'antd/es/theme/themes/default/index.js'
-import type { ButtonProps } from 'antd/es/button/Button.js'
-import ButtonImport from 'antd/es/button/index.js'
+import { Button as PrimitiveButton, Switch as PrimitiveSwitch, type ButtonVariant } from '@deepseek-ai/dsh-client-ui-primitives'
+export { PrimitiveButton, PrimitiveSwitch }
 import type { CheckboxProps } from 'antd/es/checkbox/Checkbox.js'
 import CheckboxImport from 'antd/es/checkbox/index.js'
 import type { ConfigProviderProps } from 'antd/es/config-provider/index.js'
@@ -36,12 +36,87 @@ function unwrap<T>(mod: unknown): T {
 
 const TextArea = unwrap<React.ForwardRefExoticComponent<TextAreaProps & React.RefAttributes<TextAreaRef>>>(TextAreaImport)
 export const Input = Object.assign(unwrap<React.ComponentType<InputProps>>(InputImport), { TextArea })
-const ButtonBase = unwrap<React.ForwardRefExoticComponent<ButtonProps & React.RefAttributes<HTMLButtonElement>>>(ButtonImport)
 
-/** 操作按钮默认用中等尺寸。标题栏和小按钮可以传入 size、shape 覆盖。 */
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(props, ref) {
-  return React.createElement(ButtonBase, { size: 'middle', ...props, ref })
-})
+export interface UnifiedButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
+  variant?: ButtonVariant
+  type?: 'primary' | 'ghost' | 'outline' | 'toolbar' | 'default' | 'text' | 'link' | 'button' | 'submit' | 'reset'
+  danger?: boolean
+  loading?: boolean
+  block?: boolean
+  size?: 'md' | 'sm' | 'middle' | 'small' | 'large'
+  icon?: React.ReactNode
+  shape?: string
+  href?: string
+  target?: string
+  rel?: string
+  htmlType?: 'button' | 'submit' | 'reset'
+}
+
+/** 桥接宿主官方原语 Button，自动映射 Antd 常用属性（type="primary", danger, size 等），彻底淘汰 Antd 按钮包装 */
+export function Button({
+  variant,
+  type,
+  danger,
+  loading,
+  block,
+  size,
+  shape,
+  className,
+  children,
+  href,
+  target,
+  rel,
+  icon,
+  htmlType,
+  ...props
+}: UnifiedButtonProps): React.ReactElement {
+  let mappedVariant: ButtonVariant = variant ?? 'outline'
+  if (type === 'primary') mappedVariant = 'primary'
+  else if (type === 'text' || type === 'link') mappedVariant = 'ghost'
+
+  const isPrimary = mappedVariant === 'primary'
+  const mappedSize = (size === 'small' || size === 'sm') ? 'sm' : 'md'
+
+  const classes = [
+    'dsh-st-btn',
+    href ? 'dsh-st-link-btn' : '',
+    className,
+    isPrimary ? 'is-primary' : '',
+    danger ? 'is-danger' : '',
+    block ? 'is-block' : '',
+    loading ? 'is-loading' : '',
+  ].filter(Boolean).join(' ')
+
+  const hasChildren = children !== undefined && children !== null && children !== false
+  const iconElement = icon ? React.createElement('span', {
+    key: 'icon',
+    className: 'dsh-st-btn-icon',
+    style: { display: 'inline-flex', alignItems: 'center', marginRight: (hasChildren && !href) ? 6 : undefined },
+  }, icon) : null
+
+  const content = [iconElement, children]
+
+  if (href) {
+    return React.createElement('a', {
+      ...(props as unknown as React.AnchorHTMLAttributes<HTMLAnchorElement>),
+      href,
+      target,
+      rel: rel || (target === '_blank' ? 'noreferrer' : undefined),
+      className: classes || undefined,
+      'aria-label': props['aria-label'],
+      style: Object.assign({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }, props.style),
+    }, content)
+  }
+
+  return React.createElement(PrimitiveButton, {
+    ...props,
+    type: htmlType ?? (type === 'submit' ? 'submit' : type === 'reset' ? 'reset' : 'button'),
+    variant: mappedVariant,
+    size: mappedSize,
+    className: classes || undefined,
+    disabled: props.disabled || loading,
+  }, content)
+}
 export const Checkbox = unwrap<React.ComponentType<CheckboxProps> & { Group: React.ComponentType<{ options: readonly { label: string; value: string }[]; value: readonly string[]; onChange: (value: string[]) => void }> }>(CheckboxImport)
 export const ConfigProvider = unwrap<React.ComponentType<ConfigProviderProps>>(ConfigProviderImport)
 export const Dropdown = unwrap<React.ComponentType<DropdownProps>>(DropdownImport)
@@ -49,7 +124,37 @@ export const Modal = unwrap<React.ComponentType<ModalProps>>(ModalImport)
 export const Progress = unwrap<React.ComponentType<ProgressProps>>(ProgressImport)
 export const Segmented = unwrap<React.ComponentType<SegmentedProps>>(SegmentedImport)
 export const Select = unwrap<React.ComponentType<SelectProps>>(SelectImport)
-export const Switch = unwrap<React.ComponentType<SwitchProps>>(SwitchImport)
+export interface UnifiedSwitchProps {
+  checked?: boolean
+  onChange?: (checked: boolean) => void
+  disabled?: boolean
+  loading?: boolean
+  'aria-label'?: string
+  className?: string
+  title?: string
+  size?: 'small' | 'default'
+}
+
+/** 桥接宿主官方原语 Switch，自动对齐 36x20 尺寸、滑块与语义颜色，彻底淘汰 Ant Design Switch */
+export function Switch({
+  checked = false,
+  onChange,
+  disabled,
+  loading,
+  'aria-label': ariaLabel,
+  className,
+  title,
+}: UnifiedSwitchProps): React.ReactElement {
+  return React.createElement(PrimitiveSwitch, {
+    checked,
+    onChange: (next: boolean) => { onChange?.(next) },
+    label: ariaLabel ?? '',
+    disabled: disabled || loading,
+    title,
+    className,
+  })
+}
+
 export const Tabs = unwrap<React.ComponentType<TabsProps>>(TabsImport)
 const darkAlgorithm = unwrap<NonNullable<ConfigProviderProps['theme']> extends { algorithm?: infer Algorithm } ? Algorithm : never>(darkAlgorithmImport)
 const defaultAlgorithm = unwrap<NonNullable<ConfigProviderProps['theme']> extends { algorithm?: infer Algorithm } ? Algorithm : never>(defaultAlgorithmImport)

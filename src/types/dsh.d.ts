@@ -51,12 +51,29 @@ declare module '@deepseek-ai/dsh-llm' {
 }
 
 declare module '@deepseek-ai/dsh-client-ui-primitives' {
-  import type { ReactNode } from 'react'
+  import type { ButtonHTMLAttributes, ReactNode } from 'react'
+  export type ButtonVariant = 'primary' | 'ghost' | 'outline' | 'toolbar'
   export type MenuEntry =
-    | { readonly id: string; readonly label: ReactNode; readonly icon?: ReactNode; readonly danger?: boolean }
+    | { readonly id: string; readonly label: ReactNode; readonly icon?: ReactNode; readonly danger?: boolean; readonly disabled?: boolean }
     | { readonly id: string; readonly type: 'separator' }
     | { readonly id: string; readonly type: 'label'; readonly text: string }
-  export function Button(props: { readonly variant?: string; readonly className?: string; readonly disabled?: boolean; readonly onClick?: () => void; readonly children?: ReactNode }): JSX.Element
+  export function Button(props: {
+    readonly variant?: ButtonVariant | string | undefined
+    readonly size?: 'md' | 'sm' | string | undefined
+    readonly icon?: ReactNode
+    readonly className?: string | undefined
+    readonly disabled?: boolean | undefined
+    readonly onClick?: ((event?: any) => void) | undefined
+    readonly children?: ReactNode
+  } & ButtonHTMLAttributes<HTMLButtonElement>): JSX.Element
+  export function Switch(props: {
+    readonly checked: boolean
+    readonly onChange: (next: boolean) => void
+    readonly label: string
+    readonly disabled?: boolean | undefined
+    readonly title?: string | undefined
+    readonly className?: string | undefined
+  }): JSX.Element
   export function HoverCard(props: { readonly anchor: ReactNode; readonly content: ReactNode; readonly openDelayMs?: number; readonly disabled?: boolean; readonly copyText?: string; readonly copyLabel?: string; readonly copiedLabel?: string }): JSX.Element
   export function StateDot(props: { readonly state: 'done' | 'warning' | 'ongoing' | 'error' | 'idle'; readonly size?: number }): JSX.Element
   export function Menu(props: { readonly open: boolean; readonly onClose: () => void; readonly items?: readonly MenuEntry[]; readonly children?: ReactNode; readonly onSelect: (id: string) => void; readonly anchor: ReactNode; readonly portal?: boolean; readonly dense?: boolean; readonly compact?: boolean; readonly closeOnPointerLeave?: boolean; readonly selectedId?: string; readonly selectedIds?: readonly string[]; readonly align?: 'start' | 'end'; readonly listClassName?: string }): JSX.Element
