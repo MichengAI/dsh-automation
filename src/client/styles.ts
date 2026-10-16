@@ -194,9 +194,9 @@ const CSS_TEXT = `
 .dsh-st-n-sess .dsh-st-n-title[data-scrolled]{mask-image:linear-gradient(90deg,#0000,#000 12px)}
 .dsh-st-n-sess .dsh-st-n-title[data-clipped]{mask-image:linear-gradient(270deg,#0000,#000 12px)}
 .dsh-st-n-sess .dsh-st-n-title[data-scrolled][data-clipped]{mask-image:linear-gradient(90deg,#0000,#000 12px calc(100% - 12px),#0000)}
-.ant-modal-content{border-radius:var(--dsw-radius-panel,28px) !important;background:var(--dsw-specific-menu,var(--dsw-alias-bg-layer-1)) !important;backdrop-filter:var(--dsw-menu-backdrop-filter,blur(16px)) !important;border:1px solid var(--dsw-alias-border-l2) !important}
-.ant-modal-footer{display:flex !important;align-items:center !important;justify-content:flex-end !important;gap:8px !important;margin-top:16px !important}
-.ant-modal-footer .ant-btn{margin:0 !important}
+.ant-modal .ant-modal-content{padding:20px 24px 24px !important;border-radius:var(--dsw-radius-panel,28px) !important;background:var(--dsw-specific-menu,var(--dsw-alias-bg-layer-1)) !important;backdrop-filter:var(--dsw-menu-backdrop-filter,blur(16px)) !important;border:1px solid var(--dsw-alias-border-l2) !important;box-sizing:border-box !important}
+.ant-modal-footer{display:flex !important;align-items:center !important;justify-content:flex-end !important;gap:12px !important;margin-top:24px !important;padding-top:16px !important;border-top:0.5px solid var(--dsw-alias-border-l2) !important}
+.ant-modal-footer .ant-btn{margin:0 !important;height:32px !important}
 .ant-modal-footer .dsh-st-btn{margin:0 !important}
 .ant-modal-footer .ant-btn:not(.ant-btn-primary),
 .ant-modal-footer .dsh-st-btn:not(.is-primary){border:0.5px solid var(--dsw-alias-border-l2) !important;background:var(--dsw-alias-bg-layer-1,transparent) !important}
@@ -204,6 +204,11 @@ const CSS_TEXT = `
 .ant-modal-footer .dsh-st-btn:not(.is-primary):hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover) !important}
 .ant-modal-footer .ant-btn:focus-visible,
 .ant-modal-footer .dsh-st-btn:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary,#4c8dff) !important;outline-offset:2px !important}
+.ant-select-dropdown{border-radius:var(--dsw-radius-md,12px) !important;background:var(--dsw-specific-menu,var(--dsw-alias-bg-layer-1)) !important;backdrop-filter:var(--dsw-menu-backdrop-filter,blur(16px)) !important;border:1px solid var(--dsw-alias-border-l2) !important;padding:4px !important}
+.ant-select-dropdown .rc-virtual-list-holder{max-height:220px !important}
+.ant-select-dropdown .ant-select-item{border-radius:var(--dsw-radius-sm,8px) !important;color:var(--dsw-alias-label-primary) !important;padding:5px 8px !important;min-height:30px !important}
+.ant-select-dropdown .ant-select-item-option-selected{background:var(--dsw-alias-state-business-tertiary,rgba(76,141,255,0.12)) !important;color:var(--dsw-alias-state-business-primary,#4c8dff) !important;font-weight:600 !important}
+.ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-selected){background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,0.06)) !important}
 `
 
 export function installStyles(): () => void {

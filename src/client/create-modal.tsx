@@ -251,15 +251,20 @@ export function CreateModal({
                   options={workspaces.map(item => ({ value: item.id, label: item.title }))}
                   onChange={value => update({ workspaceId: value })}
                   popupRender={menu => (
-                    <div>
-                      {menu}
+                    <div style={{ padding: 4 }}>
+                      <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                        {menu}
+                      </div>
                       <div style={{ height: 1, margin: '6px 8px', background: 'var(--dsw-alias-border-l2, rgba(255,255,255,.1))' }} />
                       <Button
                         type="link"
                         className="dsh-st-add-workspace"
                         icon={<PlusIcon width={14} height={14} />}
                         disabled={addingWorkspace}
-                        onMouseDown={event => event.preventDefault()}
+                        onMouseDown={event => {
+                          event.preventDefault()
+                          event.stopPropagation()
+                        }}
                         onClick={event => {
                           event.preventDefault()
                           event.stopPropagation()
