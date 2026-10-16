@@ -66,6 +66,27 @@ declare module '@deepseek-ai/dsh-client-ui-primitives' {
     readonly onClick?: ((event?: any) => void) | undefined
     readonly children?: ReactNode
   } & ButtonHTMLAttributes<HTMLButtonElement>): JSX.Element
+  export function Input(props: {
+    readonly icon?: ReactNode
+    readonly className?: string | undefined
+  } & import('react').InputHTMLAttributes<HTMLInputElement>): JSX.Element
+  export function SegmentedControl<Value extends string>(props: {
+    readonly id: string
+    readonly value: Value
+    readonly options: readonly { readonly value: Value; readonly label: string; readonly disabled?: boolean; readonly title?: string }[]
+    readonly onChange: (next: Value) => void
+    readonly label: string
+    readonly disabled?: boolean
+    readonly className?: string | undefined
+  }): JSX.Element
+  export function Checkbox(props: {
+    readonly checked: boolean
+    readonly onChange: (next: boolean) => void
+    readonly label: string
+    readonly disabled?: boolean
+    readonly title?: string
+    readonly className?: string
+  }): JSX.Element
   export function Switch(props: {
     readonly checked: boolean
     readonly onChange: (next: boolean) => void
@@ -76,8 +97,8 @@ declare module '@deepseek-ai/dsh-client-ui-primitives' {
   }): JSX.Element
   export function HoverCard(props: { readonly anchor: ReactNode; readonly content: ReactNode; readonly openDelayMs?: number; readonly disabled?: boolean; readonly copyText?: string; readonly copyLabel?: string; readonly copiedLabel?: string }): JSX.Element
   export function StateDot(props: { readonly state: 'done' | 'warning' | 'ongoing' | 'error' | 'idle'; readonly size?: number }): JSX.Element
-  export function Menu(props: { readonly open: boolean; readonly onClose: () => void; readonly items?: readonly MenuEntry[]; readonly children?: ReactNode; readonly onSelect: (id: string) => void; readonly anchor: ReactNode; readonly portal?: boolean; readonly dense?: boolean; readonly compact?: boolean; readonly closeOnPointerLeave?: boolean; readonly selectedId?: string; readonly selectedIds?: readonly string[]; readonly align?: 'start' | 'end'; readonly listClassName?: string }): JSX.Element
-  export function Modal(props: { readonly open: boolean; readonly onClose: () => void; readonly closeLabel: string; readonly title: string; readonly footer?: ReactNode; readonly children?: ReactNode }): JSX.Element
+  export function Menu(props: { readonly open: boolean; readonly onClose: () => void; readonly items?: readonly MenuEntry[]; readonly footer?: readonly MenuEntry[]; readonly children?: ReactNode; readonly onSelect: (id: string) => void; readonly anchor: ReactNode; readonly portal?: boolean; readonly dense?: boolean; readonly compact?: boolean; readonly closeOnPointerLeave?: boolean; readonly selectedId?: string; readonly selectedIds?: readonly string[]; readonly align?: 'start' | 'end'; readonly listClassName?: string }): JSX.Element
+  export function Modal(props: { readonly open: boolean; readonly onClose: () => void; readonly closeLabel: string; readonly title: string; readonly footer?: ReactNode; readonly children?: ReactNode; readonly className?: string; readonly description?: string }): JSX.Element
   export function IconArchiveOutline20(props: { readonly size?: number }): JSX.Element
   export function IconBranchOutline16(props: { readonly size?: number }): JSX.Element
   export function IconEditOutline16(props: { readonly size?: number }): JSX.Element
@@ -98,6 +119,7 @@ declare module '@deepseek-ai/dsh-client-ui-primitives' {
     readonly description: string
     readonly acknowledgeLabel: string
     readonly cancelLabel: string
+    readonly closeLabel: string
     readonly confirmLabel: string
     readonly acknowledged: boolean
     readonly disabled?: boolean

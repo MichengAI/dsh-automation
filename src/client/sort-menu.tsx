@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Translate } from './contracts.js'
-import { Menu, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
-import { Button } from './antd-ui.js'
+import { Menu, Button, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
+import { rowIconStyle } from './plugin-ui.js'
 import {
   readSortDefault,
   writeSortDefault,
@@ -64,7 +64,9 @@ export function SortMenu({
 
   const trigger = iconOnly ? (
     <Button
-      variant="ghost"
+      className="dsh-st-row-icon"
+      variant="outline"
+      style={rowIconStyle}
       size="sm"
       aria-label={currentLabel}
       title={currentLabel}

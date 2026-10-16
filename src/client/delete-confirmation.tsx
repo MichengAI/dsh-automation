@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { AntdProvider, Button, Modal } from './antd-ui.js'
+import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { blockHostModalBackdrop } from './plugin-ui.js'
 import type { Translate } from './contracts.js'
 
 export function DeleteConfirmation({
@@ -24,25 +25,30 @@ export function DeleteConfirmation({
       event.stopImmediatePropagation()
       onCancel()
     }
+    const onClick = (event: MouseEvent): void => { blockHostModalBackdrop(event, 'dsh-st-delete-dialog') }
     window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
+    document.addEventListener('click', onClick, true)
+    return () => {
+      window.removeEventListener('keydown', onKey, true)
+      document.removeEventListener('click', onClick, true)
+    }
   }, [onCancel, target])
   return (
-    <AntdProvider>
-      <Modal
-        open={target !== undefined}
-        title={t('card.confirmDelete')}
-        onCancel={onCancel}
-        maskClosable={false}
-        keyboard={false}
-        footer={[
-          <Button key="cancel" disabled={busy} onClick={onCancel}>{t('card.cancel')}</Button>,
-          <Button key="delete" danger type="primary" disabled={busy} onClick={onConfirm}>{t('card.confirm')}</Button>,
-        ]}
-      >
-        {target !== undefined && <p>{target.name}</p>}
-        <p>{t('card.confirmDeleteHint')}</p>
-      </Modal>
-    </AntdProvider>
+    <Modal
+      open={target !== undefined}
+      className="dsh-st-delete-dialog"
+      title={t('card.confirmDelete')}
+      closeLabel={t('card.cancel')}
+      onClose={onCancel}
+      footer={(
+        <>
+          <Button variant="outline" disabled={busy} onClick={onCancel}>{t('card.cancel')}</Button>
+          <Button variant="outline" className="dsh-st-n-danger-button" disabled={busy} onClick={onConfirm}>{t('card.confirm')}</Button>
+        </>
+      )}
+    >
+      {target !== undefined && <p>{target.name}</p>}
+      <p>{t('card.confirmDeleteHint')}</p>
+    </Modal>
   )
 }

@@ -14,7 +14,7 @@ import {
 } from './helpers.js'
 import type { AutomationViewModel } from './protocol.js'
 import { automationToggleMutation, deriveTaskOverviewRows, type TaskOverviewRow } from './schedule-rail-model.js'
-import { AntdProvider, Segmented, Switch } from './antd-ui.js'
+import { SegmentedControl, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { SortMenu } from './sort-menu.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
@@ -32,19 +32,17 @@ export function ScheduleViewSwitch({
   readonly onChange: (view: ScheduleView) => void
 }): JSX.Element {
   return (
-    <AntdProvider>
-      <Segmented
-        block
-        className="dsh-st-rail-views"
-        aria-label={t('sidebar.views')}
-        value={view}
-        options={[
-          { value: 'runs', label: t('tabs.runs') },
-          { value: 'overview', label: t('sidebar.viewOverview') },
-        ]}
-        onChange={value => onChange(value as ScheduleView)}
-      />
-    </AntdProvider>
+    <SegmentedControl
+      id="dsh-st-rail-views"
+      className="dsh-st-rail-views"
+      label={t('sidebar.views')}
+      value={view}
+      options={[
+        { value: 'runs', label: t('tabs.runs') },
+        { value: 'overview', label: t('sidebar.viewOverview') },
+      ]}
+      onChange={onChange}
+    />
   )
 }
 
@@ -87,7 +85,6 @@ export function ScheduleOverview({
   }
 
   return (
-    <AntdProvider>
     <div className="dsh-st-overview">
       <div className="dsh-st-overview-head">
         <div className="dsh-st-overview-title">
@@ -122,7 +119,6 @@ export function ScheduleOverview({
             {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
           />)}
     </div>
-    </AntdProvider>
   )
 }
 
@@ -164,10 +160,9 @@ function OverviewRow({
       </button>
       <span className="dsh-st-overview-toggle" title={toggleLabel}>
         <Switch
-          size="small"
           checked={!paused}
           disabled={toggleDisabled}
-          aria-label={toggleLabel}
+          label={toggleLabel}
           onChange={() => { onToggleAutomation?.(row.id, automationToggleMutation(row.status)) }}
         />
       </span>

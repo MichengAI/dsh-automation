@@ -33,8 +33,8 @@ import {
   PlusIcon,
   RefreshIcon,
 } from './icons.js'
-import { AntdProvider, Button, Input, PrimitiveButton, Switch, Tabs } from './antd-ui.js'
-import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Input, Menu, SegmentedControl, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { rowIconStyle } from './plugin-ui.js'
 import { MenuSelect } from './menu-select.js'
 import { CreateModal } from './create-modal.js'
 import { DeleteConfirmation } from './delete-confirmation.js'
@@ -158,27 +158,26 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
   }, [snapshot, taskSettingsRequest, t])
 
   return (
-    <AntdProvider>
     <div className="dsh-st-shell">
       <header className="dsh-st-top">
         <div className="dsh-st-heading">
           <div className="dsh-st-heading-row">
             <h1>{t('tab')}</h1>
             <div className="dsh-st-heading-links">
-              <PrimitiveButton variant="outline" size="sm" aria-label={t('header.githubProject')} icon={<GithubIcon />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation', '_blank', 'noreferrer') }}>{t('header.githubProject')}</PrimitiveButton>
-              <PrimitiveButton variant="outline" size="sm" aria-label={t('header.githubFeedback')} icon={<IconListPenOutline />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation/issues', '_blank', 'noreferrer') }}>{t('header.githubFeedback')}</PrimitiveButton>
+              <Button variant="outline" size="sm" aria-label={t('header.githubProject')} icon={<GithubIcon />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation', '_blank', 'noreferrer') }}>{t('header.githubProject')}</Button>
+              <Button variant="outline" size="sm" aria-label={t('header.githubFeedback')} icon={<IconListPenOutline />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation/issues', '_blank', 'noreferrer') }}>{t('header.githubFeedback')}</Button>
             </div>
           </div>
           <p>{t('header.lead')}</p>
         </div>
         <div className="dsh-st-toolbar">
-          <Input className="dsh-st-search" allowClear value={query} placeholder={t('search.placeholder')} onChange={event => setQuery(event.target.value)} />
-          <Button icon={<ChatIcon />} onClick={() => {
+          <Input className="dsh-st-search" value={query} placeholder={t('search.placeholder')} onChange={event => setQuery(event.target.value)} />
+          <Button variant="outline" icon={<ChatIcon />} onClick={() => {
             setChatPrefill(t('chat.prompt'))
             closeSettings?.()
           }}>{t('action.chatCreate')}</Button>
-          <Button type="primary" icon={<PlusIcon />} disabled={defaultPermission === '' || permissions.length === 0} onClick={() => openCreate()}>{t('action.create')}</Button>
-          <Button className="dsh-st-icon-btn" icon={<RefreshIcon />} aria-label={t('section.refresh')} onClick={() => { void runtime.refresh() }} />
+          <Button variant="primary" icon={<PlusIcon />} disabled={defaultPermission === '' || permissions.length === 0} onClick={() => openCreate()}>{t('action.create')}</Button>
+          <Button className="dsh-st-row-icon" variant="outline" size="sm" icon={<RefreshIcon />} aria-label={t('section.refresh')} style={rowIconStyle} onClick={() => { void runtime.refresh() }} />
         </div>
       </header>
 
@@ -219,22 +218,18 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
         <div className="dsh-st-empty">
           <h3>{t('error.title')}</h3>
           <p>{state.error}</p>
-          <Button type="primary" onClick={() => { void runtime.refresh() }}>{t('error.retry')}</Button>
+          <Button variant="primary" onClick={() => { void runtime.refresh() }}>{t('error.retry')}</Button>
         </div>
       )}
 
       <div className="dsh-st-tabs">
-        <Tabs
+        <SegmentedControl
+          id="dsh-st-settings-tabs"
           className="dsh-st-settings-tabs"
-          activeKey={tab}
-          onChange={key => setTab(key as Tab)}
-          items={[{ key: 'mine', label: t('tabs.mine') }, { key: 'runs', label: t('tabs.runs') }]}
-          styles={{
-            header: { margin: 0, height: 40 },
-            item: { height: 40, padding: 0, display: 'flex', alignItems: 'center' },
-            body: { display: 'none' },
-            content: { display: 'none' },
-          }}
+          label={t('tab')}
+          value={tab}
+          options={[{ value: 'mine', label: t('tabs.mine') }, { value: 'runs', label: t('tabs.runs') }]}
+          onChange={setTab}
         />
         {tab === 'mine' && (
           <div className="dsh-st-sort-wrap">
@@ -359,7 +354,6 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
         }}
       />
     </div>
-    </AntdProvider>
   )
 }
 
@@ -380,7 +374,7 @@ function TaskCard({
     <article className="dsh-st-card" onClick={onEdit}>
       <div className="dsh-st-card-head">
         <span onClick={(event) => event.stopPropagation()}>
-          <Switch checked={item.status === 'active'} disabled={busy} aria-label={item.status === 'active' ? t('card.pause') : t('card.resume')} onChange={() => onToggle()} />
+          <Switch checked={item.status === 'active'} disabled={busy} label={item.status === 'active' ? t('card.pause') : t('card.resume')} onChange={() => onToggle()} />
         </span>
         <span onClick={(event) => event.stopPropagation()}>
           {/* 原语菜单替代 Antd Dropdown，对齐技能插件 */}
@@ -392,10 +386,12 @@ function TaskCard({
             dense
             anchor={
               <Button
-                variant="ghost"
+                className="dsh-st-row-icon"
+                variant="outline"
                 size="sm"
                 aria-label={t('card.more')}
                 icon={<MoreIcon width={16} height={16} />}
+                style={rowIconStyle}
                 onClick={() => setMenuOpen(prev => !prev)}
               />
             }

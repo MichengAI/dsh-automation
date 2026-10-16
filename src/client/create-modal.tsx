@@ -16,8 +16,8 @@ import {
 import { shouldConfirmFullAccess } from './create-modal-logic.js'
 import { AddedWorkspaceMissingError } from './workspace-create.js'
 import { PlusIcon } from './icons.js'
-import type { TextAreaRef } from 'antd/es/input/TextArea.js'
-import { AntdProvider, Button, Checkbox, Input, Modal, PrimitiveButton, Select } from './antd-ui.js'
+import { Button, Checkbox, Modal, RiskConfirmation } from '@deepseek-ai/dsh-client-ui-primitives'
+import { blockHostModalBackdrop, Input, TextArea } from './plugin-ui.js'
 import { MenuSelect } from './menu-select.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
@@ -53,12 +53,12 @@ export function CreateModal({
   const [caret, setCaret] = useState(0)
   const [slashIndex, setSlashIndex] = useState(0)
   const [slashDismissed, setSlashDismissed] = useState<string>()
-  const promptRef = useRef<TextAreaRef>(null)
+  const promptRef = useRef<HTMLTextAreaElement>(null)
   const caretRef = useRef(0)
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
-      if (document.querySelector('.ant-select-dropdown:not(.ant-select-dropdown-hidden), .ant-dropdown:not(.ant-dropdown-hidden)') !== null) return
+      if (document.querySelector('[role="menu"]') !== null) return
       event.preventDefault()
       event.stopPropagation()
       event.stopImmediatePropagation()
@@ -69,8 +69,13 @@ export function CreateModal({
       }
       onClose()
     }
+    const onClick = (event: MouseEvent): void => { blockHostModalBackdrop(event, 'dsh-st-create-dialog') }
     window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
+    document.addEventListener('click', onClick, true)
+    return () => {
+      window.removeEventListener('keydown', onKey, true)
+      document.removeEventListener('click', onClick, true)
+    }
   }, [confirmingPermission, onClose])
   const update = (patch: Partial<AutomationFormState>): void => {
     setForm(current => ({ ...current, ...patch }))
@@ -134,7 +139,7 @@ export function CreateModal({
     update({ prompt: next.text })
     setSlashDismissed(undefined)
     queueMicrotask(() => {
-      const el = promptRef.current?.resizableTextArea?.textArea
+      const el = promptRef.current
       if (el == null) return
       el.focus()
       el.setSelectionRange(next.caret, next.caret)
@@ -143,19 +148,19 @@ export function CreateModal({
   }
 
   return (
-    <AntdProvider>
+    <>
       <Modal
         open
+        className="dsh-st-create-dialog"
         title={editing === true ? t('modal.edit') : t('modal.title')}
-        onCancel={onClose}
-        maskClosable={false}
-        keyboard={false}
-        width={720}
-        destroyOnHidden
-        footer={[
-          <Button key="cancel" disabled={busy} onClick={onClose}>{t('form.cancel')}</Button>,
-          <Button key="save" htmlType="submit" form="dsh-st-create-form" type="primary" disabled={busy || addingWorkspace || !workspaceReady}>{t('modal.save')}</Button>,
-        ]}
+        closeLabel={t('form.cancel')}
+        onClose={onClose}
+        footer={(
+          <>
+            <Button variant="outline" disabled={busy} onClick={onClose}>{t('form.cancel')}</Button>
+            <Button variant="primary" type="submit" form="dsh-st-create-form" disabled={busy || addingWorkspace || !workspaceReady}>{t('modal.save')}</Button>
+          </>
+        )}
       >
         <form id="dsh-st-create-form" className="dsh-st-form" onSubmit={(event) => { void handleSubmit(event) }}>
           <p>{t('form.subtitle')}</p>
@@ -187,7 +192,7 @@ export function CreateModal({
                 {form.scheduleKind === 'interval' && (
                   <>
                     <span className="dsh-st-suffix">{t('form.every')}</span>
-                    <span className="dsh-st-amount"><Input type="number" min={1} value={form.everyMinutes} addonAfter={t('form.minutes')} onChange={event => update({ everyMinutes: event.target.value })} /></span>
+                    <span className="dsh-st-amount"><Input type="number" min={1} value={form.everyMinutes} onChange={event => update({ everyMinutes: event.target.value })} /><span className="dsh-st-suffix">{t('form.minutes')}</span></span>
                   </>
                 )}
                 {form.scheduleKind === 'hourly' && (
@@ -209,7 +214,7 @@ export function CreateModal({
                 {form.scheduleKind === 'custom' && (
                   <>
                     <span className="dsh-st-suffix">{t('form.every')}</span>
-                    <span className="dsh-st-amount"><Input type="number" min={1} value={form.customDays} addonAfter={t('form.daysShort')} onChange={event => update({ customDays: event.target.value })} /></span>
+                    <span className="dsh-st-amount"><Input type="number" min={1} value={form.customDays} onChange={event => update({ customDays: event.target.value })} /><span className="dsh-st-suffix">{t('form.daysShort')}</span></span>
                     <span className="dsh-st-suffix">{t('form.atTime')}</span>
                     <TimeSelect value={form.time} onChange={value => update({ time: value })} />
                   </>
@@ -224,11 +229,16 @@ export function CreateModal({
             </label>
           </div>
           {form.scheduleKind === 'weekly' && (
-            <Checkbox.Group
-              options={WEEKDAYS.map(day => ({ label: t(`day.${day}`), value: String(day) }))}
-              value={form.weekdays.map(String)}
-              onChange={value => update({ weekdays: value.map(item => Number(item)) })}
-            />
+            <div className="dsh-st-weekdays">
+              {WEEKDAYS.map(day => (
+                <Checkbox
+                  key={day}
+                  checked={form.weekdays.includes(day)}
+                  label={t(`day.${day}`)}
+                  onChange={checked => update({ weekdays: checked ? [...form.weekdays, day] : form.weekdays.filter(item => item !== day) })}
+                />
+              ))}
+            </div>
           )}
           <div className="dsh-st-settings">
             <label className="dsh-st-picker-field">
@@ -236,7 +246,7 @@ export function CreateModal({
               {workspaces.length === 0 ? (
                 <div className="dsh-st-workspace-empty">
                   <Button
-                    type="primary"
+                    variant="primary"
                     icon={<PlusIcon width={14} height={14} />}
                     disabled={addingWorkspace}
                     onClick={() => { void handleAddWorkspace() }}
@@ -244,51 +254,28 @@ export function CreateModal({
                   <span className="dsh-st-workspace-note">{t('form.workspaceRequired')}</span>
                 </div>
               ) : (
-                <Select
-                  value={form.workspaceId === '' ? undefined : form.workspaceId}
+                <MenuSelect
+                  value={form.workspaceId}
+                  label={t('form.fieldWorkspace')}
                   placeholder={t('form.workspace')}
-                  popupMatchSelectWidth={false}
                   options={workspaces.map(item => ({ value: item.id, label: item.title }))}
+                  footer={[{ value: 'add-workspace', label: t('form.addWorkspace'), disabled: addingWorkspace }]}
+                  onFooter={() => { void handleAddWorkspace() }}
                   onChange={value => update({ workspaceId: value })}
-                  popupRender={menu => (
-                    <div style={{ padding: 4 }}>
-                      <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-                        {menu}
-                      </div>
-                      <div style={{ height: 1, margin: '6px 8px', background: 'var(--dsw-alias-border-l2, rgba(255,255,255,.1))' }} />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="dsh-st-add-workspace"
-                        icon={<PlusIcon width={14} height={14} />}
-                        disabled={addingWorkspace}
-                        style={{ width: '100%', justifyContent: 'center' }}
-                        onMouseDown={event => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                        }}
-                        onClick={event => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                          void handleAddWorkspace()
-                        }}
-                      >{t('form.addWorkspace')}</Button>
-                    </div>
-                  )}
                 />
               )}
             </label>
             <label className="dsh-st-picker-field">
               <span>{t('form.fieldModel')}</span>
-              <Select
+              <MenuSelect
                 value={form.modelKey}
-                popupMatchSelectWidth={false}
-                options={Array.from(models.reduce((groups, item) => {
+                label={t('form.fieldModel')}
+                groups={Array.from(models.reduce((groups, item) => {
                   const group = groups.get(item.provider) ?? { label: item.providerLabel, options: [] as { value: string; label: string }[] }
                   group.options.push({ value: `${item.provider}::${item.model}`, label: item.label })
                   groups.set(item.provider, group)
                   return groups
-                }, new Map<string, { label: string; options: { value: string; label: string }[] }>()), ([, group]) => group)}
+                }, new Map<string, { label: string; options: { value: string; label: string }[] }>()), ([id, group]) => ({ id, label: group.label, options: group.options }))}
                 onChange={value => {
                   const item = models.find(model => `${model.provider}::${model.model}` === value)
                   update({ modelKey: value, reasoningEffort: item?.reasoning?.defaultEffort ?? 'none' })
@@ -297,11 +284,11 @@ export function CreateModal({
             </label>
             <label className="dsh-st-picker-field">
               <span>{t('form.fieldEffort')}</span>
-              <Select
+              <MenuSelect
                 disabled={reasoning === undefined}
-                value={reasoning === undefined ? undefined : form.reasoningEffort}
+                value={reasoning === undefined ? '' : form.reasoningEffort}
+                label={t('form.fieldEffort')}
                 placeholder={modelT('effort.providerDefault')}
-                popupMatchSelectWidth={false}
                 options={reasoning === undefined ? [] : [
                   ...(reasoning.defaultEffort === undefined ? [{ value: 'none', label: modelT('effort.providerDefault') }] : []),
                   ...reasoning.efforts.map(item => ({ value: item.id, label: item.name })),
@@ -340,10 +327,9 @@ export function CreateModal({
               )}
               <div className="dsh-st-prompt-card">
               <div className="dsh-st-prompt-backdrop" aria-hidden="true">{splitSkillTokens(form.prompt, skills).map((part, index) => part.kind === 'skill' ? <span key={index} className="dsh-st-skill-token">{part.text}</span> : <span key={index}>{part.text}</span>)}</div>
-              <Input.TextArea
+              <TextArea
                 ref={promptRef}
                 spellCheck={false}
-                variant="borderless"
                 className="dsh-st-prompt-input"
                 value={form.prompt}
                 placeholder={t('form.promptPlaceholder')}
@@ -383,27 +369,26 @@ export function CreateModal({
           ))}
           {validationError !== undefined && <p className="dsh-st-error">{validationError}</p>}
         </form>
-        <Modal
-          open={confirmingPermission !== undefined}
-          title={permissionT('confirm.title')}
-          keyboard={false}
-          maskClosable={false}
-          okText={permissionT('confirm.enable')}
-          cancelText={permissionT('confirm.cancel')}
-          okButtonProps={{ disabled: !fullAccessAcknowledged }}
-          onCancel={() => { setFullAccessAcknowledged(false); setConfirmingPermission(undefined) }}
-          onOk={() => {
-            if (!fullAccessAcknowledged || confirmingPermission === undefined) return
-            update({ permission: confirmingPermission })
-            setFullAccessAcknowledged(false)
-            setConfirmingPermission(undefined)
-          }}
-        >
-          <p>{permissionT('confirm.description')}</p>
-          <Checkbox checked={fullAccessAcknowledged} onChange={event => setFullAccessAcknowledged(event.target.checked)}>{permissionT('confirm.acknowledge')}</Checkbox>
-        </Modal>
       </Modal>
-    </AntdProvider>
+      <RiskConfirmation
+        open={confirmingPermission !== undefined}
+        title={permissionT('confirm.title')}
+        description={permissionT('confirm.description')}
+        acknowledgeLabel={permissionT('confirm.acknowledge')}
+        cancelLabel={permissionT('confirm.cancel')}
+        closeLabel={permissionT('confirm.cancel')}
+        confirmLabel={permissionT('confirm.enable')}
+        acknowledged={fullAccessAcknowledged}
+        onAcknowledgedChange={setFullAccessAcknowledged}
+        onCancel={() => { setFullAccessAcknowledged(false); setConfirmingPermission(undefined) }}
+        onConfirm={() => {
+          if (!fullAccessAcknowledged || confirmingPermission === undefined) return
+          update({ permission: confirmingPermission })
+          setFullAccessAcknowledged(false)
+          setConfirmingPermission(undefined)
+        }}
+      />
+    </>
   )
 }
 

@@ -8,11 +8,21 @@ export interface MenuSelectOption {
   danger?: boolean
 }
 
+export interface MenuSelectGroup {
+  id: string
+  label: string
+  options: readonly MenuSelectOption[]
+}
+
 export interface MenuSelectProps {
   value: string
   label?: string
-  options: readonly MenuSelectOption[]
+  placeholder?: string
+  options?: readonly MenuSelectOption[]
+  groups?: readonly MenuSelectGroup[]
+  footer?: readonly MenuSelectOption[]
   onChange: (value: string) => void
+  onFooter?: (id: string) => void
   disabled?: boolean
   className?: string
   listClassName?: string
@@ -20,13 +30,19 @@ export interface MenuSelectProps {
   icon?: React.ReactNode
 }
 
-/**
- * 宿主官方原语 Menu 规范封装的下拉选择组件（对齐 dsh-skills-manager 的 SourceSelect 实现）。
- * 1. 触发器采用宿主 Button (variant="outline", size="sm")，右侧配旋转指示小箭头；
- * 2. 弹出层使用宿主原生 <Menu portal dense>，完全消除 Antd Select 的虚拟列表白底与样式打架。
- */
+function optionItem(opt: MenuSelectOption): MenuEntry {
+  return {
+    id: opt.value,
+    label: opt.label,
+    ...(opt.disabled !== undefined ? { disabled: opt.disabled } : {}),
+    ...(opt.danger !== undefined ? { danger: opt.danger } : {}),
+  }
+}
+
+/** 宿主 Menu 下拉。分组用标签行，底部动作走 footer，不走选择值。 */
 export function MenuSelect(props: MenuSelectProps): React.ReactElement {
   const [open, setOpen] = React.useState(false)
+  const options = props.options ?? []
 
   React.useEffect(() => {
     if (!open || typeof window === 'undefined') return undefined
@@ -41,16 +57,19 @@ export function MenuSelect(props: MenuSelectProps): React.ReactElement {
   }, [open])
 
   const items: readonly MenuEntry[] = React.useMemo(() => {
-    return props.options.map(opt => ({
-      id: opt.value,
-      label: opt.label,
-      ...(opt.disabled !== undefined ? { disabled: opt.disabled } : {}),
-      ...(opt.danger !== undefined ? { danger: opt.danger } : {}),
-    }))
-  }, [props.options])
+    if (props.groups !== undefined && props.groups.length > 0) {
+      return props.groups.flatMap(group => [
+        { type: 'label' as const, id: `label-${group.id}`, text: group.label },
+        ...group.options.map(optionItem),
+      ])
+    }
+    return options.map(optionItem)
+  }, [options, props.groups])
 
-  const selectedOption = props.options.find(opt => opt.value === props.value)
-  const currentText = selectedOption ? selectedOption.label : (props.label ?? '')
+  const footer = props.footer?.map(optionItem)
+  const selectedOption = options.find(opt => opt.value === props.value)
+    ?? props.groups?.flatMap(group => [...group.options]).find(opt => opt.value === props.value)
+  const currentText = selectedOption ? selectedOption.label : (props.placeholder ?? props.label ?? '')
 
   return React.createElement('div', {
     className: ['dsh-st-menu-select-wrap', props.className].filter(Boolean).join(' '),
@@ -59,6 +78,11 @@ export function MenuSelect(props: MenuSelectProps): React.ReactElement {
     open,
     onClose: () => { setOpen(false) },
     onSelect: (id: string) => {
+      if (props.footer?.some(item => item.value === id) === true) {
+        props.onFooter?.(id)
+        setOpen(false)
+        return
+      }
       props.onChange(id)
       setOpen(false)
     },
@@ -67,11 +91,12 @@ export function MenuSelect(props: MenuSelectProps): React.ReactElement {
     portal: true,
     dense: true,
     ...(props.listClassName !== undefined ? { listClassName: props.listClassName } : {}),
+    ...(footer !== undefined ? { footer } : {}),
     anchor: React.createElement(Button, {
       variant: 'outline',
       size: 'sm',
       role: 'combobox',
-      'aria-label': props.label,
+      'aria-label': props.label ?? currentText,
       'aria-expanded': open,
       disabled: props.disabled,
       className: ['dsh-st-menu-select-trigger', open ? 'is-open' : ''].filter(Boolean).join(' '),

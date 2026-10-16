@@ -68,7 +68,6 @@
     "test:matrix": "pnpm build && node scripts/test-version-matrix.mjs"
   },
   "dependencies": {
-    "antd": "^6.6.5",
     "luxon": "^3.7.2",
     "zod": "^4.1.5"
   },
