@@ -15,7 +15,7 @@ import React from 'react';
 export declare const Input: React.ComponentType<InputProps> & {
     TextArea: React.ForwardRefExoticComponent<TextAreaProps & React.RefAttributes<TextAreaRef>>;
 };
-/** 操作按钮默认用中等尺寸和圆角。标题栏和小按钮可以传入 size、shape 覆盖。 */
+/** 操作按钮默认用中等尺寸。标题栏和小按钮可以传入 size、shape 覆盖。 */
 export declare const Button: React.ForwardRefExoticComponent<ButtonProps & React.RefAttributes<HTMLButtonElement>>;
 export declare const Checkbox: React.ComponentType<CheckboxProps> & {
     Group: React.ComponentType<{
