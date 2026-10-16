@@ -42,9 +42,11 @@ const CSS_TEXT = `
 .dsh-st-settings-tabs .ant-tabs-nav{margin:0;height:40px}
 .dsh-st-settings-tabs .ant-tabs-nav::before{border-bottom:0}
 .dsh-st-settings-tabs .ant-tabs-tab{height:40px;padding:0;display:flex;align-items:center}
-.dsh-st-settings-tabs .ant-tabs-tab-btn{color:var(--dsw-alias-label-secondary);font-size:14px;line-height:22px}
-.dsh-st-settings-tabs .ant-tabs-tab-active .ant-tabs-tab-btn{color:var(--dsw-alias-label-primary);font-weight:600}
-.dsh-st-settings-tabs .ant-tabs-ink-bar{background:var(--dsw-alias-label-primary)}
+.dsh-st-settings-tabs .ant-tabs-tab-btn{color:var(--dsw-alias-label-secondary) !important;font-size:14px;line-height:22px;transition:color .14s ease}
+.dsh-st-settings-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn{color:var(--dsw-alias-label-primary) !important}
+.dsh-st-settings-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn,
+.dsh-st-settings-tabs .ant-tabs-tab-active .ant-tabs-tab-btn{color:var(--dsw-alias-label-primary) !important;font-weight:600 !important}
+.dsh-st-settings-tabs .ant-tabs-ink-bar{background:var(--dsw-alias-label-primary) !important}
 .dsh-st-sort-wrap{display:flex;align-items:center;align-self:center;justify-content:flex-end;gap:8px;height:32px;margin:0 0 0 auto;min-width:0;flex:0 0 auto;flex-wrap:nowrap}
 .dsh-st-filters{display:flex;align-items:center;align-self:center;justify-content:flex-end;gap:8px;height:32px;margin:0 0 0 auto;min-width:0;flex:0 0 auto;flex-wrap:nowrap}
 .dsh-st-filters>*{margin:0 !important}
