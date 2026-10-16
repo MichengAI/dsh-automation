@@ -43,7 +43,7 @@ export declare const Checkbox: React.ComponentType<CheckboxProps> & {
 };
 export declare const ConfigProvider: React.ComponentType<ConfigProviderProps>;
 export declare const Dropdown: React.ComponentType<DropdownProps>;
-export declare const Modal: React.ComponentType<ModalProps>;
+export declare const Modal: (props: ModalProps) => React.ReactElement;
 export declare const Progress: React.ComponentType<ProgressProps>;
 export declare const Segmented: React.ComponentType<SegmentedProps<import("antd/es/segmented/index.js").SegmentedValue>>;
 export declare const Select: React.ComponentType<SelectProps<any, import("antd/es/select/index.js").DefaultOptionType>>;
