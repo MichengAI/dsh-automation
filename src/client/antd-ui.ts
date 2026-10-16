@@ -177,8 +177,40 @@ export function AntdProvider(props: { locale?: Locale; children?: React.ReactNod
     button: { autoInsertSpace: false },
     theme: {
       algorithm: dark ? darkAlgorithm : defaultAlgorithm,
-      ...(link === '' ? {} : { token: { colorLink: link, colorLinkHover: link, colorLinkActive: link } }),
-      components: { Button: { borderRadius: 8 } },
+      token: {
+        fontFamily: 'var(--dsw-font-family, system-ui)',
+        colorText: 'var(--dsw-alias-label-primary)',
+        colorTextSecondary: 'var(--dsw-alias-label-secondary)',
+        colorTextTertiary: 'var(--dsw-alias-label-tertiary)',
+        colorTextPlaceholder: 'var(--dsw-alias-label-tertiary)',
+        colorBgContainer: 'var(--dsw-alias-bg-layer-1)',
+        colorBorder: 'var(--dsw-alias-border-l2)',
+        borderRadius: 8,
+        borderRadiusSM: 4,
+        borderRadiusLG: 12,
+        controlOutline: 'var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary, #4c8dff))',
+        colorPrimary: 'var(--dsw-alias-button-primary-fill, var(--dsw-alias-brand-primary))',
+        colorPrimaryHover: 'var(--dsw-alias-button-primary-hover, var(--dsw-alias-interactive-bg-active))',
+        ...(link === '' ? {} : { colorLink: link, colorLinkHover: link, colorLinkActive: link }),
+      },
+      components: {
+        Button: { borderRadius: 8 },
+        Input: {
+          controlHeight: 32,
+          colorBgContainer: 'var(--dsw-alias-bg-layer-1)',
+          colorBorder: 'var(--dsw-alias-border-l2)',
+          colorText: 'var(--dsw-alias-label-primary)',
+          colorTextPlaceholder: 'var(--dsw-alias-label-tertiary)',
+          borderRadius: 8,
+        },
+        Select: {
+          controlHeight: 32,
+          colorBgContainer: 'var(--dsw-alias-bg-layer-1)',
+          colorBorder: 'var(--dsw-alias-border-l2)',
+          colorText: 'var(--dsw-alias-label-primary)',
+          borderRadius: 8,
+        },
+      },
     },
   }, props.children)
 }

@@ -12,6 +12,14 @@ const CSS_TEXT = `
 .dsh-st-heading p,.dsh-st-top p{margin:12px 0 0;max-width:none;color:var(--dsw-alias-label-tertiary);font-size:14px;line-height:22px}
 .dsh-st-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px}
 .dsh-st-search{flex:1;min-width:0;max-width:280px}
+.dsh-st-shell .ant-input,
+.dsh-st-shell .ant-input-affix-wrapper{border-radius:var(--dsw-radius-sm,8px);background:var(--dsw-alias-bg-layer-1);border:0.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);transition:border-color .15s ease,background .15s ease}
+.dsh-st-shell .ant-input:hover:not(:disabled),
+.dsh-st-shell .ant-input-affix-wrapper:hover:not(.ant-input-affix-wrapper-disabled){border-color:var(--dsw-alias-border-inverted,rgba(255,255,255,.2))}
+.dsh-st-shell .ant-input:focus,
+.dsh-st-shell .ant-input-focused,
+.dsh-st-shell .ant-input-affix-wrapper-focused{border-color:var(--dsw-alias-state-business-primary,#4c8dff) !important;box-shadow:0 0 0 1px var(--dsw-alias-state-business-primary,#4c8dff) !important}
+.dsh-st-shell .ant-input::placeholder{color:var(--dsw-alias-label-tertiary)}
 .dsh-st-banner{display:flex;align-items:flex-start;gap:8px;margin-bottom:16px;padding:10px 14px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5}
 .dsh-st-banner>span{display:inline-flex;align-items:flex-start;gap:8px}
 .dsh-st-examples{margin-bottom:22px}
