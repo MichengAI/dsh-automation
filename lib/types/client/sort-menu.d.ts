@@ -1,6 +1,6 @@
 import type { Translate } from './contracts.js';
 import { type AutomationSortDirection, type AutomationSortKey, type SortPreferenceStorage } from './helpers.js';
-/** 设置页与侧栏总览共用的排序菜单。当前项可以存成默认。 */
+/** 设置页与侧栏总览共用的排序菜单。当前项可以存成默认。基于官方原语 Menu 重构。 */
 export declare function SortMenu({ t, storage, storageKey, sortKey, sortDirection, onSelect, iconOnly, className, }: {
     readonly t: Translate;
     readonly storage?: SortPreferenceStorage;
