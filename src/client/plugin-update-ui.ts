@@ -38,7 +38,6 @@ type MountedRoot = { render(node: React.ReactNode): void; unmount(): void }
 const UPDATE_HEADER = 'x-michengai-plugin-update'
 const CSS = `
 .mpi-version{margin-left:8px;color:var(--dsw-alias-label-tertiary,#a0a0a0);font-family:inherit;font-size:12px;font-weight:500;line-height:18px;letter-spacing:0;white-space:nowrap;vertical-align:baseline}.mpi-check-host{display:inline-flex;align-items:center}.mpi-icon{display:inline-flex;flex:0 0 auto;width:16px;height:16px;align-items:center;justify-content:center;pointer-events:none}.mpi-icon svg{display:block;width:16px;height:16px}
-.mpi-dialog-root .ant-modal-mask{background:var(--dsw-alias-bg-mask-1, rgba(0,0,0,.45)) !important;backdrop-filter:var(--dsw-menu-backdrop-filter, blur(16px)) !important}
 .mpi-dialog .ant-modal-content{position:relative;isolation:isolate;padding:24px 28px !important;border-radius:var(--dsw-radius-panel,28px) !important;background:transparent !important;box-shadow:var(--dsw-elevation-panel, 0 20px 48px rgba(0,0,0,.35)) !important;border:0.5px solid var(--dsw-alias-border-l2) !important;box-sizing:border-box !important}
 .mpi-dialog .ant-modal-content::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--dsw-specific-menu,var(--dsw-alias-bg-layer-3,#1e2024)) !important;backdrop-filter:var(--dsw-menu-backdrop-filter, blur(20px)) !important;pointer-events:none}
 .mpi-dialog .ant-modal-header{background:transparent !important;margin-bottom:16px !important}

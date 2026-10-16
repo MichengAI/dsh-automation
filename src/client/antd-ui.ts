@@ -120,7 +120,15 @@ export function Button({
 export const Checkbox = unwrap<React.ComponentType<CheckboxProps> & { Group: React.ComponentType<{ options: readonly { label: string; value: string }[]; value: readonly string[]; onChange: (value: string[]) => void }> }>(CheckboxImport)
 export const ConfigProvider = unwrap<React.ComponentType<ConfigProviderProps>>(ConfigProviderImport)
 export const Dropdown = unwrap<React.ComponentType<DropdownProps>>(DropdownImport)
-export const Modal = unwrap<React.ComponentType<ModalProps>>(ModalImport)
+export const Modal = function UnifiedModal(props: ModalProps): React.ReactElement {
+  const mergedRootClass = ['dsh-st-modal-root', props.rootClassName].filter(Boolean).join(' ')
+  const mergedWrapClass = ['dsh-st-modal-wrap', props.wrapClassName].filter(Boolean).join(' ')
+  return React.createElement(unwrap<React.ComponentType<ModalProps>>(ModalImport), {
+    ...props,
+    rootClassName: mergedRootClass,
+    wrapClassName: mergedWrapClass,
+  })
+}
 export const Progress = unwrap<React.ComponentType<ProgressProps>>(ProgressImport)
 export const Segmented = unwrap<React.ComponentType<SegmentedProps>>(SegmentedImport)
 export const Select = unwrap<React.ComponentType<SelectProps>>(SelectImport)
