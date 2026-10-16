@@ -7,6 +7,8 @@ const CSS_TEXT = `
 .dsh-st-heading h1,.dsh-st-top h1{margin:0;font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.4px;white-space:nowrap}
 .dsh-st-heading-row{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
 .dsh-st-heading-links{display:inline-flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.dsh-st-heading-links button{border:0.5px solid var(--dsw-alias-border-l2) !important;background:transparent !important;color:var(--dsw-alias-label-secondary) !important;font-weight:450 !important;transition:color .14s ease,background .14s ease,border-color .14s ease !important}
+.dsh-st-heading-links button:hover:not(:disabled){color:var(--dsw-alias-label-primary) !important;background:var(--dsw-alias-interactive-bg-hover) !important;border-color:var(--dsw-alias-border-l3,#555) !important}
 .dsh-st-heading-links .ant-btn{color:var(--dsw-alias-label-secondary);font-weight:450;transition:color .14s ease,background .14s ease}
 .dsh-st-heading-links .ant-btn:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}
 .dsh-st-heading p,.dsh-st-top p{margin:12px 0 0;max-width:none;color:var(--dsw-alias-label-tertiary);font-size:14px;line-height:22px}
