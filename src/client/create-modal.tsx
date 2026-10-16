@@ -17,7 +17,8 @@ import { shouldConfirmFullAccess } from './create-modal-logic.js'
 import { AddedWorkspaceMissingError } from './workspace-create.js'
 import { PlusIcon } from './icons.js'
 import type { TextAreaRef } from 'antd/es/input/TextArea.js'
-import { AntdProvider, Button, Checkbox, Input, Modal, Select } from './antd-ui.js'
+import { AntdProvider, Button, Checkbox, Input, Modal, PrimitiveButton, Select } from './antd-ui.js'
+import { MenuSelect } from './menu-select.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom']
@@ -166,10 +167,10 @@ export function CreateModal({
             <div className="dsh-st-field">
               {t('form.planTime')}
               <div className="dsh-st-inline">
-                <Select
+                <MenuSelect
                   value={form.scheduleKind}
                   options={KINDS.map(kind => ({ value: kind, label: t(`form.${kind}`) }))}
-                  onChange={value => update({ scheduleKind: value })}
+                  onChange={value => update({ scheduleKind: value as ScheduleKind })}
                 />
                 {form.scheduleKind === 'once' && (
                   <Input type="date" min={today} value={datePart} onChange={event => update({ onceAt: clampOnceAt(`${event.target.value}T${timePart}`) })} />
@@ -191,12 +192,12 @@ export function CreateModal({
                 )}
                 {form.scheduleKind === 'hourly' && (
                   <>
-                    <Select value={form.hourlyMinute} options={MINUTES.map(item => ({ value: item, label: item }))} onChange={value => update({ hourlyMinute: value })} />
+                    <MenuSelect value={form.hourlyMinute} options={MINUTES.map(item => ({ value: item, label: item }))} onChange={value => update({ hourlyMinute: value })} />
                     <span className="dsh-st-suffix">{t('form.minutesShort')}</span>
                   </>
                 )}
                 {form.scheduleKind === 'monthly' && (
-                  <Select
+                  <MenuSelect
                     value={form.monthDay}
                     options={Array.from({ length: 31 }, (_, index) => {
                       const day = String(index + 1)
@@ -303,9 +304,8 @@ export function CreateModal({
             </label>
             <label className="dsh-st-picker-field">
               <span>{t('form.fieldPermission')}</span>
-              <Select
+              <MenuSelect
                 value={form.permission}
-                popupMatchSelectWidth={false}
                 options={permissions.map(option => ({ value: option.value, label: permissionLabel(option, t) }))}
                 onChange={value => choosePermission(value)}
               />
@@ -401,12 +401,12 @@ export function CreateModal({
 }
 
 function TimeSelect({ value, onChange }: { readonly value: string; readonly onChange: (value: string) => void }): JSX.Element {
-  const [hour, minute] = [value.slice(0, 2) || '09', value.slice(3, 5) || '00']
+  const [hour, minute] = value.split(':') as [string, string]
   return (
     <span className="dsh-st-time">
-      <Select value={hour} options={HOURS.map(item => ({ value: item, label: item }))} onChange={next => onChange(`${next}:${minute}`)} />
+      <MenuSelect value={hour} options={HOURS.map(item => ({ value: item, label: item }))} onChange={next => onChange(`${next}:${minute}`)} />
       <span className="dsh-st-time-sep">:</span>
-      <Select value={minute} options={MINUTES.map(item => ({ value: item, label: item }))} onChange={next => onChange(`${hour}:${next}`)} />
+      <MenuSelect value={minute} options={MINUTES.map(item => ({ value: item, label: item }))} onChange={next => onChange(`${hour}:${next}`)} />
     </span>
   )
 }

@@ -1,6 +1,7 @@
-import { useState, type ReactElement } from 'react'
+import { useState } from 'react'
 import type { Translate } from './contracts.js'
-import { AntdProvider, Button, Dropdown, Select } from './antd-ui.js'
+import { Menu, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from './antd-ui.js'
 import {
   readSortDefault,
   writeSortDefault,
@@ -16,7 +17,7 @@ const SORT_OPTIONS: readonly (readonly [AutomationSortKey, AutomationSortDirecti
   ['planned', 'desc'],
 ]
 
-/** 设置页与侧栏总览共用的排序菜单。当前项可以存成默认。 */
+/** 设置页与侧栏总览共用的排序菜单。当前项可以存成默认。基于官方原语 Menu 重构。 */
 export function SortMenu({
   t,
   storage,
@@ -37,6 +38,7 @@ export function SortMenu({
   readonly iconOnly?: boolean
   readonly className?: string
 }): JSX.Element {
+  const [open, setOpen] = useState(false)
   const [saved, setSaved] = useState(() => readSortDefault(storage, storageKey))
   const currentLabel = t(sortKey === 'planned' ? `sort.planned.${sortDirection}` : `sort.created.${sortDirection}`)
   const savedAlready = saved?.key === sortKey && saved.direction === sortDirection
@@ -45,54 +47,81 @@ export function SortMenu({
     writeSortDefault(storage, storageKey, sortKey, sortDirection)
     setSaved({ key: sortKey, direction: sortDirection })
   }
-  const items = [
+
+  const items: readonly MenuEntry[] = [
     ...SORT_OPTIONS.map(([key, direction]) => ({
-      key: `${key}-${direction}`,
+      id: `${key}-${direction}`,
       label: t(key === 'planned' ? `sort.planned.${direction}` : `sort.created.${direction}`),
-      onClick: () => onSelect(key, direction),
     })),
-    ...(storage === undefined ? [] : [{ type: 'divider' as const }, {
-      key: 'default',
-      label: savedAlready ? t('sort.default.saved') : t('sort.default.save'),
-      disabled: savedAlready,
-      onClick: saveDefault,
-    }]),
+    ...(storage === undefined ? [] : [
+      { type: 'separator' as const, id: 'sort-default-sep' },
+      {
+        id: 'save-default',
+        label: savedAlready ? t('sort.default.saved') : t('sort.default.save'),
+      },
+    ]),
   ]
-  if (iconOnly) {
-    return (
-      <AntdProvider>
-        <span className={className}>
-          <Dropdown menu={{ selectable: true, selectedKeys: [`${sortKey}-${sortDirection}`], items }}>
-            <Button type="text" shape="default" aria-label={currentLabel} icon={<SortMark />} />
-          </Dropdown>
-        </span>
-      </AntdProvider>
-    )
-  }
+
+  const trigger = iconOnly ? (
+    <Button
+      variant="ghost"
+      size="sm"
+      aria-label={currentLabel}
+      title={currentLabel}
+      onClick={() => setOpen(prev => !prev)}
+      icon={<SortMark />}
+    />
+  ) : (
+    <Button
+      variant="outline"
+      size="sm"
+      role="combobox"
+      aria-label={currentLabel}
+      aria-expanded={open}
+      className={['dsh-st-menu-select-trigger', open ? 'is-open' : ''].filter(Boolean).join(' ')}
+      onClick={() => setOpen(prev => !prev)}
+    >
+      <span className="dsh-st-menu-select-label">{currentLabel}</span>
+      <svg
+        className="dsh-st-menu-select-arrow"
+        viewBox="0 0 16 16"
+        width={12}
+        height={12}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ marginLeft: 4, transition: 'transform 150ms ease', transform: open ? 'rotate(180deg)' : 'none' }}
+      >
+        <path d="m4 6 4 4 4-4" />
+      </svg>
+    </Button>
+  )
+
   return (
-    <AntdProvider>
-      <Select
-        className={className ?? 'dsh-st-sort-select'}
-        value={`${sortKey}-${sortDirection}`}
-        popupMatchSelectWidth={false}
-        options={SORT_OPTIONS.map(([key, direction]) => ({
-          value: `${key}-${direction}`,
-          label: t(key === 'planned' ? `sort.planned.${direction}` : `sort.created.${direction}`),
-        }))}
-        onChange={value => {
-          const [key, direction] = String(value).split('-') as [AutomationSortKey, AutomationSortDirection]
+    <div className={['dsh-st-menu-select-wrap', className].filter(Boolean).join(' ')} style={{ display: 'inline-flex', verticalAlign: 'middle' }}>
+      <Menu
+        open={open}
+        onClose={() => setOpen(false)}
+        selectedId={`${sortKey}-${sortDirection}`}
+        align={iconOnly ? 'end' : 'start'}
+        portal
+        dense
+        anchor={trigger}
+        items={items}
+        onSelect={(id) => {
+          if (id === 'save-default') {
+            saveDefault()
+            setOpen(false)
+            return
+          }
+          const [key, direction] = id.split('-') as [AutomationSortKey, AutomationSortDirection]
           onSelect(key, direction)
+          setOpen(false)
         }}
-        {...(storage === undefined ? {} : { popupRender: (menu: ReactElement) => (
-          <>
-            {menu}
-            <button type="button" className="dsh-st-sort-default" disabled={savedAlready} onMouseDown={event => event.preventDefault()} onClick={saveDefault}>
-              {savedAlready ? t('sort.default.saved') : t('sort.default.save')}
-            </button>
-          </>
-        ) })}
       />
-    </AntdProvider>
+    </div>
   )
 }
 
