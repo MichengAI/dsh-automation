@@ -178,7 +178,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
             closeSettings?.()
           }}>{t('action.chatCreate')}</Button>
           <Button type="primary" icon={<PlusIcon />} disabled={defaultPermission === '' || permissions.length === 0} onClick={() => openCreate()}>{t('action.create')}</Button>
-          <Button icon={<RefreshIcon />} aria-label={t('section.refresh')} onClick={() => { void runtime.refresh() }} />
+          <Button className="dsh-st-icon-btn" icon={<RefreshIcon />} aria-label={t('section.refresh')} onClick={() => { void runtime.refresh() }} />
         </div>
       </header>
 

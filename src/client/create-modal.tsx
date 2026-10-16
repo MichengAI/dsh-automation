@@ -257,10 +257,12 @@ export function CreateModal({
                       </div>
                       <div style={{ height: 1, margin: '6px 8px', background: 'var(--dsw-alias-border-l2, rgba(255,255,255,.1))' }} />
                       <Button
-                        type="link"
+                        variant="outline"
+                        size="sm"
                         className="dsh-st-add-workspace"
                         icon={<PlusIcon width={14} height={14} />}
                         disabled={addingWorkspace}
+                        style={{ width: '100%', justifyContent: 'center' }}
                         onMouseDown={event => {
                           event.preventDefault()
                           event.stopPropagation()

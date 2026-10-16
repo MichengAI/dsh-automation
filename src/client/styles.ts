@@ -14,6 +14,8 @@ const CSS_TEXT = `
 .dsh-st-heading-links .ant-btn:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}
 .dsh-st-heading p,.dsh-st-top p{margin:12px 0 0;max-width:none;color:var(--dsw-alias-label-tertiary);font-size:14px;line-height:22px}
 .dsh-st-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px}
+.dsh-st-icon-btn.dsh-st-btn{width:28px !important;min-width:28px !important;height:28px !important;min-height:28px !important;padding:0 !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;border-radius:var(--dsw-radius-sm,8px) !important;color:var(--dsw-alias-label-secondary,#b9b9b9) !important}
+.dsh-st-icon-btn.dsh-st-btn:hover:not(:disabled){color:var(--dsw-alias-label-primary) !important;background:var(--dsw-alias-interactive-bg-hover) !important}
 .dsh-st-search{flex:1;min-width:0;max-width:280px}
 .dsh-st-shell .ant-input,
 .dsh-st-shell .ant-input-affix-wrapper{border-radius:var(--dsw-radius-sm,8px);background:var(--dsw-alias-bg-layer-1);border:0.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);transition:border-color .15s ease,background .15s ease}
