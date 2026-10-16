@@ -216,6 +216,7 @@ export function observePluginUpdate(options: PluginUpdateUiOptions): () => void 
     const renderOpts: Record<string, unknown> = { size: 'small', shape: 'default' }
     buttonRoot.render(React.createElement(PrimitiveButton, {
       variant: 'outline',
+      size: 'sm',
       onClick: openDialog,
       icon: React.createElement(HostIcon, { node: icon }),
       ...renderOpts,
