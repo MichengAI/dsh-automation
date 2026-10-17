@@ -73,8 +73,8 @@
 
 ## 前置条件
 
-- 当前源码以 DSH `0.2.1-alpha.3` 为开发和真实宿主测试基线，声明支持 `0.2.0-rc.1` 到 `0.2.1-alpha.5`。仍停在 `0.1.x` 的宿主请继续使用插件 `0.1.66`。升级宿主前备份 Profile 中的自动化存储和会话目录。`0.2.0` 写入 V4 会话，V4 会话不支持降级读取。
-- 官方 DSH peerDependencies 精确限定为 `0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-alpha.1 || 0.2.1-alpha.2 || 0.2.1-alpha.3 || 0.2.1-alpha.4 || 0.2.1-alpha.5`。`0.1.x` 不再支持，因为当前界面使用的宿主原语在那些宿主上不存在。`@deepseek-ai/dsh-agent-presets` 和 `@deepseek-ai/dsh-agent-preset-registry` 都不写入 peer：定时任务使用宿主的 `agentPresets` 服务，安装门会拿每一个 `@deepseek-ai/dsh-*` peer 去对当前版本。开发依赖固定为 `0.2.1-alpha.3`。同一宿主中的官方包应使用一致版本。
+- 当前源码以 DSH `0.2.1-rc.2` 为开发和真实宿主测试基线，声明支持 `0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-rc.1`、`0.2.1-rc.2`。仍停在 `0.1.x` 的宿主请继续使用插件 `0.1.66`。升级宿主前备份 Profile 中的自动化存储和会话目录。`0.2.0` 写入 V4 会话，V4 会话不支持降级读取。
+- 官方 DSH peerDependencies 精确限定为 `0.2.0-rc.1 || 0.2.0-rc.2 || 0.2.1-rc.1 || 0.2.1-rc.2`。中间的 `0.2.1-alpha` 预发布不再支持。`0.1.x` 不再支持，因为当前界面使用的宿主原语在那些宿主上不存在。`@deepseek-ai/dsh-agent-presets` 和 `@deepseek-ai/dsh-agent-preset-registry` 都不写入 peer：定时任务使用宿主的 `agentPresets` 服务，安装门会拿每一个 `@deepseek-ai/dsh-*` peer 去对当前版本。开发依赖固定为 `0.2.1-rc.2`。同一宿主中的官方包应使用一致版本。
 - 其他版本不在声明兼容范围内；安装器可能提示 peer 警告，启用严格 peer 校验时会失败。支持新 rc 前需扩展版本矩阵并通过验证。
 - 自动化 bundle 不覆盖官方 Connection 条目，各版宿主保留自己的启动依赖、可信地址表达式和自定义配置；自动化在自身插件作用域注册 RPC 路由。
 - 已可正常运行 DeepSeek Harness Web，且可在 PowerShell 中使用 `dsh`。

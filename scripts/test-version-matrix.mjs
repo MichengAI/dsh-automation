@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
-const versions = ['0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-alpha.1', '0.2.1-alpha.2', '0.2.1-alpha.3', '0.2.1-alpha.4', '0.2.1-alpha.5']
+const versions = ['0.2.0-rc.1', '0.2.0-rc.2', '0.2.1-rc.1', '0.2.1-rc.2']
 const versionsToRun = process.env.DSH_MATRIX_ONLY ? process.env.DSH_MATRIX_ONLY.split(',') : versions
 const legacyPreset = '@deepseek-ai/dsh-agent-presets'
 const presetRegistry = '@deepseek-ai/dsh-agent-preset-registry'
@@ -73,11 +73,8 @@ for (const version of versionsToRun) {
   const cwd = join(directory, version)
   await mkdir(cwd)
   try {
-    const alphaToolchain = version === '0.2.1-alpha.1' || version === '0.2.1-alpha.2'
-      ? { '@deepseek-ai/cordis': '4.0.5-alpha.1', '@deepseek-ai/schemastery': '3.18.5-alpha.1', '@deepseek-ai/cordis-plugin-loader': '1.0.6-alpha.1', '@deepseek-ai/cordis-plugin-include': '1.0.10-alpha.1', '@deepseek-ai/cordis-plugin-group': '1.0.5-alpha.1', '@deepseek-ai/cordis-plugin-timer': '1.1.7-alpha.1' }
-      : { '@deepseek-ai/cordis': '4.0.5-alpha.2', '@deepseek-ai/schemastery': '3.18.5-alpha.2', '@deepseek-ai/cordis-plugin-loader': '1.0.6-alpha.2', '@deepseek-ai/cordis-plugin-include': '1.0.10-alpha.2', '@deepseek-ai/cordis-plugin-group': '1.0.5-alpha.2', '@deepseek-ai/cordis-plugin-timer': '1.1.7-alpha.2' }
-    const toolchain = version.startsWith('0.2.1-alpha.')
-      ? alphaToolchain
+    const toolchain = version.startsWith('0.2.1-rc.')
+      ? { '@deepseek-ai/cordis': '4.0.5', '@deepseek-ai/schemastery': '3.18.5', '@deepseek-ai/cordis-plugin-loader': '1.0.6', '@deepseek-ai/cordis-plugin-include': '1.0.10', '@deepseek-ai/cordis-plugin-group': '1.0.5', '@deepseek-ai/cordis-plugin-timer': '1.1.7' }
       : { '@deepseek-ai/cordis': '4.0.4', '@deepseek-ai/schemastery': '3.18.4', '@deepseek-ai/cordis-plugin-loader': '1.0.5', '@deepseek-ai/cordis-plugin-include': '1.0.9', '@deepseek-ai/cordis-plugin-group': '1.0.4' }
     const dependencies = { [manifest.name]: `file:${join(directory, archive)}`, react: '18.3.1', 'react-dom': '18.3.1', tsx: '4.23.12', ...manifest.dependencies, ...toolchain }
     for (const name of ['js-yaml']) dependencies[name] = manifest.devDependencies[name]
