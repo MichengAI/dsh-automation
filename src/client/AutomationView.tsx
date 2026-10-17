@@ -28,12 +28,11 @@ import {
   FeedbackIcon,
   GithubIcon,
   InfoIcon,
-  MoreIcon,
   PlusIcon,
   RefreshIcon,
 } from './icons.js'
-import { IconClockOutline } from './host-icons.js'
-import { Button, Input, Menu, SegmentedControl, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconClockOutline, IconEllipsisOutline } from './host-icons.js'
+import { Button, Input, Menu, SegmentedControl, Switch, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { rowIconStyle } from './plugin-ui.js'
 import { MenuSelect } from './menu-select.js'
 import { CreateModal } from './create-modal.js'
@@ -388,15 +387,17 @@ function TaskCard({
             portal
             dense
             anchor={
-              <Button
-                className="dsh-st-row-icon"
-                variant="outline"
-                size="sm"
-                aria-label={t('card.more')}
-                icon={<MoreIcon width={16} height={16} />}
-                style={rowIconStyle}
-                onClick={() => setMenuOpen(prev => !prev)}
-              />
+              <Tooltip label={t('card.more')} side="bottom" delayMs={500} portal>
+                <button
+                  type="button"
+                  className="dsh-st-row-icon"
+                  aria-label={t('card.more')}
+                  style={{ ...rowIconStyle, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0, border: '1px solid var(--dsw-alias-border-l2, rgba(255,255,255,.15))', borderRadius: 'var(--dsw-radius-sm, 6px)', background: 'transparent', color: 'var(--dsw-alias-label-secondary)', cursor: 'pointer' }}
+                  onClick={() => setMenuOpen(prev => !prev)}
+                >
+                  <IconEllipsisOutline size={16} />
+                </button>
+              </Tooltip>
             }
             items={[
               { id: 'run', label: t('menu.run'), disabled: busy },

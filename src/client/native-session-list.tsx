@@ -6,11 +6,13 @@ import {
   Menu,
   Modal,
   StateDot,
+  Tooltip,
   type MenuEntry,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import {
   IconArchiveOutline,
   IconBranchOutline,
+  IconCopyOutline,
   IconEditOutline,
   IconEllipsisOutline,
   IconFolderClose,
@@ -354,13 +356,13 @@ function NativeScheduleGroupRow(props: {
           }}
           portal
           closeOnPointerLeave
-          anchor={<button
+          anchor={<Tooltip label={t('session.groupActions', { name })} side='bottom' delayMs={500} portal><button
             type='button'
             className='dsh-st-n-ico'
             aria-label={t('session.groupActions', { name })}
             onMouseDown={(event) => { event.stopPropagation() }}
             onClick={(event) => { event.stopPropagation(); onMenuChange(!menuOpen) /* 官方 Menu 受控，不会自己开；官方行也是锚点 toggle */ }}
-          ><IconEllipsisOutline size={16} /></button>}
+          ><IconEllipsisOutline size={16} /></button></Tooltip>}
         />
       </span>
     </div>
@@ -445,17 +447,20 @@ function NativeSessionRow(props: {
     )
   }
   const displayTitle = (hoverTitle ?? title).trim() || title
-  const menuSlot = renderSlot !== undefined ? ['rename', 'fork', 'archive', 'archive-manager.delete-session'].map((only) => renderSlot('sidebar.workspaces.session.menu.item', {
+  const menuSlot = renderSlot !== undefined ? ['pin', 'rename', 'fork', 'archive', 'session-id', 'archive-manager.delete-session'].map((only) => renderSlot('sidebar.workspaces.session.menu.item', {
     sessionId: id,
     displayTitle,
   }, { hookContext: [menuOpen, (open: boolean) => onMenuChange(open)], only })) : undefined
-  const items: MenuEntry[] = menuSlot !== undefined ? [] : scheduledSessionMenuActions({ canDelete, archived, canUnarchive }).map((action) => {
-    if (action === 'rename') return { id: action, label: t('session.rename'), icon: <IconEditOutline /> }
-    if (action === 'fork') return { id: action, label: t('session.fork'), icon: <IconBranchOutline /> }
-    if (action === 'archive') return { id: action, label: t('session.archive'), icon: <IconArchiveOutline size={16} /> }
-    if (action === 'unarchive') return { id: action, label: t('session.unarchive'), icon: <IconUnarchiveOutline size={16} /> }
-    return { id: action, label: t('session.deleteSession'), icon: <IconTrashOutline />, danger: true }
-  })
+  const items: MenuEntry[] = menuSlot !== undefined ? [] : [
+    ...scheduledSessionMenuActions({ canDelete, archived, canUnarchive }).map((action) => {
+      if (action === 'rename') return { id: action, label: t('session.rename'), icon: <IconEditOutline /> }
+      if (action === 'fork') return { id: action, label: t('session.fork'), icon: <IconBranchOutline /> }
+      if (action === 'archive') return { id: action, label: t('session.archive'), icon: <IconArchiveOutline size={16} /> }
+      if (action === 'unarchive') return { id: action, label: t('session.unarchive'), icon: <IconUnarchiveOutline size={16} /> }
+      return { id: action, label: t('session.deleteSession'), icon: <IconTrashOutline />, danger: true }
+    }),
+    { id: 'session-id', label: t('session.copySessionId'), icon: <IconCopyOutline size={16} /> },
+  ]
   const primary = hoverStatuses.find((status) => status.state !== 'archived')
   const showDot = !archived && primary !== undefined && primary.state !== 'idle'
   const trailing = primary?.trailing
@@ -492,17 +497,18 @@ function NativeSessionRow(props: {
             if (action === 'fork') run(() => forkSession?.(id))
             if (action === 'archive') run(() => archiveSession?.(id))
             if (action === 'unarchive') run(() => unarchiveSession?.(id))
+            if (action === 'session-id') void navigator.clipboard?.writeText(id)
             if (action === 'delete-session') onDeleteSession?.()
           }}
           portal
           closeOnPointerLeave
-          anchor={<button
+          anchor={<Tooltip label={t('session.moreActions', { title })} side='bottom' delayMs={500} portal><button
             type='button'
             className='dsh-st-n-ico'
             aria-label={t('session.moreActions', { title })}
             onMouseDown={(event) => { event.stopPropagation() }}
             onClick={(event) => { event.stopPropagation(); hideHover(); onMenuChange(!menuOpen) /* 官方 Menu 受控，不会自己开；官方行也是锚点 toggle */ }}
-          ><IconEllipsisOutline size={16} /></button>}
+          ><IconEllipsisOutline size={16} /></button></Tooltip>}
         >
           {menuSlot}
         </Menu>
