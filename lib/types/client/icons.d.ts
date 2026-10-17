@@ -9,6 +9,8 @@ export declare function InfoIcon(props: IconProps): JSX.Element;
 export declare function ClockIcon(props: IconProps): JSX.Element;
 export declare function ChatIcon(props: IconProps): JSX.Element;
 export declare function GithubIcon(props: IconProps): JSX.Element;
+/** 与技能管理器标题旁的问题反馈同一支 16px 笔，避免宿主图标把按钮撑高。 */
+export declare function FeedbackIcon(props: IconProps): JSX.Element;
 export declare function FolderIcon(props: IconProps): JSX.Element;
 export declare function SparkleIcon(props: IconProps): JSX.Element;
 export declare function UnarchiveOutlineIcon(props: IconProps): JSX.Element;
