@@ -26,3 +26,5 @@ export declare function scheduledGroupShowsActiveFolder(sessionIds: readonly str
 export declare function scheduledSessionOmitsStatusSlot(flat: boolean, running: boolean): boolean;
 /** 串行归档，避免多个 workspace 状态写入相互覆盖。 */
 export declare function archiveScheduledGroup(sessionIds: readonly string[], archiveSession: (sessionId: string) => void | Promise<void>): Promise<void>;
+/** 串行恢复，避免多个 workspace 状态写入相互覆盖。 */
+export declare function unarchiveScheduledGroup(sessionIds: readonly string[], unarchiveSession: (sessionId: string) => void | Promise<void>): Promise<void>;

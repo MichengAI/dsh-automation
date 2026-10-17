@@ -60,6 +60,13 @@ export declare const en: {
     readonly "session.archiveGroupFailed": "Some conversations could not be archived: {message}";
     readonly "session.archiveGroupClose": "Close";
     readonly "session.archiveGroupCancel": "Cancel";
+    readonly "session.unarchiveGroup": "Restore all conversations";
+    readonly "session.unarchiveGroupConfirm": "Restore all";
+    readonly "session.unarchiveGroupDescription": "Restore all {count} conversations for “{name}”.";
+    readonly "session.unarchiveGroupPending": "Restoring conversations…";
+    readonly "session.unarchiveGroupFailed": "Some conversations could not be restored: {message}";
+    readonly "session.unarchiveGroupClose": "Close";
+    readonly "session.unarchiveGroupCancel": "Cancel";
     readonly "session.deleteSession": "Delete session";
     readonly "session.deleteSessionConfirm": "Delete session";
     readonly "session.deleteSessionDescription": "This permanently deletes session “{name}”, its child agents (including any that are still running), and all of its records (conversation, stats, cache). This cannot be undone.";
