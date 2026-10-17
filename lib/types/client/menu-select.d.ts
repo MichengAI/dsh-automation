@@ -1,7 +1,8 @@
 import * as React from 'react';
 export interface MenuSelectOption {
     value: string;
-    label: string;
+    label: React.ReactNode;
+    text?: string;
     disabled?: boolean;
     danger?: boolean;
 }
