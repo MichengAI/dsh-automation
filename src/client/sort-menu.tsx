@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Translate } from './contracts.js'
 import { Menu, Button, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 import { rowIconStyle } from './plugin-ui.js'
+import { IconSlidersTwoOutline } from './host-icons.js'
 import {
   readSortDefault,
   writeSortDefault,
@@ -70,7 +71,7 @@ export function SortMenu({
       aria-label={currentLabel}
       title={currentLabel}
       onClick={() => setOpen(prev => !prev)}
-      icon={<SortMark />}
+      icon={<IconSlidersTwoOutline size={16} />}
     />
   ) : (
     <Button
@@ -123,13 +124,5 @@ export function SortMenu({
         }}
       />
     </div>
-  )
-}
-
-function SortMark(): JSX.Element {
-  return (
-    <svg width={16} height={16} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M4.5 3v10M4.5 3 2.5 5.2M4.5 3l2 2.2M11.5 13V3M11.5 13l-2-2.2M11.5 13l2-2.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   )
 }
