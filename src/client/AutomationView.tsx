@@ -249,12 +249,14 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
         {tab === 'runs' && (
           <div className="dsh-st-filters">
             <MenuSelect
+              compact
               className="dsh-st-filter-range"
               value={historyRange}
               options={(['day', 'week', 'month'] as const).map(range => ({ value: range, label: t(`history.range.${range}`) }))}
               onChange={value => setHistoryRange(value as HistoryRange)}
             />
             <MenuSelect
+              compact
               className="dsh-st-filter-task"
               value={historyTask}
               options={[
@@ -264,6 +266,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
               onChange={setHistoryTask}
             />
             <MenuSelect
+              compact
               className="dsh-st-filter-status"
               value={historyStatus}
               options={[

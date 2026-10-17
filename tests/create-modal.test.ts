@@ -77,6 +77,8 @@ test('工作区、模型、推理等级和权限在输入区上方两列排列�
   assert.match(modal, /spellCheck=\{false\}/)
   assert.doesNotMatch(modal, /form\.skills/)
   assert.match(styles, /grid-template-columns:1fr 1fr/)
+  assert.match(styles, /\.dsh-st-plan-row\{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/)
+  assert.match(styles, /\.dsh-st-picker-field \.dsh-st-menu-select-wrap>span\{[^}]*width:100%/)
 })
 
 test('间隔输入是短框，自定义写成每隔几天', () => {

@@ -24,6 +24,7 @@ export interface MenuSelectProps {
   onChange: (value: string) => void
   onFooter?: (id: string) => void
   disabled?: boolean
+  compact?: boolean
   className?: string
   listClassName?: string
 }
@@ -40,7 +41,15 @@ function optionItem(opt: MenuSelectOption): MenuEntry {
 /** 宿主 Menu 下拉。分组用标签行，底部动作走 footer，不走选择值。 */
 export function MenuSelect(props: MenuSelectProps): React.ReactElement {
   const [open, setOpen] = React.useState(false)
+  const rootRef = React.useRef<HTMLDivElement>(null)
   const options = props.options ?? []
+
+  React.useEffect(() => {
+    if (!open) return undefined
+    const width = rootRef.current?.getBoundingClientRect().width ?? 0
+    if (width > 0) document.documentElement.style.setProperty('--dsh-st-menu-width', `${Math.round(width)}px`)
+    return () => { document.documentElement.style.removeProperty('--dsh-st-menu-width') }
+  }, [open])
 
   React.useEffect(() => {
     if (!open || typeof window === 'undefined') return undefined
@@ -70,8 +79,8 @@ export function MenuSelect(props: MenuSelectProps): React.ReactElement {
   const currentText = selectedOption ? selectedOption.label : (props.placeholder ?? props.label ?? '')
 
   return React.createElement('div', {
-    className: ['dsh-st-menu-select-wrap', props.className].filter(Boolean).join(' '),
-    style: { display: 'inline-flex', verticalAlign: 'middle' },
+    ref: rootRef,
+    className: ['dsh-st-menu-select-wrap', props.compact === true ? 'is-compact' : '', props.className].filter(Boolean).join(' '),
   }, React.createElement(Menu, {
     open,
     onClose: () => { setOpen(false) },
@@ -88,11 +97,11 @@ export function MenuSelect(props: MenuSelectProps): React.ReactElement {
     align: 'start',
     portal: true,
     dense: true,
-    ...(props.listClassName !== undefined ? { listClassName: props.listClassName } : {}),
+    listClassName: ['dsh-st-form-menu', props.listClassName].filter(Boolean).join(' '),
     ...(footer !== undefined ? { footer } : {}),
     anchor: React.createElement(Button, {
       variant: 'outline',
-      size: 'sm',
+      ...(props.compact === true ? { size: 'sm' as const } : {}),
       role: 'combobox',
       'aria-label': props.label ?? currentText,
       'aria-expanded': open,
