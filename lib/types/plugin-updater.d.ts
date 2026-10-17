@@ -64,5 +64,8 @@ export declare function resolveUpdateRuntime(ctx: {
 }): Runtime;
 export declare function shouldNotifyParent(target: Runtime, send?: unknown): boolean;
 export declare function isNewerVersion(currentValue: string, candidateValue: string): boolean;
+/** 把刚安装的精确版本并进 profile 白名单。pnpm 每个包名只认第一条，所以必须并进已有 union。 */
+export declare function mergeMinimumReleaseAgeExclude(yaml: string, packageSpec: string): string;
+export declare function recordReleaseAgeExclude(profileDir: string, packageSpec: string): Promise<void>;
 export declare function registerPluginUpdater(ctx: Context, options: PluginUpdaterOptions): () => void;
 export {};
