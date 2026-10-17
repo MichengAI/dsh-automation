@@ -17,6 +17,7 @@
 - 新增工作区完全照抄 IM 机制：运行时动态探测 `__DSH_DIRECTORY_PICKER__`、`uiWorkspace`、`dialog`、`workspaces` 四重来源，支持在宿主 `workspaces.create` 中直接创建并联动登记。
 - 分组三点菜单补齐「恢复整组会话」及批量恢复弹窗，已归档会话菜单确保包含恢复、复制 ID 与删除会话保底。
 - 侧边栏视图选项（调音台菜单）筛选会话补齐「隐藏已归档」（`IconArchiveOffOutline`），对齐官方三选一单选单项与默认选中状态。
+- 模型下拉菜单对齐官方 Chat 规范：提供方按 `deepseek-account` 优先排序，提供方名称本地化为「DeepSeek 账号」，官方 Flash 模型选项挂载 `1017` 蓝色版本徽标。
 
 ## 1.0.0 - 2026-10-17
 

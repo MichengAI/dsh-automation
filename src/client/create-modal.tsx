@@ -16,9 +16,34 @@ import {
 import { shouldConfirmFullAccess } from './create-modal-logic.js'
 import { WorkspacePickerUnavailableError } from './workspace-create.js'
 import { PlusIcon } from './icons.js'
-import { Button, Checkbox, Modal, RiskConfirmation } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Checkbox, Modal, RiskConfirmation, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { blockHostModalBackdrop, Input, TextArea } from './plugin-ui.js'
-import { MenuSelect } from './menu-select.js'
+import { MenuSelect, type MenuSelectOption } from './menu-select.js'
+
+function formatProviderLabel(provider: string, defaultLabel: string, modelT: ModelTranslate): string {
+  if (provider === 'deepseek-account') {
+    const localized = modelT('provider.account')
+    return localized && localized !== 'provider.account' ? localized : 'DeepSeek 账号'
+  }
+  return defaultLabel
+}
+
+function orderProviders(left: string, right: string): number {
+  const leftRank = left === 'deepseek-account' ? 0 : left === 'deepseek-official' ? 1 : 2
+  const rightRank = right === 'deepseek-account' ? 0 : right === 'deepseek-official' ? 1 : 2
+  return leftRank - rightRank
+}
+
+function renderModelOptionLabel(item: ModelOption): React.ReactNode {
+  const isFlash = (item.provider === 'deepseek-account' || item.provider === 'deepseek-official') && (item.model === 'deepseek-flash' || item.label.includes('Flash'))
+  if (!isFlash) return item.label
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <span>{item.label}</span>
+      <Tag tone="info">1017</Tag>
+    </span>
+  )
+}
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom']
@@ -275,11 +300,18 @@ export function CreateModal({
                 value={form.modelKey}
                 label={t('form.fieldModel')}
                 groups={Array.from(models.reduce((groups, item) => {
-                  const group = groups.get(item.provider) ?? { label: item.providerLabel, options: [] as { value: string; label: string }[] }
-                  group.options.push({ value: `${item.provider}::${item.model}`, label: item.label })
+                  const providerName = formatProviderLabel(item.provider, item.providerLabel, modelT)
+                  const group = groups.get(item.provider) ?? { label: providerName, options: [] as MenuSelectOption[] }
+                  group.options.push({
+                    value: `${item.provider}::${item.model}`,
+                    label: renderModelOptionLabel(item),
+                    text: item.label,
+                  })
                   groups.set(item.provider, group)
                   return groups
-                }, new Map<string, { label: string; options: { value: string; label: string }[] }>()), ([id, group]) => ({ id, label: group.label, options: group.options }))}
+                }, new Map<string, { label: string; options: MenuSelectOption[] }>()))
+                  .sort(([leftId], [rightId]) => orderProviders(leftId, rightId))
+                  .map(([id, group]) => ({ id, label: group.label, options: group.options }))}
                 onChange={value => {
                   const item = models.find(model => `${model.provider}::${model.model}` === value)
                   update({ modelKey: value, reasoningEffort: item?.reasoning?.defaultEffort ?? 'none' })

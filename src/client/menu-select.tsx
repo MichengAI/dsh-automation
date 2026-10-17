@@ -3,7 +3,8 @@ import { Menu, Button, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primiti
 
 export interface MenuSelectOption {
   value: string
-  label: string
+  label: React.ReactNode
+  text?: string
   disabled?: boolean
   danger?: boolean
 }
@@ -103,7 +104,7 @@ export function MenuSelect(props: MenuSelectProps): React.ReactElement {
       variant: 'outline',
       ...(props.compact === true ? { size: 'sm' as const } : {}),
       role: 'combobox',
-      'aria-label': props.label ?? currentText,
+      'aria-label': props.label ?? (typeof currentText === 'string' ? currentText : selectedOption?.text),
       'aria-expanded': open,
       disabled: props.disabled,
       className: ['dsh-st-menu-select-trigger', open ? 'is-open' : ''].filter(Boolean).join(' '),

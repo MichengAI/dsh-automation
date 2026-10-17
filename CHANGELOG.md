@@ -17,6 +17,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Align workspace picking with the proven IM Assistant implementation: dynamically probe `__DSH_DIRECTORY_PICKER__`, `uiWorkspace`, `dialog`, and `workspaces` at runtime, and sync new folders directly through `workspaces.create`.
 - Complete group ellipsis actions with Restore all conversations and its batch dialog; ensure archived session menus always retain unarchive, copy ID, and deletion fallbacks.
 - Add Hide archived (`IconArchiveOffOutline`) to view options filter menu, matching official 3-way radio selection and default state.
+- Align model select with official Chat: order providers with `deepseek-account` first, localize provider label to DeepSeek 账号, and append the 1017 badge to official Flash models.
 
 ## 1.0.0 - 2026-10-17
 
