@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { Translate } from './contracts.js'
-import { Menu, Button, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
-import { rowIconStyle } from './plugin-ui.js'
+import { Menu, Button, Tooltip, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 import { IconSlidersTwoOutline } from './host-icons.js'
 import {
   readSortDefault,
@@ -63,16 +62,17 @@ export function SortMenu({
   ]
 
   const trigger = iconOnly ? (
-    <Button
-      className="dsh-st-row-icon"
-      variant="outline"
-      style={rowIconStyle}
-      size="sm"
-      aria-label={currentLabel}
-      title={currentLabel}
-      onClick={() => setOpen(prev => !prev)}
-      icon={<IconSlidersTwoOutline size={16} />}
-    />
+    <Tooltip label={currentLabel} side="bottom" delayMs={500} disabled={open} portal>
+      <button
+        type="button"
+        className={open ? 'dsh-st-n-head-btn is-on' : 'dsh-st-n-head-btn'}
+        aria-label={currentLabel}
+        aria-expanded={open}
+        onClick={() => setOpen(prev => !prev)}
+      >
+        <IconSlidersTwoOutline size={16} />
+      </button>
+    </Tooltip>
   ) : (
     <Button
       variant="outline"
