@@ -75,7 +75,7 @@ for (const version of versionsToRun) {
   try {
     const toolchain = version.startsWith('0.2.1-rc.')
       ? { '@deepseek-ai/cordis': '4.0.5', '@deepseek-ai/schemastery': '3.18.5', '@deepseek-ai/cordis-plugin-loader': '1.0.6', '@deepseek-ai/cordis-plugin-include': '1.0.10', '@deepseek-ai/cordis-plugin-group': '1.0.5', '@deepseek-ai/cordis-plugin-timer': '1.1.7' }
-      : { '@deepseek-ai/cordis': '4.0.4', '@deepseek-ai/schemastery': '3.18.4', '@deepseek-ai/cordis-plugin-loader': '1.0.5', '@deepseek-ai/cordis-plugin-include': '1.0.9', '@deepseek-ai/cordis-plugin-group': '1.0.4' }
+      : { '@deepseek-ai/cordis': '4.0.4', '@deepseek-ai/schemastery': '3.18.4', '@deepseek-ai/cordis-plugin-loader': '1.0.5', '@deepseek-ai/cordis-plugin-include': '1.0.9', '@deepseek-ai/cordis-plugin-group': '1.0.4', '@deepseek-ai/cordis-plugin-timer': '1.1.6' }
     const dependencies = { [manifest.name]: `file:${join(directory, archive)}`, react: '18.3.1', 'react-dom': '18.3.1', tsx: '4.23.12', ...manifest.dependencies, ...toolchain }
     for (const name of ['js-yaml']) dependencies[name] = manifest.devDependencies[name]
     for (const name of Object.keys(manifest.devDependencies)) {
