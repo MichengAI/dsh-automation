@@ -11,6 +11,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Support DeepSeek Harness `0.2.1-rc.1` and `0.2.1-rc.2`. Supported hosts are `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`, and `0.2.1-rc.2`. Intermediate `0.2.1-alpha` releases are no longer supported. Development dependencies are pinned to `0.2.1-rc.2`, Cordis to `4.0.5`, and Schemastery to `3.18.5`.
 - Opening a scheduled session uses only the host `uiWorkspace.openSession`. The removed `sessions.open` fallback is gone.
 - The new-task form dropdowns now share one two-column grid. The time controls stay with the schedule, and each picker fills its cell. The open menu matches the trigger width.
+- The settings title actions now line up with Skills Manager. The feedback mark is the same 16px pen, and the update dialog footer is a host button fragment instead of a button array.
 
 ## 1.0.0 - 2026-10-17
 

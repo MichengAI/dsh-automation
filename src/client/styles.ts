@@ -5,8 +5,9 @@ const CSS_TEXT = `
 .dsh-st-shell{container-type:inline-size;min-width:0;box-sizing:border-box;max-width:1080px;width:100%;margin:0 auto;padding:0 0 32px;color:var(--dsw-alias-label-primary);font-family:var(--dsw-font-family,system-ui)}
 .dsh-st-top{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-bottom:12px}
 .dsh-st-heading h1,.dsh-st-top h1{margin:0;font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.4px;white-space:nowrap}
-.dsh-st-heading-row{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
-.dsh-st-heading-links{display:inline-flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.dsh-st-heading-row{display:flex;align-items:center;gap:8px 12px;min-width:0;flex-wrap:wrap}
+.dsh-st-heading-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dsh-st-heading-links>span[data-mpi-check]{display:inline-flex;align-items:center}
 .dsh-st-heading p,.dsh-st-top p{margin:12px 0 0;max-width:none;color:var(--dsw-alias-label-tertiary);font-size:14px;line-height:22px}
 .dsh-st-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px}
 .dsh-st-search{flex:1;min-width:0;max-width:280px}

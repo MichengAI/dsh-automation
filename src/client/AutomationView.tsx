@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import { IconListPenOutline } from './host-icons.js'
 import type { AutomationViewProps, Translate } from './contracts.js'
 import {
   AutomationFormError,
@@ -27,6 +26,7 @@ import { automationToggleMutation } from './schedule-rail-model.js'
 import {
   ChatIcon,
   ClockIcon,
+  FeedbackIcon,
   GithubIcon,
   InfoIcon,
   MoreIcon,
@@ -165,7 +165,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
             <h1>{t('tab')}</h1>
             <div className="dsh-st-heading-links">
               <Button variant="outline" size="sm" aria-label={t('header.githubProject')} icon={<GithubIcon />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation', '_blank', 'noreferrer') }}>{t('header.githubProject')}</Button>
-              <Button variant="outline" size="sm" aria-label={t('header.githubFeedback')} icon={<IconListPenOutline />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation/issues', '_blank', 'noreferrer') }}>{t('header.githubFeedback')}</Button>
+              <Button variant="outline" size="sm" aria-label={t('header.githubFeedback')} icon={<FeedbackIcon />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation/issues', '_blank', 'noreferrer') }}>{t('header.githubFeedback')}</Button>
             </div>
           </div>
           <p>{t('header.lead')}</p>
