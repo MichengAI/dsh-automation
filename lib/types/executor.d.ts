@@ -41,7 +41,7 @@ export interface ExecutorConfig {
 }
 /** 先应用官方预设的完整语义，再让无人值守审批 fail-closed。 */
 export declare function applyUnattendedPermission(presets: PermissionPresetService, session: unknown, permission: AutomationDefinition['permissionPreset']): void;
-/** 新宿主读 deriveMessages 投影；旧宿主和测试夹具再回退事件数组或弃用的同步快照。 */
+/** 优先读 deriveMessages；没有投影时再读 snapshotEvents。数组入参只给测试夹具。 */
 export declare function hasAutomationSource(hint?: SessionOwnershipHint): boolean;
 /** 已弃用的同步历史读取，只给 session/event 没有增量或不完整时兜底。 */
 export declare function readSessionEvents(session: SessionEventReader): readonly SessionEventLike[];

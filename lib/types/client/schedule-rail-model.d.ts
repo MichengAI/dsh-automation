@@ -116,14 +116,11 @@ export interface WorkspaceListState {
     readonly items?: readonly NativeWorkspaceLike[];
     readonly archivedSessionIds?: readonly string[];
 }
-/** 0.2 主视图由 retainedBy.mainView 标记，不再读已删除的 list.current。 */
+/** 0.2 主视图由 retainedBy.mainView 标记。 */
 export declare function resolveCurrentSessionId(snapshot: SessionListState | undefined): string | null;
 export interface ClientSessionOpenAccess {
     readonly uiWorkspace?: {
         openSession(id: string): void;
-    };
-    readonly sessions?: {
-        open?(id: string): void;
     };
     readonly get?: (name: string) => unknown;
     readonly reflect?: {
@@ -133,7 +130,7 @@ export interface ClientSessionOpenAccess {
 /** 不硬读 ctx.uiWorkspace：Cordis 未 inject 时读属性会抛，只能 reflect.get / get。 */
 export declare function resolveClientSessionOpenAccess(ctx: ClientSessionOpenAccess): ClientSessionOpenAccess;
 export declare function canOpenClientSession(access: ClientSessionOpenAccess): boolean;
-/** 官方 alpha.2 走 uiWorkspace.openSession；旧宿主继续 sessions.open。不硬注入 uiWorkspace。 */
+/** 支持范围内的宿主都用 uiWorkspace.openSession。不硬读未注入的属性。 */
 export declare function openClientSession(access: ClientSessionOpenAccess, id: string): void;
 export declare function openScheduledSession(id: string, openRuntime?: (sessionId: string) => void, openHost?: (sessionId: string) => void): boolean;
 export interface EnsureOpenScheduledSessionInput {

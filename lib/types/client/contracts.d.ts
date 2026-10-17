@@ -42,13 +42,11 @@ export interface ClientContext {
         readonly rpc: ClientRpc;
     };
     sessions?: {
-        open?(id: string): void;
         refresh?: () => Promise<void>;
         list?: {
             getSnapshot(): {
                 ids?: readonly string[];
                 byId?: Record<string, unknown>;
-                current?: string | null;
             };
         };
     };
