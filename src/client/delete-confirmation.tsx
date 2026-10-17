@@ -44,7 +44,7 @@ export function DeleteConfirmation({
       footer={(
         <>
           <Button variant="outline" className="dsh-st-modal-action" disabled={busy} onClick={onCancel}>{t('card.cancel')}</Button>
-          <Button variant="primary" className="dsh-st-modal-action" disabled={busy} onClick={onConfirm}>{t('card.confirm')}</Button>
+          <Button variant="outline" className="dsh-st-modal-action dsh-st-btn-danger" disabled={busy} onClick={onConfirm}>{t('card.confirm')}</Button>
         </>
       )}
     />

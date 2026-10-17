@@ -21,6 +21,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Switch settings page tabs to official `SegmentedTabs` (aligning with skills manager), with `Pill` elements, sliding indicators, and clock/list icons.
 - Switch sidebar view switcher (Runs / Task overview) to official `SegmentedTabs`, aligning styling and icons with the settings page tabs.
 - Replace the sidebar Task overview circular clock icon with official `IconWorkspaceTreeOutline`, perfectly matching the flat list outline icon and removing visual inconsistency.
+- Align destructive action buttons with skills manager and archive manager: task deletion, session deletion, and group archive confirm buttons now use red outlined buttons (`variant="outline"` with `.dsh-st-btn-danger`) instead of filled primary buttons.
 - Fix model select edge cases: provide localized i18n fallbacks for provider names, narrow TagTone to host closed union, restrict 1017 badge strictly to `deepseek-flash`, and complete MenuSelect aria-label fallback chain.
 
 ## 1.0.0 - 2026-10-17

@@ -305,7 +305,7 @@ export function NativeScheduleSessionList(props: {
         {...(archiveGroupTarget === undefined ? {} : { description: t('session.archiveGroupDescription', { name: archiveGroupTarget.name, count: archiveGroupTarget.sessionIds.length }) })}
         footer={<>
           <Button variant='outline' className='dsh-st-modal-action' disabled={archiveGroupBusy} onClick={() => { setArchiveGroupTarget(undefined); setArchiveGroupError(undefined) }}>{t('session.archiveGroupCancel')}</Button>
-          <Button variant='primary' className='dsh-st-modal-action' disabled={archiveGroupBusy} onClick={confirmArchiveGroup}>{t('session.archiveGroupConfirm')}</Button>
+          <Button variant='outline' className='dsh-st-modal-action dsh-st-btn-danger' disabled={archiveGroupBusy} onClick={confirmArchiveGroup}>{t('session.archiveGroupConfirm')}</Button>
         </>}
       >
         {archiveGroupBusy || archiveGroupError !== undefined ? <>
@@ -345,7 +345,7 @@ export function NativeScheduleSessionList(props: {
         {...(deleteSessionTarget === undefined ? {} : { description: t('session.deleteSessionDescription', { name: deleteSessionTarget.title }) })}
         footer={<>
           <Button variant='outline' className='dsh-st-modal-action' disabled={deleteSessionBusy} onClick={() => { setDeleteSessionTarget(undefined); setDeleteSessionError(undefined) }}>{t('session.deleteSessionCancel')}</Button>
-          <Button variant='primary' className='dsh-st-modal-action' disabled={deleteSessionBusy} onClick={confirmDeleteSession}>{t('session.deleteSessionConfirm')}</Button>
+          <Button variant='outline' className='dsh-st-modal-action dsh-st-btn-danger' disabled={deleteSessionBusy} onClick={confirmDeleteSession}>{t('session.deleteSessionConfirm')}</Button>
         </>}
       >
         {deleteSessionBusy || deleteSessionError !== undefined ? <>

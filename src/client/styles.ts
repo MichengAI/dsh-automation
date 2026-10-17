@@ -154,6 +154,7 @@ const CSS_TEXT = `
 .dsh-st-n-dialog-status{margin-top:12px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px}
 .dsh-st-n-dialog-error{margin-top:12px;color:var(--dsw-alias-state-error-primary,#f85149);font-size:13px;line-height:20px}
 .dsh-st-modal-action{min-width:72px}
+.dsh-st-btn-danger:not(:disabled){color:var(--dsw-alias-state-error-primary,#ef7272)}
 .dsh-st-n-restore{flex:none;border:0;background:transparent;color:var(--dsw-alias-label-secondary,#c9cdd4);font:12px/16px inherit;padding:2px 4px;cursor:pointer}
 .dsh-st-n-sess.is-archived .dsh-st-n-title,.dsh-st-n-sess.is-archived .dsh-st-n-time{color:var(--dsw-alias-label-caption,#ADB2B8)}
 .dsh-st-n-sess .dsh-st-n-title[data-scrolled]{mask-image:linear-gradient(90deg,#0000,#000 12px)}
