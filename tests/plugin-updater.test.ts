@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import test from 'node:test'
 import { handlePluginUpdateEscape, manualPluginUpdateCommand } from '../src/client/plugin-update-model.ts'
-import { isDshCliEntry, isNewerVersion, isTrustedUpdateRequest, PLUGIN_UPDATE_HEADER, resolveUpdateRuntime, shouldNotifyParent } from '../src/plugin-updater.ts'
+import { isDshCliEntry, isNewerVersion, isTrustedUpdateRequest, mergeMinimumReleaseAgeExclude, PLUGIN_UPDATE_HEADER, recordReleaseAgeExclude, resolveUpdateRuntime, shouldNotifyParent } from '../src/plugin-updater.ts'
 
 test('定时任务独立更新只接受同源专用请求', () => {
   assert.equal(isNewerVersion('0.1.32', '0.1.33'), true)
@@ -81,4 +82,30 @@ test('官方 Desktop 在线更新指向 desktop profile，且不通知父进程'
   assert.equal(runtime.officialDesktop, true)
   assert.equal(runtime.canAutoUpdate, true)
   assert.equal(shouldNotifyParent(runtime, () => {}), false)
+})
+
+test('自更新把刚安装的版本并进已有发布年龄白名单，不另起一行', () => {
+  const created = mergeMinimumReleaseAgeExclude('packages:\n  - .\n', '@michengai/dsh-automation@1.0.0')
+  assert.match(created, /minimumReleaseAgeExclude:\n  - '@michengai\/dsh-automation@1\.0\.0'\n/)
+  const merged = mergeMinimumReleaseAgeExclude(
+    "minimumReleaseAgeExclude:\n  - '@michengai/dsh-automation@0.1.66'\n  - keep@1.0.0\n",
+    '@michengai/dsh-automation@1.0.0',
+  )
+  assert.match(merged, /'@michengai\/dsh-automation@0\.1\.66 \|\| 1\.0\.0'/)
+  assert.match(merged, /keep@1\.0\.0/)
+  assert.equal(merged.split('@michengai/dsh-automation').length - 1, 1)
+  assert.throws(() => mergeMinimumReleaseAgeExclude('minimumReleaseAgeExclude: [keep@1.0.0]\n', '@michengai/dsh-automation@1.0.0'), /无法安全合并/)
+})
+
+test('白名单先写临时文件再替换，不留下临时文件', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'dsh-age-'))
+  try {
+    await writeFile(join(dir, 'pnpm-workspace.yaml'), "packages:\n  - .\nminimumReleaseAgeExclude:\n  - '@michengai/dsh-automation@0.1.66' # 保留\n", 'utf8')
+    await recordReleaseAgeExclude(dir, '@michengai/dsh-automation@1.0.0')
+    const text = await readFile(join(dir, 'pnpm-workspace.yaml'), 'utf8')
+    assert.match(text, /0\.1\.66 \|\| 1\.0\.0' # 保留/)
+    assert.deepEqual(await readdir(dir), ['pnpm-workspace.yaml'])
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
 })

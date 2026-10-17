@@ -38,6 +38,7 @@ export function DeleteConfirmation({
       open={target !== undefined}
       className="dsh-st-delete-dialog"
       title={t('card.confirmDelete')}
+      {...(target === undefined ? {} : { description: `${target.name} ${t('card.confirmDeleteHint')}` })}
       closeLabel={t('card.cancel')}
       onClose={onCancel}
       footer={(
@@ -46,9 +47,6 @@ export function DeleteConfirmation({
           <Button variant="primary" className="dsh-st-modal-action" disabled={busy} onClick={onConfirm}>{t('card.confirm')}</Button>
         </>
       )}
-    >
-      {target !== undefined && <p>{target.name}</p>}
-      <p>{t('card.confirmDeleteHint')}</p>
-    </Modal>
+    />
   )
 }

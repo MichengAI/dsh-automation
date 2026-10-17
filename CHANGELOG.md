@@ -6,6 +6,9 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+- Confirmation dialogs put the sentence in the host modal description, so the body margin no longer pushes it onto the buttons.
+- A successful self-update now records the exact version in the profile release-age allowlist, so later plugin installs are not rejected.
+
 ## 1.0.0 - 2026-10-17
 
 - This line starts at `1.0.0` and requires DSH `0.2.0-rc.1` through `0.2.1-alpha.5`. Hosts still on `0.1.x` should stay on plugin `0.1.66`.
