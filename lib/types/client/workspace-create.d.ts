@@ -2,6 +2,10 @@
 export declare class AddedWorkspaceMissingError extends Error {
     constructor();
 }
+export declare class WorkspacePickerUnavailableError extends Error {
+    readonly code = "workspace/picker-unavailable";
+    constructor();
+}
 export interface HostWorkspaceCreator {
     pickDirectory(): Promise<string | undefined>;
     create(path: string): Promise<unknown>;
@@ -21,7 +25,11 @@ export declare function createdWorkspaceId(workspaces: readonly {
     readonly id: string;
     readonly path: string;
 }[], path: string): string;
-/** 只探测选目录。桌面优先用原生窗口；否则再调宿主服务。 */
+export declare function probeService(ctx: WorkspaceProbe | unknown, name: string): unknown;
+export declare function parsePickedPath(value: unknown): string | undefined;
+export declare function pickHostDirectory(ctx: WorkspaceProbe | unknown): Promise<string | undefined>;
+export declare function hasHostDirectoryPicker(ctx: WorkspaceProbe | unknown): boolean;
+/** 只探测选目录。桌面优先用原生窗口；否则再调宿主服务。照抄 IM pickHostDirectory。 */
 export declare function resolveDirectoryPicker(ctx: WorkspaceProbe): {
     pickDirectory(): Promise<string | undefined>;
 } | undefined;
