@@ -49,6 +49,7 @@ export declare const en: {
     readonly "session.fork": "Fork session";
     readonly "session.archive": "Archive session";
     readonly "session.unarchive": "Restore";
+    readonly "session.copySessionId": "Copy Session ID";
     readonly "session.moreActions": "More actions for {title}";
     readonly "session.groupActions": "Actions for {name}";
     readonly "session.taskSettings": "Task settings";

@@ -21,4 +21,5 @@ export declare const IconWorkspaceTreeOutline: HostIcon;
 export declare const IconFlatListOutline: HostIcon;
 export declare const IconChevronsUpDownOutline: HostIcon;
 export declare const IconClockOutline: HostIcon;
+export declare const IconCopyOutline: HostIcon;
 export declare const IconArchiveCheckOutline: HostIcon;
