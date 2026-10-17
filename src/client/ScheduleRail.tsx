@@ -1,6 +1,7 @@
 import { Component, createElement, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
+import { StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
-import { ClockIcon, RunningStateDot } from './icons.js'
+import { IconClockOutline } from './host-icons.js'
 import type { AutomationRuntime } from './runtime.js'
 import {
   filterTaskSessionState,
@@ -89,7 +90,7 @@ export function ScheduleRail({
                   className="dsh-st-rail-head"
                   onClick={() => setFolded(current => ({ ...current, [group.id]: !current[group.id] }))}
                 >
-                  <span className="dsh-st-rail-folder"><ClockIcon width={16} height={16} /></span>
+                  <span className="dsh-st-rail-folder"><IconClockOutline size={16} /></span>
                   <span className="dsh-st-rail-title">{group.name}</span>
                 </button>
                 {folded[group.id] !== true && group.sessions.map(session => (
@@ -100,7 +101,7 @@ export function ScheduleRail({
                     onClick={() => openSession?.(session.id)}
                   >
                     <span>{session.label}</span>
-                    {session.running && <RunningStateDot />}
+                    {session.running && <StateDot state="ongoing" size={10} />}
                   </button>
                 ))}
               </section>

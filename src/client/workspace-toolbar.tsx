@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Menu, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Menu, Tooltip, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { Translate } from './contracts.js'
 import { IconArchiveCheckOutline, IconArchiveOutline, IconClockOutline, IconCloseFill, IconFlatListOutline, IconFolderClose, IconSearchOutline, IconSlidersTwoOutline, IconWorkspaceTreeOutline } from './host-icons.js'
 import type { ArchivedSessionFilter, WorkspaceGroupMode, WorkspaceListSort } from './schedule-rail-model.js'
@@ -69,16 +69,20 @@ export function WorkspaceToolbar({
       <span className="dsh-st-n-head-label">{groupMode === 'list' ? t('sidebar.sessions') : t('sidebar.workspaces')}</span>
       <div className="dsh-st-n-search-slot">
         <div className="dsh-st-n-search" onClick={openSearch}>
-          <button type="button" className="dsh-st-n-search-btn" aria-label={t('sidebar.search')} aria-expanded={searching} onClick={openSearch}>
-            <IconSearchOutline size={searchSize} />
-          </button>
+          <Tooltip label={t('sidebar.search')} side="bottom" delayMs={500} disabled={searching}>
+            <button type="button" className="dsh-st-n-search-btn" aria-label={t('sidebar.search')} aria-expanded={searching} onClick={openSearch}>
+              <IconSearchOutline size={searchSize} />
+            </button>
+          </Tooltip>
           <input ref={inputRef} className="dsh-st-n-search-input" value={query} placeholder={t('sidebar.searchSessions')} aria-label={t('sidebar.searchSessions')} tabIndex={searching ? 0 : -1} aria-hidden={!searching} onChange={(event) => onQueryChange(event.target.value)} onKeyDown={(event) => {
             if (event.key === 'Escape') closeSearch()
           }} />
           {searching && (
-            <button type="button" className="dsh-st-n-search-clear" aria-label={t('sidebar.clearSearch')} onClick={(event) => { event.stopPropagation(); closeSearch() }}>
-              <IconCloseFill size={14} />
-            </button>
+            <Tooltip label={t('sidebar.clearSearch')} side="bottom" delayMs={500}>
+              <button type="button" className="dsh-st-n-search-clear" aria-label={t('sidebar.clearSearch')} onClick={(event) => { event.stopPropagation(); closeSearch() }}>
+                <IconCloseFill size={14} />
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>
@@ -99,9 +103,9 @@ export function WorkspaceToolbar({
             if (id === 'only-archived') onArchivedFilterChange?.(archivedFilter === 'only' ? 'default' : 'only')
             setFilterOpen(false)
           }}
-          anchor={<button type="button" className={filterOpen ? 'dsh-st-n-head-btn is-on' : 'dsh-st-n-head-btn'} aria-label={t('sidebar.filter')} aria-expanded={filterOpen} onClick={() => setFilterOpen((open) => !open)}>
+          anchor={<Tooltip label={t('sidebar.filter')} side="bottom" delayMs={500} disabled={filterOpen}><button type="button" className={filterOpen ? 'dsh-st-n-head-btn is-on' : 'dsh-st-n-head-btn'} aria-label={t('sidebar.filter')} aria-expanded={filterOpen} onClick={() => setFilterOpen((open) => !open)}>
             <IconSlidersTwoOutline size={16} />
-          </button>}
+          </button></Tooltip>}
         />
       </div>
     </div>

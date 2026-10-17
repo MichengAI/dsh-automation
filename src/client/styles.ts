@@ -129,8 +129,9 @@ const CSS_TEXT = `
 .dsh-st-run-dot{flex:none;color:var(--dsw-static-deepseek-450,#4c8dff)}.dsh-st-run-dot-cell{fill:currentColor;opacity:.15;animation:dsh-st-run-chase 1s infinite}@keyframes dsh-st-run-chase{0%,12.4%{opacity:1}12.5%,24.9%{opacity:.6}25%,37.4%{opacity:.35}37.5%,100%{opacity:.15}}
 .dsh-st-shell-rail{display:flex;flex-direction:column;min-height:0;flex:1;height:100%;overflow:hidden}
 .dsh-st-shell-tabs{display:flex;flex:none;gap:18px;padding:6px 12px 0;border-bottom:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,.08))}
-.dsh-st-shell-tabs button{appearance:none;border:0;background:transparent;color:var(--dsw-alias-label-secondary,#8b8f98);padding:8px 0 9px;font-size:13px;cursor:pointer}
-.dsh-st-shell-tabs button.is-on{color:var(--dsw-alias-label-primary,inherit);box-shadow:inset 0 -2px 0 currentColor}
+.dsh-st-shell-tabs button{appearance:none;border:0;background:transparent;color:var(--dsw-alias-label-secondary,#8b8f98);padding:8px 0 9px;font-size:13px;font-weight:500;cursor:pointer;transition:color .15s ease}
+.dsh-st-shell-tabs button:hover{color:var(--dsw-alias-label-primary,inherit)}
+.dsh-st-shell-tabs button.is-on{color:var(--dsw-alias-label-primary,inherit);font-weight:600;box-shadow:inset 0 -2px 0 var(--dsw-alias-state-business-primary,currentColor)}
 .dsh-st-shell-body{display:flex;min-height:0;flex:1;overflow:hidden}
 .dsh-st-shell-body>*{min-width:0;flex:1}.dsh-st-official-tree{display:flex;min-height:0;flex:1;overflow:hidden}.dsh-st-official-tree>*{min-width:0;flex:1}
 .dsh-st-rail-head.is-static{cursor:default;font-weight:600}

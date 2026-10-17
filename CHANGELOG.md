@@ -12,6 +12,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Opening a scheduled session uses only the host `uiWorkspace.openSession`. The removed `sessions.open` fallback is gone.
 - The new-task form dropdowns now share one two-column grid. The time controls stay with the schedule, and each picker fills its cell. The open menu matches the trigger width.
 - The settings title actions now line up with Skills Manager. The feedback mark is the same 16px pen, and the update dialog footer is a host button fragment instead of a button array.
+- Align sidebar icons and toolbar controls with the official design system: use `IconFolderClose` and `IconFolderOpen` for folders, `IconTriangleRightFill` for group disclosure chevrons, `IconUnarchiveOutline` for unarchiving, official `StateDot` for ongoing run pulses, official wireframe clock glyphs for schedules and settings navigation, and add host `Tooltip` wrappers for search and filter buttons.
 
 ## 1.0.0 - 2026-10-17
 

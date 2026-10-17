@@ -25,7 +25,6 @@ import {
 import { automationToggleMutation } from './schedule-rail-model.js'
 import {
   ChatIcon,
-  ClockIcon,
   FeedbackIcon,
   GithubIcon,
   InfoIcon,
@@ -33,6 +32,7 @@ import {
   PlusIcon,
   RefreshIcon,
 } from './icons.js'
+import { IconClockOutline } from './host-icons.js'
 import { Button, Input, Menu, SegmentedControl, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { rowIconStyle } from './plugin-ui.js'
 import { MenuSelect } from './menu-select.js'
@@ -206,7 +206,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
             >
               <strong>{t(`examples.${index + 1}.title` as 'examples.1.title')}</strong>
               <p>{t(`examples.${index + 1}.body` as 'examples.1.body')}</p>
-              <span className="dsh-st-chip"><ClockIcon />{t(`examples.${index + 1}.chip` as 'examples.1.chip')}</span>
+              <span className="dsh-st-chip"><IconClockOutline size={14} />{t(`examples.${index + 1}.chip` as 'examples.1.chip')}</span>
             </button>
           ))}
         </div>
@@ -415,7 +415,7 @@ function TaskCard({
       <h3>{item.name}</h3>
       <p>{item.prompt}</p>
       <div className="dsh-st-card-foot">
-        <span className="dsh-st-chip"><ClockIcon />{formatSchedule(item.schedule, t)}</span>
+        <span className="dsh-st-chip"><IconClockOutline size={14} />{formatSchedule(item.schedule, t)}</span>
         <span>{item.nextRunAt === undefined ? t('stats.noneScheduled') : t('history.nextApprox', { when: formatWithin(item.nextRunAt, now, t) })}</span>
       </div>
     </article>

@@ -8,15 +8,19 @@ import {
   StateDot,
   type MenuEntry,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { IconArchiveOutline, IconBranchOutline, IconEditOutline, IconEllipsisOutline, IconSettingsOutline, IconTrashOutline } from './host-icons.js'
-import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import {
-  ChevronIcon,
-  FolderClosedIcon,
-  FolderOpenIcon,
-  RunningStateDot,
-  UnarchiveOutlineIcon,
-} from './icons.js'
+  IconArchiveOutline,
+  IconBranchOutline,
+  IconEditOutline,
+  IconEllipsisOutline,
+  IconFolderClose,
+  IconFolderOpen,
+  IconSettingsOutline,
+  IconTrashOutline,
+  IconTriangleRightFill,
+  IconUnarchiveOutline,
+} from './host-icons.js'
+import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import {
   nativeSessionHoverStyle,
   renderOwnedSlot,
@@ -335,8 +339,8 @@ function NativeScheduleGroupRow(props: {
       data-n-group={id}
       onClick={onToggle}
     >
-      <span className='dsh-st-n-slot dsh-st-n-folder'>{expanded ? <FolderOpenIcon width={16} height={16} /> : <FolderClosedIcon width={16} height={16} />}</span>
-      <span className='dsh-st-n-slot dsh-st-n-chevron'><ChevronIcon width={14} height={14} className={'dsh-st-n-arrow' + (expanded ? ' is-open' : '')} /></span>
+      <span className='dsh-st-n-slot dsh-st-n-folder'>{expanded ? <IconFolderOpen size={16} /> : <IconFolderClose size={16} />}</span>
+      <span className='dsh-st-n-slot dsh-st-n-chevron'><IconTriangleRightFill size={14} className={'dsh-st-n-arrow' + (expanded ? ' is-open' : '')} /></span>
       <span className='dsh-st-n-project-text'><span className='dsh-st-n-title'>{name}</span></span>
       <span className='dsh-st-n-acts'>
         <Menu
@@ -449,7 +453,7 @@ function NativeSessionRow(props: {
     if (action === 'rename') return { id: action, label: t('session.rename'), icon: <IconEditOutline /> }
     if (action === 'fork') return { id: action, label: t('session.fork'), icon: <IconBranchOutline /> }
     if (action === 'archive') return { id: action, label: t('session.archive'), icon: <IconArchiveOutline size={16} /> }
-    if (action === 'unarchive') return { id: action, label: t('session.unarchive'), icon: <UnarchiveOutlineIcon width={16} height={16} /> }
+    if (action === 'unarchive') return { id: action, label: t('session.unarchive'), icon: <IconUnarchiveOutline size={16} /> }
     return { id: action, label: t('session.deleteSession'), icon: <IconTrashOutline />, danger: true }
   })
   const primary = hoverStatuses.find((status) => status.state !== 'archived')
@@ -471,7 +475,7 @@ function NativeSessionRow(props: {
   )
   const row = (
     <div className={rowClass} ref={rowRef} role='treeitem' tabIndex={0} aria-selected={selected} data-n-menu-root={id} onClick={onOpen} onMouseEnter={() => { startSessionTitleMarquee(titleRef.current, titleFrame.current); showHover() }} onMouseLeave={() => { stopSessionTitleMarquee(titleRef.current, titleFrame.current); hideHover() }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() } }} onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); hideHover(); onMenuChange(true) }}>
-      {!omitStatusSlot && <span className='dsh-st-n-slot'>{showDot && primary !== undefined ? <StateDot state={primary.state === 'ongoing' ? 'ongoing' : primary.state === 'warning' ? 'warning' : 'done'} size={10} /> : running ? <RunningStateDot /> : null}</span>}
+      {!omitStatusSlot && <span className='dsh-st-n-slot'>{showDot && primary !== undefined ? <StateDot state={primary.state === 'ongoing' ? 'ongoing' : primary.state === 'warning' ? 'warning' : 'done'} size={10} /> : running ? <StateDot state='ongoing' size={10} /> : null}</span>}
       <span ref={titleRef} className='dsh-st-n-title' onDoubleClick={(event) => { if (renameSession === undefined) return; event.stopPropagation(); setRenaming(true) }}>{title}</span>
       <span className='dsh-st-n-time' aria-hidden={trailing === undefined ? undefined : true}>{trailing ?? sessionRowTime(updatedAt, t)}</span>
       <span className='dsh-st-n-acts'>

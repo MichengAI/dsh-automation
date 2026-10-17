@@ -12,6 +12,7 @@
 - 打开定时会话只走宿主 `uiWorkspace.openSession`，不再回退已删除的 `sessions.open`。
 - 新建定时任务的下拉改成两列对齐：频率和时间留在计划时间里，工作区、模型、推理等级和权限铺满各自的格子。弹出的菜单跟触发器同宽。
 - 设置标题旁的 GitHub、问题反馈、检查更新与技能管理器同一行对齐，反馈图标改成同一支 16px 笔。更新弹窗底部改用宿主按钮片段，不再传按钮数组。
+- 侧边栏图标与官方原生对齐：工作区文件夹使用 `IconFolderClose` 与 `IconFolderOpen`，折叠展开箭头使用 `IconTriangleRightFill`，取消归档使用 `IconUnarchiveOutline`，运行状态统一使用官方 `StateDot`，计划与设置图标对齐官方线框时钟，工具栏操作按钮补充官方 Tooltip 浮层提示。
 
 ## 1.0.0 - 2026-10-17
 
