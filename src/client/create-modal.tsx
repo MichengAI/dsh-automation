@@ -14,7 +14,7 @@ import {
   type ScheduleKind,
 } from './helpers.js'
 import { shouldConfirmFullAccess } from './create-modal-logic.js'
-import { AddedWorkspaceMissingError } from './workspace-create.js'
+import { WorkspacePickerUnavailableError } from './workspace-create.js'
 import { PlusIcon } from './icons.js'
 import { Button, Checkbox, Modal, RiskConfirmation } from '@deepseek-ai/dsh-client-ui-primitives'
 import { blockHostModalBackdrop, Input, TextArea } from './plugin-ui.js'
@@ -91,9 +91,13 @@ export function CreateModal({
       const id = await onAddWorkspace()
       if (id !== undefined) update({ workspaceId: id })
     } catch (caught) {
-      setValidationError(caught instanceof AddedWorkspaceMissingError || (caught instanceof Error && caught.message === 'picker-unavailable') || !(caught instanceof Error) || caught.message === ''
-        ? t(caught instanceof Error && caught.message === 'picker-unavailable' ? 'form.workspaceUnavailable' : 'form.addWorkspaceFailed')
-        : caught.message)
+      if (caught instanceof WorkspacePickerUnavailableError) {
+        setValidationError(t('form.workspaceUnavailable'))
+      } else if (caught instanceof Error && caught.message !== '') {
+        setValidationError(caught.message)
+      } else {
+        setValidationError(t('form.addWorkspaceFailed'))
+      }
     } finally {
       setAddingWorkspace(false)
     }

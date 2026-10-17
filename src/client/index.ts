@@ -10,7 +10,7 @@ import {
 } from './native-tabs.js'
 import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
-import { pickHostDirectory, probeService, resolveDirectoryPicker, WorkspacePickerUnavailableError } from './workspace-create.js'
+import { createHostWorkspace, pickHostDirectory } from './workspace-create.js'
 import { scheduledListHostActions } from './native-group-actions.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
 import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
@@ -117,22 +117,10 @@ export function apply(ctx: ClientContext): void {
   const modelT = ctx.locale.bind('model')
   const runtime = createAutomationRuntime(ctx.connection.rpc)
   const addWorkspace = async (): Promise<string | undefined> => {
-    let picked: string | undefined
-    try {
-      picked = await pickHostDirectory(ctx)
-    } catch (caught) {
-      if (caught instanceof WorkspacePickerUnavailableError || (caught as { code?: string })?.code === 'workspace/picker-unavailable') {
-        throw new Error('picker-unavailable')
-      }
-      throw caught
-    }
+    const picked = await pickHostDirectory(ctx)
     if (picked === undefined) return undefined
-    const hostWorkspaces = probeService(ctx, 'workspaces') as { create?: (input: { path: string }) => Promise<unknown> } | undefined
-    if (hostWorkspaces && typeof hostWorkspaces.create === 'function') {
-      try {
-        await hostWorkspaces.create({ path: picked })
-      } catch { /* 宿主创建失败或已存在时继续走后置 runtime 登记 */ }
-    }
+    // 前端通知宿主工作区服务创建并即时刷新侧栏/下拉视图；后端 RPC 确保定时任务调度器持久化登记
+    await createHostWorkspace(ctx, picked)
     const registered = await runtime.registerWorkspace(picked)
     return registered.id
   }
@@ -153,10 +141,7 @@ export function apply(ctx: ClientContext): void {
     label: () => t('tab'),
     icon: 'schedule',
     inject: () => ({
-      createWorkspace: (input: { path: string }) => {
-        const ws = probeService(ctx, 'workspaces') as { create?: (input: { path: string }) => unknown } | undefined
-        return ws?.create?.(input)
-      },
+      createWorkspace: (input: { path: string }) => createHostWorkspace(ctx, input.path),
       pickDirectory: () => pickHostDirectory(ctx),
       permissionT,
       modelT,

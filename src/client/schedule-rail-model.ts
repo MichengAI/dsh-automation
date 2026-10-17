@@ -1,6 +1,7 @@
 /** 侧栏定时树与原生任务列表的纯函数，供组件和单测共用。 */
 
 import type { AutomationStatus } from './protocol.js'
+import { probeService } from './workspace-create.js'
 
 export const AUTOMATION_SESSION_PREFIX = 'dsh-automation-session-'
 export const NATIVE_SIDEBAR_TAB_KEY = 'dsh-automation.sidebar-tab'
@@ -362,17 +363,6 @@ function asUiWorkspace(value: unknown): { openSession(id: string): void } | unde
   const openSession = (value as { openSession?: unknown }).openSession
   if (typeof openSession !== 'function') return undefined
   return { openSession: (id: string) => { (openSession as (id: string) => void).call(value, id) } }
-}
-
-function probeService(ctx: ClientSessionOpenAccess, name: string): unknown {
-  const reflectGet = ctx.reflect?.get
-  if (typeof reflectGet === 'function') {
-    try { return reflectGet.call(ctx.reflect, name) } catch { /* 未提供时不让点击崩掉 */ }
-  }
-  if (typeof ctx.get === 'function') {
-    try { return ctx.get(name) } catch { /* 未注入时 Cordis get 也可能抛 */ }
-  }
-  return undefined
 }
 
 /** 不硬读 ctx.uiWorkspace：Cordis 未 inject 时读属性会抛，只能 reflect.get / get。 */
