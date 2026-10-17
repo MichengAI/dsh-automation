@@ -20,6 +20,7 @@ export interface MenuSelectProps {
     onChange: (value: string) => void;
     onFooter?: (id: string) => void;
     disabled?: boolean;
+    compact?: boolean;
     className?: string;
     listClassName?: string;
 }
