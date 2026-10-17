@@ -266,10 +266,10 @@ export function NativeScheduleSessionList(props: {
         }}
         closeLabel={t('session.archiveGroupClose')}
         title={t('session.archiveGroup')}
-        footer={<div className='dsh-st-n-dialog-actions'>
-          <Button variant='outline' disabled={archiveGroupBusy} onClick={() => { setArchiveGroupTarget(undefined); setArchiveGroupError(undefined) }}>{t('session.archiveGroupCancel')}</Button>
-          <Button variant='outline' className='dsh-st-n-danger-button' disabled={archiveGroupBusy} onClick={confirmArchiveGroup}>{t('session.archiveGroupConfirm')}</Button>
-        </div>}
+        footer={<>
+          <Button variant='outline' className='dsh-st-modal-action' disabled={archiveGroupBusy} onClick={() => { setArchiveGroupTarget(undefined); setArchiveGroupError(undefined) }}>{t('session.archiveGroupCancel')}</Button>
+          <Button variant='primary' className='dsh-st-modal-action' disabled={archiveGroupBusy} onClick={confirmArchiveGroup}>{t('session.archiveGroupConfirm')}</Button>
+        </>}
       >
         <p className='dsh-st-n-dialog-copy'>{archiveGroupTarget === undefined ? '' : t('session.archiveGroupDescription', { name: archiveGroupTarget.name, count: archiveGroupTarget.sessionIds.length })}</p>
         {archiveGroupBusy && <div className='dsh-st-n-dialog-status' role='status'>{t('session.archiveGroupPending')}</div>}
@@ -284,10 +284,10 @@ export function NativeScheduleSessionList(props: {
         }}
         closeLabel={t('session.deleteSessionClose')}
         title={t('session.deleteSession')}
-        footer={<div className='dsh-st-n-dialog-actions'>
-          <Button variant='outline' disabled={deleteSessionBusy} onClick={() => { setDeleteSessionTarget(undefined); setDeleteSessionError(undefined) }}>{t('session.deleteSessionCancel')}</Button>
-          <Button variant='outline' className='dsh-st-n-danger-button' disabled={deleteSessionBusy} onClick={confirmDeleteSession}>{t('session.deleteSessionConfirm')}</Button>
-        </div>}
+        footer={<>
+          <Button variant='outline' className='dsh-st-modal-action' disabled={deleteSessionBusy} onClick={() => { setDeleteSessionTarget(undefined); setDeleteSessionError(undefined) }}>{t('session.deleteSessionCancel')}</Button>
+          <Button variant='primary' className='dsh-st-modal-action' disabled={deleteSessionBusy} onClick={confirmDeleteSession}>{t('session.deleteSessionConfirm')}</Button>
+        </>}
       >
         <p className='dsh-st-n-dialog-copy'>{deleteSessionTarget === undefined ? '' : t('session.deleteSessionDescription', { name: deleteSessionTarget.title })}</p>
         {deleteSessionBusy && <div className='dsh-st-n-dialog-status' role='status'>{t('session.deleteSessionPending')}</div>}

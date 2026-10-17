@@ -157,8 +157,8 @@ export function CreateModal({
         onClose={onClose}
         footer={(
           <>
-            <Button variant="outline" disabled={busy} onClick={onClose}>{t('form.cancel')}</Button>
-            <Button variant="primary" type="submit" form="dsh-st-create-form" disabled={busy || addingWorkspace || !workspaceReady}>{t('modal.save')}</Button>
+            <Button variant="outline" className="dsh-st-modal-action" disabled={busy} onClick={onClose}>{t('form.cancel')}</Button>
+            <Button variant="primary" className="dsh-st-modal-action" type="submit" form="dsh-st-create-form" disabled={busy || addingWorkspace || !workspaceReady}>{t('modal.save')}</Button>
           </>
         )}
       >

@@ -146,12 +146,10 @@ const CSS_TEXT = `
 .dsh-st-n-arrow.is-open{transform:rotate(90deg)}
 .dsh-st-n-project-text{flex-direction:column;flex:1;gap:2px;min-width:0;display:flex}
 .dsh-st-n-sess:focus{outline:none}.dsh-st-n-sess:focus-visible:not(.is-on){box-shadow:inset 0 0 0 2px var(--dsw-alias-state-business-primary,#4c8dff)}
-.dsh-st-n-dialog-actions{display:flex;justify-content:flex-end;gap:8px}
 .dsh-st-n-dialog-copy{margin:0;color:var(--dsw-alias-label-secondary);font-size:14px;line-height:22px}
 .dsh-st-n-dialog-status{margin-top:12px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:20px}
 .dsh-st-n-dialog-error{margin-top:12px;color:var(--dsw-alias-state-error-primary,#f85149);font-size:13px;line-height:20px}
-.dsh-st-n-danger-button{color:var(--dsw-alias-state-error-primary,#f85149)!important}
-.dsh-st-n-danger-button:hover{background:var(--dsw-alias-interactive-bg-hover-danger,rgba(248,81,73,.12))!important}
+.dsh-st-modal-action{min-width:72px}
 .dsh-st-n-restore{flex:none;border:0;background:transparent;color:var(--dsw-alias-label-secondary,#c9cdd4);font:12px/16px inherit;padding:2px 4px;cursor:pointer}
 .dsh-st-n-sess.is-archived .dsh-st-n-title,.dsh-st-n-sess.is-archived .dsh-st-n-time{color:var(--dsw-alias-label-caption,#ADB2B8)}
 .dsh-st-n-sess .dsh-st-n-title[data-scrolled]{mask-image:linear-gradient(90deg,#0000,#000 12px)}

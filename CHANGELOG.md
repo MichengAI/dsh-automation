@@ -9,6 +9,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Drop DSH `0.1.x` support. Supported hosts are `0.2.0-rc.1` through `0.2.1-alpha.5`. Hosts still on `0.1.x` should stay on plugin `0.1.66`.
 - Remove host-version shims that only existed for pre-0.2 icons, session `list.current`, and the pre-0.1.5 Agent context entry.
 - Remove unused Ant-shaped props left after the host primitive swap: `autoSize`, `MenuSelect.action` / `icon`, `SortMenu.compact`, and the unused custom switch styles.
+- Align modal footer buttons with the host dialog: default 36px outline and primary actions, 72px minimum width, no custom danger skin.
 
 ## 0.1.66 - 2026-10-15
 
