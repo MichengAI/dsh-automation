@@ -50,6 +50,7 @@ test('定时任务客户端与 Host 绑定自身更新入口', async () => {
   assert.match(updateUi, /data-mpi-label/)
   assert.match(updateUi, /variant: 'outline', size: 'sm'/)
   assert.match(updateUi, /className: 'dsh-st-update-dialog'/)
+  assert.doesNotMatch(updateUi, /width:min\(680px/)
   assert.match(updateUi, /document\.addEventListener\('keydown', onKey, true\)/)
   assert.match(updateUi, /if \(version\.textContent !== versionLabel\)/)
   assert.match(updateUi, /else if \(payload\.latestCheckFailed\)/)
