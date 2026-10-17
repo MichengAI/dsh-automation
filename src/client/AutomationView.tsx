@@ -31,8 +31,8 @@ import {
   PlusIcon,
   RefreshIcon,
 } from './icons.js'
-import { IconClockOutline, IconEllipsisOutline } from './host-icons.js'
-import { Button, Input, Menu, SegmentedControl, Switch, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconClockOutline, IconEllipsisOutline, IconFlatListOutline } from './host-icons.js'
+import { Button, Input, Menu, SegmentedTabs, Switch, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { rowIconStyle } from './plugin-ui.js'
 import { MenuSelect } from './menu-select.js'
 import { CreateModal } from './create-modal.js'
@@ -222,12 +222,34 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
       )}
 
       <div className="dsh-st-tabs">
-        <SegmentedControl
-          id="dsh-st-settings-tabs"
+        <SegmentedTabs
           className="dsh-st-settings-tabs"
           label={t('tab')}
           value={tab}
-          options={[{ value: 'mine', label: t('tabs.mine') }, { value: 'runs', label: t('tabs.runs') }]}
+          items={[
+            {
+              value: 'mine' as const,
+              id: 'dsh-st-tab-mine',
+              panelId: 'dsh-st-panel-mine',
+              label: (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <IconClockOutline />
+                  <span>{t('tabs.mine')}</span>
+                </span>
+              ),
+            },
+            {
+              value: 'runs' as const,
+              id: 'dsh-st-tab-runs',
+              panelId: 'dsh-st-panel-runs',
+              label: (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <IconFlatListOutline />
+                  <span>{t('tabs.runs')}</span>
+                </span>
+              ),
+            },
+          ]}
           onChange={setTab}
         />
         {tab === 'mine' && (
