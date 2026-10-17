@@ -170,7 +170,7 @@ export function NativeScheduleShell({
     void runtime.refresh().catch(() => undefined)
   }, [automationState.snapshot?.runs, currentId, runtime])
   const useFilteredSessions = useCallback<SessionSelector>((selector, eq) => {
-    if (useSessions === undefined) return selector({ ids: [], byId: {}, current: null })
+    if (useSessions === undefined) return selector({ ids: [], byId: {} })
     return useSessions(state => selector(filterTaskSessionState(state, scheduledIds)), eq)
   }, [useSessions, scheduledIds])
   const useFilteredWorkspaces = useCallback<WorkspaceSelector>((selector, eq) => {
@@ -285,8 +285,8 @@ function NativeTaskRail({
   readonly useWorkspaces?: WorkspaceSelector
 }): JSX.Element {
   const snap = useSessions === undefined
-    ? { ids: [] as string[], byId: {} as Record<string, NativeSessionLike>, current: null as string | null }
-    : useSessions(state => state ?? { ids: [], byId: {}, current: null })
+    ? { ids: [] as string[], byId: {} as Record<string, NativeSessionLike> }
+    : useSessions(state => state ?? { ids: [], byId: {} })
   const workspaces = useWorkspaces === undefined
     ? undefined
     : useWorkspaces(state => state ?? { items: [], archivedSessionIds: [] })

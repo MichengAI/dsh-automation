@@ -225,9 +225,8 @@ export async function executeAutomationRun(
       setup: async (agentCtx: Context, createdAgent?: SetupAgent) => {
         await ctx.agentPresets.mount(agentCtx, target.agentPreset)
         installModelSelection(agentCtx, { current: selection, assembled: undefined })
-        // 0.1.5 显式传入 Agent；只有旧宿主才读取上下文入口。
-        const agent = createdAgent ?? (agentCtx as Context & { agent?: SetupAgent }).agent
-        if (agent === undefined) throw new Error('automation setup has no scoped Agent')
+        if (createdAgent === undefined) throw new Error('automation setup has no scoped Agent')
+        const agent = createdAgent
         applyUnattendedPermission(ctx.permissionPresets, agent.session, target.permissionPreset)
       },
     }))

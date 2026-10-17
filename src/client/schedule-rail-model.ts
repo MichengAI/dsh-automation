@@ -307,7 +307,6 @@ export function hasCodexUiSidebar(entries: readonly unknown[] | undefined): bool
 export interface SessionListState {
   readonly ids?: readonly string[]
   readonly byId?: Record<string, NativeSessionLike>
-  readonly current?: string | null
 }
 
 const taskFilterCache = new WeakMap<object, { key: string; result: object }>()
@@ -319,7 +318,7 @@ function scheduledCacheKey(scheduledIds: ReadonlySet<string>): string {
 }
 
 export function filterTaskSessionState<T extends SessionListState>(state: T | undefined, scheduledIds: ReadonlySet<string> = new Set()): T {
-  const src = (state ?? { ids: [], byId: {}, current: null }) as T
+  const src = (state ?? { ids: [], byId: {} }) as T
   const key = scheduledCacheKey(scheduledIds)
   if (typeof src === 'object' && src !== null) {
     const hit = taskFilterCache.get(src)
@@ -340,10 +339,8 @@ export interface WorkspaceListState {
   readonly archivedSessionIds?: readonly string[]
 }
 
-/** 旧宿主读 list.current；alpha.2 主视图改由 retainedBy.mainView 标记。 */
+/** 0.2 主视图由 retainedBy.mainView 标记，不再读已删除的 list.current。 */
 export function resolveCurrentSessionId(snapshot: SessionListState | undefined): string | null {
-  const current = snapshot?.current
-  if (typeof current === 'string' && current !== '') return current
   const byId = snapshot?.byId ?? {}
   for (const [id, session] of Object.entries(byId)) {
     if ((session?.retainedBy?.mainView ?? 0) > 0) {

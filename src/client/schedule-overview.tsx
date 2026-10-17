@@ -93,7 +93,6 @@ export function ScheduleOverview({
         </div>
         <SortMenu
           t={t}
-          compact
           iconOnly
           className="dsh-st-overview-sort"
           {...(SORT_STORAGE === undefined ? {} : { storage: SORT_STORAGE })}

@@ -4,19 +4,17 @@ import { createElement } from 'react'
 import { hostOrFallback, pickHostExport, pickHostIcon, type HostIcon } from '../src/client/host-icon-resolve.ts'
 
 const modern = () => null
-const legacy = () => null
 
-test('0.1.7 图标名优先于带尺寸的旧导出名', () => {
+test('只认 0.2 的 Regular 导出名，不回退带尺寸的旧名字', () => {
+  const modern = () => null
+  const legacy = () => null
   assert.equal(pickHostIcon({
     IconEllipsisOutlineRegular: modern,
     IconEllipsisOutline16: legacy,
-  }, 'IconEllipsisOutlineRegular', 'IconEllipsisOutline16'), modern)
-})
-
-test('旧宿主没有 Regular 导出名时回退尺寸后缀', () => {
-  assert.equal(pickHostIcon({
+  }, 'IconEllipsisOutlineRegular'), modern)
+  assert.notEqual(pickHostIcon({
     IconEllipsisOutline16: legacy,
-  }, 'IconEllipsisOutlineRegular', 'IconEllipsisOutline16'), legacy)
+  }, 'IconEllipsisOutlineRegular'), legacy)
 })
 
 test('旧宿主没有官方组件时不拿 undefined 去渲染', () => {
@@ -32,8 +30,8 @@ test('宿主图标返回 null 时改用自绘兜底', () => {
   assert.deepEqual((hostOrFallback(native, fallback)({}) as JSX.Element).props, { 'data-host': '' })
 })
 
-test('两个导出名都不存在时不把 undefined 交给 React', () => {
-  const icon = pickHostIcon({}, 'IconEllipsisOutlineRegular', 'IconEllipsisOutline16')
+test('导出名不存在时不把 undefined 交给 React', () => {
+  const icon = pickHostIcon({}, 'IconEllipsisOutlineRegular')
   assert.equal(typeof icon, 'function')
   assert.equal(icon({}), null)
 })

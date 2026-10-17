@@ -36,13 +36,6 @@ const CSS_TEXT = `
 .dsh-st-card h3,.dsh-st-empty h3{margin:10px 0 6px;font-size:14px;font-weight:500}
 .dsh-st-card p,.dsh-st-empty p{margin:0 0 14px;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .dsh-st-card-head{display:flex;align-items:center;justify-content:space-between}
-.dsh-st-enable-switch{box-sizing:border-box;position:relative;flex:0 0 auto;width:36px;height:20px;padding:2px;border:0;border-radius:999px;corner-shape:round;background:var(--dsw-alias-border-l3,#555);cursor:pointer}
-.dsh-st-enable-switch[aria-checked=true]{background:var(--dsw-alias-brand-primary)}
-.dsh-st-enable-switch:disabled{cursor:default;opacity:.5}
-.dsh-st-enable-switch:focus-visible{outline:var(--dsw-focus-ring-width,1px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:2px}
-.dsh-st-enable-switch-thumb{display:block;width:16px;height:16px;border-radius:50%;corner-shape:round;background:var(--dsw-alias-label-primary-foreground,#fff);transition:transform 120ms ease;pointer-events:none}
-.dsh-st-enable-switch[aria-checked=false] .dsh-st-enable-switch-thumb{background:var(--dsw-alias-switch-thumb,#fff)}
-.dsh-st-enable-switch[aria-checked=true] .dsh-st-enable-switch-thumb{transform:translateX(16px)}
 .dsh-st-menu-select-wrap{position:relative;display:inline-flex;vertical-align:middle;max-width:100%}
 .dsh-st-menu-select-trigger{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;height:32px;padding:0 10px;border:0.5px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-sm,8px);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font-size:13px;line-height:20px;cursor:pointer;user-select:none;transition:border-color .15s ease,background .15s ease;width:100%}
 .dsh-st-menu-select-trigger:hover:not(:disabled){border-color:var(--dsw-alias-border-inverted,rgba(255,255,255,.2));background:var(--dsw-alias-interactive-bg-hover)}

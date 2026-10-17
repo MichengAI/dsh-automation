@@ -8,7 +8,7 @@ import {
   StateDot,
   type MenuEntry,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { hostMenuRendersChildren, IconArchiveOutline, IconBranchOutline, IconEditOutline, IconEllipsisOutline, IconSettingsOutline, IconTrashOutline } from './host-icons.js'
+import { IconArchiveOutline, IconBranchOutline, IconEditOutline, IconEllipsisOutline, IconSettingsOutline, IconTrashOutline } from './host-icons.js'
 import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import {
   ChevronIcon,
@@ -437,7 +437,7 @@ function NativeSessionRow(props: {
     )
   }
   const displayTitle = (hoverTitle ?? title).trim() || title
-  const menuSlot = renderSlot !== undefined && hostMenuRendersChildren() ? ['rename', 'fork', 'archive', 'archive-manager.delete-session'].map((only) => renderSlot('sidebar.workspaces.session.menu.item', {
+  const menuSlot = renderSlot !== undefined ? ['rename', 'fork', 'archive', 'archive-manager.delete-session'].map((only) => renderSlot('sidebar.workspaces.session.menu.item', {
     sessionId: id,
     displayTitle,
   }, { hookContext: [menuOpen, (open: boolean) => onMenuChange(open)], only })) : undefined

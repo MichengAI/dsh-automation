@@ -138,11 +138,11 @@ test('native tabs follow session prefixes and detect Codex UI sidebar', () => {
 })
 
 test('过滤结果必须保持同一引用，避免任务页卡死', () => {
-  const state = { ids: ['chat-1', 'dsh-automation-session-1'], byId: { 'chat-1': { id: 'chat-1' }, 'dsh-automation-session-1': { id: 'dsh-automation-session-1' } }, current: 'chat-1' }
+  const state = { ids: ['chat-1', 'dsh-automation-session-1'], byId: { 'chat-1': { id: 'chat-1' }, 'dsh-automation-session-1': { id: 'dsh-automation-session-1' } } }
   const first = filterTaskSessionState(state)
   const second = filterTaskSessionState(state)
   assert.equal(first, second)
-  const clean = { ids: ['chat-1'], byId: { 'chat-1': { id: 'chat-1' } }, current: 'chat-1' }
+  const clean = { ids: ['chat-1'], byId: { 'chat-1': { id: 'chat-1' } } }
   assert.equal(filterTaskSessionState(clean), clean)
 })
 
@@ -163,7 +163,6 @@ test('official task tree hides automation and im sessions', () => {
       [AUTOMATION_SESSION_PREFIX + '1']: { id: AUTOMATION_SESSION_PREFIX + '1' },
       'im:wecom:1': { id: 'im:wecom:1' },
     },
-    current: 'chat-1',
   }, new Set([AUTOMATION_SESSION_PREFIX + '1']))
   if (filtered.ids === undefined) throw new Error('missing ids')
   if (filtered.ids.length !== 1 || filtered.ids[0] !== 'chat-1') throw new Error('filter failed')
@@ -179,7 +178,6 @@ test('从定时页移除后，任务树仍不展示自动化会话', () => {
       'chat-1': { id: 'chat-1' },
       [autoId]: { id: autoId, title: 'forgotten-run' },
     },
-    current: autoId,
   }, new Set())
   if (filtered.ids === undefined || filtered.ids.includes(autoId)) throw new Error('automation session must stay off the task tree')
   assert.equal(tabForSessionId(autoId, new Set()), 'tasks')
@@ -268,11 +266,7 @@ test('打开定时会话前先挂载并刷新，未入簿时不会空点', async
   assert.deepEqual(steps, ['adopt:dsh-automation-session-abc', 'refresh', 'open:dsh-automation-session-abc'])
 })
 
-test('旧宿主仍用 list.current 作为当前会话', () => {
-  assert.equal(resolveCurrentSessionId({ current: 'legacy-current', byId: {} }), 'legacy-current')
-})
-
-test('alpha.2 无 current 时按 retainedBy.mainView 反查主视图会话', () => {
+test('忽略已删除的 list.current，只按 retainedBy.mainView 反查主视图会话', () => {
   assert.equal(resolveCurrentSessionId({
     byId: {
       parked: { retainedBy: {} },
@@ -285,7 +279,7 @@ test('alpha.2 无 current 时按 retainedBy.mainView 反查主视图会话', () 
   assert.equal(resolveCurrentSessionId({
     current: 'legacy-current',
     byId: { main: { id: 'main-view', retainedBy: { mainView: 1 } } },
-  }), 'legacy-current')
+  } as never), 'main-view')
 })
 
 test('打开定时会话优先走官方 uiWorkspace.openSession', () => {

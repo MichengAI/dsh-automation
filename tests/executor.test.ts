@@ -28,8 +28,8 @@ for (const permission of ['read-only', 'workspace-write', 'danger-full-access', 
   })
 }
 
-for (const [hostDenies, setupApi] of [[false, 'legacy'], [true, 'legacy'], [false, 'explicit'], [true, 'explicit']] as const) {
-  test(`${setupApi} 创建接口对后台 shell 和扩展工具遵循 Host ${hostDenies ? '拒绝' : '允许'}结果`, async () => {
+for (const hostDenies of [false, true]) {
+  test(`创建接口对后台 shell 和扩展工具遵循 Host ${hostDenies ? '拒绝' : '允许'}结果`, async () => {
     const definition = createDefinition({
       id: 'automation_permissions', name: '权限检查', prompt: '执行权限检查。',
       schedule: { kind: 'daily', time: '09:00', timeZone: 'Asia/Shanghai' },
@@ -69,8 +69,7 @@ for (const [hostDenies, setupApi] of [[false, 'legacy'], [true, 'legacy'], [fals
     }
     const agentCtx = {
       get agent() {
-        if (setupApi === 'explicit') throw new Error('新版 Host 不允许读取 ctx.agent')
-        return agent
+        throw new Error('新版 Host 不允许读取 ctx.agent')
       },
       tools: { guard(callback: (call: Call) => string | undefined) { guards.push(callback) } },
     }
@@ -82,7 +81,7 @@ for (const [hostDenies, setupApi] of [[false, 'legacy'], [true, 'legacy'], [fals
       agents: {
         withoutInitiator: (callback: () => unknown) => callback(),
         async create(options: { setup: (ctx: unknown, agent?: unknown) => Promise<void> }) {
-          await options.setup(agentCtx, setupApi === 'explicit' ? agent : undefined)
+          await options.setup(agentCtx, agent)
           return { agent, async dispose() { disposed = true } }
         },
       },

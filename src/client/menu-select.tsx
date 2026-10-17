@@ -26,8 +26,6 @@ export interface MenuSelectProps {
   disabled?: boolean
   className?: string
   listClassName?: string
-  action?: boolean
-  icon?: React.ReactNode
 }
 
 function optionItem(opt: MenuSelectOption): MenuEntry {

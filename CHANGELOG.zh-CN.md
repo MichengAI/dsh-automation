@@ -6,6 +6,10 @@
 
 ## 未发布
 
+- 不再支持 DSH `0.1.x`。支持范围改为 `0.2.0-rc.1` 到 `0.2.1-alpha.5`。仍停在 `0.1.x` 的宿主请继续使用插件 `0.1.66`。
+- 去掉只为旧宿主保留的图标尺寸名、会话 `list.current`，以及 `0.1.5` 之前从上下文读取 Agent 的分支。
+- 去掉换成宿主原语后残留的无用参数：`autoSize`、`MenuSelect` 的 `action` / `icon`、`SortMenu` 的 `compact`，以及不再使用的自绘开关样式。
+
 ## 0.1.66 - 2026-10-15
 
 - 支持 DSH `0.2.1-alpha.3`，继续兼容既有已支持版本；开发依赖中的 `@deepseek-ai/dsh*` 对齐宿主 `0.2.1-alpha.3`，Cordis 对齐 `4.0.5-alpha.2`，Schemastery 对齐 `3.18.5-alpha.2`。

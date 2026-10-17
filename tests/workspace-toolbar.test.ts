@@ -28,7 +28,7 @@ test('任务总览标题与工作区共用弱化颜色，排序使用同款图�
   const overview = readFileSync(new URL('../src/client/schedule-overview.tsx', import.meta.url), 'utf8')
   assert.match(css, /\.dsh-st-overview-title\{[^}]*color:var\(--dsw-alias-label-tertiary/)
   assert.match(css, /\.dsh-st-overview-title strong\{font-size:14px;font-weight:400;line-height:20px\}/)
-  assert.match(overview, /<SortMenu[\s\S]*?compact[\s\S]*?iconOnly[\s\S]*?className="dsh-st-overview-sort"/)
+  assert.match(overview, /<SortMenu[\s\S]*?iconOnly[\s\S]*?className="dsh-st-overview-sort"/)
 })
 
 test('定时文件夹与宿主任务文件夹使用官方 padding-inline-start', () => {

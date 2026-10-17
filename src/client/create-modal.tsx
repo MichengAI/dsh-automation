@@ -333,7 +333,7 @@ export function CreateModal({
                 className="dsh-st-prompt-input"
                 value={form.prompt}
                 placeholder={t('form.promptPlaceholder')}
-                autoSize={{ minRows: 4, maxRows: 10 }}
+                rows={4}
                 onChange={event => { rememberCaret(event.target.selectionStart); update({ prompt: event.target.value }); setSlashDismissed(undefined) }}
                 onSelect={event => rememberCaret(event.currentTarget.selectionStart)}
                 onScroll={event => {

@@ -13,14 +13,14 @@ export const rowIconStyle: React.CSSProperties = {
   borderRadius: 'var(--dsw-radius-sm, 8px)',
 }
 
-/** 宿主没有多行输入。令牌由调用处的 class 对齐，不桥接成 Ant TextArea。 */
-export const TextArea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement> & { autoSize?: { minRows?: number; maxRows?: number } }>(function TextArea(props, ref) {
-  const { autoSize, className, rows, ...rest } = props
+/** 宿主没有多行输入。行数由 rows 控制，不再接收 Ant 的 autoSize。 */
+export const TextArea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(function TextArea(props, ref) {
+  const { className, rows, ...rest } = props
   return React.createElement('textarea', {
     ...rest,
     ref,
     className: ['dsh-st-textarea', className].filter(Boolean).join(' '),
-    rows: autoSize?.minRows || rows || 4,
+    rows: rows || 4,
   })
 })
 

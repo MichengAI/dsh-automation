@@ -22,26 +22,21 @@ function archiveCheckFallback(): JSX.Element {
     createElement('path', { d: 'M3 6.5h10v6H3v-6Zm1.2-2.5h7.6L13 6.5H3L4.2 4Zm2.3 5.2 1.3 1.3 2.6-2.6', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round' }))
 }
 
-export const IconEllipsisOutline = pickHostIcon(icons, 'IconEllipsisOutlineRegular', 'IconEllipsisOutline16')
-export const IconSettingsOutline = pickHostIcon(icons, 'IconSettingsOutlineRegular', 'IconSettingsOutline16')
-export const IconArchiveOutline = pickHostIcon(icons, 'IconArchiveOutlineRegular', 'IconArchiveOutline20')
-export const IconBranchOutline = pickHostIcon(icons, 'IconBranchOutlineRegular', 'IconBranchOutline16')
-export const IconEditOutline = pickHostIcon(icons, 'IconEditOutlineRegular', 'IconEditOutline16')
-export const IconTrashOutline = pickHostIcon(icons, 'IconTrashOutlineRegular', 'IconTrashOutline16')
-export const IconCheckOutline = pickHostIcon(icons, 'IconCheckOutlineRegular', 'IconCheckOutline16')
-export const IconChevronDownOutline = pickHostIcon(icons, 'IconChevronDownOutlineRegular', 'IconChevronDownOutline14')
-export const IconListPenOutline = pickHostIcon(icons, 'IconListPenOutlineRegular', 'IconListPenOutline16')
-export const IconSearchOutline = pickHostIcon(icons, 'IconSearchOutlineRegular', 'IconSearchOutline16')
-export const IconCloseFill = pickHostIcon(icons, 'IconCloseFillRegular', 'IconCloseOutline16')
-export const IconSlidersTwoOutline = pickHostIcon(icons, 'IconSlidersTwoOutlineRegular', 'IconSlidersOutline16')
-export const IconFolderClose = pickHostIcon(icons, 'IconFolderCloseRegular', 'IconFolderOutline16')
+export const IconEllipsisOutline = pickHostIcon(icons, 'IconEllipsisOutlineRegular')
+export const IconSettingsOutline = pickHostIcon(icons, 'IconSettingsOutlineRegular')
+export const IconArchiveOutline = pickHostIcon(icons, 'IconArchiveOutlineRegular')
+export const IconBranchOutline = pickHostIcon(icons, 'IconBranchOutlineRegular')
+export const IconEditOutline = pickHostIcon(icons, 'IconEditOutlineRegular')
+export const IconTrashOutline = pickHostIcon(icons, 'IconTrashOutlineRegular')
+export const IconCheckOutline = pickHostIcon(icons, 'IconCheckOutlineRegular')
+export const IconChevronDownOutline = pickHostIcon(icons, 'IconChevronDownOutlineRegular')
+export const IconListPenOutline = pickHostIcon(icons, 'IconListPenOutlineRegular')
+export const IconSearchOutline = pickHostIcon(icons, 'IconSearchOutlineRegular')
+export const IconCloseFill = pickHostIcon(icons, 'IconCloseFillRegular')
+export const IconSlidersTwoOutline = pickHostIcon(icons, 'IconSlidersTwoOutlineRegular')
+export const IconFolderClose = pickHostIcon(icons, 'IconFolderCloseRegular')
 export const IconWorkspaceTreeOutline = hostOrFallback(pickHostIcon(icons, 'IconWorkspaceTreeOutlineRegular'), treeFallback)
 export const IconFlatListOutline = hostOrFallback(pickHostIcon(icons, 'IconFlatListOutlineRegular'), listFallback)
 export const IconChevronsUpDownOutline = pickHostIcon(icons, 'IconChevronsUpDownOutlineRegular')
-export const IconClockOutline = pickHostIcon(icons, 'IconClockOutlineRegular', 'IconClockOutline16')
+export const IconClockOutline = pickHostIcon(icons, 'IconClockOutlineRegular')
 export const IconArchiveCheckOutline = hostOrFallback(pickHostIcon(icons, 'IconArchiveCheckOutlineRegular'), archiveCheckFallback)
-
-/** 0.1.7 的 Menu 会渲染 children。更早的 Menu 只认 items。样式和列表功能不再按宿主版本分叉。 */
-export function hostMenuRendersChildren(): boolean {
-  return typeof icons.IconEllipsisOutlineRegular === 'function'
-}

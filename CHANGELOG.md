@@ -6,6 +6,10 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+- Drop DSH `0.1.x` support. Supported hosts are `0.2.0-rc.1` through `0.2.1-alpha.5`. Hosts still on `0.1.x` should stay on plugin `0.1.66`.
+- Remove host-version shims that only existed for pre-0.2 icons, session `list.current`, and the pre-0.1.5 Agent context entry.
+- Remove unused Ant-shaped props left after the host primitive swap: `autoSize`, `MenuSelect.action` / `icon`, `SortMenu.compact`, and the unused custom switch styles.
+
 ## 0.1.66 - 2026-10-15
 
 - Support DSH `0.2.1-alpha.3` while retaining all existing supported versions; pin development `@deepseek-ai/dsh*` dependencies to host `0.2.1-alpha.3`, Cordis to `4.0.5-alpha.2`, and Schemastery to `3.18.5-alpha.2`.

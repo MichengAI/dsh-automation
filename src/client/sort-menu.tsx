@@ -34,7 +34,6 @@ export function SortMenu({
   readonly sortKey: AutomationSortKey
   readonly sortDirection: AutomationSortDirection
   readonly onSelect: (key: AutomationSortKey, direction: AutomationSortDirection) => void
-  readonly compact?: boolean
   readonly iconOnly?: boolean
   readonly className?: string
 }): JSX.Element {
