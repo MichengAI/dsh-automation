@@ -20,10 +20,11 @@ import { Button, Checkbox, Modal, RiskConfirmation, Tag } from '@deepseek-ai/dsh
 import { blockHostModalBackdrop, Input, TextArea } from './plugin-ui.js'
 import { MenuSelect, type MenuSelectOption } from './menu-select.js'
 
-function formatProviderLabel(provider: string, defaultLabel: string, modelT: ModelTranslate): string {
+function formatProviderLabel(provider: string, defaultLabel: string, modelT: ModelTranslate, t: Translate): string {
   if (provider === 'deepseek-account') {
     const localized = modelT('provider.account')
-    return localized && localized !== 'provider.account' ? localized : 'DeepSeek 账号'
+    if (localized && localized !== 'provider.account') return localized
+    return t('form.providerAccount')
   }
   return defaultLabel
 }
@@ -35,8 +36,8 @@ function orderProviders(left: string, right: string): number {
 }
 
 function renderModelOptionLabel(item: ModelOption): React.ReactNode {
-  const isFlash = (item.provider === 'deepseek-account' || item.provider === 'deepseek-official') && (item.model === 'deepseek-flash' || item.label.includes('Flash'))
-  if (!isFlash) return item.label
+  const isOfficialFlash = (item.provider === 'deepseek-account' || item.provider === 'deepseek-official') && item.model === 'deepseek-flash'
+  if (!isOfficialFlash) return item.label
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
       <span>{item.label}</span>
@@ -300,7 +301,7 @@ export function CreateModal({
                 value={form.modelKey}
                 label={t('form.fieldModel')}
                 groups={Array.from(models.reduce((groups, item) => {
-                  const providerName = formatProviderLabel(item.provider, item.providerLabel, modelT)
+                  const providerName = formatProviderLabel(item.provider, item.providerLabel, modelT, t)
                   const group = groups.get(item.provider) ?? { label: providerName, options: [] as MenuSelectOption[] }
                   group.options.push({
                     value: `${item.provider}::${item.model}`,
