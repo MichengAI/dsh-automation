@@ -26,7 +26,8 @@ export const en = {
   "sidebar.sortManual": "Manual",
   "sidebar.sortTime": "Last updated",
   "sidebar.filterBy": "Filter sessions",
-  "sidebar.showArchived": "Show archived",
+  "sidebar.hideArchived": "Hide archived",
+  "sidebar.showArchived": "All conversations (show archived)",
   "sidebar.onlyArchived": "Archived only",
   "header.lead":
     "Plan automatic tasks, or trigger them by hand. Describe the recurring work in any chat to create it quickly.",
@@ -318,7 +319,8 @@ export const zh: Record<AutomationLocaleKey, string> = {
   "sidebar.sortManual": "手动排序",
   "sidebar.sortTime": "最近更新",
   "sidebar.filterBy": "筛选会话",
-  "sidebar.showArchived": "显示已归档",
+  "sidebar.hideArchived": "隐藏已归档",
+  "sidebar.showArchived": "全部对话（显示已归档）",
   "sidebar.onlyArchived": "仅显示已归档",
   "header.lead":
     "按计划自动执行任务，也可随时手动触发。在任意对话中描述你想定期做的事，即可快速创建",

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Menu, Tooltip, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { Translate } from './contracts.js'
-import { IconArchiveCheckOutline, IconArchiveOutline, IconClockOutline, IconCloseFill, IconFlatListOutline, IconFolderClose, IconSearchOutline, IconSlidersTwoOutline, IconWorkspaceTreeOutline } from './host-icons.js'
+import { IconArchiveCheckOutline, IconArchiveOffOutline, IconArchiveOutline, IconClockOutline, IconCloseFill, IconFlatListOutline, IconFolderClose, IconSearchOutline, IconSlidersTwoOutline, IconWorkspaceTreeOutline } from './host-icons.js'
 import type { ArchivedSessionFilter, WorkspaceGroupMode, WorkspaceListSort } from './schedule-rail-model.js'
 import { officialSearchIconSize } from './workspace-toolbar-metrics.js'
 
@@ -54,6 +54,7 @@ export function WorkspaceToolbar({
     ...(onArchivedFilterChange !== undefined ? [
       { type: 'separator' as const, id: 'archived-filter-separator' },
       { type: 'label' as const, id: 'filter-by', text: t('sidebar.filterBy') },
+      { id: 'hide-archived', label: t('sidebar.hideArchived'), icon: <IconArchiveOffOutline /> },
       { id: 'show-archived', label: t('sidebar.showArchived'), icon: <IconArchiveOutline /> },
       { id: 'only-archived', label: t('sidebar.onlyArchived'), icon: <IconArchiveCheckOutline /> },
     ] : []),
@@ -61,8 +62,7 @@ export function WorkspaceToolbar({
   const selectedIds = [
     groupMode === 'list' ? 'flat' : groupMode,
     'updated',
-    ...(archivedFilter === 'show' ? ['show-archived'] : []),
-    ...(archivedFilter === 'only' ? ['only-archived'] : []),
+    archivedFilter === 'show' ? 'show-archived' : archivedFilter === 'only' ? 'only-archived' : 'hide-archived',
   ]
   return (
     <div className={searching ? 'dsh-st-n-toolbar is-search' : 'dsh-st-n-toolbar'}>
@@ -99,8 +99,9 @@ export function WorkspaceToolbar({
             if (id === 'workspace' || id === 'workspace-tree') onGroupModeChange(id)
             if (id === 'flat') onGroupModeChange('list')
             if (id === 'updated') onSortChange('time')
-            if (id === 'show-archived') onArchivedFilterChange?.(archivedFilter === 'show' ? 'default' : 'show')
-            if (id === 'only-archived') onArchivedFilterChange?.(archivedFilter === 'only' ? 'default' : 'only')
+            if (id === 'hide-archived') onArchivedFilterChange?.('default')
+            if (id === 'show-archived') onArchivedFilterChange?.('show')
+            if (id === 'only-archived') onArchivedFilterChange?.('only')
             setFilterOpen(false)
           }}
           anchor={<Tooltip label={t('sidebar.filter')} side="bottom" delayMs={500} disabled={filterOpen}><button type="button" className={filterOpen ? 'dsh-st-n-head-btn is-on' : 'dsh-st-n-head-btn'} aria-label={t('sidebar.filter')} aria-expanded={filterOpen} onClick={() => setFilterOpen((open) => !open)}>

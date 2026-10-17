@@ -16,6 +16,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Align the session and group row ellipsis menus with host specifications: request all official and extension slot items (including `pin` and `session-id`), support Copy Session ID in the fallback menu, wrap ellipsis buttons in official `Tooltip` overlays, and replace the custom settings card action icon with `IconEllipsisOutline`.
 - Align workspace picking with the proven IM Assistant implementation: dynamically probe `__DSH_DIRECTORY_PICKER__`, `uiWorkspace`, `dialog`, and `workspaces` at runtime, and sync new folders directly through `workspaces.create`.
 - Complete group ellipsis actions with Restore all conversations and its batch dialog; ensure archived session menus always retain unarchive, copy ID, and deletion fallbacks.
+- Add Hide archived (`IconArchiveOffOutline`) to view options filter menu, matching official 3-way radio selection and default state.
 
 ## 1.0.0 - 2026-10-17
 

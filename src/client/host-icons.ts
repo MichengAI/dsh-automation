@@ -43,4 +43,5 @@ export const IconFlatListOutline = hostOrFallback(pickHostIcon(icons, 'IconFlatL
 export const IconChevronsUpDownOutline = pickHostIcon(icons, 'IconChevronsUpDownOutlineRegular')
 export const IconClockOutline = pickHostIcon(icons, 'IconClockOutlineRegular')
 export const IconCopyOutline = pickHostIcon(icons, 'IconCopyOutlineRegular')
+export const IconArchiveOffOutline = pickHostIcon(icons, 'IconArchiveOffOutlineRegular')
 export const IconArchiveCheckOutline = hostOrFallback(pickHostIcon(icons, 'IconArchiveCheckOutlineRegular'), archiveCheckFallback)
