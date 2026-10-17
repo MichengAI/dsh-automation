@@ -15,7 +15,7 @@ import {
 import type { AutomationViewModel } from './protocol.js'
 import { automationToggleMutation, deriveTaskOverviewRows, type TaskOverviewRow } from './schedule-rail-model.js'
 import { SegmentedTabs, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
-import { IconClockOutline, IconFlatListOutline } from './host-icons.js'
+import { IconFlatListOutline, IconWorkspaceTreeOutline } from './host-icons.js'
 import { SortMenu } from './sort-menu.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
@@ -55,7 +55,7 @@ export function ScheduleViewSwitch({
           panelId: 'dsh-st-rail-panel-overview',
           label: (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <IconClockOutline />
+              <IconWorkspaceTreeOutline />
               <span>{t('sidebar.viewOverview')}</span>
             </span>
           ),
