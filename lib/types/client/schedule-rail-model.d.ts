@@ -110,14 +110,13 @@ export declare function hasCodexUiSidebar(entries: readonly unknown[] | undefine
 export interface SessionListState {
     readonly ids?: readonly string[];
     readonly byId?: Record<string, NativeSessionLike>;
-    readonly current?: string | null;
 }
 export declare function filterTaskSessionState<T extends SessionListState>(state: T | undefined, scheduledIds?: ReadonlySet<string>): T;
 export interface WorkspaceListState {
     readonly items?: readonly NativeWorkspaceLike[];
     readonly archivedSessionIds?: readonly string[];
 }
-/** 旧宿主读 list.current；alpha.2 主视图改由 retainedBy.mainView 标记。 */
+/** 0.2 主视图由 retainedBy.mainView 标记，不再读已删除的 list.current。 */
 export declare function resolveCurrentSessionId(snapshot: SessionListState | undefined): string | null;
 export interface ClientSessionOpenAccess {
     readonly uiWorkspace?: {

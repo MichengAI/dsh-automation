@@ -22,8 +22,6 @@ export interface MenuSelectProps {
     disabled?: boolean;
     className?: string;
     listClassName?: string;
-    action?: boolean;
-    icon?: React.ReactNode;
 }
 /** 宿主 Menu 下拉。分组用标签行，底部动作走 footer，不走选择值。 */
 export declare function MenuSelect(props: MenuSelectProps): React.ReactElement;
