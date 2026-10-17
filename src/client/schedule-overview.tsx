@@ -14,7 +14,8 @@ import {
 } from './helpers.js'
 import type { AutomationViewModel } from './protocol.js'
 import { automationToggleMutation, deriveTaskOverviewRows, type TaskOverviewRow } from './schedule-rail-model.js'
-import { SegmentedControl, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SegmentedTabs, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconClockOutline, IconFlatListOutline } from './host-icons.js'
 import { SortMenu } from './sort-menu.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
@@ -32,14 +33,33 @@ export function ScheduleViewSwitch({
   readonly onChange: (view: ScheduleView) => void
 }): JSX.Element {
   return (
-    <SegmentedControl
-      id="dsh-st-rail-views"
+    <SegmentedTabs
       className="dsh-st-rail-views"
       label={t('sidebar.views')}
       value={view}
-      options={[
-        { value: 'runs', label: t('tabs.runs') },
-        { value: 'overview', label: t('sidebar.viewOverview') },
+      items={[
+        {
+          value: 'runs' as const,
+          id: 'dsh-st-rail-view-runs',
+          panelId: 'dsh-st-rail-panel-runs',
+          label: (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <IconFlatListOutline />
+              <span>{t('tabs.runs')}</span>
+            </span>
+          ),
+        },
+        {
+          value: 'overview' as const,
+          id: 'dsh-st-rail-view-overview',
+          panelId: 'dsh-st-rail-panel-overview',
+          label: (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <IconClockOutline />
+              <span>{t('sidebar.viewOverview')}</span>
+            </span>
+          ),
+        },
       ]}
       onChange={onChange}
     />

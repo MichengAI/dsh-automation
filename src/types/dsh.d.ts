@@ -79,13 +79,19 @@ declare module '@deepseek-ai/dsh-client-ui-primitives' {
     readonly disabled?: boolean
     readonly className?: string | undefined
   }): JSX.Element
+  export interface SegmentedTab<Value extends string = string> {
+    readonly value: Value
+    readonly label: ReactNode
+    readonly id: string
+    readonly panelId: string
+  }
   export function SegmentedTabs<Value extends string>(props: {
-    readonly items: readonly { readonly id?: string; readonly panelId?: string; readonly value: Value; readonly label: ReactNode }[]
+    readonly items: readonly [SegmentedTab<Value>, ...SegmentedTab<Value>[]]
     readonly value: Value
     readonly onChange: (next: Value) => void
-    readonly label?: string
+    readonly label: string
     readonly className?: string | undefined
-  }): JSX.Element
+  }): ReactNode
   export function Checkbox(props: {
     readonly checked: boolean
     readonly onChange: (next: boolean) => void

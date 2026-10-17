@@ -19,6 +19,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Add Hide archived (`IconArchiveOffOutline`) to view options filter menu, matching official 3-way radio selection and default state.
 - Align model select with official Chat: order providers with `deepseek-account` first, localize provider label to DeepSeek 账号, and append the 1017 badge to official Flash models.
 - Switch settings page tabs to official `SegmentedTabs` (aligning with skills manager), with `Pill` elements, sliding indicators, and clock/list icons.
+- Switch sidebar view switcher (Runs / Task overview) to official `SegmentedTabs`, aligning styling and icons with the settings page tabs.
 - Fix model select edge cases: provide localized i18n fallbacks for provider names, narrow TagTone to host closed union, restrict 1017 badge strictly to `deepseek-flash`, and complete MenuSelect aria-label fallback chain.
 
 ## 1.0.0 - 2026-10-17

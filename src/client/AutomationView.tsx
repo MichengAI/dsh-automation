@@ -302,8 +302,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
 
       {tab === 'mine' && (
         automations.length === 0
-          ? <div className="dsh-st-empty"><h3>{t('empty.title')}</h3><p>{t('empty.body')}</p></div>
-          : <div className="dsh-st-grid">
+          ? <div id="dsh-st-panel-mine" role="tabpanel" aria-labelledby="dsh-st-tab-mine" className="dsh-st-empty"><h3>{t('empty.title')}</h3><p>{t('empty.body')}</p></div>
+          : <div id="dsh-st-panel-mine" role="tabpanel" aria-labelledby="dsh-st-tab-mine" className="dsh-st-grid">
               {automations.map(item => (
                 <TaskCard
                   key={item.id}
@@ -322,8 +322,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
 
       {tab === 'runs' && (
         groups.length === 0
-          ? <div className="dsh-st-empty">{t('runs.empty')}</div>
-          : <div className="dsh-st-timeline">
+          ? <div id="dsh-st-panel-runs" role="tabpanel" aria-labelledby="dsh-st-tab-runs" className="dsh-st-empty">{t('runs.empty')}</div>
+          : <div id="dsh-st-panel-runs" role="tabpanel" aria-labelledby="dsh-st-tab-runs" className="dsh-st-timeline">
               {groups.map(group => (
                 <section key={group.key} className="dsh-st-group">
                   <h3>{group.label}</h3>
