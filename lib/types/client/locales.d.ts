@@ -118,6 +118,7 @@ export declare const en: {
     readonly "form.workspace": "Workspace";
     readonly "form.fieldWorkspace": "Workspace";
     readonly "form.fieldModel": "Model";
+    readonly "form.providerAccount": "DeepSeek account";
     readonly "form.fieldEffort": "Reasoning";
     readonly "form.fieldPermission": "Permission";
     readonly "form.slashHint": "Type / to insert a skill";

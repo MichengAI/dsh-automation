@@ -2,6 +2,7 @@ import * as React from 'react';
 export interface MenuSelectOption {
     value: string;
     label: React.ReactNode;
+    /** 当 label 是复杂 ReactNode 时作为 aria-label 和纯文本回退 */
     text?: string;
     disabled?: boolean;
     danger?: boolean;
