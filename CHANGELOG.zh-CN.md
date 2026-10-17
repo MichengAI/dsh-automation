@@ -14,6 +14,7 @@
 - 设置标题旁的 GitHub、问题反馈、检查更新与技能管理器同一行对齐，反馈图标改成同一支 16px 笔。更新弹窗底部改用宿主按钮片段，不再传按钮数组。
 - 侧边栏图标与官方原生对齐：工作区文件夹使用 `IconFolderClose` 与 `IconFolderOpen`，折叠展开箭头使用 `IconTriangleRightFill`，取消归档使用 `IconUnarchiveOutline`，运行状态统一使用官方 `StateDot`，计划与设置图标对齐官方线框时钟，工具栏操作按钮补充官方 Tooltip 浮层提示。
 - 会话行三个点菜单对齐官方全量条目，支持复制 Session ID 与扩展条目；会话行与分组行三个点按钮补充官方 Tooltip 浮层，设置页卡片更多操作图标换用官方 `IconEllipsisOutline`。
+- 新增工作区完全照抄 IM 机制：运行时动态探测 `__DSH_DIRECTORY_PICKER__`、`uiWorkspace`、`dialog`、`workspaces` 四重来源，支持在宿主 `workspaces.create` 中直接创建并联动登记。
 
 ## 1.0.0 - 2026-10-17
 

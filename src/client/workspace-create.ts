@@ -7,6 +7,14 @@ export class AddedWorkspaceMissingError extends Error {
   }
 }
 
+export class WorkspacePickerUnavailableError extends Error {
+  readonly code = 'workspace/picker-unavailable'
+  constructor() {
+    super('workspace picker unavailable')
+    this.name = 'WorkspacePickerUnavailableError'
+  }
+}
+
 export interface HostWorkspaceCreator {
   pickDirectory(): Promise<string | undefined>
   create(path: string): Promise<unknown>
@@ -38,15 +46,64 @@ export function createdWorkspaceId(
   return id
 }
 
-function probeService(ctx: WorkspaceProbe, name: string): unknown {
-  const reflectGet = ctx.reflect?.get
-  if (typeof reflectGet === 'function') {
-    try { return reflectGet.call(ctx.reflect, name) } catch { /* 未提供时保持按钮可解释，不让点击崩掉 */ }
+export function probeService(ctx: WorkspaceProbe | unknown, name: string): unknown {
+  if (ctx === null || typeof ctx !== 'object') return undefined
+  const target = ctx as { readonly reflect?: { readonly get?: (name: string) => unknown }; readonly get?: (name: string) => unknown }
+  const reflect = target.reflect
+  if (reflect && typeof reflect.get === 'function') {
+    try {
+      const found = reflect.get(name)
+      if (found !== undefined) return found
+    } catch { /* 未注入时不硬读 ctx[name]，改走 get */ }
   }
-  if (typeof ctx.get === 'function') {
-    try { return ctx.get(name) } catch { /* 未注入时 Cordis get 也可能抛 */ }
+  if (typeof target.get === 'function') {
+    try {
+      const found = target.get(name)
+      if (found !== undefined) return found
+    } catch { return undefined }
   }
-  return undefined
+  if (reflect && typeof reflect.get === 'function') return undefined
+  try {
+    return (ctx as Record<string, unknown>)[name]
+  } catch {
+    return undefined
+  }
+}
+
+export function parsePickedPath(value: unknown): string | undefined {
+  if (typeof value === 'string' && value.trim() !== '') return value
+  if (value === null || typeof value !== 'object') return undefined
+  const record = value as { readonly canceled?: unknown; readonly path?: unknown; readonly filePaths?: unknown }
+  if (record.canceled === true) return undefined
+  if (typeof record.path === 'string' && record.path.trim() !== '') return record.path
+  const first = Array.isArray(record.filePaths) ? record.filePaths[0] : undefined
+  return typeof first === 'string' && first.trim() !== '' ? first : undefined
+}
+
+export async function pickHostDirectory(ctx: WorkspaceProbe | unknown): Promise<string | undefined> {
+  const host = typeof globalThis !== 'undefined' ? (globalThis as { __DSH_DIRECTORY_PICKER__?: { pick?: () => Promise<unknown> } }).__DSH_DIRECTORY_PICKER__ : undefined
+  if (host && typeof host.pick === 'function') {
+    return parsePickedPath(await host.pick())
+  }
+  const uiWorkspace = probeService(ctx, 'uiWorkspace')
+  if (uiWorkspace && typeof (uiWorkspace as { pickDirectory?: () => Promise<unknown> }).pickDirectory === 'function') {
+    return parsePickedPath(await (uiWorkspace as { pickDirectory: () => Promise<unknown> }).pickDirectory())
+  }
+  const dialog = probeService(ctx, 'dialog')
+  if (dialog && typeof (dialog as { pickDirectory?: () => Promise<unknown> }).pickDirectory === 'function') {
+    return parsePickedPath(await (dialog as { pickDirectory: () => Promise<unknown> }).pickDirectory())
+  }
+  const workspaces = probeService(ctx, 'workspaces')
+  if (workspaces && typeof (workspaces as { pickDirectory?: () => Promise<unknown> }).pickDirectory === 'function') {
+    return parsePickedPath(await (workspaces as { pickDirectory: () => Promise<unknown> }).pickDirectory())
+  }
+  try {
+    const directWorkspaces = (ctx as { workspaces?: { pickDirectory?: () => Promise<unknown> } })?.workspaces
+    if (directWorkspaces && typeof directWorkspaces.pickDirectory === 'function') {
+      return parsePickedPath(await directWorkspaces.pickDirectory())
+    }
+  } catch { /* ignore */ }
+  throw new WorkspacePickerUnavailableError()
 }
 
 function method(owner: unknown, name: string): ((...args: unknown[]) => unknown) | undefined {
@@ -56,13 +113,7 @@ function method(owner: unknown, name: string): ((...args: unknown[]) => unknown)
 }
 
 function pickedPath(value: unknown): string | undefined {
-  if (typeof value === 'string' && value.trim() !== '') return value
-  if (value === null || typeof value !== 'object') return undefined
-  const record = value as { readonly path?: unknown; readonly filePaths?: unknown; readonly canceled?: unknown }
-  if (record.canceled === true) return undefined
-  if (typeof record.path === 'string' && record.path.trim() !== '') return record.path
-  const first = Array.isArray(record.filePaths) ? record.filePaths[0] : undefined
-  return typeof first === 'string' && first.trim() !== '' ? first : undefined
+  return parsePickedPath(value)
 }
 
 function createdPath(value: unknown): string | undefined {
@@ -81,24 +132,35 @@ function nativeDirectoryPicker(): { pick(): Promise<string | null> } | undefined
   return { pick: () => pick.call(host.__DSH_DIRECTORY_PICKER__) as Promise<string | null> }
 }
 
-/** 只探测选目录。桌面优先用原生窗口；否则再调宿主服务。 */
-export function resolveDirectoryPicker(ctx: WorkspaceProbe): { pickDirectory(): Promise<string | undefined> } | undefined {
-  const native = nativeDirectoryPicker()
-  if (native !== undefined) {
-    return {
-      async pickDirectory() {
-        return pickedPath(await native.pick())
-      },
-    }
-  }
+export function hasHostDirectoryPicker(ctx: WorkspaceProbe | unknown): boolean {
+  const host = typeof globalThis !== 'undefined' ? (globalThis as { __DSH_DIRECTORY_PICKER__?: { pick?: unknown } }).__DSH_DIRECTORY_PICKER__ : undefined
+  if (host && typeof host.pick === 'function') return true
   const uiWorkspace = probeService(ctx, 'uiWorkspace')
+  if (uiWorkspace && typeof (uiWorkspace as { pickDirectory?: unknown }).pickDirectory === 'function') return true
   const dialog = probeService(ctx, 'dialog')
-  const owner = method(uiWorkspace, 'pickDirectory') !== undefined ? uiWorkspace : dialog
-  const pick = method(owner, 'pickDirectory')
-  if (pick === undefined || owner === undefined) return undefined
+  if (dialog && typeof (dialog as { pickDirectory?: unknown }).pickDirectory === 'function') return true
+  const workspaces = probeService(ctx, 'workspaces')
+  if (workspaces && typeof (workspaces as { pickDirectory?: unknown }).pickDirectory === 'function') return true
+  try {
+    const directWorkspaces = (ctx as { workspaces?: { pickDirectory?: unknown } })?.workspaces
+    if (directWorkspaces && typeof directWorkspaces.pickDirectory === 'function') return true
+  } catch { /* ignore */ }
+  return false
+}
+
+/** 只探测选目录。桌面优先用原生窗口；否则再调宿主服务。照抄 IM pickHostDirectory。 */
+export function resolveDirectoryPicker(ctx: WorkspaceProbe): { pickDirectory(): Promise<string | undefined> } | undefined {
+  if (!hasHostDirectoryPicker(ctx)) return undefined
   return {
     async pickDirectory() {
-      return pickedPath(await (owner as { pickDirectory(): Promise<unknown> }).pickDirectory())
+      try {
+        return await pickHostDirectory(ctx)
+      } catch (err) {
+        if (err instanceof WorkspacePickerUnavailableError || (err as { code?: string })?.code === 'workspace/picker-unavailable') {
+          return undefined
+        }
+        throw err
+      }
     },
   }
 }

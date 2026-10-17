@@ -10,7 +10,7 @@ import {
 } from './native-tabs.js'
 import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
-import { resolveDirectoryPicker } from './workspace-create.js'
+import { pickHostDirectory, probeService, resolveDirectoryPicker, WorkspacePickerUnavailableError } from './workspace-create.js'
 import { scheduledListHostActions } from './native-group-actions.js'
 import { NativeScheduleSessionList } from './native-session-list.js'
 import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
@@ -116,12 +116,22 @@ export function apply(ctx: ClientContext): void {
   const permissionT = ctx.locale.bind('permission.access')
   const modelT = ctx.locale.bind('model')
   const runtime = createAutomationRuntime(ctx.connection.rpc)
-  const picker = resolveDirectoryPicker(ctx)
   const addWorkspace = async (): Promise<string | undefined> => {
-    const picked = picker === undefined ? undefined : await picker.pickDirectory()
-    if (picked === undefined) {
-      if (picker === undefined) throw new Error('picker-unavailable')
-      return undefined
+    let picked: string | undefined
+    try {
+      picked = await pickHostDirectory(ctx)
+    } catch (caught) {
+      if (caught instanceof WorkspacePickerUnavailableError || (caught as { code?: string })?.code === 'workspace/picker-unavailable') {
+        throw new Error('picker-unavailable')
+      }
+      throw caught
+    }
+    if (picked === undefined) return undefined
+    const hostWorkspaces = probeService(ctx, 'workspaces') as { create?: (input: { path: string }) => Promise<unknown> } | undefined
+    if (hostWorkspaces && typeof hostWorkspaces.create === 'function') {
+      try {
+        await hostWorkspaces.create({ path: picked })
+      } catch { /* 宿主创建失败或已存在时继续走后置 runtime 登记 */ }
     }
     const registered = await runtime.registerWorkspace(picked)
     return registered.id
@@ -142,6 +152,15 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
     label: () => t('tab'),
     icon: 'schedule',
+    inject: () => ({
+      createWorkspace: (input: { path: string }) => {
+        const ws = probeService(ctx, 'workspaces') as { create?: (input: { path: string }) => unknown } | undefined
+        return ws?.create?.(input)
+      },
+      pickDirectory: () => pickHostDirectory(ctx),
+      permissionT,
+      modelT,
+    }),
   }, function ScheduledTasksSettings(props: { close?: () => void }) {
     return createElement(AutomationView, {
       t,

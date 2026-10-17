@@ -14,6 +14,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - The settings title actions now line up with Skills Manager. The feedback mark is the same 16px pen, and the update dialog footer is a host button fragment instead of a button array.
 - Align sidebar icons and toolbar controls with the official design system: use `IconFolderClose` and `IconFolderOpen` for folders, `IconTriangleRightFill` for group disclosure chevrons, `IconUnarchiveOutline` for unarchiving, official `StateDot` for ongoing run pulses, official wireframe clock glyphs for schedules and settings navigation, and add host `Tooltip` wrappers for search and filter buttons.
 - Align the session and group row ellipsis menus with host specifications: request all official and extension slot items (including `pin` and `session-id`), support Copy Session ID in the fallback menu, wrap ellipsis buttons in official `Tooltip` overlays, and replace the custom settings card action icon with `IconEllipsisOutline`.
+- Align workspace picking with the proven IM Assistant implementation: dynamically probe `__DSH_DIRECTORY_PICKER__`, `uiWorkspace`, `dialog`, and `workspaces` at runtime, and sync new folders directly through `workspaces.create`.
 
 ## 1.0.0 - 2026-10-17
 
