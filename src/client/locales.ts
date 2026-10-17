@@ -69,6 +69,15 @@ export const en = {
     "Some conversations could not be archived: {message}",
   "session.archiveGroupClose": "Close",
   "session.archiveGroupCancel": "Cancel",
+  "session.unarchiveGroup": "Restore all conversations",
+  "session.unarchiveGroupConfirm": "Restore all",
+  "session.unarchiveGroupDescription":
+    "Restore all {count} conversations for “{name}”.",
+  "session.unarchiveGroupPending": "Restoring conversations…",
+  "session.unarchiveGroupFailed":
+    "Some conversations could not be restored: {message}",
+  "session.unarchiveGroupClose": "Close",
+  "session.unarchiveGroupCancel": "Cancel",
   "session.deleteSession": "Delete session",
   "session.deleteSessionConfirm": "Delete session",
   "session.deleteSessionDescription":
@@ -350,6 +359,14 @@ export const zh: Record<AutomationLocaleKey, string> = {
   "session.archiveGroupFailed": "部分会话归档失败：{message}",
   "session.archiveGroupClose": "关闭",
   "session.archiveGroupCancel": "取消",
+  "session.unarchiveGroup": "恢复整组会话",
+  "session.unarchiveGroupConfirm": "确认恢复",
+  "session.unarchiveGroupDescription":
+    "将恢复“{name}”下的 {count} 个会话。",
+  "session.unarchiveGroupPending": "正在恢复整组会话…",
+  "session.unarchiveGroupFailed": "部分会话恢复失败：{message}",
+  "session.unarchiveGroupClose": "关闭",
+  "session.unarchiveGroupCancel": "取消",
   "session.deleteSession": "删除会话",
   "session.deleteSessionConfirm": "删除会话",
   "session.deleteSessionDescription":

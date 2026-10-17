@@ -32,7 +32,15 @@ import {
   startSessionTitleMarquee,
   stopSessionTitleMarquee,
 } from './native-session-menu.js'
-import { archiveScheduledGroup, canDeleteScheduledSession, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder, scheduledSessionMenuActions, scheduledSessionOmitsStatusSlot } from './native-group-actions.js'
+import {
+  archiveScheduledGroup,
+  canDeleteScheduledSession,
+  hasArchiveManagerPlugin,
+  scheduledGroupShowsActiveFolder,
+  scheduledSessionMenuActions,
+  scheduledSessionOmitsStatusSlot,
+  unarchiveScheduledGroup,
+} from './native-group-actions.js'
 import type { AutomationRuntime } from './runtime.js'
 import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, groupScheduledSessionsByWorkspaceTree, resolveCurrentSessionId, scheduledSessionNeedsSnapshotRefresh, scheduledSessionVisible, type ArchivedSessionFilter, type NativeSessionLike, type NativeWorkspaceLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
 import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
@@ -80,6 +88,9 @@ export function NativeScheduleSessionList(props: {
   const [archiveGroupTarget, setArchiveGroupTarget] = useState<{ readonly id: string; readonly name: string; readonly sessionIds: readonly string[] }>()
   const [archiveGroupBusy, setArchiveGroupBusy] = useState(false)
   const [archiveGroupError, setArchiveGroupError] = useState<string>()
+  const [unarchiveGroupTarget, setUnarchiveGroupTarget] = useState<{ readonly id: string; readonly name: string; readonly sessionIds: readonly string[] }>()
+  const [unarchiveGroupBusy, setUnarchiveGroupBusy] = useState(false)
+  const [unarchiveGroupError, setUnarchiveGroupError] = useState<string>()
   const [deleteSessionTarget, setDeleteSessionTarget] = useState<{ readonly id: string; readonly title: string }>()
   const [deleteSessionBusy, setDeleteSessionBusy] = useState(false)
   const [deleteSessionError, setDeleteSessionError] = useState<string>()
@@ -144,6 +155,16 @@ export function NativeScheduleSessionList(props: {
       .catch((caught: unknown) => { setArchiveGroupError(caught instanceof Error ? caught.message : t('error.action')) })
       .finally(() => { setArchiveGroupBusy(false) })
   }
+  const confirmUnarchiveGroup = (): void => {
+    if (unarchiveGroupTarget === undefined || unarchiveSession === undefined || unarchiveGroupBusy) return
+    const target = unarchiveGroupTarget
+    setUnarchiveGroupBusy(true)
+    setUnarchiveGroupError(undefined)
+    void unarchiveScheduledGroup(target.sessionIds, unarchiveSession)
+      .then(() => { setUnarchiveGroupTarget(undefined) })
+      .catch((caught: unknown) => { setUnarchiveGroupError(caught instanceof Error ? caught.message : t('error.action')) })
+      .finally(() => { setUnarchiveGroupBusy(false) })
+  }
   const confirmDeleteSession = (): void => {
     if (deleteSessionTarget === undefined || deleteSession === undefined || deleteSessionBusy) return
     const target = deleteSessionTarget
@@ -183,6 +204,10 @@ export function NativeScheduleSessionList(props: {
                   : undefined
                 const taskAutomationId: string | undefined = groupMode === 'workspace-tree' ? treeTask?.id : group.id
                 const taskSettingsName = groupMode === 'workspace-tree' ? treeTask?.name : group.name
+                const unarchivedSessionIds = group.sessions.filter(session => !archived.has(session.id)).map(session => session.id)
+                const archivedGroupSessionIds = group.sessions.filter(session => archived.has(session.id)).map(session => session.id)
+                const groupCanArchive = canArchiveGroup && unarchivedSessionIds.length > 0
+                const groupCanUnarchive = canUnarchive && archivedGroupSessionIds.length > 0
                 return (
                   <div key={group.id === '' ? 'ungrouped' : group.id} className='dsh-st-n-group' style={depth > 0 ? { ['--dsh-workspace-indent' as string]: `${depth * 12}px` } : undefined}>
                     {groupMode !== 'list' && <NativeScheduleGroupRow
@@ -193,7 +218,8 @@ export function NativeScheduleSessionList(props: {
                       expanded={expanded}
                       hasCurrentSession={hasCurrentSession}
                       menuOpen={openGroupMenu === group.id}
-                      canArchiveGroup={canArchiveGroup}
+                      canArchiveGroup={groupCanArchive}
+                      canUnarchiveGroup={groupCanUnarchive}
                       showTaskSettings={taskAutomationId !== undefined}
                       onToggle={() => setFolded((current) => ({ ...current, [group.id]: expanded }))}
                       onMenuChange={(open) => {
@@ -206,7 +232,11 @@ export function NativeScheduleSessionList(props: {
                       }}
                       onArchiveGroup={() => {
                         setArchiveGroupError(undefined)
-                        setArchiveGroupTarget({ id: group.id, name: group.name, sessionIds: group.sessions.map(session => session.id) })
+                        setArchiveGroupTarget({ id: group.id, name: group.name, sessionIds: unarchivedSessionIds })
+                      }}
+                      onUnarchiveGroup={() => {
+                        setUnarchiveGroupError(undefined)
+                        setUnarchiveGroupTarget({ id: group.id, name: group.name, sessionIds: archivedGroupSessionIds })
                       }}
                     />}
                     {(groupMode === 'list' || expanded) && group.sessions.map((session) => (
@@ -284,6 +314,26 @@ export function NativeScheduleSessionList(props: {
         </> : undefined}
       </Modal>
       <Modal
+        open={unarchiveGroupTarget !== undefined}
+        onClose={() => {
+          if (unarchiveGroupBusy) return
+          setUnarchiveGroupTarget(undefined)
+          setUnarchiveGroupError(undefined)
+        }}
+        closeLabel={t('session.unarchiveGroupClose')}
+        title={t('session.unarchiveGroup')}
+        {...(unarchiveGroupTarget === undefined ? {} : { description: t('session.unarchiveGroupDescription', { name: unarchiveGroupTarget.name, count: unarchiveGroupTarget.sessionIds.length }) })}
+        footer={<>
+          <Button variant='outline' className='dsh-st-modal-action' disabled={unarchiveGroupBusy} onClick={() => { setUnarchiveGroupTarget(undefined); setUnarchiveGroupError(undefined) }}>{t('session.unarchiveGroupCancel')}</Button>
+          <Button variant='primary' className='dsh-st-modal-action' disabled={unarchiveGroupBusy} onClick={confirmUnarchiveGroup}>{t('session.unarchiveGroupConfirm')}</Button>
+        </>}
+      >
+        {unarchiveGroupBusy || unarchiveGroupError !== undefined ? <>
+          {unarchiveGroupBusy && <div className='dsh-st-n-dialog-status' role='status'>{t('session.unarchiveGroupPending')}</div>}
+          {unarchiveGroupError !== undefined && <div className='dsh-st-n-dialog-error' role='alert'>{t('session.unarchiveGroupFailed', { message: unarchiveGroupError })}</div>}
+        </> : undefined}
+      </Modal>
+      <Modal
         open={deleteSessionTarget !== undefined}
         onClose={() => {
           if (deleteSessionBusy) return
@@ -316,19 +366,27 @@ function NativeScheduleGroupRow(props: {
   readonly hasCurrentSession: boolean
   readonly menuOpen: boolean
   readonly canArchiveGroup: boolean
+  readonly canUnarchiveGroup?: boolean
   readonly showTaskSettings: boolean
   readonly onToggle: () => void
   readonly onMenuChange: (open: boolean) => void
   readonly onTaskSettings: () => void
   readonly onArchiveGroup: () => void
+  readonly onUnarchiveGroup?: () => void
 }): JSX.Element {
-  const { t, id, name, expanded, hasCurrentSession, menuOpen, canArchiveGroup, showTaskSettings, onToggle, onMenuChange, onTaskSettings, onArchiveGroup } = props
+  const { t, id, name, expanded, hasCurrentSession, menuOpen, canArchiveGroup, canUnarchiveGroup, showTaskSettings, onToggle, onMenuChange, onTaskSettings, onArchiveGroup, onUnarchiveGroup } = props
   const items: MenuEntry[] = [
     ...(showTaskSettings ? [{ id: 'task-settings', label: t('session.taskSettings'), icon: <IconSettingsOutline size={16} /> }] : []),
     ...(canArchiveGroup
       ? [
           ...(showTaskSettings ? [{ type: 'separator' as const, id: 'archive-separator' }] : []),
           { id: 'archive-group', label: t('session.archiveGroup'), icon: <IconArchiveOutline size={16} />, danger: true },
+        ]
+      : []),
+    ...(canUnarchiveGroup
+      ? [
+          ...(showTaskSettings && !canArchiveGroup ? [{ type: 'separator' as const, id: 'unarchive-separator' }] : []),
+          { id: 'unarchive-group', label: t('session.unarchiveGroup'), icon: <IconUnarchiveOutline size={16} /> },
         ]
       : []),
   ]
@@ -353,6 +411,7 @@ function NativeScheduleGroupRow(props: {
             onMenuChange(false)
             if (action === 'task-settings') onTaskSettings()
             if (action === 'archive-group') onArchiveGroup()
+            if (action === 'unarchive-group') onUnarchiveGroup?.()
           }}
           portal
           closeOnPointerLeave
@@ -450,17 +509,20 @@ function NativeSessionRow(props: {
   const menuSlot = renderSlot !== undefined ? ['pin', 'rename', 'fork', 'archive', 'session-id', 'archive-manager.delete-session'].map((only) => renderSlot('sidebar.workspaces.session.menu.item', {
     sessionId: id,
     displayTitle,
-  }, { hookContext: [menuOpen, (open: boolean) => onMenuChange(open)], only })) : undefined
-  const items: MenuEntry[] = menuSlot !== undefined ? [] : [
-    ...scheduledSessionMenuActions({ canDelete, archived, canUnarchive }).map((action) => {
-      if (action === 'rename') return { id: action, label: t('session.rename'), icon: <IconEditOutline /> }
-      if (action === 'fork') return { id: action, label: t('session.fork'), icon: <IconBranchOutline /> }
-      if (action === 'archive') return { id: action, label: t('session.archive'), icon: <IconArchiveOutline size={16} /> }
-      if (action === 'unarchive') return { id: action, label: t('session.unarchive'), icon: <IconUnarchiveOutline size={16} /> }
-      return { id: action, label: t('session.deleteSession'), icon: <IconTrashOutline />, danger: true }
-    }),
-    { id: 'session-id', label: t('session.copySessionId'), icon: <IconCopyOutline size={16} /> },
-  ]
+  }, { hookContext: [menuOpen, (open: boolean) => onMenuChange(open)], only })).filter(Boolean) : undefined
+  const hasSlot = menuSlot !== undefined && menuSlot.some(Boolean)
+  const items: MenuEntry[] = hasSlot
+    ? (archived && canDelete ? [{ id: 'delete-session', label: t('session.deleteSession'), icon: <IconTrashOutline />, danger: true }] : [])
+    : [
+        ...scheduledSessionMenuActions({ canDelete, archived, canUnarchive }).map((action) => {
+          if (action === 'rename') return { id: action, label: t('session.rename'), icon: <IconEditOutline /> }
+          if (action === 'fork') return { id: action, label: t('session.fork'), icon: <IconBranchOutline /> }
+          if (action === 'archive') return { id: action, label: t('session.archive'), icon: <IconArchiveOutline size={16} /> }
+          if (action === 'unarchive') return { id: action, label: t('session.unarchive'), icon: <IconUnarchiveOutline size={16} /> }
+          return { id: action, label: t('session.deleteSession'), icon: <IconTrashOutline />, danger: true }
+        }),
+        { id: 'session-id', label: t('session.copySessionId'), icon: <IconCopyOutline size={16} /> },
+      ]
   const primary = hoverStatuses.find((status) => status.state !== 'archived')
   const showDot = !archived && primary !== undefined && primary.state !== 'idle'
   const trailing = primary?.trailing

@@ -15,6 +15,7 @@
 - 侧边栏图标与官方原生对齐：工作区文件夹使用 `IconFolderClose` 与 `IconFolderOpen`，折叠展开箭头使用 `IconTriangleRightFill`，取消归档使用 `IconUnarchiveOutline`，运行状态统一使用官方 `StateDot`，计划与设置图标对齐官方线框时钟，工具栏操作按钮补充官方 Tooltip 浮层提示。
 - 会话行三个点菜单对齐官方全量条目，支持复制 Session ID 与扩展条目；会话行与分组行三个点按钮补充官方 Tooltip 浮层，设置页卡片更多操作图标换用官方 `IconEllipsisOutline`。
 - 新增工作区完全照抄 IM 机制：运行时动态探测 `__DSH_DIRECTORY_PICKER__`、`uiWorkspace`、`dialog`、`workspaces` 四重来源，支持在宿主 `workspaces.create` 中直接创建并联动登记。
+- 分组三点菜单补齐「恢复整组会话」及批量恢复弹窗，已归档会话菜单确保包含恢复、复制 ID 与删除会话保底。
 
 ## 1.0.0 - 2026-10-17
 

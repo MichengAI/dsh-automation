@@ -84,3 +84,11 @@ export async function archiveScheduledGroup(
 ): Promise<void> {
   for (const sessionId of sessionIds) await archiveSession(sessionId)
 }
+
+/** 串行恢复，避免多个 workspace 状态写入相互覆盖。 */
+export async function unarchiveScheduledGroup(
+  sessionIds: readonly string[],
+  unarchiveSession: (sessionId: string) => void | Promise<void>,
+): Promise<void> {
+  for (const sessionId of sessionIds) await unarchiveSession(sessionId)
+}
