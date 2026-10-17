@@ -4,33 +4,20 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
-## Unreleased
-
-- Confirmation dialogs put the sentence in the host modal description, so the body margin no longer pushes it onto the buttons.
-- A successful self-update now records the exact version in the profile release-age allowlist, so later plugin installs are not rejected.
-- Support DeepSeek Harness `0.2.1-rc.1` and `0.2.1-rc.2`. Supported hosts are `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`, and `0.2.1-rc.2`. Intermediate `0.2.1-alpha` releases are no longer supported. Development dependencies are pinned to `0.2.1-rc.2`, Cordis to `4.0.5`, and Schemastery to `3.18.5`.
-- Opening a scheduled session uses only the host `uiWorkspace.openSession`. The removed `sessions.open` fallback is gone.
-- The new-task form dropdowns now share one two-column grid. The time controls stay with the schedule, and each picker fills its cell. The open menu matches the trigger width.
-- The settings title actions now line up with Skills Manager. The feedback mark is the same 16px pen, and the update dialog footer is a host button fragment instead of a button array.
-- Align sidebar icons and toolbar controls with the official design system: use `IconFolderClose` and `IconFolderOpen` for folders, `IconTriangleRightFill` for group disclosure chevrons, `IconUnarchiveOutline` for unarchiving, official `StateDot` for ongoing run pulses, official wireframe clock glyphs for schedules and settings navigation, and add host `Tooltip` wrappers for search and filter buttons.
-- Align the session and group row ellipsis menus with host specifications: request all official and extension slot items (including `pin` and `session-id`), support Copy Session ID in the fallback menu, wrap ellipsis buttons in official `Tooltip` overlays, and replace the custom settings card action icon with `IconEllipsisOutline`.
-- Align workspace picking with the proven IM Assistant implementation: dynamically probe `__DSH_DIRECTORY_PICKER__`, `uiWorkspace`, `dialog`, and `workspaces` at runtime, and sync new folders directly through `workspaces.create`.
-- Complete group ellipsis actions with Restore all conversations and its batch dialog; ensure archived session menus always retain unarchive, copy ID, and deletion fallbacks.
-- Add Hide archived (`IconArchiveOffOutline`) to view options filter menu, matching official 3-way radio selection and default state.
-- Align model select with official Chat: order providers with `deepseek-account` first, localize provider label to DeepSeek 账号, and append the 1017 badge to official Flash models.
-- Switch settings page tabs to official `SegmentedTabs` (aligning with skills manager), with `Pill` elements, sliding indicators, and clock/list icons.
-- Switch sidebar view switcher (Runs / Task overview) to official `SegmentedTabs`, aligning styling and icons with the settings page tabs.
-- Replace the sidebar Task overview circular clock icon with official `IconWorkspaceTreeOutline`, perfectly matching the flat list outline icon and removing visual inconsistency.
-- Align sidebar task overview sort button icon with the workspace toolbar: replace the bespoke double vertical arrow icon with the official `IconSlidersTwoOutline`.
-- Align task overview sort button container with workspace toolbar buttons: replace the 22px outlined square button with the borderless 28px circular hover button (`.dsh-st-n-head-btn`) and host Tooltip.
-- Align destructive action buttons with skills manager and archive manager: task deletion, session deletion, and group archive confirm buttons now use red outlined buttons (`variant="outline"` with `.dsh-st-btn-danger`) instead of filled primary buttons.
-- Fix model select edge cases: provide localized i18n fallbacks for provider names, narrow TagTone to host closed union, restrict 1017 badge strictly to `deepseek-flash`, and complete MenuSelect aria-label fallback chain.
-
 ## 1.0.0 - 2026-10-17
 
-- This line starts at `1.0.0` and requires DSH `0.2.0-rc.1` through `0.2.1-alpha.5`. Hosts still on `0.1.x` should stay on plugin `0.1.66`.
-- Settings and dialogs now use the host's own buttons, switches, inputs, menus, and dialogs instead of a separate component library.
-- Dialog actions match the host: outline cancel, primary confirm, default 36px height, and a 72px minimum width.
+- This line starts at `1.0.0` and requires DeepSeek Harness `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`, or `0.2.1-rc.2`. Development dependencies are pinned to `0.2.1-rc.2`, Cordis to `4.0.5`, and Schemastery to `3.18.5`. Hosts still on `0.1.x` should stay on plugin `0.1.66`.
+- Completely dropped Ant Design in favor of host native primitives (buttons, switches, inputs, menus, segmented tabs, and dialog modals).
+- Switched settings page tabs and sidebar view switcher to official `SegmentedTabs`, featuring pill segments, smooth sliding indicators, and wireframe icons.
+- Fully aligned sidebar icons and controls with host design system: folders use `IconFolderClose` and `IconFolderOpen`, chevrons use `IconTriangleRightFill`, unarchive uses `IconUnarchiveOutline`, pulse statuses use official `StateDot`, and overview controls use `IconSlidersTwoOutline` with 28px borderless circular hover styling.
+- Added Hide archived (`IconArchiveOffOutline`) to view options filter menu, matching official 3-way radio selection and default state.
+- Aligned session ellipsis menus with official slots, supporting Copy Session ID; group rows support Restore all conversations and batch restore dialogs; archived sessions guarantee restore and deletion fallbacks.
+- Aligned destructive action buttons with skills manager and archive manager: deletion and group archive confirm buttons use red outlined buttons (`variant="outline"` with `.dsh-st-btn-danger`) instead of filled primary buttons.
+- Aligned model select dropdown with official Chat: `deepseek-account` is prioritized at top, localized to DeepSeek 账号 in Chinese, and official Flash models mount the 1017 blue badge.
+- Aligned workspace directory picking with IM Assistant: dynamically probes `__DSH_DIRECTORY_PICKER__`, `uiWorkspace`, `dialog`, and `workspaces`, supporting creation directly through `workspaces.create`.
+- Successful self-update automatically records the exact version in the profile release-age allowlist to prevent subsequent install rejections.
+- Scheduled session opening strictly uses `uiWorkspace.openSession`.
+- Dialog confirmations place instructions in host modal descriptions rather than body text.
 
 ## 0.1.66 - 2026-10-15
 
