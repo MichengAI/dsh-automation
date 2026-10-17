@@ -25,7 +25,8 @@ export declare const en: {
     readonly "sidebar.sortManual": "Manual";
     readonly "sidebar.sortTime": "Last updated";
     readonly "sidebar.filterBy": "Filter sessions";
-    readonly "sidebar.showArchived": "Show archived";
+    readonly "sidebar.hideArchived": "Hide archived";
+    readonly "sidebar.showArchived": "All conversations (show archived)";
     readonly "sidebar.onlyArchived": "Archived only";
     readonly "header.lead": "Plan automatic tasks, or trigger them by hand. Describe the recurring work in any chat to create it quickly.";
     readonly "header.githubProject": "GitHub";
