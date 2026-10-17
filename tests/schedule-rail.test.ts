@@ -282,36 +282,25 @@ test('忽略已删除的 list.current，只按 retainedBy.mainView 反查主视�
   } as never), 'main-view')
 })
 
-test('打开定时会话优先走官方 uiWorkspace.openSession', () => {
+test('打开定时会话走官方 uiWorkspace.openSession', () => {
   const opened: string[] = []
-  const legacy: string[] = []
   openClientSession({
     uiWorkspace: { openSession: (id) => { opened.push(id) } },
-    sessions: { open: (id) => { legacy.push(id) } },
   }, 'dsh-automation-session-abc')
   assert.deepEqual(opened, ['dsh-automation-session-abc'])
-  assert.deepEqual(legacy, [])
 })
 
-test('没有 uiWorkspace 时回退 sessions.open', () => {
-  const legacy: string[] = []
-  openClientSession({
-    sessions: { open: (id) => { legacy.push(id) } },
-  }, 'dsh-automation-session-abc')
-  assert.deepEqual(legacy, ['dsh-automation-session-abc'])
-})
-
-test('官方 sessions 已无 open 且没有 uiWorkspace 时抛错，交给宿主兜底', () => {
+test('没有 uiWorkspace 时不能打开，交给宿主兜底', () => {
+  assert.equal(canOpenClientSession({}), false)
   assert.throws(
-    () => openClientSession({ sessions: {} }, 'dsh-automation-session-abc'),
+    () => openClientSession({}, 'dsh-automation-session-abc'),
     /no client session opener/,
   )
 })
 
-test('alpha.2 未注入 uiWorkspace 时从 ctx.get 取官方 openSession', () => {
+test('未注入 uiWorkspace 时从 ctx.get 取官方 openSession', () => {
   const opened: string[] = []
   const access = resolveClientSessionOpenAccess({
-    sessions: {},
     get: (name) => name === 'uiWorkspace' ? { openSession: (id: string) => { opened.push(id) } } : undefined,
   })
   assert.equal(typeof access.uiWorkspace?.openSession, 'function')
@@ -326,7 +315,6 @@ test('读取 ctx.uiWorkspace 抛 without inject 时改走 reflect.get', () => {
     get uiWorkspace(): { openSession(id: string): void } { throw new Error('cannot get property "uiWorkspace" without inject') },
     get: () => { throw new Error('should prefer reflect.get') },
     reflect: { get: (name: string) => name === 'uiWorkspace' ? { openSession: (id: string) => { opened.push(id) } } : undefined },
-    sessions: {},
   }
   const access = resolveClientSessionOpenAccess(ctx)
   openClientSession(access, 'dsh-automation-session-abc')

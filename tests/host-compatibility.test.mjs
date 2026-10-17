@@ -46,7 +46,7 @@ test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动�
   const ctx = new Context();
   t.after(() => ctx.fiber.dispose());
   const routes = new Set();
-  const startupService = /^0\.2\.1-(?:alpha\.(?:[2-9]|[1-9]\d+)|rc\.\d+)$/.test(hostVersion) ? "webStartup" : "webRuntime";
+  const startupService = /^0\.2\.1-/.test(hostVersion) ? "webStartup" : "webRuntime";
   ctx.provide(startupService, { trustedHosts: [] });
   // 与真实 Loader 一致：WebServer 来自兄弟插件，不能用根 Context 的无条件提供掩盖缺失注入。
   await ctx.plugin({

@@ -3,7 +3,7 @@ import type { Translate } from './contracts.js'
 
 type SlotRenderer = (name: string, props?: Record<string, unknown>, opts?: { readonly hookContext?: unknown; readonly only?: string }) => ReactNode
 
-/** 旧宿主的 renderSlot 在条目未声明该子插槽时抛 SlotOwnershipError。接住它，避免定时页整页失败。 */
+/** 宿主 renderSlot 在条目未声明该子插槽时抛 SlotOwnershipError。接住它，避免定时页整页失败。 */
 export function renderOwnedSlot(renderSlot: SlotRenderer | undefined, name: string, props?: Record<string, unknown>, opts?: { readonly hookContext?: unknown; readonly only?: string }): ReactNode {
   if (renderSlot === undefined) return null
   try {
@@ -96,7 +96,7 @@ function ageText(age: { readonly unit: 'now' | 'minutes' | 'hours' | 'days' | 'm
   return t('time.years', { count: age.count })
 }
 
-/** 0.1.7 会话标题在悬停时匀速滚到末尾，并交给样式做两端淡出。 */
+/** 会话标题在悬停时匀速滚到末尾，并交给样式做两端淡出。 */
 export function placeSessionTitle(title: HTMLElement, left: number, range: number): void {
   title.scrollLeft = left
   if (left > 0) title.dataset.scrolled = ''

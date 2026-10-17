@@ -339,7 +339,7 @@ export interface WorkspaceListState {
   readonly archivedSessionIds?: readonly string[]
 }
 
-/** 0.2 主视图由 retainedBy.mainView 标记，不再读已删除的 list.current。 */
+/** 0.2 主视图由 retainedBy.mainView 标记。 */
 export function resolveCurrentSessionId(snapshot: SessionListState | undefined): string | null {
   const byId = snapshot?.byId ?? {}
   for (const [id, session] of Object.entries(byId)) {
@@ -353,7 +353,6 @@ export function resolveCurrentSessionId(snapshot: SessionListState | undefined):
 
 export interface ClientSessionOpenAccess {
   readonly uiWorkspace?: { openSession(id: string): void }
-  readonly sessions?: { open?(id: string): void }
   readonly get?: (name: string) => unknown
   readonly reflect?: { get?: (name: string) => unknown }
 }
@@ -381,23 +380,17 @@ export function resolveClientSessionOpenAccess(ctx: ClientSessionOpenAccess): Cl
   const uiWorkspace = asUiWorkspace(probeService(ctx, 'uiWorkspace'))
   return {
     ...(uiWorkspace === undefined ? {} : { uiWorkspace }),
-    ...(ctx.sessions === undefined ? {} : { sessions: ctx.sessions }),
   }
 }
 
 export function canOpenClientSession(access: ClientSessionOpenAccess): boolean {
   return typeof access.uiWorkspace?.openSession === 'function'
-    || typeof access.sessions?.open === 'function'
 }
 
-/** 官方 alpha.2 走 uiWorkspace.openSession；旧宿主继续 sessions.open。不硬注入 uiWorkspace。 */
+/** 支持范围内的宿主都用 uiWorkspace.openSession。不硬读未注入的属性。 */
 export function openClientSession(access: ClientSessionOpenAccess, id: string): void {
   if (typeof access.uiWorkspace?.openSession === 'function') {
     access.uiWorkspace.openSession(id)
-    return
-  }
-  if (typeof access.sessions?.open === 'function') {
-    access.sessions.open(id)
     return
   }
   throw new Error('no client session opener')

@@ -46,10 +46,9 @@ export interface ClientContext {
   reflect?: { get?(name: string): unknown }
   connection: { readonly rpc: ClientRpc }
   sessions?: {
-    open?(id: string): void
     refresh?: () => Promise<void>
     list?: {
-      getSnapshot(): { ids?: readonly string[]; byId?: Record<string, unknown>; current?: string | null }
+      getSnapshot(): { ids?: readonly string[]; byId?: Record<string, unknown> }
     }
   }
   uiWorkspace?: {

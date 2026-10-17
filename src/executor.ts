@@ -96,7 +96,7 @@ function eventsHaveAutomationSource(events: readonly SessionEventLike[]): boolea
   })
 }
 
-/** 新宿主读 deriveMessages 投影；旧宿主和测试夹具再回退事件数组或弃用的同步快照。 */
+/** 优先读 deriveMessages；没有投影时再读 snapshotEvents。数组入参只给测试夹具。 */
 export function hasAutomationSource(hint: SessionOwnershipHint = []): boolean {
   if (isSessionEventList(hint)) return eventsHaveAutomationSource(hint)
   if (typeof hint.deriveMessages === 'function') {
