@@ -267,8 +267,10 @@ export function resolveVisibleSidebarTab(input: {
   readonly extraTabIds: readonly string[]
 }): string {
   if (input.extraTabIds.includes(input.tab)) return input.tab
-  if (input.tab === 'channels' && !input.channelsReady) return 'tasks'
-  return input.tab
+  if (input.tab === 'channels' && input.channelsReady) return 'channels'
+  // 协作页签可能已被注册方注销，但用户选择仍留在 localStorage：此时必须回落到任务页，
+  // 否则分段页签拿不到匹配项，指示器会移出可视区且不渲染任何面板。
+  return 'tasks'
 }
 export function tabForSessionId(sessionId: string | null | undefined, scheduledIds?: ReadonlySet<string>): NativeSidebarTab | undefined {
   if (sessionId === undefined || sessionId === null || sessionId === '') return undefined

@@ -21,6 +21,13 @@ import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
 export type ScheduleView = 'runs' | 'overview'
 
+/**
+ * 视图切换页签与内容面板共用的面板 id。
+ * 执行记录与任务总览同一时刻只渲染一个面板，所有页签的 `aria-controls` 都指向它，
+ * 避免未挂载面板造成悬空引用；调用方渲染面板时必须带上 `id` 与 `role="tabpanel"`。
+ */
+export const SCHEDULE_VIEW_PANEL_ID = 'dsh-st-rail-panel'
+
 const SORT_STORAGE: SortPreferenceStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage
 
 export function ScheduleViewSwitch({
@@ -41,22 +48,22 @@ export function ScheduleViewSwitch({
         {
           value: 'runs' as const,
           id: 'dsh-st-rail-view-runs',
-          panelId: 'dsh-st-rail-panel-runs',
+          panelId: SCHEDULE_VIEW_PANEL_ID,
           label: (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <IconFlatListOutline />
-              <span>{t('tabs.runs')}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+              <IconFlatListOutline size={14} />
+              <span>{t('sidebar.runsTab')}</span>
             </span>
           ),
         },
         {
           value: 'overview' as const,
           id: 'dsh-st-rail-view-overview',
-          panelId: 'dsh-st-rail-panel-overview',
+          panelId: SCHEDULE_VIEW_PANEL_ID,
           label: (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <IconWorkspaceTreeOutline />
-              <span>{t('sidebar.viewOverview')}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+              <IconWorkspaceTreeOutline size={14} />
+              <span>{t('sidebar.overviewTab')}</span>
             </span>
           ),
         },

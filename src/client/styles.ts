@@ -95,8 +95,19 @@ const CSS_TEXT = `
 .dsh-st-composer-left,.dsh-st-composer-right{display:flex;align-items:center;gap:2px;min-width:0}
 .dsh-st-composer-left{flex:1}.dsh-st-composer-right{flex:none}
 @media(max-width:860px){.dsh-st-toolbar{flex-wrap:wrap}.dsh-st-search{flex-basis:100%;max-width:none}.dsh-st-grid,.dsh-st-example-row{grid-template-columns:1fr}.dsh-st-filters{width:100%;margin:8px 0}}
-.dsh-st-rail-views{margin:16px 8px 10px}
-.dsh-st-overview{display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto;padding:2px 8px 14px}
+.dsh-st-n-views-wrap{display:flex;flex:none;margin:2px 0 8px;padding:0;width:100%}
+.dsh-st-n-views-wrap .dsh-st-rail-views{margin:0!important;width:100%!important}
+.dsh-st-n-view-body{display:flex;flex:1;min-width:0;min-height:0;flex-direction:column}
+/* 以下两段覆盖宿主 SegmentedTabs 的胶囊外观。选择器依赖原语渲染出的结构：
+   容器 [role=tablist] 的首个子元素是 aria-hidden 的滑动指示器，其后才是各 [role=tab]。
+   升级 @deepseek-ai/dsh-client-ui-primitives 时必须复核该结构，否则这些规则会静默失效。 */
+.dsh-st-rail-views{display:grid!important;width:100%;margin:0!important;padding:2px!important;background:color-mix(in srgb,var(--dsw-alias-label-primary,currentColor) 3%,transparent)!important;border-radius:8px!important;border:0.5px solid var(--dsw-alias-border-l1,rgba(255,255,255,.05))!important;box-sizing:border-box}
+.dsh-st-rail-views>span[aria-hidden="true"]{inset:2px auto 2px 2px!important;border-radius:6px!important;border:0.5px solid var(--dsw-alias-border-l2,rgba(255,255,255,.08))!important;background:color-mix(in srgb,var(--dsw-alias-label-primary,currentColor) 8%,transparent)!important;border-color:color-mix(in srgb,var(--dsw-alias-label-primary,currentColor) 12%,transparent)!important;box-shadow:none!important}
+.dsh-st-rail-views [role=tab]{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;width:100%!important;height:26px!important;padding:0 6px!important;font-size:13px!important;line-height:18px!important;border-radius:6px!important;color:var(--dsw-alias-label-secondary,#8b8f98);font-weight:500;text-align:center!important}
+.dsh-st-rail-views [role=tab]>*{display:inline-flex!important;align-items:center!important;justify-content:center!important}
+.dsh-st-rail-views [role=tab]:hover{color:var(--dsw-alias-label-primary,inherit)}
+.dsh-st-rail-views [role=tab][aria-selected=true]{color:var(--dsw-alias-label-primary,inherit)!important;font-weight:600}
+.dsh-st-overview{display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto;padding:2px 0 14px}
 .dsh-st-overview-head{display:flex;flex:none;align-items:center;justify-content:space-between;gap:8px;height:36px;min-height:36px;margin-bottom:4px;padding:6px 0}
 .dsh-st-overview-title{display:flex;align-items:baseline;min-width:0;gap:6px;color:var(--dsw-alias-label-tertiary,#81858C)}
 .dsh-st-overview-title strong{font-size:14px;font-weight:400;line-height:20px}
@@ -128,10 +139,13 @@ const CSS_TEXT = `
 .dsh-st-rail-session span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dsh-st-run-dot{flex:none;color:var(--dsw-static-deepseek-450,#4c8dff)}.dsh-st-run-dot-cell{fill:currentColor;opacity:.15;animation:dsh-st-run-chase 1s infinite}@keyframes dsh-st-run-chase{0%,12.4%{opacity:1}12.5%,24.9%{opacity:.6}25%,37.4%{opacity:.35}37.5%,100%{opacity:.15}}
 .dsh-st-shell-rail{display:flex;flex-direction:column;min-height:0;flex:1;height:100%;overflow:hidden}
-.dsh-st-shell-tabs{display:flex;flex:none;gap:18px;padding:6px 12px 0;border-bottom:1px solid var(--dsw-alias-border-l2,rgba(255,255,255,.08))}
-.dsh-st-shell-tabs button{appearance:none;border:0;background:transparent;color:var(--dsw-alias-label-secondary,#8b8f98);padding:8px 0 9px;font-size:13px;font-weight:500;cursor:pointer;transition:color .15s ease}
-.dsh-st-shell-tabs button:hover{color:var(--dsw-alias-label-primary,inherit)}
-.dsh-st-shell-tabs button.is-on{color:var(--dsw-alias-label-primary,inherit);font-weight:600;box-shadow:inset 0 -2px 0 var(--dsw-alias-state-business-primary,currentColor)}
+.dsh-st-shell-tabs-wrap{display:flex;margin:2px var(--dsh-sidebar-inline-padding,12px) 8px 0;padding:0;width:auto}
+.dsh-st-shell-tabs-wrap .dsh-st-shell-segmented-tabs{width:100%;background:color-mix(in srgb,var(--dsw-alias-label-primary,currentColor) 3%,transparent)!important;border-radius:8px!important;border:0.5px solid var(--dsw-alias-border-l1,rgba(255,255,255,.05))!important;box-sizing:border-box;padding:2px!important}
+.dsh-st-shell-tabs-wrap .dsh-st-shell-segmented-tabs>span[aria-hidden="true"]{inset:2px auto 2px 2px!important;border-radius:6px!important;border:0.5px solid var(--dsw-alias-border-l2,rgba(255,255,255,.08))!important;background:color-mix(in srgb,var(--dsw-alias-label-primary,currentColor) 8%,transparent)!important;border-color:color-mix(in srgb,var(--dsw-alias-label-primary,currentColor) 12%,transparent)!important;box-shadow:none!important}
+.dsh-st-shell-tabs-wrap .dsh-st-shell-segmented-tabs [role=tab]{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;width:100%!important;height:26px!important;padding:0 6px!important;font-size:13px!important;line-height:18px!important;border-radius:6px!important;color:var(--dsw-alias-label-secondary,#8b8f98);text-align:center!important}
+.dsh-st-shell-tabs-wrap .dsh-st-shell-segmented-tabs [role=tab]>*{display:inline-flex!important;align-items:center!important;justify-content:center!important}
+.dsh-st-shell-tabs-wrap .dsh-st-shell-segmented-tabs [role=tab]:hover{color:var(--dsw-alias-label-primary,inherit)}
+.dsh-st-shell-tabs-wrap .dsh-st-shell-segmented-tabs [role=tab][aria-selected=true]{color:var(--dsw-alias-label-primary,inherit)!important;font-weight:600}
 .dsh-st-shell-body{display:flex;min-height:0;flex:1;overflow:hidden}
 .dsh-st-shell-body>*{min-width:0;flex:1}.dsh-st-official-tree{display:flex;min-height:0;flex:1;overflow:hidden}.dsh-st-official-tree>*{min-width:0;flex:1}
 .dsh-st-rail-head.is-static{cursor:default;font-weight:600}

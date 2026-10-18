@@ -18,7 +18,7 @@ test('折叠搜索时输入框不占点击层', () => {
 
 test('任务总览与执行记录的内容起点使用同一 36px 控制行节奏', () => {
   const css = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')
-  assert.match(css, /\.dsh-st-overview\{[^}]*padding:2px 8px 14px/)
+  assert.match(css, /\.dsh-st-overview\{[^}]*padding:2px 0 14px/)
   assert.match(css, /\.dsh-st-overview-head\{[^}]*height:36px;[^}]*min-height:36px;[^}]*margin-bottom:4px;[^}]*padding:6px 0/)
   assert.match(css, /\.dsh-st-n-toolbar\{[^}]*height:36px;[^}]*margin:2px [^}]* 4px 0/)
 })

@@ -43,7 +43,7 @@ import {
 } from './native-group-actions.js'
 import type { AutomationRuntime } from './runtime.js'
 import { applyWorkspaceBrowserQuery, formatRunStamp, groupScheduledSessions, groupScheduledSessionsByWorkspaceTree, resolveCurrentSessionId, scheduledSessionNeedsSnapshotRefresh, scheduledSessionVisible, type ArchivedSessionFilter, type NativeSessionLike, type NativeWorkspaceLike, type WorkspaceGroupMode, type WorkspaceListSort } from './schedule-rail-model.js'
-import { ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
+import { SCHEDULE_VIEW_PANEL_ID, ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import { WorkspaceToolbar } from './workspace-toolbar.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
@@ -177,7 +177,10 @@ export function NativeScheduleSessionList(props: {
   }
   return (
     <div className='dsh-st-n'>
-      <ScheduleViewSwitch t={t} view={view} onChange={setView} />
+      <div className='dsh-st-n-views-wrap'>
+        <ScheduleViewSwitch t={t} view={view} onChange={setView} />
+      </div>
+      <div id={SCHEDULE_VIEW_PANEL_ID} role='tabpanel' className='dsh-st-n-view-body'>
       {view === 'overview'
         ? state.snapshot === undefined
           ? <div className='dsh-st-n-empty'>{state.phase === 'loading' ? t('loading') : t('overview.empty')}</div>
@@ -293,6 +296,7 @@ export function NativeScheduleSessionList(props: {
             </div>
             </div>
           </>}
+      </div>
       <Modal
         open={archiveGroupTarget !== undefined}
         onClose={() => {

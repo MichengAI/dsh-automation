@@ -64,6 +64,11 @@ test('频道若已作为协作页签注册，即使 slot 未就绪也不能打�
   assert.equal(resolveVisibleSidebarTab({ tab: 'channels', channelsReady: true, extraTabIds: [] }), 'channels')
   assert.equal(resolveVisibleSidebarTab({ tab: 'tasks', channelsReady: false, extraTabIds: ['channels'] }), 'tasks')
 })
+
+test('已注销的协作页签回落到任务页，避免分段页签没有选中项', () => {
+  assert.equal(resolveVisibleSidebarTab({ tab: 'im-removed', channelsReady: false, extraTabIds: ['channels', 'schedule'] }), 'tasks')
+  assert.equal(resolveVisibleSidebarTab({ tab: 'stale-foreign-tab', channelsReady: true, extraTabIds: ['tasks', 'channels', 'schedule'] }), 'tasks')
+})
 test('schedule rail groups runs by task name', () => {
   const groups = groupScheduledSessions(
     [
