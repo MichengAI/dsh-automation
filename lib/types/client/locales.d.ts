@@ -7,6 +7,8 @@ export declare const en: {
     readonly "sidebar.channelsTab": "Channels";
     readonly "sidebar.views": "Scheduled views";
     readonly "sidebar.viewOverview": "Task overview";
+    readonly "sidebar.runsTab": "Records";
+    readonly "sidebar.overviewTab": "Tasks";
     readonly "sidebar.empty": "No scheduled runs yet.";
     readonly "sidebar.tasksEmpty": "No web tasks yet.";
     readonly "sidebar.ungrouped": "Ungrouped";

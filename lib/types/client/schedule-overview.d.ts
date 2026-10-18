@@ -2,6 +2,12 @@ import type { Translate } from './contracts.js';
 import type { AutomationViewModel } from './protocol.js';
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js';
 export type ScheduleView = 'runs' | 'overview';
+/**
+ * 视图切换页签与内容面板共用的面板 id。
+ * 执行记录与任务总览同一时刻只渲染一个面板，所有页签的 `aria-controls` 都指向它，
+ * 避免未挂载面板造成悬空引用；调用方渲染面板时必须带上 `id` 与 `role="tabpanel"`。
+ */
+export declare const SCHEDULE_VIEW_PANEL_ID = "dsh-st-rail-panel";
 export declare function ScheduleViewSwitch({ t, view, onChange, }: {
     readonly t: Translate;
     readonly view: ScheduleView;
