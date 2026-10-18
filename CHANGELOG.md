@@ -4,6 +4,14 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 1.0.1 - 2026-10-18
+
+- Migrated primary sidebar tabs (Tasks/Channels/Schedule) and secondary view switcher (Records/Tasks) to official host `SegmentedTabs` primitives.
+- Styled outer segment tracks with subtle transparent borders, matching concentric pill radiuses and symmetric 12px margins.
+- Simplified secondary view labels to Records and Tasks with dedicated line icons.
+- Aligned task overview card bounds to match segment controls precisely.
+- Added explicit WAI-ARIA tabpanel bindings (`SHELL_PANEL_ID` and `SCHEDULE_VIEW_PANEL_ID`) and safe tab fallback on unregistration.
+
 ## 1.0.0 - 2026-10-17
 
 - This line starts at `1.0.0` and requires DeepSeek Harness `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`, or `0.2.1-rc.2`. Development dependencies are pinned to `0.2.1-rc.2`, Cordis to `4.0.5`, and Schemastery to `3.18.5`. Hosts still on `0.1.x` should stay on plugin `0.1.66`.
