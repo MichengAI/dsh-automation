@@ -54,3 +54,23 @@ test('旧页签的卸载不会删除同 ID 的新页签，也不会发送多余�
   removeOld()
   assert.equal(notifications, 3)
 })
+
+test('侧栏切换后只认当前组件的注册表，不使用 entry 残留缓存', () => {
+  const stale = createNativeTabRegistry(null)
+  const current = createNativeTabRegistry(null)
+  const component = function CurrentShell(): null { return null }
+  attachNativeTabRegistry(component, current)
+  const entry = { component, __dshNativeTabs: stale }
+  assert.equal(findNativeTabRegistry(entry), current)
+  entry.component = function NewTree(): null { return null }
+  assert.equal(findNativeTabRegistry(entry), undefined)
+  assert.equal(findNativeTabRegistry({ __dshNativeTabs: current }), current)
+  assert.equal(findNativeTabRegistry(component), current)
+})
+
+test('不完整或不兼容的注册表不参与协作', () => {
+  const valid = createNativeTabRegistry(null)
+  for (const invalid of [{ insert() {} }, { ...valid, version: 2 }, { ...valid, getTabs: null }, { ...valid, subscribe: null }]) {
+    assert.equal(findNativeTabRegistry({ __dshNativeTabs: invalid }), undefined)
+  }
+})

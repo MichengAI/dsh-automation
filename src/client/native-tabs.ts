@@ -72,7 +72,13 @@ export function getNativeTabRegistry(target: unknown): NativeTabRegistry | undef
   if (target === undefined || target === null || (typeof target !== 'object' && typeof target !== 'function')) return undefined
   const registry = (target as Record<string, unknown>)[NATIVE_TABS_KEY]
   if (registry === undefined || registry === null || typeof registry !== 'object') return undefined
-  return typeof (registry as NativeTabRegistry).insert === 'function' ? registry as NativeTabRegistry : undefined
+  const candidate = registry as Partial<NativeTabRegistry>
+  return candidate.version === 1
+    && typeof candidate.getTabs === 'function'
+    && typeof candidate.subscribe === 'function'
+    && typeof candidate.insert === 'function'
+    ? registry as NativeTabRegistry
+    : undefined
 }
 
 export function attachNativeTabRegistry<T>(target: T, registry: NativeTabRegistry): NativeTabRegistry {
@@ -81,8 +87,9 @@ export function attachNativeTabRegistry<T>(target: T, registry: NativeTabRegistr
 }
 
 export function findNativeTabRegistry(entry: unknown): NativeTabRegistry | undefined {
-  const record = entry as { component?: unknown } | undefined
-  return getNativeTabRegistry(entry) ?? getNativeTabRegistry(record?.component)
+  if (entry === undefined || entry === null || (typeof entry !== 'object' && typeof entry !== 'function')) return undefined
+  // entry 上的缓存可能属于被换下的外壳；当前显示组件才拥有有效注册表。
+  return getNativeTabRegistry('component' in entry ? (entry as { component?: unknown }).component : entry)
 }
 
 export function isForeignSidebarHost(component: unknown): boolean {

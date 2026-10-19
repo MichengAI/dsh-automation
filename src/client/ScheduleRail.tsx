@@ -132,8 +132,6 @@ export function NativeScheduleShell({
   useSessions,
   useWorkspaces,
   renderSlot,
-  hasChannels,
-  subscribeChannels,
   tabRegistry,
   wide,
 }: {
@@ -146,8 +144,6 @@ export function NativeScheduleShell({
   readonly useSessions?: SessionSelector
   readonly useWorkspaces?: WorkspaceSelector
   readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode
-  readonly hasChannels?: () => boolean
-  readonly subscribeChannels?: (listener: () => void) => () => void
   readonly tabRegistry?: NativeTabRegistry
   readonly wide?: boolean
 }): JSX.Element | null {
@@ -161,13 +157,8 @@ export function NativeScheduleShell({
     () => tabRegistry?.getTabs() ?? EMPTY_EXTRA_TABS,
     () => EMPTY_EXTRA_TABS,
   )
-  const channelsReady = useSyncExternalStore(
-    subscribeChannels ?? noopSubscribe,
-    () => {
-      try { return hasChannels?.() === true } catch { return false }
-    },
-    () => false,
-  )
+  // 只有注册表提供了可渲染的频道贡献，才显示频道入口；不跨用工作区的子槽位权限。
+  const channelsReady = extraTabs.some(item => item.id === 'channels')
   const currentId = useSessions?.((state) => resolveCurrentSessionId(state))
   const automationState = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const scheduledIds = useMemo(() => collectScheduledSessionIds(automationState.snapshot?.runs), [automationState.snapshot])
@@ -289,21 +280,6 @@ export function NativeScheduleShell({
         label: itemLabel,
       })
     }
-    if (channelsReady && foreignTabs.every(item => item.id !== 'channels')) {
-      items.push({
-        value: 'channels',
-        id: 'dsh-st-tab-channels',
-        panelId: SHELL_PANEL_ID,
-        label: (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-            <svg viewBox="0 0 16 16" width={14} height={14} fill="none" aria-hidden="true">
-              <path fill="currentColor" d="M2.15 2.9h11.7v8.2H6.42L2.15 13.85V2.9Zm1.4 1.4v6.62l1.78-1.12h7.12V4.3H3.55Z" />
-            </svg>
-            <span>{t('sidebar.channelsTab')}</span>
-          </span>
-        ),
-      })
-    }
     items.push({
       value: 'schedule',
       id: 'dsh-st-tab-schedule',
@@ -318,7 +294,7 @@ export function NativeScheduleShell({
     return items as unknown as readonly [SegmentedTab<string>, ...SegmentedTab<string>[]]
   }, [channelsReady, foreignTabs, t])
 
-  const activeForeignTab = visibleTab === 'schedule' || visibleTab === 'channels'
+  const activeForeignTab = visibleTab === 'schedule' || visibleTab === 'tasks'
     ? undefined
     : foreignTabs.find(item => item.id === visibleTab)
   const panelClass = activeForeignTab !== undefined || visibleTab === 'schedule' || visibleTab === 'channels'
@@ -341,9 +317,7 @@ export function NativeScheduleShell({
           ? scheduleBody
           : activeForeignTab !== undefined
             ? activeForeignTab.render({ ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true }) as ReactNode
-            : visibleTab === 'channels'
-              ? renderSlot?.('sidebar.channels', { ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true, skin: 'native' })
-              : renderOfficial(filteredOfficialProps)}
+            : renderOfficial(filteredOfficialProps)}
       </div>
     </div>
   )

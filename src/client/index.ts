@@ -183,7 +183,6 @@ export function apply(ctx: ClientContext): void {
     let retryTimer: number | undefined
     // 直接替换 component 不触发宿主插槽通知；与 IM 共用事件，在本次同步完成后重新协调。
     const notifyPeers = (): void => { queueMicrotask(() => window.dispatchEvent(new Event('dsh-native-sidebar-change'))) }
-    const listenChannels = (listener: () => void) => ctx.slots.subscribe?.('sidebar.channels', listener) ?? (() => undefined)
     const stopRetry = (): void => {
       if (retryTimer !== undefined) {
         window.clearInterval(retryTimer)
@@ -248,6 +247,10 @@ export function apply(ctx: ClientContext): void {
         const record = entry as { component?: unknown }
         if (insertScheduleTab(entry) || insertScheduleTab(record.component)) return true
       }
+      // 当前显示外壳不再提供旧表时立即释放自有贡献，等待新表就绪通知。
+      removeInsertedTab()
+      removeInsertedTab = (): void => undefined
+      insertedRegistry = undefined
       return false
     }
     const ensureScheduleTab = (): void => {
@@ -301,8 +304,6 @@ export function apply(ctx: ClientContext): void {
             openTaskSettings,
             tabRegistry: registry,
             ...(innerProps.wide === undefined ? {} : { wide: innerProps.wide }),
-            hasChannels: () => slotHasEntries(ctx, 'sidebar.channels'),
-            subscribeChannels: listenChannels,
             ...(innerProps.useSessions === undefined ? {} : { useSessions: innerProps.useSessions }),
             ...(innerProps.useWorkspaces === undefined ? {} : { useWorkspaces: innerProps.useWorkspaces }),
             ...(innerProps.renderSlot === undefined ? {} : { renderSlot: innerProps.renderSlot }),
@@ -386,8 +387,4 @@ function readSlotEntries(ctx: ClientContext, name: string): readonly unknown[] {
   } catch {
     return []
   }
-}
-
-function slotHasEntries(ctx: ClientContext, name: string): boolean {
-  return readSlotEntries(ctx, name).length > 0
 }

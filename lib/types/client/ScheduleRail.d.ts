@@ -12,7 +12,7 @@ export declare function ScheduleRail({ t, runtime, openSession, openTaskSettings
     readonly view?: ScheduleView;
     readonly showViewSwitch?: boolean;
 }): JSX.Element;
-export declare function NativeScheduleShell({ t, runtime, officialTree, hostProps, openSession, openTaskSettings, useSessions, useWorkspaces, renderSlot, hasChannels, subscribeChannels, tabRegistry, wide, }: {
+export declare function NativeScheduleShell({ t, runtime, officialTree, hostProps, openSession, openTaskSettings, useSessions, useWorkspaces, renderSlot, tabRegistry, wide, }: {
     readonly t: Translate;
     readonly runtime: AutomationRuntime;
     readonly officialTree?: ComponentType<any>;
@@ -22,8 +22,6 @@ export declare function NativeScheduleShell({ t, runtime, officialTree, hostProp
     readonly useSessions?: SessionSelector;
     readonly useWorkspaces?: WorkspaceSelector;
     readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode;
-    readonly hasChannels?: () => boolean;
-    readonly subscribeChannels?: (listener: () => void) => () => void;
     readonly tabRegistry?: NativeTabRegistry;
     readonly wide?: boolean;
 }): JSX.Element | null;

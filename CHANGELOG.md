@@ -4,6 +4,12 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 1.0.2 - 2026-10-19
+
+- Fix sidebar Channels tab crash: render registered channel contributions directly via foreign tab renderer instead of bypassing it to invoke undeclared child slot `sidebar.channels`.
+- Align channel availability strictly with native tab registry; gracefully fall back to official task tree upon tab removal.
+- Clean up own schedule contribution when the active sidebar host unregisters, safely reconnecting on next notification.
+
 ## 1.0.1 - 2026-10-18
 
 - Migrated primary sidebar tabs (Tasks/Channels/Schedule) and secondary view switcher (Records/Tasks) to official host `SegmentedTabs` primitives.
