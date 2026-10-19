@@ -4,9 +4,11 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
-## Unreleased
+## 1.0.4 - 2026-10-19
 
-- Fix the sidebar "Scheduled tasks" entry collapsing into vertical text: settings navigation icons are now injected only into buttons that render the host `svg` as a direct child, so sidebar icons wrapped in their own container are no longer decorated.
+- Let the settings page fill the host content column by removing the 1080px cap.
+- Scroll the body of the create/edit task modal when content exceeds the viewport while keeping the footer actions visible.
+- Fix the sidebar "Scheduled tasks" entry collapsing into vertical text: only decorate buttons with a direct host `svg`, and only inside the native settings dialog, so sidebar and Codex UI entries keep their own icons.
 
 ## 1.0.3 - 2026-10-19
 
