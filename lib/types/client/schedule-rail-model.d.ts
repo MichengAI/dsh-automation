@@ -80,8 +80,6 @@ export declare function scheduledSessionNeedsSnapshotRefresh(sessionId: string |
 export declare function collectScheduledSessionIds(runs: readonly {
     readonly sessionId?: string | null;
 }[] | undefined): Set<string>;
-/** 任务树要藏的定时会话：前缀、仍挂在定时快照上，或标题是定时跑出来的时间戳。 */
-export declare function isAutomationSidebarSession(id: string, item?: NativeSessionLike, scheduledIds?: ReadonlySet<string>): boolean;
 export declare function readNativeSidebarTab(raw: string | null): NativeSidebarTab;
 /** 协作页签（频道/定时）以 registry 为准，不能因 sidebar.channels slot 未就绪就把点击打回任务。 */
 /** 只有当前会话变了才跟随切页签，避免点「定时」时被频道/任务会话打回去闪烁。 */
@@ -97,6 +95,7 @@ export declare function resolveVisibleSidebarTab(input: {
 }): string;
 export declare function tabForSessionId(sessionId: string | null | undefined, scheduledIds?: ReadonlySet<string>, options?: {
     readonly followSchedule?: boolean;
+    readonly followChannels?: boolean;
 }): NativeSidebarTab | undefined;
 export declare function occupantLooksLikeCodexUi(value: unknown): boolean;
 export declare function slotOccupantName(item: unknown): string;
@@ -105,11 +104,6 @@ export interface SessionListState {
     readonly ids?: readonly string[];
     readonly byId?: Record<string, NativeSessionLike>;
 }
-export interface SessionFilterOptions {
-    /** 任务树需要显示定时会话时设为 true；只保留 IM 过滤。 */
-    readonly includeScheduled?: boolean;
-}
-export declare function filterTaskSessionState<T extends SessionListState>(state: T | undefined, scheduledIds?: ReadonlySet<string>, options?: SessionFilterOptions): T;
 /** 记录视图只保留定时执行产生的会话；其余字段原样带给官方树。 */
 export declare function scheduledOnlySessionState<T extends SessionListState>(state: T | undefined, scheduledIds: ReadonlySet<string>): T;
 export interface WorkspaceListState {
@@ -167,8 +161,10 @@ export interface EnsureOpenScheduledSessionInput {
 }
 /** 先把会话挂回工作区并刷新客户端会话簿，再打开；避免侧栏能看见、点下去却 unknown session。 */
 export declare function ensureOpenScheduledSession(input: EnsureOpenScheduledSessionInput): Promise<boolean>;
-export declare function filterWorkspaceListState<T extends WorkspaceListState>(state: T | undefined, scheduledIds?: ReadonlySet<string>, options?: SessionFilterOptions): T;
 export type WrapperFlags = {
+    __dshNativeTabWrapped?: unknown;
+    __dshNativeTabOriginal?: unknown;
+    __dshNativeTabOwner?: unknown;
     __dshAutomationWrapped?: unknown;
     __dshAutomationOriginal?: unknown;
     __imConnectWrapped?: unknown;

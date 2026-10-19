@@ -70,6 +70,9 @@ function isWorkspaceSelector(value: unknown): value is WorkspaceSelector {
 type HostComponent = ComponentType<any> & {
   displayName?: string
   __dshNativeTabHost?: boolean
+  __dshNativeTabWrapped?: boolean
+  __dshNativeTabOriginal?: ComponentType<any>
+  __dshNativeTabOwner?: string
   __dshAutomationWrapped?: boolean
   __dshAutomationOriginal?: ComponentType<any>
 }
@@ -301,7 +304,7 @@ export function apply(ctx: ClientContext): void {
         const registry = createNativeTabRegistry(originalComp)
         ownedRegistry = registry
         attachNativeTabRegistry(occupant, registry)
-        function AutomationNativeWorkspaceShell(innerProps: NativeSwitcherProps): JSX.Element | null {
+        function DshNativeTabWorkspaceShell(innerProps: NativeSwitcherProps): JSX.Element | null {
           const openSession = createScheduledSessionOpener(ctx, runtime, innerProps.openSession ?? innerProps.open)
           return createElement(NativeScheduleShell, {
             t,
@@ -318,9 +321,12 @@ export function apply(ctx: ClientContext): void {
             officialTree: tree,
           })
         }
-        const marked = AutomationNativeWorkspaceShell as HostComponent
-        marked.displayName = 'AutomationNativeWorkspaceShell'
+        const marked = DshNativeTabWorkspaceShell as HostComponent
+        marked.displayName = 'DshNativeTabWorkspaceShell'
         marked.__dshNativeTabHost = true
+        marked.__dshNativeTabWrapped = true
+        marked.__dshNativeTabOriginal = originalComp
+        marked.__dshNativeTabOwner = 'automation'
         marked.__dshAutomationWrapped = true
         marked.__dshAutomationOriginal = originalComp
         const tree = originalComp

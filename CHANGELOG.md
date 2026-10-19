@@ -7,6 +7,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 ## Unreleased
 
 - Scheduled sessions are no longer hidden from the official task tree; idle scheduled sessions show the official clock icon before the row status.
+- Channel sessions now appear in the official task tree; opening one no longer forces the sidebar to switch to the Channels tab.
 - The Records view now renders the official workspace tree. It offers no add-workspace, rename, or group deletion; groups only expand and collapse.
 - The task group's `…` menu injects Task settings; archive-all remains the Archive Manager's injection.
 - The Records view adds a By task grouping selected by default and can switch to By workspace, Workspace tree, or Flat. Grouping and ordering use an independent view state and no longer affect the main task tree. By workspace keeps every workspace and filters only sessions to scheduled runs.
@@ -19,6 +20,9 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Settings toolbar buttons, dropdown chevrons, icons injected into official workspace/view menus, task schedule rows, channel tabs, and the settings-nav icon now use host icons; only the GitHub brand mark remains custom-drawn.
 - Delete the self-drawn Tasks/Records fallback lists and the legacy `sidebar.schedule` slot; show an unavailable message when the official tree is missing.
 - Delete the empty-icon renderer, `pickHostExport`, and legacy `events` reader fallbacks that supported hosts cannot reach; a missing host icon now throws.
+- Fix the Tasks / Channels / Scheduled tabs disappearing after collapsing and expanding the sidebar: move the `wide === false` return in `NativeScheduleShell` below every hook to keep hook order stable.
+- Unify the sidebar wrapper protocol with `__dshNativeTabWrapped`, `__dshNativeTabOriginal`, and `__dshNativeTabOwner` while keeping legacy flags readable; name both wrappers `DshNativeTabWorkspaceShell`.
+- Stop filtering `im:` sessions from the official task tree; Channels and Tasks now share the same sessions. Remove `filterTaskSessionState`, `filterWorkspaceListState`, their caches, and related tests.
 - Delete the custom session list, search toolbar, row menus, and hover cards; session management now reuses the official components.
 
 ## 1.0.4 - 2026-10-19

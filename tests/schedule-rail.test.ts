@@ -4,7 +4,6 @@ import {
   AUTOMATION_SESSION_PREFIX,
   collectScheduledSessionIds,
   deriveTaskOverviewRows,
-  isAutomationSidebarSession,
   groupScheduledSessions,
   keepScheduledSessionLink,
   scheduledSessionVisible,
@@ -19,8 +18,6 @@ import {
   resolveCurrentSessionId,
   hasCodexUiSidebar,
   readNativeSidebarTab,
-  filterTaskSessionState,
-  filterWorkspaceListState,
   isMarkedWorkspaceWrapper,
   pickWrappableWorkspacesEntry,
   resolveOfficialTreeComponent,
@@ -96,11 +93,6 @@ test('任务总览包含从未运行的任务并保留下次执行时间', () =>
   assert.equal(rows[1]?.nextRunAt, undefined)
 })
 
-test('任务树按前缀和定时标题隐藏自动化会话', () => {
-  assert.equal(isAutomationSidebarSession('dsh-automation-session-abc'), true)
-  assert.equal(isAutomationSidebarSession('chat-1', { id: 'chat-1', displayTitle: '2026-08-18 09:40 - 给我报表信息' }), true)
-  assert.equal(isAutomationSidebarSession('chat-1', { id: 'chat-1', title: '审查本项目代码' }), false)
-})
 test('native tabs follow session prefixes and detect Codex UI sidebar', () => {
   assert.equal(readNativeSidebarTab('schedule'), 'schedule')
   assert.equal(readNativeSidebarTab('nope'), 'tasks')
@@ -111,49 +103,9 @@ test('native tabs follow session prefixes and detect Codex UI sidebar', () => {
   assert.equal(hasCodexUiSidebar([{ options: { locale: 'sidebar' } }]), false)
 })
 
-test('过滤结果必须保持同一引用，避免任务页卡死', () => {
-  const state = { ids: ['chat-1', 'dsh-automation-session-1'], byId: { 'chat-1': { id: 'chat-1' }, 'dsh-automation-session-1': { id: 'dsh-automation-session-1' } } }
-  const first = filterTaskSessionState(state)
-  const second = filterTaskSessionState(state)
-  assert.equal(first, second)
-  const clean = { ids: ['chat-1'], byId: { 'chat-1': { id: 'chat-1' } } }
-  assert.equal(filterTaskSessionState(clean), clean)
-})
-
-test('工作区列表过滤必须保持引用稳定，避免任务树重绘卡死', () => {
-  const state = { items: [{ id: 'ws', sessionIds: ['chat-1', 'im:1'] }], archivedSessionIds: [] }
-  const first = filterWorkspaceListState(state)
-  const second = filterWorkspaceListState(state)
-  assert.equal(first, second)
-  const clean = { items: [{ id: 'ws', sessionIds: ['chat-1'] }], archivedSessionIds: [] }
-  assert.equal(filterWorkspaceListState(clean), clean)
-})
-
-test('official task tree hides automation and im sessions', () => {
-  const filtered = filterTaskSessionState({
-    ids: ['chat-1', AUTOMATION_SESSION_PREFIX + '1', 'im:wecom:1'],
-    byId: {
-      'chat-1': { id: 'chat-1' },
-      [AUTOMATION_SESSION_PREFIX + '1']: { id: AUTOMATION_SESSION_PREFIX + '1' },
-      'im:wecom:1': { id: 'im:wecom:1' },
-    },
-  }, new Set([AUTOMATION_SESSION_PREFIX + '1']))
-  if (filtered.ids === undefined) throw new Error('missing ids')
-  if (filtered.ids.length !== 1 || filtered.ids[0] !== 'chat-1') throw new Error('filter failed')
-})
-
-
-test('从定时页移除后，任务树仍不展示自动化会话', () => {
+test('从定时页移除后仍保留已记录会话关联', () => {
   const autoId = AUTOMATION_SESSION_PREFIX + 'kept'
   assert.deepEqual([...collectScheduledSessionIds([{ sessionId: autoId }, { sessionId: null }])], [autoId])
-  const filtered = filterTaskSessionState({
-    ids: ['chat-1', autoId],
-    byId: {
-      'chat-1': { id: 'chat-1' },
-      [autoId]: { id: autoId, title: 'forgotten-run' },
-    },
-  }, new Set())
-  if (filtered.ids === undefined || filtered.ids.includes(autoId)) throw new Error('automation session must stay off the task tree')
   assert.equal(tabForSessionId(autoId, new Set()), 'tasks')
   assert.equal(tabForSessionId(autoId, new Set([autoId])), 'schedule')
 })
@@ -170,6 +122,20 @@ test('already wrapped official trees are not wrapped again', () => {
   const official = { options: { id: 'workspace-browser' }, component: Wrapped }
   if (isMarkedWorkspaceWrapper(Wrapped) !== true) throw new Error('missing wrap mark')
   if (pickWrappableWorkspacesEntry([official]) !== undefined) throw new Error('should skip wrapped occupant')
+})
+
+test('unified native tab wrapper markers prevent double wrapping', () => {
+  function Official() { return null }
+  function Shell() { return null }
+  Shell.__dshNativeTabWrapped = true
+  Shell.__dshNativeTabOriginal = Official
+  Shell.__dshNativeTabOwner = 'im-connect'
+  assert.equal(isMarkedWorkspaceWrapper(Shell), true)
+  assert.equal(resolveOfficialTreeComponent(Shell), Official)
+  const entry = { options: { id: 'im' }, component: Shell }
+  assert.equal(pickWrappableWorkspacesEntry([entry]), entry)
+  Shell.__dshNativeTabOwner = 'automation'
+  assert.equal(pickWrappableWorkspacesEntry([entry]), undefined)
 })
 
 test('im-connect wrap can be unwrapped back to official tree', () => {
@@ -386,22 +352,6 @@ test('当前已打开的定时会话若还没进快照，应立刻再拉一次�
   assert.equal(scheduledSessionNeedsSnapshotRefresh(null, []), false)
 })
 
-test('官方任务树保留定时会话，只过滤 IM 会话', () => {
-  const state = {
-    ids: ['dsh-automation-session-a', 'im:wecom:1', 'normal'],
-    byId: {
-      'dsh-automation-session-a': { id: 'dsh-automation-session-a', title: '2026-10-19 12:00 - 巡检' },
-      'normal': { id: 'normal', title: '普通会话' },
-    },
-  }
-  assert.deepEqual(filterTaskSessionState(state, new Set(), { includeScheduled: true }).ids, ['dsh-automation-session-a', 'normal'])
-  const workspaces = { items: [{ workspaceId: 'w', sessionIds: ['dsh-automation-session-a', 'im:wecom:1', 'normal'] }] }
-  assert.deepEqual(
-    filterWorkspaceListState(workspaces, new Set(), { includeScheduled: true }).items?.[0]?.sessionIds,
-    ['dsh-automation-session-a', 'normal'],
-  )
-})
-
 test('记录视图只保留定时会话，并保留源快照的启动状态', () => {
   const state = {
     phase: 'ready' as const,
@@ -454,6 +404,11 @@ test('定时会话不再自动切到定时页签', () => {
   assert.equal(tabForSessionId('dsh-automation-session-a', scheduled, { followSchedule: false }), undefined)
   assert.equal(tabForSessionId('dsh-automation-session-a', scheduled), 'schedule')
   assert.equal(tabForSessionId('im:wecom:1', scheduled, { followSchedule: false }), 'channels')
+})
+
+test('频道会话不再自动切到频道页签', () => {
+  assert.equal(tabForSessionId('im:wecom:1', new Set(), { followChannels: false }), undefined)
+  assert.equal(tabForSessionId('im:wecom:1', new Set()), 'channels')
 })
 
 test('记录视图按真实工作区分组时只保留定时会话，但保留工作区', () => {

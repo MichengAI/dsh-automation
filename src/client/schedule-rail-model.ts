@@ -188,18 +188,6 @@ export function collectScheduledSessionIds(runs: readonly { readonly sessionId?:
 }
 
 
-const AUTOMATION_TITLE_RE = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/
-
-/** 任务树要藏的定时会话：前缀、仍挂在定时快照上，或标题是定时跑出来的时间戳。 */
-export function isAutomationSidebarSession(id: string, item?: NativeSessionLike, scheduledIds: ReadonlySet<string> = new Set()): boolean {
-  if (id.startsWith(AUTOMATION_SESSION_PREFIX) || scheduledIds.has(id)) return true
-  const title = String(item?.title ?? item?.displayTitle ?? '')
-  return AUTOMATION_TITLE_RE.test(title)
-}
-
-
-
-
 export function readNativeSidebarTab(raw: string | null): NativeSidebarTab {
   if (raw === 'channels' || raw === 'schedule' || raw === 'tasks') return raw
   return 'tasks'
@@ -242,14 +230,15 @@ export function resolveVisibleSidebarTab(input: {
 export function tabForSessionId(
   sessionId: string | null | undefined,
   scheduledIds?: ReadonlySet<string>,
-  options: { readonly followSchedule?: boolean } = {},
+  options: { readonly followSchedule?: boolean; readonly followChannels?: boolean } = {},
 ): NativeSidebarTab | undefined {
   if (sessionId === undefined || sessionId === null || sessionId === '') return undefined
   const scheduled = scheduledIds !== undefined
     ? scheduledIds.has(sessionId)
     : sessionId.startsWith(AUTOMATION_SESSION_PREFIX)
   if (scheduled) return options.followSchedule === false ? undefined : 'schedule'
-  if (sessionId.startsWith('im:')) return 'channels'
+  // 频道会话也出现在官方任务树里；从任务树点开时不要强制跳频道页签。
+  if (sessionId.startsWith('im:')) return options.followChannels === false ? undefined : 'channels'
   return 'tasks'
 }
 
@@ -286,8 +275,6 @@ export interface SessionListState {
   readonly byId?: Record<string, NativeSessionLike>
 }
 
-const taskFilterCache = new WeakMap<object, { key: string; result: object }>()
-const workspaceFilterCache = new WeakMap<object, { key: string; result: object }>()
 const scheduledSessionCache = new WeakMap<object, { key: string; result: object }>()
 const syntheticWorkspaceCache = new WeakMap<object, { key: string; result: object }>()
 const realWorkspaceCache = new WeakMap<object, { key: string; result: object }>()
@@ -303,34 +290,7 @@ function scheduledCacheKey(scheduledIds: ReadonlySet<string>): string {
   return [...scheduledIds].sort().join('\0')
 }
 
-export interface SessionFilterOptions {
-  /** 任务树需要显示定时会话时设为 true；只保留 IM 过滤。 */
-  readonly includeScheduled?: boolean
-}
 
-export function filterTaskSessionState<T extends SessionListState>(
-  state: T | undefined,
-  scheduledIds: ReadonlySet<string> = new Set(),
-  options: SessionFilterOptions = {},
-): T {
-  const src = (state ?? { ids: [], byId: {} }) as T
-  const key = `${scheduledCacheKey(scheduledIds)}\0${options.includeScheduled === true ? '1' : '0'}`
-  if (typeof src === 'object' && src !== null) {
-    const hit = taskFilterCache.get(src)
-    if (hit !== undefined && hit.key === key) return hit.result as T
-  }
-  const ids = (src.ids ?? []).filter((id) => {
-    const value = String(id)
-    if (value.startsWith('im:')) return false
-    return options.includeScheduled === true
-      ? true
-      : !isAutomationSidebarSession(value, src.byId?.[value], scheduledIds)
-  })
-  const unchanged = ids.length === (src.ids ?? []).length
-  const result = unchanged ? src : { ...src, ids, byId: Object.fromEntries(ids.map((id) => [id, src.byId?.[id]]).filter((entry) => entry[1] !== undefined)) }
-  if (typeof src === 'object' && src !== null) taskFilterCache.set(src, { key, result })
-  return result
-}
 
 /** 记录视图只保留定时执行产生的会话；其余字段原样带给官方树。 */
 export function scheduledOnlySessionState<T extends SessionListState>(state: T | undefined, scheduledIds: ReadonlySet<string>): T {
@@ -548,36 +508,12 @@ export async function ensureOpenScheduledSession(input: EnsureOpenScheduledSessi
   return openScheduledSession(id, input.openRuntime, input.openHost)
 }
 
-export function filterWorkspaceListState<T extends WorkspaceListState>(
-  state: T | undefined,
-  scheduledIds: ReadonlySet<string> = new Set(),
-  options: SessionFilterOptions = {},
-): T {
-  const src = (state ?? { items: [], archivedSessionIds: [] }) as T
-  const key = `${scheduledCacheKey(scheduledIds)}\0${options.includeScheduled === true ? '1' : '0'}`
-  if (typeof src === 'object' && src !== null) {
-    const hit = workspaceFilterCache.get(src)
-    if (hit !== undefined && hit.key === key) return hit.result as T
-  }
-  let changed = false
-  const items = (src.items ?? []).map((workspace) => {
-    const sessionIds = (workspace.sessionIds ?? []).filter((sid) => {
-      const value = String(sid)
-      if (value.startsWith('im:')) return false
-      return options.includeScheduled === true ? true : !isAutomationSidebarSession(value, undefined, scheduledIds)
-    })
-    if (sessionIds.length !== (workspace.sessionIds ?? []).length) {
-      changed = true
-      return { ...workspace, sessionIds }
-    }
-    return workspace
-  })
-  const result = changed ? { ...src, items } : src
-  if (typeof src === 'object' && src !== null) workspaceFilterCache.set(src, { key, result })
-  return result
-}
+
 
 export type WrapperFlags = {
+  __dshNativeTabWrapped?: unknown
+  __dshNativeTabOriginal?: unknown
+  __dshNativeTabOwner?: unknown
   __dshAutomationWrapped?: unknown
   __dshAutomationOriginal?: unknown
   __imConnectWrapped?: unknown
@@ -590,12 +526,16 @@ export function wrapperFlags(component: unknown): WrapperFlags {
 }
 
 export function isOwnAutomationWrapper(component: unknown): boolean {
-  return wrapperFlags(component).__dshAutomationWrapped === true
+  const flags = wrapperFlags(component)
+  return flags.__dshAutomationWrapped === true
+    || (flags.__dshNativeTabWrapped === true && flags.__dshNativeTabOwner === 'automation')
 }
 
 export function isMarkedWorkspaceWrapper(component: unknown): boolean {
   const flags = wrapperFlags(component)
-  return flags.__dshAutomationWrapped === true
+  return flags.__dshNativeTabWrapped === true
+    || flags.__dshNativeTabOriginal !== undefined
+    || flags.__dshAutomationWrapped === true
     || flags.__dshAutomationOriginal !== undefined
     || flags.__imConnectWrapped === true
     || flags.__imConnectOriginal !== undefined
@@ -607,12 +547,12 @@ export function resolveOfficialTreeComponent(component: unknown): unknown {
   while (current !== undefined && current !== null && !seen.has(current)) {
     seen.add(current)
     const flags = wrapperFlags(current)
-    const next = flags.__dshAutomationOriginal ?? flags.__imConnectOriginal
+    const next = flags.__dshNativeTabOriginal ?? flags.__dshAutomationOriginal ?? flags.__imConnectOriginal
     if (next !== undefined && next !== current) {
       current = next
       continue
     }
-    if (flags.__dshAutomationWrapped === true || flags.__imConnectWrapped === true) return undefined
+    if (flags.__dshNativeTabWrapped === true || flags.__dshAutomationWrapped === true || flags.__imConnectWrapped === true) return undefined
     return current
   }
   return undefined
@@ -624,6 +564,7 @@ export function isAutomationWorkspaceWrapper(item: unknown): boolean {
   const name = String(record?.component?.displayName ?? record?.component?.name ?? '')
   return id === 'dsh-automation-native-switcher'
     || id === 'dsh-automation-wrap-bump'
+    || name === 'DshNativeTabWorkspaceShell'
     || name === 'AutomationNativeWorkspaceShell'
     || name === 'AutomationWrapBump'
     || isOwnAutomationWrapper(record?.component)

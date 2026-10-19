@@ -94,8 +94,9 @@ export function findNativeTabRegistry(entry: unknown): NativeTabRegistry | undef
 
 export function isForeignSidebarHost(component: unknown): boolean {
   if (component === undefined || component === null) return false
-  const flags = component as { __dshNativeTabHost?: unknown; __imConnectWrapped?: unknown }
+  const flags = component as { __dshNativeTabHost?: unknown; __dshNativeTabWrapped?: unknown; __imConnectWrapped?: unknown }
   if (flags.__dshNativeTabHost === true) return true
+  if (flags.__dshNativeTabWrapped === true) return true
   if (flags.__imConnectWrapped === true) return true
   return getNativeTabRegistry(component) !== undefined
 }
