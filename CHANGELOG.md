@@ -4,6 +4,10 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## Unreleased
+
+- Fix the sidebar "Scheduled tasks" entry collapsing into vertical text: settings navigation icons are now injected only into buttons that render the host `svg` as a direct child, so sidebar icons wrapped in their own container are no longer decorated.
+
 ## 1.0.3 - 2026-10-19
 
 - The Scheduled tasks entry icon in Settings now displays reliably and is no longer hidden or replaced by third-party themes or skins.

@@ -53,7 +53,7 @@ function installFakeDocument(): () => void {
   })
 }
 
-function fakeButton(textContent: string, hostSvg = true) {
+function fakeButton(textContent: string, hostSvg = true, nestedSvg = false) {
   const attributes = new Map<string, string>()
   const svg = { innerHTML: '<path d="host"/>' }
   const children: FakeIcon[] = []
@@ -65,7 +65,8 @@ function fakeButton(textContent: string, hostSvg = true) {
     removeAttribute(name) { attributes.delete(name) },
     hasAttribute(name) { return attributes.has(name) },
     querySelector(selector) {
-      if (selector === 'svg') return hostSvg ? svg : null
+      if (selector === ':scope > svg') return hostSvg ? svg : null
+      if (selector === 'svg') return hostSvg || nestedSvg ? svg : null
       if (selector === `.${SETTINGS_NAV_ICON_CLASS}`) {
         return children.find(node => node.className === SETTINGS_NAV_ICON_CLASS) ?? null
       }
@@ -118,6 +119,18 @@ test('不匹配的导航项或缺少宿主 svg 时不注入', () => {
     assert.equal(applySettingsNavIcon(fakeButton('通用设置').button as unknown as HTMLButtonElement, labels), false)
     assert.equal(applySettingsNavIcon(fakeButton('定时任务', false).button as unknown as HTMLButtonElement, labels), false)
     assert.equal(fakeButton('通用设置').button.children.length, 0)
+  } finally {
+    restoreDocument()
+  }
+})
+
+test('图标包在容器里时不注入，避免打乱侧栏网格布局', () => {
+  const restoreDocument = installFakeDocument()
+  try {
+    const { button } = fakeButton('定时任务', false, true)
+    assert.equal(applySettingsNavIcon(button as unknown as HTMLButtonElement, () => ['定时任务']), false)
+    assert.equal(button.children.length, 0)
+    assert.equal(button.hasAttribute(SETTINGS_NAV_ICON_MARKER), false)
   } finally {
     restoreDocument()
   }

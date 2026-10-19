@@ -22,7 +22,9 @@ function wantedLabels(labels: () => readonly string[]): Set<string> {
 export function applySettingsNavIcon(button: HTMLButtonElement, labels: () => readonly string[]): boolean {
   const text = (button.textContent ?? '').replace(/\s+/g, ' ').trim()
   if (!wantedLabels(labels).has(text)) return false
-  if (button.querySelector('svg') === null) return false
+  // 只认宿主直接渲染在按钮里的图标；侧栏入口把图标包在自己的容器里，
+  // 插入额外图标会打乱其网格布局（文字被挤进图标列并逐字换行）。
+  if (button.querySelector(':scope > svg') === null) return false
   if (
     button.getAttribute(SETTINGS_NAV_ICON_MARKER) === '1'
     && button.querySelector(`.${SETTINGS_NAV_ICON_CLASS}`) !== null
