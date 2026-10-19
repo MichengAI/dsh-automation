@@ -17,6 +17,7 @@ import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
 import { AUTOMATION_SESSION_PREFIX, canOpenClientSession, ensureOpenScheduledSession, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
 import { installStyles } from './styles.js'
 import { openSettingsSection } from './settings-navigation.js'
+import { installSettingsNavIcon } from './settings-nav-icon.js'
 import { requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
 import { observePluginUpdate, type PluginUpdateIconName } from './plugin-update-ui.js'
 
@@ -63,8 +64,6 @@ type HostComponent = ComponentType<any> & {
   __dshAutomationOriginal?: ComponentType<any>
 }
 
-const SETTINGS_CLOCK_SVG = '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-dsh-schedule-icon="1"><path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z"/><path d="M8 4.667V8l2.333 2.333"/></svg>'
-
 function isSessionSelector(value: unknown): value is SessionSelector {
   return typeof value === 'function'
 }
@@ -73,33 +72,6 @@ function isWorkspaceSelector(value: unknown): value is WorkspaceSelector {
   return typeof value === 'function'
 }
 
-function installSettingsNavIcon(labels: () => readonly string[]): () => void {
-  const wanted = new Set(labels().map(item => item.trim()).filter(item => item !== ''))
-  const applyButton = (button: HTMLButtonElement): void => {
-    const text = (button.textContent ?? '').replace(/\s+/g, ' ').trim()
-    if (!wanted.has(text)) return
-    const svg = button.querySelector('svg')
-    if (svg === null || svg.getAttribute('data-dsh-schedule-icon') === '1') return
-    svg.outerHTML = SETTINGS_CLOCK_SVG
-  }
-  const scan = (root: ParentNode): void => {
-    if (root instanceof HTMLButtonElement) applyButton(root)
-    for (const button of root.querySelectorAll?.('button') ?? []) applyButton(button as HTMLButtonElement)
-  }
-  scan(document)
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement
-      const owner = target?.closest('button')
-      if (owner instanceof HTMLButtonElement) applyButton(owner)
-      for (const node of mutation.addedNodes) {
-        if (node instanceof Element) scan(node)
-      }
-    }
-  })
-  observer.observe(document.documentElement, { childList: true, characterData: true, subtree: true })
-  return () => { observer.disconnect() }
-}
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => installStyles(), 'dsh-automation: styles')
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-automation: locale')

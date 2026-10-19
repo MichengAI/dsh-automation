@@ -4,6 +4,13 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 1.0.3 - 2026-10-19
+
+- Stop rewriting the host `svg` for the settings navigation icon: inject a standalone mask element and hide the host icon through a marker attribute, avoiding conflicts with third-party skins and restoring cleanly when the effect is disposed.
+- Fix settings tab geometry: override the indicator width for the 2px inset and fit tabs exactly to the 32px track, removing the 1–2px overflow and the second-tab drift.
+- Simplify tab labels: `我的定时任务` → `定时任务` and `My tasks` → `Tasks`.
+- Ignore the local packaging output `dist-test/`.
+
 ## 1.0.2 - 2026-10-19
 
 - Fix sidebar Channels tab crash: render registered channel contributions directly via foreign tab renderer instead of bypassing it to invoke undeclared child slot `sidebar.channels`.

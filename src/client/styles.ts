@@ -2,6 +2,9 @@ const STYLE_ID = 'dsh-automation-styles'
 const STYLE_OWNER = '@michengai/dsh-automation'
 
 const CSS_TEXT = `
+/* 设置导航图标：隐藏宿主 svg，改用独立 mask 元素，避免改写宿主图标内容。 */
+[data-dsh-schedule-nav="1"] svg{display:none!important}
+.dsh-st-nav-icon-schedule{--dsh-st-schedule-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z'/%3E%3Cpath d='M8 4.667V8l2.333 2.333'/%3E%3C/svg%3E");display:inline-block;flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:var(--dsh-st-schedule-mask) center/contain no-repeat;mask:var(--dsh-st-schedule-mask) center/contain no-repeat}
 .dsh-st-shell{container-type:inline-size;min-width:0;box-sizing:border-box;max-width:1080px;width:100%;margin:0 auto;padding:0 0 32px;color:var(--dsw-alias-label-primary);font-family:var(--dsw-font-family,system-ui)}
 .dsh-st-top{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-bottom:12px}
 .dsh-st-heading h1,.dsh-st-top h1{margin:0;font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.4px;white-space:nowrap}
@@ -21,7 +24,19 @@ const CSS_TEXT = `
 .dsh-st-example strong{font-size:14px}
 .dsh-st-example p{margin:0;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .dsh-st-tabs{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:40px;margin:4px 0 16px;flex-wrap:nowrap}
-.dsh-st-settings-tabs{flex:0 0 auto}
+/* 设置页签固定两项，几何必须与 32px 高对齐右侧排序/筛选控件：
+   容器用 inset box-shadow 画 0.5px 描边而非 border，避免 0.5px 边框占用布局高度，
+   使 border-box 32px − padding 2×2 = 28px 恰好等于页签与指示器内高。
+   宿主指示器宽度按 padding 4px 写死为 calc((100% - 8px) / n)，这里改成 2px 内边距后
+   必须同步覆盖为 calc((100% - 4px) / 2)，否则指示器比页签窄 2px，第二项还会累积偏移。
+   选择器依赖原语结构（首个子元素为 aria-hidden 指示器），升级 primitives 时需复核。 */
+.dsh-st-settings-tabs{flex:0 0 auto;box-sizing:border-box !important;height:32px !important;min-height:32px !important;max-height:32px !important;padding:2px !important;border-radius:var(--dsw-radius-sm,8px) !important;box-shadow:inset 0 0 0 0.5px var(--dsw-alias-border-l2) !important;background:var(--dsw-alias-bg-layer-1) !important}
+.dsh-st-settings-tabs>span[aria-hidden="true"],.dsh-st-settings-tabs>[class*="indicator"]{width:calc((100% - 4px) / 2) !important;inset:2px auto 2px 2px !important;border-radius:6px !important;border:0.5px solid var(--dsw-alias-border-l3,rgba(255,255,255,.12)) !important;background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,.08)) !important;box-shadow:none !important}
+.dsh-st-settings-tabs [role=tab]{display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:6px !important;height:28px !important;padding:0 12px !important;border-radius:6px !important;font-size:13px !important;line-height:20px !important;color:var(--dsw-alias-label-secondary) !important;text-align:center !important;box-sizing:border-box !important;transition:color 150ms ease !important}
+.dsh-st-settings-tabs [role=tab]:hover{color:var(--dsw-alias-label-primary) !important}
+.dsh-st-settings-tabs [role=tab][aria-selected="true"]{color:var(--dsw-alias-label-primary) !important;font-weight:600 !important}
+.dsh-st-tab-label{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.dsh-st-tab-label svg{flex:none;display:block}
 .dsh-st-sort-wrap{display:flex;align-items:center;align-self:center;justify-content:flex-end;gap:8px;height:32px;margin:0 0 0 auto;min-width:0;flex:0 0 auto;flex-wrap:nowrap}
 .dsh-st-filters{display:flex;align-items:center;align-self:center;justify-content:flex-end;gap:8px;height:32px;margin:0 0 0 auto;min-width:0;flex:0 0 auto;flex-wrap:nowrap}
 .dsh-st-filters>*{margin:0 !important}

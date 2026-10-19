@@ -108,7 +108,7 @@ export declare const en: {
     readonly "action.chatCreate": "Create in chat";
     readonly "action.create": "New scheduled task";
     readonly "banner.wake": "Scheduled tasks run only while this computer stays awake.";
-    readonly "tabs.mine": "My tasks";
+    readonly "tabs.mine": "Tasks";
     readonly "tabs.runs": "Run history";
     readonly "sort.by": "Sort";
     readonly "sort.created.asc": "Created time ascending";

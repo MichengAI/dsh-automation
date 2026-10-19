@@ -232,8 +232,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
               id: 'dsh-st-tab-mine',
               panelId: 'dsh-st-panel-mine',
               label: (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <IconClockOutline />
+                <span className="dsh-st-tab-label">
+                  <IconClockOutline size={14} />
                   <span>{t('tabs.mine')}</span>
                 </span>
               ),
@@ -243,8 +243,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
               id: 'dsh-st-tab-runs',
               panelId: 'dsh-st-panel-runs',
               label: (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <IconFlatListOutline />
+                <span className="dsh-st-tab-label">
+                  <IconFlatListOutline size={14} />
                   <span>{t('tabs.runs')}</span>
                 </span>
               ),
