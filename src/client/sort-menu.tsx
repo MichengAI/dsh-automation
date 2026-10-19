@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Translate } from './contracts.js'
 import { Menu, Button, Tooltip, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
-import { IconSlidersTwoOutline } from './host-icons.js'
+import { IconChevronDownOutline, IconSlidersTwoOutline } from './host-icons.js'
 import {
   readSortDefault,
   writeSortDefault,
@@ -84,20 +84,11 @@ export function SortMenu({
       onClick={() => setOpen(prev => !prev)}
     >
       <span className="dsh-st-menu-select-label">{currentLabel}</span>
-      <svg
+      <IconChevronDownOutline
         className="dsh-st-menu-select-arrow"
-        viewBox="0 0 16 16"
-        width={12}
-        height={12}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        size={12}
         style={{ marginLeft: 4, transition: 'transform 150ms ease', transform: open ? 'rotate(180deg)' : 'none' }}
-      >
-        <path d="m4 6 4 4 4-4" />
-      </svg>
+      />
     </Button>
   )
 

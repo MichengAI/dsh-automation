@@ -15,7 +15,7 @@ import {
 } from './helpers.js'
 import { shouldConfirmFullAccess } from './create-modal-logic.js'
 import { WorkspacePickerUnavailableError } from './workspace-create.js'
-import { PlusIcon } from './icons.js'
+import { IconPlusOutline } from './host-icons.js'
 import { Button, Checkbox, Modal, RiskConfirmation, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { blockHostModalBackdrop, Input, TextArea } from './plugin-ui.js'
 import { MenuSelect, type MenuSelectOption } from './menu-select.js'
@@ -278,7 +278,7 @@ export function CreateModal({
                 <div className="dsh-st-workspace-empty">
                   <Button
                     variant="primary"
-                    icon={<PlusIcon width={14} height={14} />}
+                    icon={<IconPlusOutline size={14} />}
                     disabled={addingWorkspace}
                     onClick={() => { void handleAddWorkspace() }}
                   >{t('form.addWorkspace')}</Button>

@@ -80,7 +80,7 @@ function fakeButton(textContent: string, hostSvg = true, nestedSvg = false) {
   return { button, svg, attributes }
 }
 
-test('设置导航图标插入独立 mask 元素，不改写宿主 svg', () => {
+test('设置导航图标插入独立宿主图标元素，不改写宿主 svg', () => {
   const restoreDocument = installFakeDocument()
   try {
     const { button, svg, attributes } = fakeButton('定时任务')

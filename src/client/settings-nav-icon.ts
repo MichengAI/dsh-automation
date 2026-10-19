@@ -2,7 +2,7 @@
  * 设置页导航图标的非侵入式替换。
  *
  * 宿主会用自己的 svg 渲染设置导航图标；插件若直接改写宿主 svg 的 outerHTML，
- * 会与宿主/皮肤的内容级图标规则互相覆盖。这里改为插入独立的 mask 图标，
+ * 会与宿主/皮肤的内容级图标规则互相覆盖。这里改为插入独立的宿主时钟图标，
  * 只通过 marker 属性隐藏宿主 svg，卸载时可以完整还原。
  */
 export const SETTINGS_NAV_ICON_CLASS = 'dsh-st-nav-icon-schedule'
@@ -20,7 +20,7 @@ function wantedLabels(labels: () => readonly string[]): Set<string> {
  * @param labels 返回当前语言下目标分区名称的函数
  * @returns 是否发生了实际变更；重复调用保持幂等
  */
-export function applySettingsNavIcon(button: HTMLButtonElement, labels: () => readonly string[]): boolean {
+export function applySettingsNavIcon(button: HTMLButtonElement, labels: () => readonly string[], markup?: () => string): boolean {
   const text = (button.textContent ?? '').replace(/\s+/g, ' ').trim()
   if (!wantedLabels(labels).has(text)) return false
   // 只认宿主直接渲染在按钮里的图标；侧栏入口把图标包在自己的容器里，
@@ -36,6 +36,7 @@ export function applySettingsNavIcon(button: HTMLButtonElement, labels: () => re
     const icon = document.createElement('span')
     icon.className = SETTINGS_NAV_ICON_CLASS
     icon.setAttribute('aria-hidden', 'true')
+    if (markup !== undefined) icon.innerHTML = markup()
     button.prepend(icon)
   }
   return true
@@ -60,10 +61,10 @@ export function restoreSettingsNavIcon(button: HTMLButtonElement): boolean {
  *
  * 通过 MutationObserver 覆盖设置弹窗异步挂载、语言切换和宿主重渲染的场景。
  */
-export function installSettingsNavIcon(labels: () => readonly string[]): () => void {
+export function installSettingsNavIcon(labels: () => readonly string[], markup?: () => string): () => void {
   const decorated = new Set<HTMLButtonElement>()
   const applyButton = (button: HTMLButtonElement): void => {
-    if (applySettingsNavIcon(button, labels)) decorated.add(button)
+    if (applySettingsNavIcon(button, labels, markup)) decorated.add(button)
   }
   const scan = (root: ParentNode): void => {
     if (root instanceof HTMLButtonElement) {

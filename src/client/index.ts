@@ -14,6 +14,7 @@ import { createHostWorkspace, pickHostDirectory } from './workspace-create.js'
 import { NativeScheduleShell, ScheduleRail, ScheduledRecordsView } from './ScheduleRail.js'
 import { AUTOMATION_SESSION_PREFIX, automationIdFromTaskWorkspaceId, canOpenClientSession, collectScheduledSessionIds, ensureOpenScheduledSession, groupScheduledSessions, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
 import { IconClockOutline } from './host-icons.js'
+import { hostIconMarkup } from './host-icon-markup.js'
 import { installTaskSettingsMenuInjector } from './workspace-menu.js'
 import { installStyles } from './styles.js'
 import { openSettingsSection } from './settings-navigation.js'
@@ -112,7 +113,10 @@ export function apply(ctx: ClientContext): void {
     )
   }
   ctx.effect(() => installAutomationSessionSync(runtime, () => ctx.sessions), 'dsh-automation: session sync')
-  ctx.effect(() => installSettingsNavIcon(() => [t('tab'), 'Scheduled tasks', '定时任务']), 'dsh-automation: settings icon')
+  ctx.effect(() => installSettingsNavIcon(
+    () => [t('tab'), 'Scheduled tasks', '定时任务'],
+    () => hostIconMarkup(IconClockOutline, 16),
+  ), 'dsh-automation: settings icon')
   ctx.effect(() => installTaskSettingsMenuInjector({
     label: () => t('session.taskSettings'),
     resolveTask: (workspaceId) => {

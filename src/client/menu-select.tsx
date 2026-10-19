@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Menu, Button, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconChevronDownOutline } from './host-icons.js'
 
 export interface MenuSelectOption {
   value: string
@@ -114,18 +115,11 @@ export function MenuSelect(props: MenuSelectProps): React.ReactElement {
       },
     },
       React.createElement('span', { className: 'dsh-st-menu-select-label' }, currentText),
-      React.createElement('svg', {
+      React.createElement(IconChevronDownOutline, {
         className: 'dsh-st-menu-select-arrow',
-        viewBox: '0 0 16 16',
-        width: 12,
-        height: 12,
-        fill: 'none',
-        stroke: 'currentColor',
-        strokeWidth: 1.8,
-        strokeLinecap: 'round',
-        strokeLinejoin: 'round',
+        size: 12,
         style: { marginLeft: 4, transition: 'transform 150ms ease', transform: open ? 'rotate(180deg)' : 'none' },
-      }, React.createElement('path', { d: 'm4 6 4 4 4-4' })),
+      }),
     ),
     items,
   }))

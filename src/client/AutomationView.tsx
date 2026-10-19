@@ -4,7 +4,6 @@ import {
   AutomationFormError,
   buildCreateInput,
   clockTime,
-  defaultFormState,
   formatDuration,
   formatRunTrigger,
   formatSchedule,
@@ -23,15 +22,17 @@ import {
   type SortPreferenceStorage,
 } from './helpers.js'
 import { automationToggleMutation } from './schedule-rail-model.js'
+import { GithubIcon } from './icons.js'
 import {
-  ChatIcon,
-  FeedbackIcon,
-  GithubIcon,
-  InfoIcon,
-  PlusIcon,
-  RefreshIcon,
-} from './icons.js'
-import { IconClockOutline, IconEllipsisOutline, IconFlatListOutline } from './host-icons.js'
+  IconClockOutline,
+  IconEditOutline,
+  IconEllipsisOutline,
+  IconFlatListOutline,
+  IconInfoOutline,
+  IconNewChatOutline,
+  IconPlusOutline,
+  IconRefreshOutline,
+} from './host-icons.js'
 import { Button, Input, Menu, SegmentedTabs, Switch, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { rowIconStyle } from './plugin-ui.js'
 import { MenuSelect } from './menu-select.js'
@@ -55,7 +56,6 @@ import {
   readAutomationCreateTaskRequest,
 } from './create-task-request.js'
 
-const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const SORT_STORAGE: SortPreferenceStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage
 const TASK_SETTINGS_STORAGE: Storage | undefined = typeof window === 'undefined' ? undefined : window.sessionStorage
 const CREATE_TASK_STORAGE: Storage | undefined = typeof window === 'undefined' ? undefined : window.sessionStorage
@@ -185,24 +185,24 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
             <h1>{t('tab')}</h1>
             <div className="dsh-st-heading-links">
               <Button variant="outline" size="sm" aria-label={t('header.githubProject')} icon={<GithubIcon />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation', '_blank', 'noreferrer') }}>{t('header.githubProject')}</Button>
-              <Button variant="outline" size="sm" aria-label={t('header.githubFeedback')} icon={<FeedbackIcon />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation/issues', '_blank', 'noreferrer') }}>{t('header.githubFeedback')}</Button>
+              <Button variant="outline" size="sm" aria-label={t('header.githubFeedback')} icon={<IconEditOutline size={16} />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation/issues', '_blank', 'noreferrer') }}>{t('header.githubFeedback')}</Button>
             </div>
           </div>
           <p>{t('header.lead')}</p>
         </div>
         <div className="dsh-st-toolbar">
           <Input className="dsh-st-search" value={query} placeholder={t('search.placeholder')} onChange={event => setQuery(event.target.value)} />
-          <Button variant="outline" icon={<ChatIcon />} onClick={() => {
+          <Button variant="outline" icon={<IconNewChatOutline size={18} />} onClick={() => {
             setChatPrefill(t('chat.prompt'))
             closeSettings?.()
           }}>{t('action.chatCreate')}</Button>
-          <Button variant="primary" icon={<PlusIcon />} disabled={defaultPermission === '' || permissions.length === 0} onClick={() => openCreate()}>{t('action.create')}</Button>
-          <Button className="dsh-st-row-icon" variant="outline" size="sm" icon={<RefreshIcon />} aria-label={t('section.refresh')} style={rowIconStyle} onClick={() => { void runtime.refresh() }} />
+          <Button variant="primary" icon={<IconPlusOutline size={18} />} disabled={defaultPermission === '' || permissions.length === 0} onClick={() => openCreate()}>{t('action.create')}</Button>
+          <Button className="dsh-st-row-icon" variant="outline" size="sm" icon={<IconRefreshOutline size={16} />} aria-label={t('section.refresh')} style={rowIconStyle} onClick={() => { void runtime.refresh() }} />
         </div>
       </header>
 
       <div className="dsh-st-banner" role="note">
-        <span><InfoIcon />{t('banner.wake')}</span>
+        <span><IconInfoOutline size={18} />{t('banner.wake')}</span>
       </div>
 
       <section className="dsh-st-examples">

@@ -585,10 +585,6 @@ export async function ensureOpenScheduledSession(input: EnsureOpenScheduledSessi
   return openScheduledSession(id, input.openRuntime, input.openHost)
 }
 
-export function isHiddenSidebarSessionId(id: string, scheduledIds: ReadonlySet<string> = new Set()): boolean {
-  return id.startsWith('im:') || isAutomationSidebarSession(id, undefined, scheduledIds)
-}
-
 export function filterWorkspaceListState<T extends WorkspaceListState>(
   state: T | undefined,
   scheduledIds: ReadonlySet<string> = new Set(),

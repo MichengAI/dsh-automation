@@ -192,6 +192,7 @@ declare module '@deepseek-ai/dsh-tools' {
 declare module "react-dom" {
   import type { ReactNode, ReactPortal } from "react"
   export function createPortal(children: ReactNode, container: Element | DocumentFragment): ReactPortal
+  export function flushSync(callback: () => void): void
 }
 
 declare module 'react-dom/client' {
@@ -199,5 +200,6 @@ declare module 'react-dom/client' {
 
   export function createRoot(container: Element): {
     render(node: ReactNode): void
+    unmount(): void
   }
 }

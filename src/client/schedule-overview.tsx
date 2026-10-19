@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import type { Translate } from './contracts.js'
-import { CalendarIcon } from './icons.js'
 import {
   formatRelativeTime,
   formatWithin,
@@ -16,6 +15,7 @@ import type { AutomationViewModel } from './protocol.js'
 import { automationToggleMutation, deriveTaskOverviewRows, type TaskOverviewRow } from './schedule-rail-model.js'
 import { SegmentedTabs, Switch, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import {
+  IconClockOutline,
   IconCloseFill,
   IconFlatListOutline,
   IconProjectAddOutline,
@@ -239,7 +239,7 @@ function OverviewRow({
       >
         <span className="dsh-st-overview-copy">
           <span className="dsh-st-overview-name">{row.name}</span>
-          {scheduleSummary !== '' && <span className="dsh-st-overview-schedule"><CalendarIcon width={14} height={14} /><span>{scheduleSummary}</span></span>}
+          {scheduleSummary !== '' && <span className="dsh-st-overview-schedule"><IconClockOutline size={14} /><span>{scheduleSummary}</span></span>}
         </span>
         <span className="dsh-st-overview-next" title={nextRunLabel} aria-label={nextRunLabel}><strong>{nextRunCompact}</strong></span>
       </button>

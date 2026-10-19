@@ -179,7 +179,6 @@ export interface EnsureOpenScheduledSessionInput {
 }
 /** 先把会话挂回工作区并刷新客户端会话簿，再打开；避免侧栏能看见、点下去却 unknown session。 */
 export declare function ensureOpenScheduledSession(input: EnsureOpenScheduledSessionInput): Promise<boolean>;
-export declare function isHiddenSidebarSessionId(id: string, scheduledIds?: ReadonlySet<string>): boolean;
 export declare function filterWorkspaceListState<T extends WorkspaceListState>(state: T | undefined, scheduledIds?: ReadonlySet<string>, options?: SessionFilterOptions): T;
 export type WrapperFlags = {
     __dshAutomationWrapped?: unknown;

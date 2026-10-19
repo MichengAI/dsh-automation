@@ -171,10 +171,6 @@ export function pauseDefinition(current: AutomationDefinition, now: string): Aut
   return setStatus(current, 'paused', now)
 }
 
-export function resumeDefinition(current: AutomationDefinition, now: string): AutomationDefinition {
-  return setStatus(current, 'active', now)
-}
-
 export function deleteDefinition(current: AutomationDefinition): DeleteAutomationPlan {
   automationDefinitionSchema.parse(current)
   return { id: current.id, preserveRunHistory: true }

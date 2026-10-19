@@ -16,6 +16,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - The Scheduled → Tasks overview now has search, sort, and create buttons; the search icon uses the same 14px size as Records, sort uses the same official sliders icon, search filters by task name, and create opens the scheduled-task dialog.
 - Align the Records / Tasks view switcher with the Archive Manager tabs: 32px container, 28px tabs, 6–12px adaptive horizontal padding, 13/20 typography, 6px icon gap, and matching selected states; tabs no longer wrap when the Mica skin narrows the sidebar.
 - The top-level Tasks / Channels / Scheduled tabs now use the same format; the indicator width follows the actual tab count and labels stay on one line.
+- Settings toolbar buttons, dropdown chevrons, icons injected into official workspace/view menus, task schedule rows, channel tabs, and the settings-nav icon now use host icons; only the GitHub brand mark remains custom-drawn.
 - Delete the custom session list, search toolbar, row menus, and hover cards; session management now reuses the official components.
 
 ## 1.0.4 - 2026-10-19

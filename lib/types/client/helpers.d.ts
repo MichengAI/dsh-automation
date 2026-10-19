@@ -1,5 +1,5 @@
 import type { Translate } from './contracts.js';
-import type { AutomationSchedule, AutomationRunViewModel, AutomationSnapshot, AutomationViewModel, CreateAutomationInput, ModelOption, WorkspaceOption } from './protocol.js';
+import type { AutomationSchedule, AutomationRunViewModel, AutomationViewModel, CreateAutomationInput, ModelOption, WorkspaceOption } from './protocol.js';
 export type ScheduleKind = 'once' | 'interval' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
 /** 使用宿主实际产生的触发类型和统一文案，避免把手动运行显示为定时。 */
 export declare function formatRunTrigger(trigger: AutomationRunViewModel['trigger'], t: Translate): string;
@@ -66,15 +66,7 @@ export declare function defaultFormState(now?: Date, workspaces?: readonly Works
 export declare function buildCreateInput(form: AutomationFormState, workspaces: readonly WorkspaceOption[], models: readonly ModelOption[], now?: Date, options?: {
     readonly allowPastOnce?: boolean;
 }): CreateAutomationInput;
-export interface OverviewStats {
-    readonly total: number;
-    readonly active: number;
-    readonly attention: number;
-    readonly nextRunAt?: string;
-}
-export declare function deriveOverview(snapshot: AutomationSnapshot): OverviewStats;
 export declare function formatRelativeTime(iso: string, now: Date, t: Translate): string;
-export declare function shortSessionId(sessionId: string): string;
 export declare function formatSchedule(schedule: AutomationSchedule, t: Translate): string;
 export declare function workspaceLabel(item: {
     readonly workspaceId?: string;
@@ -108,4 +100,3 @@ export declare function readSortDefault(storage: SortPreferenceStorage | undefin
 export declare function writeSortDefault(storage: SortPreferenceStorage, storageKey: string, key: AutomationSortKey, direction: AutomationSortDirection): void;
 export declare function groupHistory(runs: readonly import('./protocol.js').AutomationRunViewModel[], range: HistoryRange, now: Date, t: Translate): HistoryGroup[];
 export declare function formFromAutomation(item: import('./protocol.js').AutomationViewModel, workspaces?: readonly WorkspaceOption[], defaultModel?: ModelOption | null, defaultPermission?: string): AutomationFormState;
-export declare function prettyModelName(model: string): string;

@@ -7,14 +7,11 @@ import {
   AutomationFormError,
   buildCreateInput,
   defaultFormState,
-  deriveOverview,
   formatRelativeTime,
-  formatSchedule,
   formFromAutomation,
   groupHistory,
   HISTORY_STATUS_OPTIONS,
   insertSkillGesture,
-  prettyModelName,
   readSortDefault,
   skillGestureToken,
   sortAutomations,
@@ -186,60 +183,6 @@ test("表单会拒绝空白任务和过去的一次性时间", () => {
   );
   assert.equal(valid.schedule.kind, "daily");
   assert.equal(valid.workspaceId, "ws_1");
-});
-
-test("总览统计会统计未读失败并给出最近下次运行", () => {
-  const overview = deriveOverview({
-    scope: { cwd: "D:\\work" },
-    serverNow: "2026-08-16T01:00:00.000Z",
-    permissions: [],
-    defaultPermission: "read-only",
-    automations: [
-      {
-        id: "a1",
-        revision: 1,
-        name: "A",
-        prompt: "p",
-        status: "active",
-        schedule: { kind: "daily", time: "09:00" },
-        scheduleSummary: "",
-        timeZone: "Asia/Shanghai",
-        permission: "read-only",
-        nextRunAt: "2026-08-16T02:00:00.000Z",
-        createdAt: "",
-        updatedAt: "",
-      },
-      {
-        id: "a2",
-        revision: 1,
-        name: "B",
-        prompt: "p",
-        status: "paused",
-        schedule: { kind: "once", at: "2026-08-20T00:00:00.000Z" },
-        scheduleSummary: "",
-        timeZone: "UTC",
-        permission: "read-only",
-        createdAt: "",
-        updatedAt: "",
-      },
-    ],
-    runs: [
-      {
-        id: "r1",
-        automationId: "a1",
-        automationName: "A",
-        status: "failed",
-        trigger: "schedule",
-        scheduledFor: "2026-08-16T00:00:00.000Z",
-        unread: true,
-      },
-    ],
-  });
-  assert.equal(overview.total, 2);
-  assert.equal(overview.active, 1);
-  assert.equal(overview.attention, 1);
-  assert.equal(overview.nextRunAt, "2026-08-16T02:00:00.000Z");
-  assert.match(formatSchedule({ kind: "daily", time: "09:00" }, t), /dailyAt/);
 });
 
 test("历史状态筛选覆盖 interrupted", () => {
@@ -868,10 +811,6 @@ test("编辑间隔任务会保留原始时区和 anchor", () => {
     anchor,
     timeZone: "America/New_York",
   });
-});
-
-test("模型名去掉供应商前缀，只保留展示名", () => {
-  assert.equal(prettyModelName("deepseek-v4-pro"), "DeepSeek-V4-Pro");
 });
 
 test("新建任务采用模型适配器声明的默认推理等级", () => {

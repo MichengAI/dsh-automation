@@ -3,7 +3,6 @@ import type {
   AutomationSchedule,
   AutomationRunStatus,
   AutomationRunViewModel,
-  AutomationSnapshot,
   AutomationViewModel,
   CreateAutomationInput,
   ModelOption,
@@ -251,28 +250,6 @@ export function buildCreateInput(
   }
 }
 
-const ATTENTION_STATUSES = new Set<AutomationRunStatus>(['failed', 'interrupted'])
-
-export interface OverviewStats {
-  readonly total: number
-  readonly active: number
-  readonly attention: number
-  readonly nextRunAt?: string
-}
-
-export function deriveOverview(snapshot: AutomationSnapshot): OverviewStats {
-  const next = snapshot.automations
-    .filter(item => item.status === 'active' && item.nextRunAt !== undefined)
-    .map(item => item.nextRunAt as string)
-    .sort((a, b) => Date.parse(a) - Date.parse(b))[0]
-  return {
-    total: snapshot.automations.length,
-    active: snapshot.automations.filter(item => item.status === 'active').length,
-    attention: snapshot.runs.filter(run => ATTENTION_STATUSES.has(run.status) && run.unread !== false).length,
-    ...(next === undefined ? {} : { nextRunAt: next }),
-  }
-}
-
 export function formatRelativeTime(iso: string, now: Date, t: Translate): string {
   const value = Date.parse(iso)
   if (!Number.isFinite(value)) return iso
@@ -285,10 +262,6 @@ export function formatRelativeTime(iso: string, now: Date, t: Translate): string
   if (hours < 24) return t(future ? 'time.inHour' : 'time.hourAgo', { count: hours })
   const days = Math.round(hours / 24)
   return t(future ? 'time.inDay' : 'time.dayAgo', { count: days })
-}
-
-export function shortSessionId(sessionId: string): string {
-  return sessionId.length <= 12 ? sessionId : `${sessionId.slice(0, 8)}…${sessionId.slice(-4)}`
 }
 
 export function formatSchedule(schedule: AutomationSchedule, t: Translate): string {
@@ -529,11 +502,4 @@ function toLocalInput(iso: string): string {
 }
 
 
-export function prettyModelName(model: string): string {
-  return model.split(/[-_]/g).map((part) => {
-    if (part.toLowerCase() === 'deepseek') return 'DeepSeek'
-    if (/^v\d/i.test(part)) return part.slice(0, 1).toUpperCase() + part.slice(1)
-    if (part === '') return part
-    return part.slice(0, 1).toUpperCase() + part.slice(1)
-  }).join('-')
-}
+

@@ -1,7 +1,7 @@
 import { Component, createElement, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type CSSProperties, type ReactNode } from 'react'
 import { SegmentedTabs, StateDot, type SegmentedTab } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
-import { IconClockOutline, IconFolderClose } from './host-icons.js'
+import { IconClockOutline, IconFolderClose, IconQueueOutline } from './host-icons.js'
 import type { AutomationRuntime } from './runtime.js'
 import {
   automationIdFromTaskWorkspaceId,
@@ -24,7 +24,6 @@ import {
   tabForSessionId,
   resolveCurrentSessionId,
   type NativeSessionLike,
-  type NativeSidebarTab,
   type NativeWorkspaceLike,
   type SyntheticTaskGroup,
 } from './schedule-rail-model.js'
@@ -531,9 +530,7 @@ export function NativeScheduleShell({
       const itemLabel = item.id === 'channels'
         ? (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-            <svg viewBox="0 0 16 16" width={14} height={14} fill="none" aria-hidden="true">
-              <path fill="currentColor" d="M2.15 2.9h11.7v8.2H6.42L2.15 13.85V2.9Zm1.4 1.4v6.62l1.78-1.12h7.12V4.3H3.55Z" />
-            </svg>
+            <IconQueueOutline size={14} />
             <span>{item.label}</span>
           </span>
         )
