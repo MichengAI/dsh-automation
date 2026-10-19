@@ -7,6 +7,7 @@
  */
 export const SETTINGS_NAV_ICON_CLASS = 'dsh-st-nav-icon-schedule'
 export const SETTINGS_NAV_ICON_MARKER = 'data-dsh-schedule-nav'
+const SETTINGS_NAV_ROW_SELECTOR = '[role="dialog"] nav button'
 
 function wantedLabels(labels: () => readonly string[]): Set<string> {
   return new Set(labels().map(item => item.trim()).filter(item => item !== ''))
@@ -65,14 +66,19 @@ export function installSettingsNavIcon(labels: () => readonly string[]): () => v
     if (applySettingsNavIcon(button, labels)) decorated.add(button)
   }
   const scan = (root: ParentNode): void => {
-    if (root instanceof HTMLButtonElement) applyButton(root)
-    for (const button of root.querySelectorAll?.('button') ?? []) applyButton(button as HTMLButtonElement)
+    if (root instanceof HTMLButtonElement) {
+      if (root.matches(SETTINGS_NAV_ROW_SELECTOR)) applyButton(root)
+      return
+    }
+    for (const button of root.querySelectorAll?.(SETTINGS_NAV_ROW_SELECTOR) ?? []) {
+      applyButton(button as HTMLButtonElement)
+    }
   }
   scan(document)
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement
-      const owner = target?.closest('button')
+      const owner = target?.closest(SETTINGS_NAV_ROW_SELECTOR)
       if (owner instanceof HTMLButtonElement) applyButton(owner)
       for (const node of mutation.addedNodes) {
         if (node instanceof Element) scan(node)

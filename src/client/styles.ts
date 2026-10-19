@@ -3,7 +3,7 @@ const STYLE_OWNER = '@michengai/dsh-automation'
 
 const CSS_TEXT = `
 /* 设置导航图标：隐藏宿主 svg，改用独立 mask 元素，避免改写宿主图标内容。 */
-[data-dsh-schedule-nav="1"] svg{display:none!important}
+[data-dsh-schedule-nav="1"]>svg{display:none!important}
 .dsh-st-nav-icon-schedule{--dsh-st-schedule-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z'/%3E%3Cpath d='M8 4.667V8l2.333 2.333'/%3E%3C/svg%3E");display:inline-block;flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:var(--dsh-st-schedule-mask) center/contain no-repeat;mask:var(--dsh-st-schedule-mask) center/contain no-repeat}
 .dsh-st-shell{container-type:inline-size;min-width:0;box-sizing:border-box;width:100%;padding:0 0 32px;color:var(--dsw-alias-label-primary);font-family:var(--dsw-font-family,system-ui)}
 .dsh-st-top{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-bottom:12px}
