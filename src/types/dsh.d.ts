@@ -114,7 +114,7 @@ declare module '@deepseek-ai/dsh-client-ui-primitives' {
   export type TagTone = 'outline' | 'solid' | 'neutral' | 'quiet' | 'success' | 'info' | 'warning' | 'danger'
   export function Tag(props: { readonly tone?: TagTone; readonly children?: ReactNode; readonly className?: string }): JSX.Element
   export function Menu(props: { readonly open: boolean; readonly onClose: () => void; readonly items?: readonly MenuEntry[]; readonly footer?: readonly MenuEntry[]; readonly children?: ReactNode; readonly onSelect: (id: string) => void; readonly anchor: ReactNode; readonly portal?: boolean; readonly dense?: boolean; readonly compact?: boolean; readonly closeOnPointerLeave?: boolean; readonly selectedId?: string; readonly selectedIds?: readonly string[]; readonly align?: 'start' | 'end'; readonly listClassName?: string }): JSX.Element
-  export function Modal(props: { readonly open: boolean; readonly onClose: () => void; readonly closeLabel: string; readonly title: string; readonly footer?: ReactNode; readonly children?: ReactNode; readonly className?: string; readonly description?: string }): JSX.Element
+  export function Modal(props: { readonly open: boolean; readonly onClose: () => void; readonly closeLabel: string; readonly title: string; readonly footer?: ReactNode; readonly children?: ReactNode; readonly className?: string; readonly contentClassName?: string; readonly description?: string }): JSX.Element
   export function RiskConfirmation(props: {
     readonly open: boolean
     readonly title: string

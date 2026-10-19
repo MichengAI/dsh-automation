@@ -5,7 +5,7 @@ const CSS_TEXT = `
 /* 设置导航图标：隐藏宿主 svg，改用独立 mask 元素，避免改写宿主图标内容。 */
 [data-dsh-schedule-nav="1"] svg{display:none!important}
 .dsh-st-nav-icon-schedule{--dsh-st-schedule-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z'/%3E%3Cpath d='M8 4.667V8l2.333 2.333'/%3E%3C/svg%3E");display:inline-block;flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:var(--dsh-st-schedule-mask) center/contain no-repeat;mask:var(--dsh-st-schedule-mask) center/contain no-repeat}
-.dsh-st-shell{container-type:inline-size;min-width:0;box-sizing:border-box;max-width:1080px;width:100%;margin:0 auto;padding:0 0 32px;color:var(--dsw-alias-label-primary);font-family:var(--dsw-font-family,system-ui)}
+.dsh-st-shell{container-type:inline-size;min-width:0;box-sizing:border-box;width:100%;padding:0 0 32px;color:var(--dsw-alias-label-primary);font-family:var(--dsw-font-family,system-ui)}
 .dsh-st-top{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-bottom:12px}
 .dsh-st-heading h1,.dsh-st-top h1{margin:0;font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.4px;white-space:nowrap}
 .dsh-st-heading-row{display:flex;align-items:center;gap:8px 12px;min-width:0;flex-wrap:wrap}
@@ -190,6 +190,8 @@ const CSS_TEXT = `
 .dsh-st-n-sess .dsh-st-n-title[data-clipped]{mask-image:linear-gradient(270deg,#0000,#000 12px)}
 .dsh-st-n-sess .dsh-st-n-title[data-scrolled][data-clipped]{mask-image:linear-gradient(90deg,#0000,#000 12px calc(100% - 12px),#0000)}
 .dsh-st-create-dialog{width:min(720px,100%) !important;max-height:100%}
+.dsh-st-create-content{flex:1;min-height:0;overflow:hidden}
+.dsh-st-create-content>div:last-child{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 `
 
 export function installStyles(): () => void {

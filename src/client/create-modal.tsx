@@ -182,6 +182,7 @@ export function CreateModal({
       <Modal
         open
         className="dsh-st-create-dialog"
+        contentClassName="dsh-st-create-content"
         title={editing === true ? t('modal.edit') : t('modal.title')}
         closeLabel={t('form.cancel')}
         onClose={onClose}
