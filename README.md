@@ -31,7 +31,7 @@ Let DSH handle work on a schedule. Set up tasks in Settings or describe the timi
 
 ## Interface
 
-Scheduled tasks live in the workspace **Scheduled** tab, next to **Tasks** and **Channels**:
+Scheduled sessions appear in both the official **Tasks** tree and the **Scheduled** tab. Idle scheduled sessions show the official clock icon in **Tasks**. **Scheduled → Records** groups by task by default and can switch to By workspace, Workspace tree, or Flat. By workspace keeps workspaces visible and only filters sessions to scheduled runs; the header + opens New scheduled task directly. Those groups cannot be added, renamed, or deleted:
 
 ![Scheduled sidebar](assets/screenshots/workspace-scheduled.png)
 

@@ -4,6 +4,20 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## Unreleased
+
+- Scheduled sessions are no longer hidden from the official task tree; idle scheduled sessions show the official clock icon before the row status.
+- The Records view now renders the official workspace tree. It offers no add-workspace, rename, or group deletion; groups only expand and collapse.
+- The task group's `…` menu injects Task settings; archive-all remains the Archive Manager's injection.
+- The Records view adds a By task grouping selected by default and can switch to By workspace, Workspace tree, or Flat. Grouping and ordering use an independent view state and no longer affect the main task tree. By workspace keeps every workspace and filters only sessions to scheduled runs.
+- Fix the Records view's reuse of the official WorkspaceBrowser missing the `retainAccountKeys` view action, which crashed the error boundary and removed the whole workspace header, search, and sort controls.
+- Restore the Records view header's create button in the old add-workspace position; it now opens the New scheduled task dialog instead of the add-workspace flow, and the incorrect add-workspace shortcut hint is removed.
+- Fix the Records view being 12px narrower than the Tasks tree: the official WorkspaceBrowser already reserves right padding, and the records container added it a second time, pulling the header, search, sort and group rows inward.
+- The Scheduled → Tasks overview now has search, sort, and create buttons; the search icon uses the same 14px size as Records, sort uses the same official sliders icon, search filters by task name, and create opens the scheduled-task dialog.
+- Align the Records / Tasks view switcher with the Archive Manager tabs: 32px container, 28px tabs, 6–12px adaptive horizontal padding, 13/20 typography, 6px icon gap, and matching selected states; tabs no longer wrap when the Mica skin narrows the sidebar.
+- The top-level Tasks / Channels / Scheduled tabs now use the same format; the indicator width follows the actual tab count and labels stay on one line.
+- Delete the custom session list, search toolbar, row menus, and hover cards; session management now reuses the official components.
+
 ## 1.0.4 - 2026-10-19
 
 - Let the settings page fill the host content column by removing the 1080px cap.

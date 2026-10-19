@@ -14,8 +14,14 @@ import {
 } from './helpers.js'
 import type { AutomationViewModel } from './protocol.js'
 import { automationToggleMutation, deriveTaskOverviewRows, type TaskOverviewRow } from './schedule-rail-model.js'
-import { SegmentedTabs, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
-import { IconFlatListOutline, IconWorkspaceTreeOutline } from './host-icons.js'
+import { SegmentedTabs, Switch, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import {
+  IconCloseFill,
+  IconFlatListOutline,
+  IconProjectAddOutline,
+  IconSearchOutline,
+  IconWorkspaceTreeOutline,
+} from './host-icons.js'
 import { SortMenu } from './sort-menu.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
@@ -79,22 +85,30 @@ export function ScheduleOverview({
   automations,
   serverNow,
   openTaskSettings,
+  openCreateTask,
   onToggleAutomation,
 }: {
   readonly t: Translate
   readonly automations: readonly AutomationViewModel[]
   readonly serverNow?: string
   readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
+  readonly openCreateTask?: () => void
   readonly onToggleAutomation?: (automationId: string, mutation: 'pause' | 'resume') => void | Promise<void>
 }): JSX.Element {
   const [sortKey, setSortKey] = useState<AutomationSortKey>(() => readSortDefault(SORT_STORAGE, OVERVIEW_SORT_DEFAULT_KEY)?.key ?? 'planned')
   const [sortDirection, setSortDirection] = useState<AutomationSortDirection>(() => readSortDefault(SORT_STORAGE, OVERVIEW_SORT_DEFAULT_KEY)?.direction ?? 'asc')
   const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(() => new Set())
+  const [query, setQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
   const now = useMemo(() => new Date(serverNow ?? Date.now()), [serverNow])
   const rows = useMemo(() => {
     const sorted = sortAutomations(automations, sortKey, sortDirection)
     return deriveTaskOverviewRows(sorted)
   }, [automations, sortDirection, sortKey])
+  const normalizedQuery = query.trim().toLowerCase()
+  const visibleRows = normalizedQuery === ''
+    ? rows
+    : rows.filter(row => row.name.toLowerCase().includes(normalizedQuery))
   const scheduleSummaries = useMemo(() => new Map(automations.map(item => [item.id, formatSchedule(item.schedule, t)])), [automations, t])
 
   const toggleAutomation = (automationId: string, mutation: 'pause' | 'resume'): void => {
@@ -116,25 +130,70 @@ export function ScheduleOverview({
       <div className="dsh-st-overview-head">
         <div className="dsh-st-overview-title">
           <strong>{t('sidebar.viewOverview')}</strong>
-          <span aria-label={`${rows.length}`}>{rows.length}</span>
+          <span aria-label={`${visibleRows.length}`}>{visibleRows.length}</span>
         </div>
-        <SortMenu
-          t={t}
-          iconOnly
-          className="dsh-st-overview-sort"
-          {...(SORT_STORAGE === undefined ? {} : { storage: SORT_STORAGE })}
-          storageKey={OVERVIEW_SORT_DEFAULT_KEY}
-          sortKey={sortKey}
-          sortDirection={sortDirection}
-          onSelect={(key, direction) => {
-            setSortKey(key)
-            setSortDirection(direction)
-          }}
-        />
+        <div className="dsh-st-overview-actions">
+          <Tooltip label={searchOpen ? t('sidebar.clearSearch') : t('sidebar.search')} side="bottom" delayMs={500}>
+            <button
+              type="button"
+              className={searchOpen ? 'dsh-st-n-head-btn is-on' : 'dsh-st-n-head-btn'}
+              aria-label={searchOpen ? t('sidebar.clearSearch') : t('sidebar.search')}
+              aria-expanded={searchOpen}
+              onClick={() => {
+                if (searchOpen) setQuery('')
+                setSearchOpen(open => !open)
+              }}
+            >
+              {searchOpen ? <IconCloseFill size={12} /> : <IconSearchOutline size={14} />}
+            </button>
+          </Tooltip>
+          <SortMenu
+            t={t}
+            iconOnly
+            className="dsh-st-overview-sort"
+            {...(SORT_STORAGE === undefined ? {} : { storage: SORT_STORAGE })}
+            storageKey={OVERVIEW_SORT_DEFAULT_KEY}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSelect={(key, direction) => {
+              setSortKey(key)
+              setSortDirection(direction)
+            }}
+          />
+          {openCreateTask === undefined ? null : (
+            <Tooltip label={t('action.create')} side="bottom" delayMs={500}>
+              <button
+                type="button"
+                className="dsh-st-n-head-btn"
+                aria-label={t('action.create')}
+                onClick={openCreateTask}
+              >
+                <IconProjectAddOutline size={16} />
+              </button>
+            </Tooltip>
+          )}
+        </div>
       </div>
-      {rows.length === 0
+      {searchOpen ? (
+        <div className="dsh-st-overview-search">
+          <IconSearchOutline size={11} />
+          <input
+            autoFocus
+            value={query}
+            aria-label={t('search.placeholder')}
+            placeholder={t('search.placeholder')}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+          {query === '' ? null : (
+            <button type="button" aria-label={t('sidebar.clearSearch')} onClick={() => setQuery('')}>
+              <IconCloseFill size={12} />
+            </button>
+          )}
+        </div>
+      ) : null}
+      {visibleRows.length === 0
         ? <div className="dsh-st-rail-empty">{t('overview.empty')}</div>
-        : rows.map(row => <OverviewRow
+        : visibleRows.map(row => <OverviewRow
             key={row.id}
             t={t}
             row={row}

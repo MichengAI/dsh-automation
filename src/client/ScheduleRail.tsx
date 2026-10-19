@@ -1,15 +1,21 @@
-import { Component, createElement, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react'
+import { Component, createElement, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type CSSProperties, type ReactNode } from 'react'
 import { SegmentedTabs, StateDot, type SegmentedTab } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import { IconClockOutline, IconFolderClose } from './host-icons.js'
 import type { AutomationRuntime } from './runtime.js'
 import {
+  automationIdFromTaskWorkspaceId,
+  automationTaskWorkspaceId,
   filterTaskSessionState,
   collectScheduledSessionIds,
   filterWorkspaceListState,
   groupNativeTaskSessions,
   groupScheduledSessions,
+  scheduledOnlySessionState,
+  scheduledRealWorkspaceState,
   scheduledSessionNeedsSnapshotRefresh,
+  scheduledSessionVisible,
+  syntheticTaskWorkspaceState,
   NATIVE_SIDEBAR_TAB_KEY,
   ownedSidebarTabIds,
   readNativeSidebarTab,
@@ -20,10 +26,11 @@ import {
   type NativeSessionLike,
   type NativeSidebarTab,
   type NativeWorkspaceLike,
+  type SyntheticTaskGroup,
 } from './schedule-rail-model.js'
-import { scheduledListHostActions } from './native-group-actions.js'
-import { NativeScheduleSessionList } from './native-session-list.js'
 import { SCHEDULE_VIEW_PANEL_ID, ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
+import { getRecordsViewStore, type RecordsViewState } from './records-view-store.js'
+import { installTaskGroupOption } from './workspace-menu.js'
 import type { NativeSidebarTab as ExtraSidebarTab, NativeTabRegistry } from './native-tabs.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
@@ -34,6 +41,33 @@ const noopSubscribe = (_listener: () => void): (() => void) => () => undefined
  * 全部 `aria-controls` 指向它，避免未挂载面板形成悬空引用。
  */
 const SHELL_PANEL_ID = 'dsh-st-shell-panel'
+
+const EMPTY_SESSION_STATE = { ids: [] as readonly string[], byId: {} as Record<string, NativeSessionLike> }
+const EMPTY_WORKSPACE_STATE = { items: [] as readonly NativeWorkspaceLike[], archivedSessionIds: [] as readonly string[] }
+const EMPTY_ARCHIVED_IDS: readonly string[] = []
+
+type SessionSearchResult = { readonly items: readonly { readonly id?: string }[]; readonly hasMore: boolean }
+type SessionSearch = (query: string, signal: AbortSignal) => Promise<SessionSearchResult>
+type HostTranslate = (key: string, params?: Record<string, unknown>) => string
+type HostStartSession = (workspaceId?: string, options?: unknown) => void
+type HostWorkspaceAction = (workspaceId: string, value?: string) => Promise<void>
+interface HostShortcut { readonly id?: string }
+type HostShortcutSelector = <Selected>(
+  select: (rows: readonly HostShortcut[]) => Selected,
+  equals?: (left: Selected, right: Selected) => boolean,
+) => Selected
+const EMPTY_SHORTCUTS: readonly HostShortcut[] = []
+
+function noDirectoryFlow<T>(select: (occupied: boolean) => T): T {
+  return select(false)
+}
+
+function hostFunction<T>(props: Record<string, unknown> | undefined, key: string): T | undefined {
+  const value = props?.[key]
+  return typeof value === 'function' ? value as T : undefined
+}
+
+const noop = (): void => undefined
 
 class OfficialTreeGuard extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
   override state = { failed: false }
@@ -122,6 +156,212 @@ export function ScheduleRail({
   )
 }
 
+export function ScheduledRecordsView({
+  t,
+  runtime,
+  officialTree,
+  hostProps,
+  openSession,
+  openTaskSettings,
+  openCreateTask,
+  useSessions,
+  useWorkspaces,
+  wide,
+}: {
+  readonly t: Translate
+  readonly runtime: AutomationRuntime
+  readonly officialTree?: ComponentType<Record<string, unknown>>
+  readonly hostProps?: Record<string, unknown>
+  readonly openSession?: (sessionId: string) => void
+  readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
+  readonly openCreateTask?: () => void
+  readonly useSessions?: SessionSelector
+  readonly useWorkspaces?: WorkspaceSelector
+  readonly wide?: boolean
+}): JSX.Element {
+  const Official = officialTree
+  const [view, setView] = useState<ScheduleView>('runs')
+  const automationState = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
+  const scheduledIds = useMemo(() => collectScheduledSessionIds(automationState.snapshot?.runs), [automationState.snapshot])
+  const archivedIds = useWorkspaces === undefined
+    ? EMPTY_ARCHIVED_IDS
+    : useWorkspaces(state => state.archivedSessionIds ?? EMPTY_ARCHIVED_IDS)
+  const recordsStore = getRecordsViewStore()
+  const useRecordsStore = <T,>(select: (state: RecordsViewState) => T): T => {
+    const snapshot = useSyncExternalStore(recordsStore.subscribe, recordsStore.getSnapshot, recordsStore.getSnapshot)
+    return select(snapshot)
+  }
+  const groupBy = useRecordsStore(state => state.groupBy)
+  const archivedFilter = useRecordsStore(state => state.archivedFilter)
+  const scheduledGroups = useMemo<readonly SyntheticTaskGroup[]>(() => {
+    const snapshot = automationState.snapshot
+    if (snapshot === undefined) return []
+    const archived = new Set(archivedIds)
+    const createdAtById = new Map<string, string>()
+    for (const run of snapshot.runs) {
+      if (run.sessionId === undefined || run.sessionId === '') continue
+      const at = run.startedAt ?? run.scheduledFor
+      const previous = createdAtById.get(run.automationId)
+      if (previous === undefined || Date.parse(at) < Date.parse(previous)) createdAtById.set(run.automationId, at)
+    }
+    return groupScheduledSessions(snapshot.automations, snapshot.runs)
+      .map((group) => {
+        const sessionIds = group.sessions
+          .filter(session => scheduledSessionVisible(session.id, archived, archivedFilter))
+          .map(session => session.id)
+        const createdAt = createdAtById.get(group.id)
+        return {
+          id: group.id,
+          name: group.name,
+          sessionIds,
+          ...(createdAt === undefined ? {} : { createdAt }),
+        }
+      })
+      .filter(group => group.sessionIds.length > 0)
+  }, [archivedFilter, archivedIds, automationState.snapshot])
+  const useScheduledSessions = useCallback<SessionSelector>((selector, eq) => {
+    if (useSessions === undefined) return selector(EMPTY_SESSION_STATE)
+    return useSessions(state => selector(scheduledOnlySessionState(state, scheduledIds)), eq)
+  }, [useSessions, scheduledIds])
+  const sourceWorkspaces = useWorkspaces === undefined ? undefined : useWorkspaces(state => state)
+  const realWorkspaces = useMemo(
+    () => scheduledRealWorkspaceState(sourceWorkspaces, scheduledIds, archivedFilter),
+    [archivedFilter, scheduledIds, sourceWorkspaces],
+  )
+  const useRecordsWorkspaces = useCallback<WorkspaceSelector>((selector, eq) => {
+    if (useWorkspaces === undefined) return selector(EMPTY_WORKSPACE_STATE)
+    return useWorkspaces(state => selector(
+      groupBy === 'task'
+        ? syntheticTaskWorkspaceState(state, scheduledGroups)
+        : scheduledRealWorkspaceState(state, scheduledIds, archivedFilter),
+    ), eq)
+  }, [archivedFilter, groupBy, scheduledGroups, scheduledIds, useWorkspaces])
+
+  const rawOfficialProps = { ...(hostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
+  const rawUseShortcuts = hostFunction<HostShortcutSelector>(hostProps, 'useShortcuts')
+  // 头部「＋」现在是新建定时任务，不能继续显示宿主的“添加工作区”快捷键。
+  const useRecordsShortcuts = useCallback<HostShortcutSelector>((select, equals) => {
+    if (rawUseShortcuts === undefined) return select(EMPTY_SHORTCUTS)
+    return rawUseShortcuts(rows => select((rows ?? []).filter(row => row.id !== 'workspace.add')), equals)
+  }, [rawUseShortcuts])
+  const hostT = hostFunction<HostTranslate>(hostProps, 't') ?? ((key: string) => key)
+  const recordsT = useCallback((key: string, params?: Record<string, unknown>) => {
+    if (key === 'section.workspaces' && groupBy === 'task') return t('records.sectionTasks')
+    if (key === 'workspace.add' || key === 'menu.addWorkspace') return t('action.create')
+    return hostT(key, params)
+  }, [groupBy, hostT, t])
+  const recordsOpen = openSession ?? hostFunction<(sessionId: string) => void>(hostProps, 'open')
+  const rawSearch = hostFunction<SessionSearch>(hostProps, 'searchSessions')
+  const rawStartSession = hostFunction<HostStartSession>(hostProps, 'startSession')
+  const rawRenameWorkspace = hostFunction<HostWorkspaceAction>(hostProps, 'renameWorkspace')
+  const rawDeleteWorkspace = hostFunction<HostWorkspaceAction>(hostProps, 'deleteWorkspace')
+  const rawInsertWorkspaceBefore = hostFunction<HostWorkspaceAction>(hostProps, 'insertWorkspaceBefore')
+  const searchScheduledSessions = useCallback(async (query: string, signal: AbortSignal): Promise<SessionSearchResult> => {
+    if (rawSearch === undefined) return { items: [], hasMore: false }
+    const result = await rawSearch(query, signal)
+    return {
+      items: result.items.filter(item => item.id !== undefined && scheduledIds.has(item.id)),
+      hasMore: result.hasMore,
+    }
+  }, [rawSearch, scheduledIds])
+  const startScheduledSession = useCallback((workspaceId?: string, options?: unknown) => {
+    if (groupBy !== 'task' || automationIdFromTaskWorkspaceId(workspaceId) !== undefined) return
+    rawStartSession?.(workspaceId, options)
+  }, [groupBy, rawStartSession])
+  const renameScheduledWorkspace = useCallback(async (workspaceId: string, title: string): Promise<void> => {
+    if (groupBy !== 'task' || automationIdFromTaskWorkspaceId(workspaceId) !== undefined) {
+      throw new Error(t('records.groupReadOnly'))
+    }
+    await rawRenameWorkspace?.(workspaceId, title)
+  }, [groupBy, rawRenameWorkspace, t])
+  const deleteScheduledWorkspace = useCallback(async (workspaceId: string): Promise<void> => {
+    if (groupBy !== 'task' || automationIdFromTaskWorkspaceId(workspaceId) !== undefined) {
+      throw new Error(t('records.groupReadOnly'))
+    }
+    await rawDeleteWorkspace?.(workspaceId)
+  }, [groupBy, rawDeleteWorkspace, t])
+  const insertScheduledWorkspaceBefore = useCallback(async (workspaceId: string, beforeWorkspaceId?: string): Promise<void> => {
+    if (groupBy !== 'task' || automationIdFromTaskWorkspaceId(workspaceId) !== undefined) return
+    await rawInsertWorkspaceBefore?.(workspaceId, beforeWorkspaceId)
+  }, [groupBy, rawInsertWorkspaceBefore])
+  const useCreateTaskFlow = useCallback(<T,>(select: (available: boolean) => T): T => select(true), [])
+  const scheduledOfficialProps = {
+    ...rawOfficialProps,
+    useStore: useRecordsStore,
+    actions: recordsStore.actions,
+    t: recordsT,
+    ...(recordsOpen === undefined ? {} : { open: recordsOpen }),
+    ...(useSessions === undefined ? {} : { useSessions: useScheduledSessions }),
+    ...(useWorkspaces === undefined ? {} : { useWorkspaces: useRecordsWorkspaces }),
+    ...(rawUseShortcuts === undefined ? {} : { useShortcuts: useRecordsShortcuts }),
+    useDirectoryFlow: openCreateTask === undefined ? noDirectoryFlow : useCreateTaskFlow,
+    requestAddWorkspace: openCreateTask ?? noop,
+    startSession: startScheduledSession,
+    renameWorkspace: renameScheduledWorkspace,
+    deleteWorkspace: deleteScheduledWorkspace,
+    insertWorkspaceBefore: insertScheduledWorkspaceBefore,
+    ...(rawSearch === undefined ? {} : { searchSessions: searchScheduledSessions }),
+  }
+  const groupKeys = useMemo(() => {
+    if (groupBy === 'task') return scheduledGroups.map(group => automationTaskWorkspaceId(group.id))
+    if (groupBy === 'flat') return []
+    return (realWorkspaces.items ?? [])
+      .map(workspace => String(workspace.workspaceId ?? workspace.id ?? ''))
+      .filter(key => key !== '')
+  }, [groupBy, realWorkspaces.items, scheduledGroups])
+  useEffect(() => {
+    recordsStore.actions.ensureExpanded(groupKeys)
+  }, [groupKeys, recordsStore])
+  useEffect(() => installTaskGroupOption({
+    label: t('records.groupByTask'),
+    groupLabel: recordsT('groupBy.label'),
+    workspaceLabel: recordsT('groupBy.workspace'),
+    checked: groupBy === 'task',
+    onSelect: () => recordsStore.actions.setGroupBy('task'),
+  }), [groupBy, recordsStore, recordsT, t])
+
+  const recordsFallback = (
+    <ScheduleRail
+      t={t}
+      runtime={runtime}
+      {...(recordsOpen === undefined ? {} : { openSession: recordsOpen })}
+      {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
+      view="runs"
+      showViewSwitch={false}
+    />
+  )
+  const recordsBody = Official === undefined
+    ? recordsFallback
+    : (
+        <div className="dsh-st-schedule-tree" data-mode={groupBy}>
+          <OfficialTreeGuard fallback={recordsFallback}>
+            {createElement(Official, scheduledOfficialProps)}
+          </OfficialTreeGuard>
+        </div>
+      )
+  return (
+    <div className="dsh-st-n">
+      <div className="dsh-st-n-views-wrap">
+        <ScheduleViewSwitch t={t} view={view} onChange={setView} />
+      </div>
+      <div id={SCHEDULE_VIEW_PANEL_ID} role="tabpanel" className="dsh-st-n-view-body">
+        {view === 'overview'
+          ? automationState.snapshot === undefined
+            ? <div className="dsh-st-n-empty">{automationState.phase === 'loading' ? t('loading') : t('overview.empty')}</div>
+            : <ScheduleOverview
+                t={t}
+                automations={automationState.snapshot.automations}
+                onToggleAutomation={(automationId, mutation) => runtime.mutateAutomation(automationId, mutation)}
+                {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
+                {...(openCreateTask === undefined ? {} : { openCreateTask })}
+                {...(automationState.snapshot.serverNow === undefined ? {} : { serverNow: automationState.snapshot.serverNow })}
+              />
+          : recordsBody}
+      </div>
+    </div>
+  )
+}
+
 export function NativeScheduleShell({
   t,
   runtime,
@@ -129,18 +369,19 @@ export function NativeScheduleShell({
   hostProps,
   openSession,
   openTaskSettings,
+  openCreateTask,
   useSessions,
   useWorkspaces,
-  renderSlot,
   tabRegistry,
   wide,
 }: {
   readonly t: Translate
   readonly runtime: AutomationRuntime
-  readonly officialTree?: ComponentType<any>
+  readonly officialTree?: ComponentType<Record<string, unknown>>
   readonly hostProps?: Record<string, unknown>
   readonly openSession?: (sessionId: string) => void
   readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
+  readonly openCreateTask?: () => void
   readonly useSessions?: SessionSelector
   readonly useWorkspaces?: WorkspaceSelector
   readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode
@@ -172,14 +413,15 @@ export function NativeScheduleShell({
     snapshotRefreshFor.current = currentId ?? null
     void runtime.refresh().catch(() => undefined)
   }, [automationState.snapshot?.runs, currentId, runtime])
+  // 官方任务树不再隐藏定时会话，只保留 IM 会话过滤（频道页签负责它们）。
   const useFilteredSessions = useCallback<SessionSelector>((selector, eq) => {
-    if (useSessions === undefined) return selector({ ids: [], byId: {} })
-    return useSessions(state => selector(filterTaskSessionState(state, scheduledIds)), eq)
-  }, [useSessions, scheduledIds])
+    if (useSessions === undefined) return selector(EMPTY_SESSION_STATE)
+    return useSessions(state => selector(filterTaskSessionState(state, new Set(), { includeScheduled: true })), eq)
+  }, [useSessions])
   const useFilteredWorkspaces = useCallback<WorkspaceSelector>((selector, eq) => {
-    if (useWorkspaces === undefined) return selector({ items: [], archivedSessionIds: [] })
-    return useWorkspaces(state => selector(filterWorkspaceListState(state, scheduledIds)), eq)
-  }, [useWorkspaces, scheduledIds])
+    if (useWorkspaces === undefined) return selector(EMPTY_WORKSPACE_STATE)
+    return useWorkspaces(state => selector(filterWorkspaceListState(state, new Set(), { includeScheduled: true })), eq)
+  }, [useWorkspaces])
 
   useEffect(() => {
     try { window.localStorage.setItem(NATIVE_SIDEBAR_TAB_KEY, tab) }
@@ -199,7 +441,8 @@ export function NativeScheduleShell({
   const previousCurrentId = useRef(currentId)
   const tabFollowReady = useRef(false)
   useEffect(() => {
-    const next = tabForSessionId(currentId ?? undefined, scheduledIds)
+    // 定时会话已经出现在官方任务树里，点到它时不再强制切到定时页签。
+    const next = tabForSessionId(currentId ?? undefined, scheduledIds, { followSchedule: false })
     if (!tabFollowReady.current) {
       tabFollowReady.current = true
       previousCurrentId.current = currentId
@@ -217,8 +460,17 @@ export function NativeScheduleShell({
   }, [currentId, channelsReady, extraTabs, scheduledIds])
 
   const rawOfficialProps = { ...(hostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
+  const rawOpen = hostFunction<(sessionId: string) => void>(hostProps, 'open')
+  const openSidebarSession = useCallback((sessionId: string) => {
+    if (scheduledIds.has(sessionId) && openSession !== undefined) {
+      openSession(sessionId)
+      return
+    }
+    rawOpen?.(sessionId)
+  }, [openSession, rawOpen, scheduledIds])
   const filteredOfficialProps = {
     ...rawOfficialProps,
+    open: openSidebarSession,
     ...(useSessions === undefined ? {} : { useSessions: useFilteredSessions }),
     ...(useWorkspaces === undefined ? {} : { useWorkspaces: useFilteredWorkspaces }),
   }
@@ -243,7 +495,20 @@ export function NativeScheduleShell({
   })
   const hostedSchedule = extraTabs.find(item => item.id === 'schedule')
   const scheduleBody = hostedSchedule === undefined
-    ? <NativeScheduleSessionList t={t} runtime={runtime} {...(openSession === undefined ? {} : { openSession })} {...(openTaskSettings === undefined ? {} : { openTaskSettings })} {...(useSessions === undefined ? {} : { useSessions })} {...(useWorkspaces === undefined ? {} : { useWorkspaces })} {...(renderSlot === undefined ? {} : { renderSlot })} {...scheduledListHostActions(hostProps)} {...(typeof hostProps?.useSessionStatus === 'function' ? { useSessionStatus: hostProps.useSessionStatus as NonNullable<Parameters<typeof NativeScheduleSessionList>[0]['useSessionStatus']> } : {})} />
+    ? (
+        <ScheduledRecordsView
+          t={t}
+          runtime={runtime}
+          {...(Official === undefined ? {} : { officialTree: Official })}
+          {...(hostProps === undefined ? {} : { hostProps })}
+          {...(openSession === undefined ? {} : { openSession })}
+          {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
+          {...(openCreateTask === undefined ? {} : { openCreateTask })}
+          {...(useSessions === undefined ? {} : { useSessions })}
+          {...(useWorkspaces === undefined ? {} : { useWorkspaces })}
+          {...(wide === undefined ? {} : { wide })}
+        />
+      )
     : hostedSchedule.render({ ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true }) as ReactNode
 
   const sidebarTabItems = useMemo<readonly [SegmentedTab<string>, ...SegmentedTab<string>[]]>(() => {
@@ -303,7 +568,7 @@ export function NativeScheduleShell({
 
   return (
     <div className="dsh-st-shell-rail">
-      <div className="dsh-st-shell-tabs-wrap">
+      <div className="dsh-st-shell-tabs-wrap" style={{ '--dsh-st-tab-count': String(sidebarTabItems.length) } as CSSProperties}>
         <SegmentedTabs
           className="dsh-st-shell-segmented-tabs"
           label={t('sidebar.tabs')}

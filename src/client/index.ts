@@ -1,4 +1,4 @@
-import { createElement, useEffect, type ComponentType } from 'react'
+import { createElement, useEffect, useMemo, useSyncExternalStore, type ComponentType } from 'react'
 import { AutomationView } from './AutomationView.js'
 import type { ClientContext, NativeSwitcherProps, SessionSelector, WorkspaceSelector } from './contracts.js'
 import { en, NS, zh } from './locales.js'
@@ -11,14 +11,15 @@ import {
 import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
 import { createHostWorkspace, pickHostDirectory } from './workspace-create.js'
-import { scheduledListHostActions } from './native-group-actions.js'
-import { NativeScheduleSessionList } from './native-session-list.js'
-import { NativeScheduleShell, ScheduleRail } from './ScheduleRail.js'
-import { AUTOMATION_SESSION_PREFIX, canOpenClientSession, ensureOpenScheduledSession, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
+import { NativeScheduleShell, ScheduleRail, ScheduledRecordsView } from './ScheduleRail.js'
+import { AUTOMATION_SESSION_PREFIX, automationIdFromTaskWorkspaceId, canOpenClientSession, collectScheduledSessionIds, ensureOpenScheduledSession, groupScheduledSessions, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
+import { IconClockOutline } from './host-icons.js'
+import { installTaskSettingsMenuInjector } from './workspace-menu.js'
 import { installStyles } from './styles.js'
 import { openSettingsSection } from './settings-navigation.js'
 import { installSettingsNavIcon } from './settings-nav-icon.js'
 import { requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
+import { requestAutomationCreateTask } from './create-task-request.js'
 import { observePluginUpdate, type PluginUpdateIconName } from './plugin-update-ui.js'
 
 export const name = 'dsh-automation-client'
@@ -57,19 +58,19 @@ type MutableSlotEntry = {
   options?: { id?: unknown }
 }
 
-type HostComponent = ComponentType<any> & {
-  displayName?: string
-  __dshNativeTabHost?: boolean
-  __dshAutomationWrapped?: boolean
-  __dshAutomationOriginal?: ComponentType<any>
-}
-
 function isSessionSelector(value: unknown): value is SessionSelector {
   return typeof value === 'function'
 }
 
 function isWorkspaceSelector(value: unknown): value is WorkspaceSelector {
   return typeof value === 'function'
+}
+
+type HostComponent = ComponentType<any> & {
+  displayName?: string
+  __dshNativeTabHost?: boolean
+  __dshAutomationWrapped?: boolean
+  __dshAutomationOriginal?: ComponentType<any>
 }
 
 export function apply(ctx: ClientContext): void {
@@ -103,8 +104,49 @@ export function apply(ctx: ClientContext): void {
       () => { requestAutomationTaskSettings(request) },
     )
   }
+  const openCreateTask = (): void => {
+    requestAutomationCreateTask()
+    openSettingsSection(
+      [t('tab'), 'Scheduled tasks', '定时任务'],
+      () => { requestAutomationCreateTask() },
+    )
+  }
   ctx.effect(() => installAutomationSessionSync(runtime, () => ctx.sessions), 'dsh-automation: session sync')
   ctx.effect(() => installSettingsNavIcon(() => [t('tab'), 'Scheduled tasks', '定时任务']), 'dsh-automation: settings icon')
+  ctx.effect(() => installTaskSettingsMenuInjector({
+    label: () => t('session.taskSettings'),
+    resolveTask: (workspaceId) => {
+      const automationId = automationIdFromTaskWorkspaceId(workspaceId)
+      if (automationId === undefined) return undefined
+      const snapshot = runtime.source.getSnapshot().snapshot
+      if (snapshot === undefined) return undefined
+      const group = groupScheduledSessions(snapshot.automations, snapshot.runs)
+        .find(item => item.id === automationId)
+      return group === undefined
+        ? undefined
+        : {
+            id: automationId,
+            name: group.name,
+            sessionIds: group.sessions.map(session => session.id),
+          }
+    },
+    openTaskSettings,
+  }), 'dsh-automation: task settings menu')
+  // 官方任务树只在会话空闲时渲染 leading 槽位；这里用官方时钟图标标记定时会话。
+  ctx.slots.inject('sidebar.session.row.leading', () => ctx.slots.register({
+    name: 'sidebar.session.row.leading',
+    id: 'dsh-automation-session-clock',
+    order: 20,
+  }, function AutomationSessionClock(props: { readonly sessionId?: string }) {
+    const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
+    const scheduledIds = useMemo(() => collectScheduledSessionIds(state.snapshot?.runs), [state.snapshot])
+    if (props.sessionId === undefined || !scheduledIds.has(props.sessionId)) return null
+    return createElement(
+      'span',
+      { className: 'dsh-st-session-clock', 'aria-hidden': 'true' },
+      createElement(IconClockOutline, { size: 16 }),
+    )
+  }))
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
     id: 'scheduled-tasks',
@@ -198,16 +240,21 @@ export function apply(ctx: ClientContext): void {
               ? props.open as (id: string) => void
               : openSession
           const opener = createScheduledSessionOpener(ctx, runtime, hostOpen)
-          return createElement(NativeScheduleSessionList, {
+          const hostTree = typeof registry.officialTree === 'function'
+            ? registry.officialTree as ComponentType<Record<string, unknown>>
+            : undefined
+          // 复用宿主注册表里的官方树；没有官方树时才退回轻量分组列表。
+          return createElement(ScheduledRecordsView, {
             t,
             runtime,
+            ...(hostTree === undefined ? {} : { officialTree: hostTree }),
+            hostProps: props,
             openSession: opener,
+            ...(openTaskSettings === undefined ? {} : { openTaskSettings }),
+            ...(openCreateTask === undefined ? {} : { openCreateTask }),
             ...(isSessionSelector(props.useSessions) ? { useSessions: props.useSessions } : {}),
             ...(isWorkspaceSelector(props.useWorkspaces) ? { useWorkspaces: props.useWorkspaces } : {}),
-            ...(typeof props.renderSlot === 'function' ? { renderSlot: props.renderSlot as (name: string, owner?: Record<string, unknown>, opts?: { readonly hookContext?: unknown }) => ReturnType<typeof createElement> } : {}),
-            ...(typeof props.useSessionStatus === 'function' ? { useSessionStatus: props.useSessionStatus as NonNullable<Parameters<typeof NativeScheduleSessionList>[0]['useSessionStatus']> } : {}),
-            ...scheduledListHostActions(props as Record<string, unknown>),
-            openTaskSettings,
+            ...(typeof props.wide === 'boolean' ? { wide: props.wide } : {}),
           })
         },
       })
@@ -274,6 +321,7 @@ export function apply(ctx: ClientContext): void {
             hostProps: innerProps as Record<string, unknown>,
             openSession,
             openTaskSettings,
+            openCreateTask,
             tabRegistry: registry,
             ...(innerProps.wide === undefined ? {} : { wide: innerProps.wide }),
             ...(innerProps.useSessions === undefined ? {} : { useSessions: innerProps.useSessions }),

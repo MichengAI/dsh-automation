@@ -10,6 +10,9 @@ export declare const en: {
     readonly "sidebar.runsTab": "Records";
     readonly "sidebar.overviewTab": "Tasks";
     readonly "sidebar.empty": "No scheduled runs yet.";
+    readonly "records.groupReadOnly": "Scheduled task groups cannot be renamed or deleted here.";
+    readonly "records.groupByTask": "By task";
+    readonly "records.sectionTasks": "Tasks";
     readonly "sidebar.tasksEmpty": "No web tasks yet.";
     readonly "sidebar.ungrouped": "Ungrouped";
     readonly "sidebar.section": "Scheduled";

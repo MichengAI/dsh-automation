@@ -17,6 +17,11 @@ function listFallback(): JSX.Element {
     createElement('path', { d: 'M3 4h10M3 8h10M3 12h10', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round' }))
 }
 
+function projectAddFallback(): JSX.Element {
+  return createElement('svg', { viewBox: '0 0 16 16', width: 16, height: 16, fill: 'none', 'aria-hidden': true },
+    createElement('path', { d: 'M2.5 4.5h4l1.2 1.5h5.8v6.5h-11V4.5Zm8 2.2v4M8.4 8.8h4.2', stroke: 'currentColor', strokeWidth: 1.3, strokeLinecap: 'round', strokeLinejoin: 'round' }))
+}
+
 function archiveCheckFallback(): JSX.Element {
   return createElement('svg', { viewBox: '0 0 16 16', width: 16, height: 16, fill: 'none', 'aria-hidden': true },
     createElement('path', { d: 'M3 6.5h10v6H3v-6Zm1.2-2.5h7.6L13 6.5H3L4.2 4Zm2.3 5.2 1.3 1.3 2.6-2.6', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round' }))
@@ -32,6 +37,7 @@ export const IconCheckOutline = pickHostIcon(icons, 'IconCheckOutlineRegular')
 export const IconChevronDownOutline = pickHostIcon(icons, 'IconChevronDownOutlineRegular')
 export const IconListPenOutline = pickHostIcon(icons, 'IconListPenOutlineRegular')
 export const IconSearchOutline = pickHostIcon(icons, 'IconSearchOutlineRegular')
+export const IconProjectAddOutline = hostOrFallback(pickHostIcon(icons, 'IconProjectAddOutlineRegular'), projectAddFallback)
 export const IconCloseFill = pickHostIcon(icons, 'IconCloseFillRegular')
 export const IconSlidersTwoOutline = pickHostIcon(icons, 'IconSlidersTwoOutlineRegular')
 export const IconFolderClose = pickHostIcon(icons, 'IconFolderCloseRegular')

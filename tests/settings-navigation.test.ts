@@ -190,6 +190,75 @@ test('Codex trigger 在事件未被取消时回退到设置页导航', () => {
   }
 })
 
+test('账号菜单里的设置入口可以打开新版桌面设置面板', () => {
+  let selected = 0
+  let missing = 0
+  let menuOpen = false
+  let panelOpen = false
+  let accountClicks = 0
+  let menuClicks = 0
+  let targetClicks = 0
+  let frameCallback: FrameRequestCallback | undefined
+  let observerCallback: MutationCallback | undefined
+  const account = {
+    textContent: '朝歌',
+    getAttribute(name: string) { return name === 'aria-label' ? '账号菜单' : name === 'aria-haspopup' ? 'menu' : null },
+    click() { accountClicks += 1; menuOpen = true; observerCallback?.([], {} as MutationObserver) },
+  }
+  const menuItem = {
+    textContent: '设置Ctrl+Alt+,',
+    getAttribute() { return null },
+    click() { menuClicks += 1; menuOpen = false; panelOpen = true; observerCallback?.([], {} as MutationObserver) },
+  }
+  const target = {
+    textContent: '定时任务',
+    getAttribute() { return null },
+    click() { targetClicks += 1 },
+  }
+  const restoreDocument = replaceGlobal('document', {
+    body: {},
+    querySelector(selector: string) {
+      if (selector === '[data-dcu-settings-trigger]' || selector === '[data-dcu-settings-page]') return null
+      return null
+    },
+    querySelectorAll(selector: string) {
+      if (selector === 'button[aria-haspopup="dialog"]') return []
+      if (selector === 'button[aria-haspopup="menu"]') return [account]
+      if (selector === '[role="menu"] button') return menuOpen ? [menuItem] : []
+      if (selector === '[role="dialog"] nav button' || selector === 'nav button') return panelOpen ? [target] : []
+      return []
+    },
+  })
+  const restoreWindow = replaceGlobal('window', {
+    requestAnimationFrame(callback: FrameRequestCallback) { frameCallback = callback; return 1 },
+    cancelAnimationFrame() { frameCallback = undefined },
+    setTimeout() { return 2 },
+    clearTimeout() {},
+  })
+  class FakeMutationObserver {
+    constructor(callback: MutationCallback) { observerCallback = callback }
+    observe() {}
+    disconnect() {}
+    takeRecords(): MutationRecord[] { return [] }
+  }
+  const restoreObserver = replaceGlobal('MutationObserver', FakeMutationObserver)
+  const flush = () => { const callback = frameCallback; frameCallback = undefined; callback?.(0) }
+  try {
+    openSettingsSection(['定时任务', 'Scheduled tasks'], () => { selected += 1 }, () => { missing += 1 })
+    assert.equal(accountClicks, 1)
+    flush()
+    assert.equal(menuClicks, 1)
+    flush()
+    assert.equal(targetClicks, 1)
+    assert.equal(selected, 1)
+    assert.equal(missing, 0)
+  } finally {
+    restoreObserver()
+    restoreWindow()
+    restoreDocument()
+  }
+})
+
 test('设置分区在超时前仍不存在时报告缺失并清理观察器', () => {
   const dom = settingsDom({ hasTarget: false })
   let selected = 0

@@ -1,6 +1,8 @@
 /** 侧栏定时树与原生任务列表的纯函数，供组件和单测共用。 */
 import type { AutomationStatus } from './protocol.js';
 export declare const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
+/** 记录视图把每个自动化任务合成一个官方工作区分组，id 进入这个命名空间避免与真实工作区冲突。 */
+export declare const AUTOMATION_TASK_WORKSPACE_PREFIX = "dsh-automation-task:";
 export declare const NATIVE_SIDEBAR_TAB_KEY = "dsh-automation.sidebar-tab";
 export interface ScheduleRailSession {
     readonly id: string;
@@ -38,6 +40,8 @@ export interface NativeWorkspaceLike {
     readonly title?: string;
     readonly path?: string;
     readonly sessionIds?: readonly string[];
+    readonly createdAt?: string;
+    readonly updatedAt?: string;
 }
 export type NativeSidebarTab = 'tasks' | 'channels' | 'schedule';
 export { formatRunStamp } from '../run-title.js';
@@ -103,7 +107,9 @@ export declare function resolveVisibleSidebarTab(input: {
     readonly channelsReady: boolean;
     readonly extraTabIds: readonly string[];
 }): string;
-export declare function tabForSessionId(sessionId: string | null | undefined, scheduledIds?: ReadonlySet<string>): NativeSidebarTab | undefined;
+export declare function tabForSessionId(sessionId: string | null | undefined, scheduledIds?: ReadonlySet<string>, options?: {
+    readonly followSchedule?: boolean;
+}): NativeSidebarTab | undefined;
 export declare function occupantLooksLikeCodexUi(value: unknown): boolean;
 export declare function slotOccupantName(item: unknown): string;
 export declare function hasCodexUiSidebar(entries: readonly unknown[] | undefined): boolean;
@@ -111,11 +117,41 @@ export interface SessionListState {
     readonly ids?: readonly string[];
     readonly byId?: Record<string, NativeSessionLike>;
 }
-export declare function filterTaskSessionState<T extends SessionListState>(state: T | undefined, scheduledIds?: ReadonlySet<string>): T;
+export interface SessionFilterOptions {
+    /** 任务树需要显示定时会话时设为 true；只保留 IM 过滤。 */
+    readonly includeScheduled?: boolean;
+}
+export declare function filterTaskSessionState<T extends SessionListState>(state: T | undefined, scheduledIds?: ReadonlySet<string>, options?: SessionFilterOptions): T;
+/** 记录视图只保留定时执行产生的会话；其余字段原样带给官方树。 */
+export declare function scheduledOnlySessionState<T extends SessionListState>(state: T | undefined, scheduledIds: ReadonlySet<string>): T;
 export interface WorkspaceListState {
     readonly items?: readonly NativeWorkspaceLike[];
     readonly archivedSessionIds?: readonly string[];
+    readonly pinnedSessionIds?: readonly string[];
+    readonly state?: 'idle' | 'loading' | 'error';
+    readonly phase?: 'pending' | 'ready';
+    readonly error?: unknown;
 }
+export interface SyntheticTaskGroup {
+    readonly id: string;
+    readonly name: string;
+    readonly sessionIds: readonly string[];
+    readonly createdAt?: string;
+}
+export declare function automationTaskWorkspaceId(automationId: string): string;
+export declare function automationIdFromTaskWorkspaceId(workspaceId: string | undefined): string | undefined;
+/**
+ * 把自动化任务合成为官方 WorkspaceView 列表。
+ *
+ * 官方树只按 `workspaceId` + `sessionIds` 分组，不校验工作区是否真实存在；
+ * 保留源快照的 phase/state/archived/pinned，避免官方树一直停在未就绪状态。
+ */
+export declare function syntheticTaskWorkspaceState<T extends WorkspaceListState>(state: T | undefined, groups: readonly SyntheticTaskGroup[]): T;
+/**
+ * 按真实工作区分组时，只保留定时执行会话，并沿用官方的归档筛选。
+ * 保留 phase/state/archived/pinned，官方树才会正常渲染。
+ */
+export declare function scheduledRealWorkspaceState<T extends WorkspaceListState>(state: T | undefined, scheduledIds: ReadonlySet<string>, archivedFilter: ArchivedSessionFilter): T;
 /** 0.2 主视图由 retainedBy.mainView 标记。 */
 export declare function resolveCurrentSessionId(snapshot: SessionListState | undefined): string | null;
 export interface ClientSessionOpenAccess {
@@ -144,7 +180,7 @@ export interface EnsureOpenScheduledSessionInput {
 /** 先把会话挂回工作区并刷新客户端会话簿，再打开；避免侧栏能看见、点下去却 unknown session。 */
 export declare function ensureOpenScheduledSession(input: EnsureOpenScheduledSessionInput): Promise<boolean>;
 export declare function isHiddenSidebarSessionId(id: string, scheduledIds?: ReadonlySet<string>): boolean;
-export declare function filterWorkspaceListState<T extends WorkspaceListState>(state: T | undefined, scheduledIds?: ReadonlySet<string>): T;
+export declare function filterWorkspaceListState<T extends WorkspaceListState>(state: T | undefined, scheduledIds?: ReadonlySet<string>, options?: SessionFilterOptions): T;
 export type WrapperFlags = {
     __dshAutomationWrapped?: unknown;
     __dshAutomationOriginal?: unknown;

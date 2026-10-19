@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import { createElement, Component, Fragment } from 'react'
 import ts from 'typescript'
 import * as model from '../src/client/schedule-rail-model.ts'
-import * as actions from '../src/client/native-group-actions.ts'
+import * as recordsStore from '../src/client/records-view-store.ts'
+import * as workspaceMenu from '../src/client/workspace-menu.ts'
 
 export function createShellHarness() {
   const state = []
@@ -29,10 +30,10 @@ export function createShellHarness() {
     react,
     '@deepseek-ai/dsh-client-ui-primitives': { SegmentedTabs: 'segmented-tabs' },
     './schedule-rail-model.js': model,
-    './native-group-actions.js': actions,
+    './records-view-store.js': recordsStore,
+    './workspace-menu.js': workspaceMenu,
     './host-icons.js': { IconClockOutline: 'clock-icon', IconFolderClose: 'folder-icon' },
-    './native-session-list.js': { NativeScheduleSessionList: 'schedule-list' },
-    './schedule-overview.js': { SCHEDULE_VIEW_PANEL_ID: 'schedule-panel' },
+    './schedule-overview.js': { SCHEDULE_VIEW_PANEL_ID: 'schedule-panel', ScheduleViewSwitch: 'view-switch', ScheduleOverview: 'overview' },
   }
   const exports = {}
   new Function('require', 'exports', code)(name => {

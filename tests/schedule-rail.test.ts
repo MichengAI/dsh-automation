@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import {
   AUTOMATION_SESSION_PREFIX,
@@ -34,10 +33,14 @@ import {
   resolveVisibleSidebarTab,
   shouldFollowSessionTab,
   tabForSessionId,
+  scheduledOnlySessionState,
+  scheduledRealWorkspaceState,
+  syntheticTaskWorkspaceState,
+  automationTaskWorkspaceId,
+  automationIdFromTaskWorkspaceId,
 } from '../src/client/schedule-rail-model.ts'
-import { relativeTime, nativeSessionHoverStyle, renderOwnedSlot, scheduledSessionHoverStatuses, sessionRowTime } from '../src/client/native-session-menu.ts'
+import { createRecordsViewStore } from '../src/client/records-view-store.ts'
 import { en, zh } from '../src/client/locales.ts'
-import { archiveScheduledGroup, canDeleteScheduledSession, hasArchiveManagerPlugin, scheduledGroupShowsActiveFolder, scheduledListHostActions, scheduledSessionMenuActions, scheduledSessionOmitsStatusSlot } from '../src/client/native-group-actions.ts'
 
 test('会话更多操作的无障碍标签提供中英文模板', () => {
   assert.equal(en['session.moreActions'], 'More actions for {title}')
@@ -224,21 +227,6 @@ test('walks nested wrap chain back to official tree', () => {
   if (resolveOfficialTreeComponent(ImShell) !== Official) throw new Error('should unwrap to official')
 })
 
-test('native session relative time matches official labels', () => {
-  const translate = (dictionary: Record<string, string>) => (key: string, params?: Record<string, unknown>) => (
-    (dictionary[key] ?? key).replace('{count}', String(params?.count ?? ''))
-  )
-  const now = Date.parse('2026-08-26T12:00:00.000Z')
-  assert.equal(relativeTime('2026-08-26T11:59:30.000Z', translate(zh) as never, now), '刚刚')
-  assert.equal(relativeTime('2026-08-26T11:55:00.000Z', translate(en) as never, now), '5m ago')
-  const row = (key: string, params?: Record<string, unknown>) => {
-    const dict: Record<string, string> = { 'time.now': '刚刚', 'time.months': '{count}个月', 'time.years': '{count}年' }
-    return (dict[key] ?? key).replace('{count}', String(params?.count ?? ''))
-  }
-  assert.equal(sessionRowTime('2026-06-26T12:00:00.000Z', row as never, now), '2个月')
-  assert.equal(sessionRowTime('2024-08-26T12:00:00.000Z', row as never, now), '2年')
-})
-
 test('scheduled sessions open through the runtime, not the filtered host tree', () => {
   const opened: string[] = []
   const host: string[] = []
@@ -375,122 +363,6 @@ test('删除任务后仍保留会话文件夹', () => {
 })
 
 
-test('当前会话所属文件夹即使折叠也保持官方高亮', () => {
-  assert.equal(scheduledGroupShowsActiveFolder(['session-a', 'session-b'], 'session-b'), true)
-  assert.equal(scheduledGroupShowsActiveFolder(['session-a'], 'session-b'), false)
-  assert.equal(scheduledGroupShowsActiveFolder(['session-a'], null), false)
-})
-
-test('平铺列表空闲会话去掉状态槽，和工作区树对齐官方', () => {
-  assert.equal(scheduledSessionOmitsStatusSlot(true, false), true)
-  assert.equal(scheduledSessionOmitsStatusSlot(true, true), false)
-  assert.equal(scheduledSessionOmitsStatusSlot(false, false), false)
-  const nativeList = readFileSync(new URL('../src/client/native-session-list.tsx', import.meta.url), 'utf8')
-  assert.match(nativeList, /dsh-st-n-chevron/)
-  assert.match(nativeList, /dsh-st-n-project-text/)
-  assert.match(nativeList, /is-flat-idle/)
-})
-
-test('只有归档插件标记存在时才显示整组归档能力', () => {
-  const seen: string[] = []
-  const root = { querySelector(selector: string) { seen.push(selector); return selector.includes('@michengai/dsh-archive-manager') ? {} : null } }
-  assert.equal(hasArchiveManagerPlugin(root), true)
-  assert.equal(hasArchiveManagerPlugin({ querySelector() { return null } }), false)
-  assert.equal(seen.length, 1)
-})
-
-test('有归档插件且宿主提供删除时才出现删除会话', () => {
-  const deleteSession = async () => undefined
-  assert.equal(canDeleteScheduledSession(true, deleteSession), true)
-  assert.equal(canDeleteScheduledSession(false, deleteSession), false)
-  assert.equal(canDeleteScheduledSession(true, undefined), false)
-  const idle = { canDelete: false, archived: false, canUnarchive: false }
-  assert.deepEqual(scheduledSessionMenuActions(idle), ['rename', 'fork', 'archive'])
-  assert.deepEqual(scheduledSessionMenuActions({ ...idle, canDelete: true }), ['rename', 'fork', 'archive', 'delete-session'])
-  assert.deepEqual(scheduledSessionMenuActions({ ...idle, archived: true, canUnarchive: true }), ['rename', 'fork', 'unarchive'])
-})
-
-test('页签渲染和自绘回退共用宿主会话操作，而不是只在有 registry 时转发', () => {
-  const renameSession = () => undefined
-  const archiveSession = () => undefined
-  const deleteSession = () => undefined
-  const forkSession = () => undefined
-  const actions = scheduledListHostActions({
-    renameSession,
-    archiveSession,
-    deleteSession,
-    forkSession,
-    openSession: () => undefined,
-    useSessions: () => undefined,
-  })
-  assert.equal(actions.renameSession, renameSession)
-  assert.equal(actions.archiveSession, archiveSession)
-  assert.equal(actions.deleteSession, deleteSession)
-  assert.equal(actions.forkSession, forkSession)
-  const unarchiveSession = () => undefined
-  const notifyArchivedNotOpenable = () => undefined
-  const extended = scheduledListHostActions({ unarchiveSession, notifyArchivedNotOpenable })
-  assert.equal(extended.unarchiveSession, unarchiveSession)
-  assert.equal(extended.notifyArchivedNotOpenable, notifyArchivedNotOpenable)
-  assert.deepEqual(scheduledListHostActions({ renameSession: 'nope', archiveSession: 1 }), {})
-  assert.deepEqual(scheduledListHostActions(undefined), {})
-  const rail = readFileSync(new URL('../src/client/ScheduleRail.tsx', import.meta.url), 'utf8')
-  const index = readFileSync(new URL('../src/client/index.ts', import.meta.url), 'utf8')
-  assert.match(rail, /scheduledListHostActions\(hostProps\)/)
-  assert.match(index, /scheduledListHostActions\(/)
-  assert.doesNotMatch(index, /props\.renameSession as any/)
-})
-
-test('旧宿主未声明行内插槽时定时页不崩溃', () => {
-  const undeclared = new Error("slot 'sidebar.workspaces.session.row.action' is not declared by this entry's children")
-  undeclared.name = 'SlotOwnershipError'
-  assert.equal(renderOwnedSlot(() => { throw undeclared }, 'sidebar.workspaces.session.row.action'), null)
-  assert.equal(renderOwnedSlot(undefined, 'sidebar.workspaces.session.row.action'), null)
-  assert.equal(renderOwnedSlot(() => 'archive', 'sidebar.workspaces.session.row.action'), 'archive')
-  assert.throws(() => renderOwnedSlot(() => { throw new Error('boom') }, 'sidebar.workspaces.session.row.action'), /boom/)
-  const nativeList = readFileSync(new URL('../src/client/native-session-list.tsx', import.meta.url), 'utf8')
-  assert.match(nativeList, /renderOwnedSlot\(renderSlot, 'sidebar\.workspaces\.session\.row\.action'/)
-})
-
-test('定时文件夹和会话菜单跟随官方尺寸，不再使用 dense/compact', () => {
-  const nativeList = readFileSync(new URL('../src/client/native-session-list.tsx', import.meta.url), 'utf8')
-  assert.doesNotMatch(nativeList, /\bdense\b/)
-  assert.doesNotMatch(nativeList, /\bcompact\b/)
-  assert.match(nativeList, /closeOnPointerLeave/)
-  assert.match(nativeList, /session\.deleteSession/)
-  assert.equal(en['session.deleteSession'], 'Delete session')
-  assert.equal(zh['session.deleteSession'], '删除会话')
-})
-
-test('整组归档串行执行，避免工作区状态写入互相覆盖', async () => {
-  const archived: string[] = []
-  await archiveScheduledGroup(['session-a', 'session-b'], async (id) => {
-    archived.push('start:' + id)
-    await Promise.resolve()
-    archived.push('end:' + id)
-  })
-  assert.deepEqual(archived, ['start:session-a', 'end:session-a', 'start:session-b', 'end:session-b'])
-})
-
-
-
-
-
-
-
-test('会话悬停卡列出完成、待处理和已归档，而不只剩空闲', () => {
-  const t = (key: string, params?: Record<string, unknown>) => params?.count === undefined ? key : `${key}:${String(params.count)}`
-  assert.deepEqual(scheduledSessionHoverStatuses({ running: false, archived: false, completed: true }, t as never).map(item => item.label), ['session.completed'])
-  assert.deepEqual(scheduledSessionHoverStatuses({ running: true, archived: false, pendingKind: 'approval', runningSubagentCount: 2 }, t as never).map(item => item.state), ['warning', 'ongoing'])
-  assert.deepEqual(scheduledSessionHoverStatuses({ running: false, archived: true, completed: true }, t as never).map(item => item.state), ['archived'])
-})
-
-test('会话悬停预览卡贴在行右侧，避免挡住列表', () => {
-  const style = nativeSessionHoverStyle({ right: 240, top: 80 }, { width: 200, height: 90 }, { width: 1000, height: 800 })
-  assert.equal(style.left, '248px')
-  assert.equal(style.top, '80px')
-})
-
 
 test('工作区搜索按名称过滤，筛选可按时间或名称排序', () => {
   const groups = [
@@ -546,4 +418,112 @@ test('当前已打开的定时会话若还没进快照，应立刻再拉一次�
   assert.equal(scheduledSessionNeedsSnapshotRefresh('dsh-automation-session-new', [{ sessionId: 'dsh-automation-session-new' }]), false)
   assert.equal(scheduledSessionNeedsSnapshotRefresh('chat-1', []), false)
   assert.equal(scheduledSessionNeedsSnapshotRefresh(null, []), false)
+})
+
+test('官方任务树保留定时会话，只过滤 IM 会话', () => {
+  const state = {
+    ids: ['dsh-automation-session-a', 'im:wecom:1', 'normal'],
+    byId: {
+      'dsh-automation-session-a': { id: 'dsh-automation-session-a', title: '2026-10-19 12:00 - 巡检' },
+      'normal': { id: 'normal', title: '普通会话' },
+    },
+  }
+  assert.deepEqual(filterTaskSessionState(state, new Set(), { includeScheduled: true }).ids, ['dsh-automation-session-a', 'normal'])
+  const workspaces = { items: [{ workspaceId: 'w', sessionIds: ['dsh-automation-session-a', 'im:wecom:1', 'normal'] }] }
+  assert.deepEqual(
+    filterWorkspaceListState(workspaces, new Set(), { includeScheduled: true }).items?.[0]?.sessionIds,
+    ['dsh-automation-session-a', 'normal'],
+  )
+})
+
+test('记录视图只保留定时会话，并保留源快照的启动状态', () => {
+  const state = {
+    phase: 'ready' as const,
+    ids: ['dsh-automation-session-a', 'normal'],
+    byId: {
+      'dsh-automation-session-a': { id: 'dsh-automation-session-a' },
+      'normal': { id: 'normal' },
+    },
+  }
+  const result = scheduledOnlySessionState(state, new Set(['dsh-automation-session-a']))
+  assert.deepEqual(result.ids, ['dsh-automation-session-a'])
+  assert.deepEqual(Object.keys(result.byId ?? {}), ['dsh-automation-session-a'])
+  assert.equal(result.phase, 'ready')
+})
+
+test('记录视图把自动化任务合成为官方工作区分组', () => {
+  const source = {
+    items: [{ workspaceId: 'real', sessionIds: ['normal'] }],
+    archivedSessionIds: ['archived'],
+    pinnedSessionIds: ['dsh-automation-session-a'],
+    phase: 'ready' as const,
+    state: 'idle' as const,
+  }
+  const groups = [{
+    id: 'task-1',
+    name: '每日巡检',
+    sessionIds: ['dsh-automation-session-a'],
+    createdAt: '2026-10-19T00:00:00.000Z',
+  }]
+  const result = syntheticTaskWorkspaceState(source, groups)
+  assert.deepEqual(result.items, [{
+    workspaceId: automationTaskWorkspaceId('task-1'),
+    id: automationTaskWorkspaceId('task-1'),
+    title: '每日巡检',
+    path: '',
+    sessionIds: ['dsh-automation-session-a'],
+    createdAt: '2026-10-19T00:00:00.000Z',
+    updatedAt: '2026-10-19T00:00:00.000Z',
+  }])
+  assert.equal(result.phase, 'ready')
+  assert.deepEqual(result.archivedSessionIds, ['archived'])
+  assert.deepEqual(result.pinnedSessionIds, ['dsh-automation-session-a'])
+  assert.equal(syntheticTaskWorkspaceState(source, groups), result)
+  assert.equal(automationIdFromTaskWorkspaceId(automationTaskWorkspaceId('task-1')), 'task-1')
+  assert.equal(automationIdFromTaskWorkspaceId('real-workspace'), undefined)
+})
+
+test('定时会话不再自动切到定时页签', () => {
+  const scheduled = new Set(['dsh-automation-session-a'])
+  assert.equal(tabForSessionId('dsh-automation-session-a', scheduled, { followSchedule: false }), undefined)
+  assert.equal(tabForSessionId('dsh-automation-session-a', scheduled), 'schedule')
+  assert.equal(tabForSessionId('im:wecom:1', scheduled, { followSchedule: false }), 'channels')
+})
+
+test('记录视图按真实工作区分组时只保留定时会话，但保留工作区', () => {
+  const source = {
+    items: [
+      { workspaceId: 'work', title: 'repo', path: 'D:/repo', sessionIds: ['dsh-automation-session-a', 'normal'] },
+      { workspaceId: 'empty', title: 'other', path: 'D:/other', sessionIds: ['normal'] },
+    ],
+    archivedSessionIds: [],
+    pinnedSessionIds: [],
+    phase: 'ready' as const,
+    state: 'idle' as const,
+  }
+  const result = scheduledRealWorkspaceState(source, new Set(['dsh-automation-session-a']), 'default')
+  assert.deepEqual(result.items, [
+    { workspaceId: 'work', title: 'repo', path: 'D:/repo', sessionIds: ['dsh-automation-session-a'] },
+    { workspaceId: 'empty', title: 'other', path: 'D:/other', sessionIds: [] },
+  ])
+  assert.equal(result.phase, 'ready')
+  assert.equal(result.state, 'idle')
+})
+
+test('记录视图默认按定时任务分组，可切换到按工作区，并默认展开新分组', () => {
+  const store = createRecordsViewStore()
+  assert.equal(store.getSnapshot().groupBy, 'task')
+  store.actions.setGroupBy('workspace')
+  assert.equal(store.getSnapshot().groupBy, 'workspace')
+  store.actions.ensureExpanded(['group-a', 'group-b'])
+  assert.equal(store.getSnapshot().groupExpansion['group-a'], true)
+  assert.equal(store.getSnapshot().groupExpansion['group-b'], true)
+  store.actions.setGroupExpanded('group-a', false)
+  store.actions.ensureExpanded(['group-a'])
+  assert.equal(store.getSnapshot().groupExpansion['group-a'], false)
+  store.actions.setSessionOrder('gone', ['session-a'], {})
+  store.actions.retainAccountKeys(['group-a', 'group-b'])
+  assert.equal(store.getSnapshot().groupExpansion['group-a'], false)
+  assert.equal(store.getSnapshot().groupExpansion['group-b'], true)
+  assert.equal(store.getSnapshot().sessionOrderByAccount.gone, undefined)
 })

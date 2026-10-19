@@ -12,13 +12,26 @@ export declare function ScheduleRail({ t, runtime, openSession, openTaskSettings
     readonly view?: ScheduleView;
     readonly showViewSwitch?: boolean;
 }): JSX.Element;
-export declare function NativeScheduleShell({ t, runtime, officialTree, hostProps, openSession, openTaskSettings, useSessions, useWorkspaces, renderSlot, tabRegistry, wide, }: {
+export declare function ScheduledRecordsView({ t, runtime, officialTree, hostProps, openSession, openTaskSettings, openCreateTask, useSessions, useWorkspaces, wide, }: {
     readonly t: Translate;
     readonly runtime: AutomationRuntime;
-    readonly officialTree?: ComponentType<any>;
+    readonly officialTree?: ComponentType<Record<string, unknown>>;
     readonly hostProps?: Record<string, unknown>;
     readonly openSession?: (sessionId: string) => void;
     readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void;
+    readonly openCreateTask?: () => void;
+    readonly useSessions?: SessionSelector;
+    readonly useWorkspaces?: WorkspaceSelector;
+    readonly wide?: boolean;
+}): JSX.Element;
+export declare function NativeScheduleShell({ t, runtime, officialTree, hostProps, openSession, openTaskSettings, openCreateTask, useSessions, useWorkspaces, tabRegistry, wide, }: {
+    readonly t: Translate;
+    readonly runtime: AutomationRuntime;
+    readonly officialTree?: ComponentType<Record<string, unknown>>;
+    readonly hostProps?: Record<string, unknown>;
+    readonly openSession?: (sessionId: string) => void;
+    readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void;
+    readonly openCreateTask?: () => void;
     readonly useSessions?: SessionSelector;
     readonly useWorkspaces?: WorkspaceSelector;
     readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode;

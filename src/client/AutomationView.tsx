@@ -49,10 +49,16 @@ import {
   resolveAutomationTaskSettings,
   type AutomationTaskSettingsRequest,
 } from './task-settings-request.js'
+import {
+  AUTOMATION_CREATE_TASK_EVENT,
+  clearAutomationCreateTaskRequest,
+  readAutomationCreateTaskRequest,
+} from './create-task-request.js'
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
 const SORT_STORAGE: SortPreferenceStorage | undefined = typeof window === 'undefined' ? undefined : window.localStorage
 const TASK_SETTINGS_STORAGE: Storage | undefined = typeof window === 'undefined' ? undefined : window.sessionStorage
+const CREATE_TASK_STORAGE: Storage | undefined = typeof window === 'undefined' ? undefined : window.sessionStorage
 
 type Tab = 'mine' | 'runs'
 
@@ -78,6 +84,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
   const [sortKey, setSortKey] = useState<AutomationSortKey>(() => readSortDefault(SORT_STORAGE, SETTINGS_SORT_DEFAULT_KEY)?.key ?? 'created')
   const [sortDirection, setSortDirection] = useState<AutomationSortDirection>(() => readSortDefault(SORT_STORAGE, SETTINGS_SORT_DEFAULT_KEY)?.direction ?? 'desc')
   const [taskSettingsRequest, setTaskSettingsRequest] = useState<AutomationTaskSettingsRequest | undefined>(() => readAutomationTaskSettingsRequest(TASK_SETTINGS_STORAGE))
+  const [createTaskRequest, setCreateTaskRequest] = useState<boolean>(() => readAutomationCreateTaskRequest(CREATE_TASK_STORAGE))
   const now = useMemo(() => new Date(state.snapshot?.serverNow ?? Date.now()), [state.snapshot?.serverNow, state.refreshedAt])
 
   const snapshot = state.snapshot
@@ -138,9 +145,23 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
       const request = parseAutomationTaskSettingsRequest((event as CustomEvent<unknown>).detail)
       if (request !== undefined) setTaskSettingsRequest(request)
     }
+    const onCreateTask = (): void => { setCreateTaskRequest(true) }
     window.addEventListener(AUTOMATION_TASK_SETTINGS_EVENT, onTaskSettings)
-    return () => { window.removeEventListener(AUTOMATION_TASK_SETTINGS_EVENT, onTaskSettings) }
+    window.addEventListener(AUTOMATION_CREATE_TASK_EVENT, onCreateTask)
+    return () => {
+      window.removeEventListener(AUTOMATION_TASK_SETTINGS_EVENT, onTaskSettings)
+      window.removeEventListener(AUTOMATION_CREATE_TASK_EVENT, onCreateTask)
+    }
   }, [])
+
+  useEffect(() => {
+    if (!createTaskRequest || snapshot === undefined) return
+    clearAutomationCreateTaskRequest(CREATE_TASK_STORAGE)
+    setCreateTaskRequest(false)
+    setTab('mine')
+    setQuery('')
+    openCreate()
+  }, [createTaskRequest, snapshot, t])
 
   useEffect(() => {
     if (taskSettingsRequest === undefined || snapshot === undefined) return

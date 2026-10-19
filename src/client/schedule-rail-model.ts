@@ -4,6 +4,8 @@ import type { AutomationStatus } from './protocol.js'
 import { probeService } from './workspace-create.js'
 
 export const AUTOMATION_SESSION_PREFIX = 'dsh-automation-session-'
+/** 记录视图把每个自动化任务合成一个官方工作区分组，id 进入这个命名空间避免与真实工作区冲突。 */
+export const AUTOMATION_TASK_WORKSPACE_PREFIX = 'dsh-automation-task:'
 export const NATIVE_SIDEBAR_TAB_KEY = 'dsh-automation.sidebar-tab'
 
 export interface ScheduleRailSession {
@@ -44,6 +46,8 @@ export interface NativeWorkspaceLike {
   readonly title?: string
   readonly path?: string
   readonly sessionIds?: readonly string[]
+  readonly createdAt?: string
+  readonly updatedAt?: string
 }
 
 export type NativeSidebarTab = 'tasks' | 'channels' | 'schedule'
@@ -272,9 +276,16 @@ export function resolveVisibleSidebarTab(input: {
   // 否则分段页签拿不到匹配项，指示器会移出可视区且不渲染任何面板。
   return 'tasks'
 }
-export function tabForSessionId(sessionId: string | null | undefined, scheduledIds?: ReadonlySet<string>): NativeSidebarTab | undefined {
+export function tabForSessionId(
+  sessionId: string | null | undefined,
+  scheduledIds?: ReadonlySet<string>,
+  options: { readonly followSchedule?: boolean } = {},
+): NativeSidebarTab | undefined {
   if (sessionId === undefined || sessionId === null || sessionId === '') return undefined
-  if (scheduledIds !== undefined ? scheduledIds.has(sessionId) : sessionId.startsWith(AUTOMATION_SESSION_PREFIX)) return 'schedule'
+  const scheduled = scheduledIds !== undefined
+    ? scheduledIds.has(sessionId)
+    : sessionId.startsWith(AUTOMATION_SESSION_PREFIX)
+  if (scheduled) return options.followSchedule === false ? undefined : 'schedule'
   if (sessionId.startsWith('im:')) return 'channels'
   return 'tasks'
 }
@@ -314,22 +325,43 @@ export interface SessionListState {
 
 const taskFilterCache = new WeakMap<object, { key: string; result: object }>()
 const workspaceFilterCache = new WeakMap<object, { key: string; result: object }>()
+const scheduledSessionCache = new WeakMap<object, { key: string; result: object }>()
+const syntheticWorkspaceCache = new WeakMap<object, { key: string; result: object }>()
+const realWorkspaceCache = new WeakMap<object, { key: string; result: object }>()
+
+function recordField(value: unknown, key: string): Record<string, unknown> | undefined {
+  if (value === null || typeof value !== 'object' || !(key in value)) return undefined
+  const field = Reflect.get(value, key)
+  return field !== null && typeof field === 'object' ? field as Record<string, unknown> : undefined
+}
 
 function scheduledCacheKey(scheduledIds: ReadonlySet<string>): string {
   if (scheduledIds.size === 0) return ''
   return [...scheduledIds].sort().join('\0')
 }
 
-export function filterTaskSessionState<T extends SessionListState>(state: T | undefined, scheduledIds: ReadonlySet<string> = new Set()): T {
+export interface SessionFilterOptions {
+  /** 任务树需要显示定时会话时设为 true；只保留 IM 过滤。 */
+  readonly includeScheduled?: boolean
+}
+
+export function filterTaskSessionState<T extends SessionListState>(
+  state: T | undefined,
+  scheduledIds: ReadonlySet<string> = new Set(),
+  options: SessionFilterOptions = {},
+): T {
   const src = (state ?? { ids: [], byId: {} }) as T
-  const key = scheduledCacheKey(scheduledIds)
+  const key = `${scheduledCacheKey(scheduledIds)}\0${options.includeScheduled === true ? '1' : '0'}`
   if (typeof src === 'object' && src !== null) {
     const hit = taskFilterCache.get(src)
     if (hit !== undefined && hit.key === key) return hit.result as T
   }
   const ids = (src.ids ?? []).filter((id) => {
     const value = String(id)
-    return !value.startsWith('im:') && !isAutomationSidebarSession(value, src.byId?.[value], scheduledIds)
+    if (value.startsWith('im:')) return false
+    return options.includeScheduled === true
+      ? true
+      : !isAutomationSidebarSession(value, src.byId?.[value], scheduledIds)
   })
   const unchanged = ids.length === (src.ids ?? []).length
   const result = unchanged ? src : { ...src, ids, byId: Object.fromEntries(ids.map((id) => [id, src.byId?.[id]]).filter((entry) => entry[1] !== undefined)) }
@@ -337,9 +369,128 @@ export function filterTaskSessionState<T extends SessionListState>(state: T | un
   return result
 }
 
+/** 记录视图只保留定时执行产生的会话；其余字段原样带给官方树。 */
+export function scheduledOnlySessionState<T extends SessionListState>(state: T | undefined, scheduledIds: ReadonlySet<string>): T {
+  const src = (state ?? { ids: [], byId: {} }) as T
+  const key = scheduledCacheKey(scheduledIds)
+  if (typeof src === 'object' && src !== null) {
+    const hit = scheduledSessionCache.get(src)
+    if (hit !== undefined && hit.key === key) return hit.result as T
+  }
+  const ids = (src.ids ?? []).filter(id => scheduledIds.has(String(id)))
+  const byId = Object.fromEntries(
+    ids
+      .map(id => [id, src.byId?.[id]] as const)
+      .filter((entry): entry is readonly [string, NativeSessionLike] => entry[1] !== undefined),
+  )
+  const projections = recordField(src, 'projectionsBySession')
+  const result = {
+    ...src,
+    ids,
+    byId,
+    ...(projections === undefined
+      ? {}
+      : {
+          projectionsBySession: Object.fromEntries(
+            ids.filter(id => projections[id] !== undefined).map(id => [id, projections[id]]),
+          ),
+        }),
+  } as T
+  if (typeof src === 'object' && src !== null) scheduledSessionCache.set(src, { key, result })
+  return result
+}
+
 export interface WorkspaceListState {
   readonly items?: readonly NativeWorkspaceLike[]
   readonly archivedSessionIds?: readonly string[]
+  readonly pinnedSessionIds?: readonly string[]
+  readonly state?: 'idle' | 'loading' | 'error'
+  readonly phase?: 'pending' | 'ready'
+  readonly error?: unknown
+}
+
+export interface SyntheticTaskGroup {
+  readonly id: string
+  readonly name: string
+  readonly sessionIds: readonly string[]
+  readonly createdAt?: string
+}
+
+export function automationTaskWorkspaceId(automationId: string): string {
+  return `${AUTOMATION_TASK_WORKSPACE_PREFIX}${automationId}`
+}
+
+export function automationIdFromTaskWorkspaceId(workspaceId: string | undefined): string | undefined {
+  if (workspaceId === undefined || !workspaceId.startsWith(AUTOMATION_TASK_WORKSPACE_PREFIX)) return undefined
+  const id = workspaceId.slice(AUTOMATION_TASK_WORKSPACE_PREFIX.length)
+  return id === '' ? undefined : id
+}
+
+/**
+ * 把自动化任务合成为官方 WorkspaceView 列表。
+ *
+ * 官方树只按 `workspaceId` + `sessionIds` 分组，不校验工作区是否真实存在；
+ * 保留源快照的 phase/state/archived/pinned，避免官方树一直停在未就绪状态。
+ */
+export function syntheticTaskWorkspaceState<T extends WorkspaceListState>(
+  state: T | undefined,
+  groups: readonly SyntheticTaskGroup[],
+): T {
+  const src = (state ?? { items: [], archivedSessionIds: [] }) as T
+  const key = groups
+    .map(group => `${group.id}\0${group.name}\0${group.createdAt ?? ''}\0${group.sessionIds.join(',')}`)
+    .join('\0\0')
+  if (typeof src === 'object' && src !== null) {
+    const hit = syntheticWorkspaceCache.get(src)
+    if (hit !== undefined && hit.key === key) return hit.result as T
+  }
+  const createdAt = new Date(0).toISOString()
+  const items = groups.map((group) => {
+    const workspaceId = automationTaskWorkspaceId(group.id)
+    return {
+      workspaceId,
+      id: workspaceId,
+      title: group.name,
+      path: '',
+      sessionIds: [...group.sessionIds],
+      createdAt: group.createdAt ?? createdAt,
+      updatedAt: group.createdAt ?? createdAt,
+    }
+  })
+  const result = { ...src, items } as T
+  if (typeof src === 'object' && src !== null) syntheticWorkspaceCache.set(src, { key, result })
+  return result
+}
+
+/**
+ * 按真实工作区分组时，只保留定时执行会话，并沿用官方的归档筛选。
+ * 保留 phase/state/archived/pinned，官方树才会正常渲染。
+ */
+export function scheduledRealWorkspaceState<T extends WorkspaceListState>(
+  state: T | undefined,
+  scheduledIds: ReadonlySet<string>,
+  archivedFilter: ArchivedSessionFilter,
+): T {
+  const src = (state ?? { items: [], archivedSessionIds: [] }) as T
+  const key = `${scheduledCacheKey(scheduledIds)}\0${archivedFilter}`
+  if (typeof src === 'object' && src !== null) {
+    const hit = realWorkspaceCache.get(src)
+    if (hit !== undefined && hit.key === key) return hit.result as T
+  }
+  const archived = new Set(src.archivedSessionIds ?? [])
+  const items = (src.items ?? [])
+    .map((workspace) => {
+      const sessionIds = (workspace.sessionIds ?? []).filter((id) => {
+        const value = String(id)
+        return scheduledIds.has(value) && scheduledSessionVisible(value, archived, archivedFilter)
+      })
+      return sessionIds.length === (workspace.sessionIds ?? []).length
+        ? workspace
+        : { ...workspace, sessionIds }
+    })
+  const result = { ...src, items } as T
+  if (typeof src === 'object' && src !== null) realWorkspaceCache.set(src, { key, result })
+  return result
 }
 
 /** 0.2 主视图由 retainedBy.mainView 标记。 */
@@ -438,16 +589,24 @@ export function isHiddenSidebarSessionId(id: string, scheduledIds: ReadonlySet<s
   return id.startsWith('im:') || isAutomationSidebarSession(id, undefined, scheduledIds)
 }
 
-export function filterWorkspaceListState<T extends WorkspaceListState>(state: T | undefined, scheduledIds: ReadonlySet<string> = new Set()): T {
+export function filterWorkspaceListState<T extends WorkspaceListState>(
+  state: T | undefined,
+  scheduledIds: ReadonlySet<string> = new Set(),
+  options: SessionFilterOptions = {},
+): T {
   const src = (state ?? { items: [], archivedSessionIds: [] }) as T
-  const key = scheduledCacheKey(scheduledIds)
+  const key = `${scheduledCacheKey(scheduledIds)}\0${options.includeScheduled === true ? '1' : '0'}`
   if (typeof src === 'object' && src !== null) {
     const hit = workspaceFilterCache.get(src)
     if (hit !== undefined && hit.key === key) return hit.result as T
   }
   let changed = false
   const items = (src.items ?? []).map((workspace) => {
-    const sessionIds = (workspace.sessionIds ?? []).filter(sid => !isHiddenSidebarSessionId(String(sid), scheduledIds))
+    const sessionIds = (workspace.sessionIds ?? []).filter((sid) => {
+      const value = String(sid)
+      if (value.startsWith('im:')) return false
+      return options.includeScheduled === true ? true : !isAutomationSidebarSession(value, undefined, scheduledIds)
+    })
     if (sessionIds.length !== (workspace.sessionIds ?? []).length) {
       changed = true
       return { ...workspace, sessionIds }

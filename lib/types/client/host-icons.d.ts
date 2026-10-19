@@ -11,6 +11,7 @@ export declare const IconCheckOutline: HostIcon;
 export declare const IconChevronDownOutline: HostIcon;
 export declare const IconListPenOutline: HostIcon;
 export declare const IconSearchOutline: HostIcon;
+export declare const IconProjectAddOutline: HostIcon;
 export declare const IconCloseFill: HostIcon;
 export declare const IconSlidersTwoOutline: HostIcon;
 export declare const IconFolderClose: HostIcon;
