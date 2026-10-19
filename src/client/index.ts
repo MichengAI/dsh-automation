@@ -11,7 +11,7 @@ import {
 import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
 import { createHostWorkspace, pickHostDirectory } from './workspace-create.js'
-import { NativeScheduleShell, ScheduleRail, ScheduledRecordsView } from './ScheduleRail.js'
+import { NativeScheduleShell, ScheduledRecordsView } from './ScheduleRail.js'
 import { AUTOMATION_SESSION_PREFIX, automationIdFromTaskWorkspaceId, canOpenClientSession, collectScheduledSessionIds, ensureOpenScheduledSession, groupScheduledSessions, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
 import { IconClockOutline } from './host-icons.js'
 import { hostIconMarkup } from './host-icon-markup.js'
@@ -172,22 +172,6 @@ export function apply(ctx: ClientContext): void {
       runtime,
       ...(props.close === undefined ? {} : { closeSettings: props.close }),
       addWorkspace,
-    })
-  }))
-  ctx.slots.inject('sidebar.schedule', () => ctx.slots.register({
-    name: 'sidebar.schedule',
-    id: 'dsh-automation-schedule',
-    order: 10,
-    locale: NS,
-    label: () => t('sidebar.tab'),
-  }, function AutomationScheduleRail(props: { openSession?: (sessionId: string) => void; view?: 'runs' | 'overview'; showViewSwitch?: boolean }) {
-    return createElement(ScheduleRail, {
-      t,
-      runtime,
-      openSession: createScheduledSessionOpener(ctx, runtime, props.openSession),
-      openTaskSettings,
-      ...(props.view === undefined ? {} : { view: props.view }),
-      ...(props.showViewSwitch === undefined ? {} : { showViewSwitch: props.showViewSwitch }),
     })
   }))
   ctx.slots.inject('sidebar.workspaces', () => {

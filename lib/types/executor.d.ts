@@ -8,8 +8,7 @@ export interface SessionEventLike {
     readonly data: Record<string, any>;
 }
 interface SessionEventReader {
-    readonly events?: readonly SessionEventLike[];
-    snapshotEvents?(): readonly SessionEventLike[];
+    snapshotEvents(): readonly SessionEventLike[];
 }
 export interface SessionOwnershipHintObject extends SessionEventReader {
     deriveMessages?(): readonly {

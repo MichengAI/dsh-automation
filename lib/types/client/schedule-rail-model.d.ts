@@ -82,18 +82,6 @@ export declare function collectScheduledSessionIds(runs: readonly {
 }[] | undefined): Set<string>;
 /** 任务树要藏的定时会话：前缀、仍挂在定时快照上，或标题是定时跑出来的时间戳。 */
 export declare function isAutomationSidebarSession(id: string, item?: NativeSessionLike, scheduledIds?: ReadonlySet<string>): boolean;
-export declare function isNativeTaskSession(item: NativeSessionLike | undefined, scheduledIds?: ReadonlySet<string>): boolean;
-export declare function groupNativeTaskSessions(sessions: {
-    readonly ids?: readonly string[];
-    readonly byId?: Record<string, NativeSessionLike>;
-}, workspaces: {
-    readonly items?: readonly NativeWorkspaceLike[];
-    readonly archivedSessionIds?: readonly string[];
-} | undefined, ungroupedLabel: string, scheduledIds?: ReadonlySet<string>): {
-    readonly id: string;
-    readonly label: string;
-    readonly sessions: readonly NativeSessionLike[];
-}[];
 export declare function readNativeSidebarTab(raw: string | null): NativeSidebarTab;
 /** 协作页签（频道/定时）以 registry 为准，不能因 sidebar.channels slot 未就绪就把点击打回任务。 */
 /** 只有当前会话变了才跟随切页签，避免点「定时」时被频道/任务会话打回去闪烁。 */

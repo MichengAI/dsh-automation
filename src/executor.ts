@@ -21,8 +21,7 @@ export interface SessionEventLike {
 }
 
 interface SessionEventReader {
-  readonly events?: readonly SessionEventLike[]
-  snapshotEvents?(): readonly SessionEventLike[]
+  snapshotEvents(): readonly SessionEventLike[]
 }
 
 export interface SessionOwnershipHintObject extends SessionEventReader {
@@ -107,8 +106,7 @@ export function hasAutomationSource(hint: SessionOwnershipHint = []): boolean {
 
 /** 已弃用的同步历史读取，只给 session/event 没有增量或不完整时兜底。 */
 export function readSessionEvents(session: SessionEventReader): readonly SessionEventLike[] {
-  if (typeof session.snapshotEvents === 'function') return session.snapshotEvents()
-  return session.events ?? []
+  return session.snapshotEvents()
 }
 
 /** 订阅当前会话增量，避免为摘要再扫整段历史。 */

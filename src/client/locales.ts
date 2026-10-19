@@ -9,12 +9,13 @@ export const en = {
   "sidebar.viewOverview": "Task overview",
   "sidebar.runsTab": "Records",
   "sidebar.overviewTab": "Tasks",
-  "sidebar.empty": "No scheduled runs yet.",
+
   "records.groupReadOnly": "Scheduled task groups cannot be renamed or deleted here.",
   "records.groupByTask": "By task",
   "records.sectionTasks": "Tasks",
-  "sidebar.tasksEmpty": "No web tasks yet.",
-  "sidebar.ungrouped": "Ungrouped",
+
+  "sidebar.treeUnavailable": "The official task tree is unavailable in this Host.",
+
   "sidebar.workspaces": "Workspaces",
   "sidebar.search": "Search",
   "sidebar.clearSearch": "Clear search",
@@ -212,12 +213,13 @@ export const zh: Record<AutomationLocaleKey, string> = {
   "sidebar.viewOverview": "任务总览",
   "sidebar.runsTab": "记录",
   "sidebar.overviewTab": "任务",
-  "sidebar.empty": "还没有定时任务执行记录。",
+
   "records.groupReadOnly": "定时任务分组不能在这里重命名或删除。",
   "records.groupByTask": "按任务",
   "records.sectionTasks": "任务",
-  "sidebar.tasksEmpty": "暂无网页任务",
-  "sidebar.ungrouped": "未分组",
+
+  "sidebar.treeUnavailable": "当前宿主未提供官方任务树。",
+
   "sidebar.workspaces": "工作区",
   "sidebar.search": "搜索",
   "sidebar.clearSearch": "清除搜索",

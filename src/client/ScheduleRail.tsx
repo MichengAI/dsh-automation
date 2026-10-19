@@ -1,5 +1,5 @@
 import { Component, createElement, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type CSSProperties, type ReactNode } from 'react'
-import { SegmentedTabs, StateDot, type SegmentedTab } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SegmentedTabs, type SegmentedTab } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import { IconClockOutline, IconFolderClose, IconQueueOutline } from './host-icons.js'
 import type { AutomationRuntime } from './runtime.js'
@@ -9,7 +9,6 @@ import {
   filterTaskSessionState,
   collectScheduledSessionIds,
   filterWorkspaceListState,
-  groupNativeTaskSessions,
   groupScheduledSessions,
   scheduledOnlySessionState,
   scheduledRealWorkspaceState,
@@ -79,81 +78,11 @@ class OfficialTreeGuard extends Component<{ fallback: ReactNode; children: React
   }
 }
 
-export function ScheduleRail({
-  t,
-  runtime,
-  openSession,
-  openTaskSettings,
-  view: controlledView,
-  showViewSwitch = true,
-}: {
-  readonly t: Translate
-  readonly runtime: AutomationRuntime
-  readonly openSession?: (sessionId: string) => void
-  readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
-  readonly view?: ScheduleView
-  readonly showViewSwitch?: boolean
-}): JSX.Element {
-  const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
-  const [folded, setFolded] = useState<Record<string, boolean>>({})
-  const [localView, setLocalView] = useState<ScheduleView>('runs')
-  const view = controlledView ?? localView
-  const snapshot = state.snapshot
-
-  const groups = useMemo(() => {
-    if (snapshot === undefined) return []
-    return groupScheduledSessions(snapshot.automations, snapshot.runs)
-  }, [snapshot])
-
-  return (
-    <div className="dsh-st-rail">
-      {showViewSwitch && (
-        <div className="dsh-st-n-views-wrap">
-          <ScheduleViewSwitch t={t} view={view} onChange={setLocalView} />
-        </div>
-      )}
-      <div id={SCHEDULE_VIEW_PANEL_ID} role="tabpanel" className="dsh-st-rail-panel">
-        {view === 'overview'
-          ? snapshot === undefined
-            ? <div className="dsh-st-rail-empty">{state.phase === 'loading' ? t('loading') : t('overview.empty')}</div>
-            : <ScheduleOverview
-                t={t}
-                automations={snapshot.automations}
-                onToggleAutomation={(automationId, mutation) => runtime.mutateAutomation(automationId, mutation)}
-                {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
-                {...(snapshot.serverNow === undefined ? {} : { serverNow: snapshot.serverNow })}
-              />
-          : <>
-              {state.phase === 'loading' && groups.length === 0 && <div className="dsh-st-rail-empty">{t('loading')}</div>}
-              {groups.length === 0 && state.phase !== 'loading' && <div className="dsh-st-rail-empty">{t('sidebar.empty')}</div>}
-              {groups.map(group => (
-                <section key={group.id} className="dsh-st-rail-group">
-                  <button
-                    type="button"
-                    className="dsh-st-rail-head"
-                    onClick={() => setFolded(current => ({ ...current, [group.id]: !current[group.id] }))}
-                  >
-                    <span className="dsh-st-rail-folder"><IconClockOutline size={16} /></span>
-                    <span className="dsh-st-rail-title">{group.name}</span>
-                  </button>
-                  {folded[group.id] !== true && group.sessions.map(session => (
-                    <button
-                      key={session.id}
-                      type="button"
-                      className="dsh-st-rail-session"
-                      onClick={() => openSession?.(session.id)}
-                    >
-                      <span>{session.label}</span>
-                      {session.running && <StateDot state="ongoing" size={10} />}
-                    </button>
-                  ))}
-                </section>
-              ))}
-            </>}
-      </div>
-    </div>
-  )
+function TreeUnavailable({ t }: { readonly t: Translate }): JSX.Element {
+  return <div className="dsh-st-rail-empty">{t('sidebar.treeUnavailable')}</div>
 }
+
+
 
 export function ScheduledRecordsView({
   t,
@@ -319,21 +248,11 @@ export function ScheduledRecordsView({
     onSelect: () => recordsStore.actions.setGroupBy('task'),
   }), [groupBy, recordsStore, recordsT, t])
 
-  const recordsFallback = (
-    <ScheduleRail
-      t={t}
-      runtime={runtime}
-      {...(recordsOpen === undefined ? {} : { openSession: recordsOpen })}
-      {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
-      view="runs"
-      showViewSwitch={false}
-    />
-  )
   const recordsBody = Official === undefined
-    ? recordsFallback
+    ? <TreeUnavailable t={t} />
     : (
         <div className="dsh-st-schedule-tree" data-mode={groupBy}>
-          <OfficialTreeGuard fallback={recordsFallback}>
+          <OfficialTreeGuard fallback={<TreeUnavailable t={t} />}>
             {createElement(Official, scheduledOfficialProps)}
           </OfficialTreeGuard>
         </div>
@@ -474,9 +393,7 @@ export function NativeScheduleShell({
     ...(useWorkspaces === undefined ? {} : { useWorkspaces: useFilteredWorkspaces }),
   }
   const renderOfficial = (props: Record<string, unknown>): ReactNode => {
-    if (Official === undefined) {
-      return <NativeTaskRail t={t} {...(openSession === undefined ? {} : { openSession })} {...(useSessions === undefined ? {} : { useSessions: useFilteredSessions })} {...(useWorkspaces === undefined ? {} : { useWorkspaces })} />
-    }
+    if (Official === undefined) return <TreeUnavailable t={t} />
     return (
       <OfficialTreeGuard fallback={createElement(Official, rawOfficialProps)}>
         {createElement(Official, props)}
@@ -585,45 +502,4 @@ export function NativeScheduleShell({
   )
 }
 
-function NativeTaskRail({
-  t,
-  openSession,
-  useSessions,
-  useWorkspaces,
-}: {
-  readonly t: Translate
-  readonly openSession?: (sessionId: string) => void
-  readonly useSessions?: SessionSelector
-  readonly useWorkspaces?: WorkspaceSelector
-}): JSX.Element {
-  const snap = useSessions === undefined
-    ? { ids: [] as string[], byId: {} as Record<string, NativeSessionLike> }
-    : useSessions(state => state ?? { ids: [], byId: {} })
-  const workspaces = useWorkspaces === undefined
-    ? undefined
-    : useWorkspaces(state => state ?? { items: [], archivedSessionIds: [] })
-  const groups = groupNativeTaskSessions(snap, workspaces, t('sidebar.ungrouped'))
-  const currentId = resolveCurrentSessionId(snap)
-  if (groups.length === 0) return <div className="dsh-st-rail-empty">{t('sidebar.tasksEmpty')}</div>
-  return (
-    <div className="dsh-st-rail">
-      {groups.map(group => (
-        <section key={group.id || 'ungrouped'} className="dsh-st-rail-group">
-          <div className="dsh-st-rail-head is-static">
-            <span className="dsh-st-rail-title">{group.label}</span>
-          </div>
-          {group.sessions.map(item => (
-            <button
-              key={item.id}
-              type="button"
-              className={`dsh-st-rail-session${currentId === item.id ? ' is-on' : ''}`}
-              onClick={() => { if (item.id !== undefined) openSession?.(item.id) }}
-            >
-              <span>{item.title || item.id}</span>
-            </button>
-          ))}
-        </section>
-      ))}
-    </div>
-  )
-}
+

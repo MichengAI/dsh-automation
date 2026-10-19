@@ -119,14 +119,9 @@ test('运行摘要只取本 run 区间内的最后一条助手文本和 turn 结
   assert.equal(result.reason?.kind, 'completed')
 })
 
-test('会话事件优先使用新版 snapshotEvents，并兼容旧版 events', () => {
+test('会话事件只从 snapshotEvents 读取', () => {
   const current = [{ seq: 2, type: 'turn/start', data: {} }]
-  const legacy = [{ seq: 1, type: 'user/message', data: {} }]
-  assert.deepEqual(readSessionEvents({
-    snapshotEvents: () => current,
-    events: legacy,
-  }), current)
-  assert.deepEqual(readSessionEvents({ events: legacy }), legacy)
+  assert.deepEqual(readSessionEvents({ snapshotEvents: () => current }), current)
 })
 
 test('有 session/event 增量时摘要不读 snapshotEvents', () => {

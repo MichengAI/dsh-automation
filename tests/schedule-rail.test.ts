@@ -5,7 +5,6 @@ import {
   collectScheduledSessionIds,
   deriveTaskOverviewRows,
   isAutomationSidebarSession,
-  groupNativeTaskSessions,
   groupScheduledSessions,
   keepScheduledSessionLink,
   scheduledSessionVisible,
@@ -19,7 +18,6 @@ import {
   resolveClientSessionOpenAccess,
   resolveCurrentSessionId,
   hasCodexUiSidebar,
-  isNativeTaskSession,
   readNativeSidebarTab,
   filterTaskSessionState,
   filterWorkspaceListState,
@@ -103,32 +101,6 @@ test('任务树按前缀和定时标题隐藏自动化会话', () => {
   assert.equal(isAutomationSidebarSession('chat-1', { id: 'chat-1', displayTitle: '2026-08-18 09:40 - 给我报表信息' }), true)
   assert.equal(isAutomationSidebarSession('chat-1', { id: 'chat-1', title: '审查本项目代码' }), false)
 })
-test('native task list filters im, subagent and automation sessions', () => {
-  assert.equal(isNativeTaskSession({ id: 'chat-1', title: 'normal' }), true)
-  const listedId = AUTOMATION_SESSION_PREFIX + 'x'
-  assert.equal(isNativeTaskSession({ id: listedId, title: 'scheduled' }, new Set([listedId])), false)
-  assert.equal(isNativeTaskSession({ id: listedId, title: 'forgotten' }, new Set()), false)
-  assert.equal(isNativeTaskSession({ id: 'im:wecom:1', origin: 'im' }), false)
-  assert.equal(isNativeTaskSession({ id: 'sub-1', origin: 'subagent' }), false)
-  const autoId = AUTOMATION_SESSION_PREFIX + '1'
-  const groups = groupNativeTaskSessions({
-    ids: ['ws-session', autoId, 'im:1', 'loose'],
-    byId: {
-      'ws-session': { id: 'ws-session', title: 'workspace-task' },
-      [autoId]: { id: autoId, title: 'scheduled-run' },
-      'im:1': { id: 'im:1', origin: 'im', title: 'channel' },
-      loose: { id: 'loose', title: 'loose-task' },
-    },
-  }, {
-    items: [{ id: 'ws1', title: 'demo', sessionIds: ['ws-session', autoId] }],
-    archivedSessionIds: [],
-  }, 'ungrouped', new Set([autoId]))
-  assert.deepEqual(groups.map(group => ({ id: group.id, titles: group.sessions.map(item => item.title) })), [
-    { id: 'ws1', titles: ['workspace-task'] },
-    { id: '', titles: ['loose-task'] },
-  ])
-})
-
 test('native tabs follow session prefixes and detect Codex UI sidebar', () => {
   assert.equal(readNativeSidebarTab('schedule'), 'schedule')
   assert.equal(readNativeSidebarTab('nope'), 'tasks')

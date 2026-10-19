@@ -196,46 +196,9 @@ export function isAutomationSidebarSession(id: string, item?: NativeSessionLike,
   const title = String(item?.title ?? item?.displayTitle ?? '')
   return AUTOMATION_TITLE_RE.test(title)
 }
-export function isNativeTaskSession(item: NativeSessionLike | undefined, scheduledIds: ReadonlySet<string> = new Set()): boolean {
-  if (item === undefined || item.blank === true) return false
-  if (item.origin === 'im' || item.origin === 'subagent') return false
-  const id = item.id ?? ''
-  if (id.startsWith('im:')) return false
-  if (isAutomationSidebarSession(id, item, scheduledIds)) return false
-  return true
-}
 
-export function groupNativeTaskSessions(
-  sessions: { readonly ids?: readonly string[]; readonly byId?: Record<string, NativeSessionLike> },
-  workspaces: { readonly items?: readonly NativeWorkspaceLike[]; readonly archivedSessionIds?: readonly string[] } | undefined,
-  ungroupedLabel: string,
-  scheduledIds: ReadonlySet<string> = new Set(),
-): { readonly id: string; readonly label: string; readonly sessions: readonly NativeSessionLike[] }[] {
-  const byId = sessions.byId ?? {}
-  const archived = new Set(workspaces?.archivedSessionIds ?? [])
-  const assigned = new Set<string>()
-  const groups: { id: string; label: string; sessions: NativeSessionLike[] }[] = []
-  for (const workspace of workspaces?.items ?? []) {
-    const items = (workspace.sessionIds ?? [])
-      .map(id => byId[id])
-      .filter((item): item is NativeSessionLike => item !== undefined && item.id !== undefined && isNativeTaskSession(item, scheduledIds) && !archived.has(item.id))
-    for (const item of items) {
-      if (item.id !== undefined) assigned.add(item.id)
-    }
-    if (items.length > 0) {
-      groups.push({
-        id: workspace.workspaceId ?? workspace.id ?? workspace.path ?? workspace.title ?? 'workspace',
-        label: workspace.title || workspace.path || ungroupedLabel,
-        sessions: items,
-      })
-    }
-  }
-  const ungrouped = (sessions.ids ?? [])
-    .map(id => byId[id])
-    .filter((item): item is NativeSessionLike => item !== undefined && item.id !== undefined && !assigned.has(item.id) && isNativeTaskSession(item, scheduledIds) && !archived.has(item.id))
-  if (ungrouped.length > 0) groups.push({ id: '', label: ungroupedLabel, sessions: ungrouped })
-  return groups
-}
+
+
 
 export function readNativeSidebarTab(raw: string | null): NativeSidebarTab {
   if (raw === 'channels' || raw === 'schedule' || raw === 'tasks') return raw

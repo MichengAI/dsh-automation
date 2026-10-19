@@ -140,16 +140,7 @@ const CSS_TEXT = `
 .dsh-st-overview-next strong{color:var(--dsw-alias-label-secondary,#b6bac2);font-size:12px;font-weight:600;line-height:16px;white-space:nowrap}
 .dsh-st-overview-row:not(.is-paused) .dsh-st-overview-next strong{color:#45d483}
 .dsh-st-overview-toggle{position:absolute;top:4px;right:6px;z-index:1;display:inline-flex;align-items:center}
-.dsh-st-rail{box-sizing:border-box;height:100%;overflow:auto;padding:4px var(--dsh-sidebar-inline-padding,12px) 18px 8px;color:inherit;scrollbar-gutter:stable}
 .dsh-st-rail-empty{padding:16px 10px;color:var(--dsw-alias-label-tertiary,#8b8f98);font-size:12px}
-.dsh-st-rail-group{margin:0 0 8px}
-.dsh-st-rail-head,.dsh-st-rail-session{display:flex;align-items:center;gap:8px;width:100%;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer}
-.dsh-st-rail-head{min-height:32px;padding:4px 8px;border-radius:8px;font-size:13px;font-weight:600}
-.dsh-st-rail-session{min-height:28px;padding:3px 8px 3px 28px;border-radius:8px;color:var(--dsw-alias-label-secondary,#9ca39f);font-size:12px}
-.dsh-st-rail-head:hover,.dsh-st-rail-session:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06))}
-.dsh-st-rail-folder{display:grid;place-items:center;width:16px;height:20px;flex:none;opacity:.8}
-.dsh-st-rail-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dsh-st-rail-session span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dsh-st-shell-rail{display:flex;flex-direction:column;min-height:0;flex:1;height:100%;overflow:hidden}
 .dsh-st-shell-tabs-wrap{display:flex;margin:2px var(--dsh-sidebar-inline-padding,12px) 8px 0;padding:0;width:auto}
 .dsh-st-shell-tabs-wrap .dsh-st-shell-segmented-tabs{display:grid!important;width:100%!important;box-sizing:border-box!important;height:32px!important;min-height:32px!important;max-height:32px!important;padding:2px!important;border:0!important;border-radius:var(--dsw-radius-sm,8px)!important;box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2,rgba(255,255,255,.08))!important;background:var(--dsw-alias-bg-layer-1,rgba(255,255,255,.02))!important}
@@ -168,8 +159,6 @@ const CSS_TEXT = `
 .dsh-st-schedule-tree[data-mode="workspace"] [data-row-key^="workspace:"] > span:last-child,
 .dsh-st-schedule-tree[data-mode="workspace-tree"] [data-row-key^="workspace:"] > span:last-child{display:none}
 .dsh-st-session-clock{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;color:var(--dsw-alias-label-tertiary,#8b8f98)}
-.dsh-st-rail-head.is-static{cursor:default;font-weight:600}
-.dsh-st-rail-session.is-on{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06))}
 .dsh-st-n,.dsh-st-n *{box-sizing:border-box}.dsh-st-n{--dsh-session-list-edge-inset:var(--dsh-sidebar-inline-padding,12px);box-sizing:border-box;display:flex;flex:1;min-width:0;min-height:0;flex-direction:column;padding:0;color:var(--dsw-alias-label-primary,inherit);font:14px/20px inherit;overflow:hidden}
 .dsh-st-n-empty{padding:16px 12px;color:var(--dsw-alias-label-tertiary,#8b8f98);font-size:13px}
 .dsh-st-n-head-btn{cursor:pointer;width:28px;height:28px;min-width:28px;min-height:28px;position:relative;z-index:1;color:var(--dsw-alias-label-secondary);background:transparent;border:none;border-radius:50%;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}

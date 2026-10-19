@@ -8,12 +8,10 @@ export declare const en: {
     readonly "sidebar.viewOverview": "Task overview";
     readonly "sidebar.runsTab": "Records";
     readonly "sidebar.overviewTab": "Tasks";
-    readonly "sidebar.empty": "No scheduled runs yet.";
     readonly "records.groupReadOnly": "Scheduled task groups cannot be renamed or deleted here.";
     readonly "records.groupByTask": "By task";
     readonly "records.sectionTasks": "Tasks";
-    readonly "sidebar.tasksEmpty": "No web tasks yet.";
-    readonly "sidebar.ungrouped": "Ungrouped";
+    readonly "sidebar.treeUnavailable": "The official task tree is unavailable in this Host.";
     readonly "sidebar.workspaces": "Workspaces";
     readonly "sidebar.search": "Search";
     readonly "sidebar.clearSearch": "Clear search";

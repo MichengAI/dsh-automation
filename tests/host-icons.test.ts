@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { pickHostExport, pickHostIcon } from '../src/client/host-icon-resolve.ts'
-
-const modern = () => null
+import { pickHostIcon } from '../src/client/host-icon-resolve.ts'
 
 test('只认 0.2 的 Regular 导出名，不回退带尺寸的旧名字', () => {
   const modern = () => null
@@ -11,18 +9,11 @@ test('只认 0.2 的 Regular 导出名，不回退带尺寸的旧名字', () => 
     IconEllipsisOutlineRegular: modern,
     IconEllipsisOutline16: legacy,
   }, 'IconEllipsisOutlineRegular'), modern)
-  assert.notEqual(pickHostIcon({
+  assert.throws(() => pickHostIcon({
     IconEllipsisOutline16: legacy,
-  }, 'IconEllipsisOutlineRegular'), legacy)
+  }, 'IconEllipsisOutlineRegular'), /Missing host icon export/)
 })
 
-test('旧宿主没有官方组件时不拿 undefined 去渲染', () => {
-  assert.equal(pickHostExport({}, 'Button'), undefined)
-  assert.equal(typeof pickHostExport({ Button: modern }, 'Button'), 'function')
-})
-
-test('导出名不存在时不把 undefined 交给 React', () => {
-  const icon = pickHostIcon({}, 'IconEllipsisOutlineRegular')
-  assert.equal(typeof icon, 'function')
-  assert.equal(icon({}), null)
+test('导出名不存在时直接报错，不返回空图标', () => {
+  assert.throws(() => pickHostIcon({}, 'IconEllipsisOutlineRegular'), /Missing host icon export/)
 })
