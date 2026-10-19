@@ -6,10 +6,9 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## 1.0.3 - 2026-10-19
 
-- Stop rewriting the host `svg` for the settings navigation icon: inject a standalone mask element and hide the host icon through a marker attribute, avoiding conflicts with third-party skins and restoring cleanly when the effect is disposed.
-- Fix settings tab geometry: override the indicator width for the 2px inset and fit tabs exactly to the 32px track, removing the 1–2px overflow and the second-tab drift.
-- Simplify tab labels: `我的定时任务` → `定时任务` and `My tasks` → `Tasks`.
-- Ignore the local packaging output `dist-test/`.
+- The Scheduled tasks entry icon in Settings now displays reliably and is no longer hidden or replaced by third-party themes or skins.
+- The Tasks and Run history tabs now align with the selection thumb, without slight overflow or drift.
+- Sharper tab labels: "定时任务" in Chinese and "Tasks" in English.
 
 ## 1.0.2 - 2026-10-19
 
