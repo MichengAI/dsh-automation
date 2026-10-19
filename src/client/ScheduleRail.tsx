@@ -6,9 +6,7 @@ import type { AutomationRuntime } from './runtime.js'
 import {
   automationIdFromTaskWorkspaceId,
   automationTaskWorkspaceId,
-  filterTaskSessionState,
   collectScheduledSessionIds,
-  filterWorkspaceListState,
   groupScheduledSessions,
   scheduledOnlySessionState,
   scheduledRealWorkspaceState,
@@ -331,16 +329,6 @@ export function NativeScheduleShell({
     snapshotRefreshFor.current = currentId ?? null
     void runtime.refresh().catch(() => undefined)
   }, [automationState.snapshot?.runs, currentId, runtime])
-  // 官方任务树不再隐藏定时会话，只保留 IM 会话过滤（频道页签负责它们）。
-  const useFilteredSessions = useCallback<SessionSelector>((selector, eq) => {
-    if (useSessions === undefined) return selector(EMPTY_SESSION_STATE)
-    return useSessions(state => selector(filterTaskSessionState(state, new Set(), { includeScheduled: true })), eq)
-  }, [useSessions])
-  const useFilteredWorkspaces = useCallback<WorkspaceSelector>((selector, eq) => {
-    if (useWorkspaces === undefined) return selector(EMPTY_WORKSPACE_STATE)
-    return useWorkspaces(state => selector(filterWorkspaceListState(state, new Set(), { includeScheduled: true })), eq)
-  }, [useWorkspaces])
-
   useEffect(() => {
     try { window.localStorage.setItem(NATIVE_SIDEBAR_TAB_KEY, tab) }
     catch { /* 隐私模式或禁用存储时忽略 */ }
@@ -360,7 +348,7 @@ export function NativeScheduleShell({
   const tabFollowReady = useRef(false)
   useEffect(() => {
     // 定时会话已经出现在官方任务树里，点到它时不再强制切到定时页签。
-    const next = tabForSessionId(currentId ?? undefined, scheduledIds, { followSchedule: false })
+    const next = tabForSessionId(currentId ?? undefined, scheduledIds, { followSchedule: false, followChannels: false })
     if (!tabFollowReady.current) {
       tabFollowReady.current = true
       previousCurrentId.current = currentId
@@ -374,7 +362,8 @@ export function NativeScheduleShell({
     if (next === 'tasks') setTab('tasks')
     if (next === 'channels' && (channelsReady || extraIds.includes('channels'))) setTab('channels')
     const matched = extraTabs.find(item => currentId !== undefined && currentId !== null && item.matchSession?.(String(currentId)) === true)
-    if (matched !== undefined && matched.id !== 'schedule') setTab(matched.id)
+    // 频道会话已经在任务树里，频道页签交给用户手动切换；定时页签同样不抢。
+    if (matched !== undefined && matched.id !== 'schedule' && matched.id !== 'channels') setTab(matched.id)
   }, [currentId, channelsReady, extraTabs, scheduledIds])
 
   const rawOfficialProps = { ...(hostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
@@ -389,8 +378,6 @@ export function NativeScheduleShell({
   const filteredOfficialProps = {
     ...rawOfficialProps,
     open: openSidebarSession,
-    ...(useSessions === undefined ? {} : { useSessions: useFilteredSessions }),
-    ...(useWorkspaces === undefined ? {} : { useWorkspaces: useFilteredWorkspaces }),
   }
   const renderOfficial = (props: Record<string, unknown>): ReactNode => {
     if (Official === undefined) return <TreeUnavailable t={t} />
@@ -400,8 +387,6 @@ export function NativeScheduleShell({
       </OfficialTreeGuard>
     )
   }
-
-  if (wide === false) return <>{renderOfficial(filteredOfficialProps)}</>
 
   const foreignTabs = useMemo(() => extraTabs.filter(item => item.id !== 'schedule'), [extraTabs])
   const visibleTab = resolveVisibleSidebarTab({
@@ -472,6 +457,8 @@ export function NativeScheduleShell({
     })
     return items as unknown as readonly [SegmentedTab<string>, ...SegmentedTab<string>[]]
   }, [channelsReady, foreignTabs, t])
+
+  if (wide === false) return <>{renderOfficial(filteredOfficialProps)}</>
 
   const activeForeignTab = visibleTab === 'schedule' || visibleTab === 'tasks'
     ? undefined
