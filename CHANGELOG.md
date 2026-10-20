@@ -26,6 +26,9 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Unify official task-tree session filters: both automation and IM apply filters through `NativeTabRegistry.sessionFilters`, with a new `getRevision()` so adding or removing a filter recomputes immediately regardless of which plugin wrapped the sidebar first.
 - Unify official task-tree session opening: add `NativeTabRegistry.sessionOpeners` to match scheduled/channel openers in order and fall back to the host; scheduled sessions still adopt/refresh and channel sessions still resolve/ensure regardless of which plugin wrapped first.
 - Delete the custom session list, search toolbar, row menus, and hover cards; session management now reuses the official components.
+- Fix the Scheduled tab disappearing when a foreign sidebar host changes: distinguish automation and IM wrappers with the shared display name, and reattach the tab/opener when the foreign host changes.
+- Preserve the stored sidebar tab on first load; match new-session controls by their own label instead of session titles.
+- Reduce per-row automation subscriptions and guard menu injection and foreign opener matchers.
 
 ## 1.0.4 - 2026-10-19
 

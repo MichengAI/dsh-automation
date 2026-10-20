@@ -33,7 +33,7 @@ export function openRegisteredSession(
   const opener = registry?.sessionOpeners
     ?.slice()
     .sort((left, right) => (left.order ?? 0) - (right.order ?? 0))
-    .find(item => item.matchSession(sessionId))
+    .find(item => item !== null && typeof item?.matchSession === 'function' && item.matchSession(sessionId))
   if (opener === undefined) {
     hostOpen?.(sessionId)
     return

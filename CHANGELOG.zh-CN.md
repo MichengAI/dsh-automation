@@ -26,6 +26,9 @@
 - 统一官方任务树的会话过滤器：automation 与 IM 插件都通过 `NativeTabRegistry.sessionFilters` 应用过滤，并新增 `getRevision()`，过滤器增删后立即重新计算，不再取决于哪个插件先包裹侧栏。
 - 统一官方任务树的会话打开：新增 `NativeTabRegistry.sessionOpeners`，按时序匹配定时/频道 opener，未匹配时回退宿主；无论谁先包裹，定时会话都会 adopt/refresh，频道会话都会 resolve/ensure。
 - 删除自绘会话列表、搜索工具栏、行菜单和悬停卡，会话管理统一复用官方组件。
+- 修复外部侧栏换壳后「定时」页签可能丢失：正确区分 automation 与 IM 的共享包裹名，并在 foreign host 变化时重新挂载页签和 opener。
+- 修复已保存侧栏页签在首次加载被普通会话覆盖；新建会话点击只匹配控件标签，不再误命中会话标题。
+- 降低每个会话行对自动化状态的订阅开销，并为菜单注入和第三方 opener 增加边界保护。
 
 ## 1.0.4 - 2026-10-19
 

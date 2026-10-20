@@ -1,4 +1,4 @@
-import { type ComponentType, type ReactNode } from 'react';
+import { type ComponentType } from 'react';
 import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js';
 import type { AutomationRuntime } from './runtime.js';
 import { type NativeTabRegistry } from './native-tabs.js';
@@ -25,7 +25,6 @@ export declare function NativeScheduleShell({ t, runtime, officialTree, hostProp
     readonly openCreateTask?: () => void;
     readonly useSessions?: SessionSelector;
     readonly useWorkspaces?: WorkspaceSelector;
-    readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode;
     readonly tabRegistry?: NativeTabRegistry;
     readonly wide?: boolean;
 }): JSX.Element | null;

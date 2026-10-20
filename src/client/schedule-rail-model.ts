@@ -530,7 +530,7 @@ export function isAutomationWorkspaceWrapper(item: unknown): boolean {
   const name = String(record?.component?.displayName ?? record?.component?.name ?? '')
   return id === 'dsh-automation-native-switcher'
     || id === 'dsh-automation-wrap-bump'
-    || name === 'DshNativeTabWorkspaceShell'
+    || (name === 'DshNativeTabWorkspaceShell' && isOwnAutomationWrapper(record?.component))
     || name === 'AutomationNativeWorkspaceShell'
     || name === 'AutomationWrapBump'
     || isOwnAutomationWrapper(record?.component)

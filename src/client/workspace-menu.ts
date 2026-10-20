@@ -91,7 +91,7 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
       ?? items.find(item => !item.disabled && !/(danger|删除|Delete)/i.test(item.textContent ?? ''))
       ?? first
     const wrapper = template.parentElement
-    if (wrapper === null) return
+    if (wrapper === null || wrapper === menu || wrapper.parentElement === null) return
     const clone = wrapper.cloneNode(true) as HTMLElement
     const button = clone.querySelector<HTMLButtonElement>(MENU_ITEM_SELECTOR)
     if (button === null) return
@@ -188,7 +188,7 @@ export function installTaskGroupOption(options: TaskGroupOptionOptions): () => v
     const [first] = items
     if (first === undefined) return
     const wrapper = first.parentElement
-    if (wrapper === null) return
+    if (wrapper === null || wrapper === menu || wrapper.parentElement === null) return
     const clone = wrapper.cloneNode(true) as HTMLElement
     const button = clone.querySelector<HTMLButtonElement>(MENU_ITEM_SELECTOR)
     if (button === null) return

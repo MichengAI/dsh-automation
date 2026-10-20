@@ -300,7 +300,6 @@ export function NativeScheduleShell({
   readonly openCreateTask?: () => void
   readonly useSessions?: SessionSelector
   readonly useWorkspaces?: WorkspaceSelector
-  readonly renderSlot?: (name: string, props?: Record<string, unknown>) => ReactNode
   readonly tabRegistry?: NativeTabRegistry
   readonly wide?: boolean
 }): JSX.Element | null {
@@ -343,8 +342,8 @@ export function NativeScheduleShell({
     const onClick = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target.closest('button') : null
       if (target === null) return
-      const label = `${target.textContent ?? ''} ${target.getAttribute('aria-label') ?? ''}`
-      if (/新会话|新建任务|New chat|New session/i.test(label)) setTab('tasks')
+      const label = (target.getAttribute('aria-label') ?? target.textContent ?? '').trim()
+      if (/^(新会话|新建任务|New chat|New session)$/i.test(label)) setTab('tasks')
     }
     document.addEventListener('click', onClick, true)
     return () => document.removeEventListener('click', onClick, true)
@@ -355,21 +354,18 @@ export function NativeScheduleShell({
     // 定时会话已经出现在官方任务树里，点到它时不再强制切到定时页签。
     const next = tabForSessionId(currentId ?? undefined, scheduledIds, { followSchedule: false, followChannels: false })
     if (!tabFollowReady.current) {
-      tabFollowReady.current = true
       previousCurrentId.current = currentId
-      if (next === 'tasks') setTab('tasks')
+      tabFollowReady.current = currentId !== undefined && currentId !== null
       return
     }
     const previous = previousCurrentId.current
     previousCurrentId.current = currentId
     if (!shouldFollowSessionTab(previous, currentId)) return
-    const extraIds = extraTabs.map(item => item.id)
     if (next === 'tasks') setTab('tasks')
-    if (next === 'channels' && (channelsReady || extraIds.includes('channels'))) setTab('channels')
     const matched = extraTabs.find(item => currentId !== undefined && currentId !== null && item.matchSession?.(String(currentId)) === true)
     // 频道会话已经在任务树里，频道页签交给用户手动切换；定时页签同样不抢。
     if (matched !== undefined && matched.id !== 'schedule' && matched.id !== 'channels') setTab(matched.id)
-  }, [currentId, channelsReady, extraTabs, scheduledIds])
+  }, [currentId, extraTabs, scheduledIds])
 
   const rawOfficialProps = { ...(hostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
   const rawOpen = hostFunction<(sessionId: string) => void>(hostProps, 'open')

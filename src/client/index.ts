@@ -145,8 +145,12 @@ export function apply(ctx: ClientContext): void {
     id: 'dsh-automation-session-clock',
     order: 20,
   }, function AutomationSessionClock(props: { readonly sessionId?: string }) {
-    const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
-    const scheduledIds = useMemo(() => collectScheduledSessionIds(state.snapshot?.runs), [state.snapshot])
+    const runs = useSyncExternalStore(
+      runtime.source.subscribe,
+      () => runtime.source.getSnapshot().snapshot?.runs,
+      () => undefined,
+    )
+    const scheduledIds = useMemo(() => collectScheduledSessionIds(runs), [runs])
     if (props.sessionId === undefined || !scheduledIds.has(props.sessionId)) return null
     return createElement(
       'span',
@@ -229,7 +233,7 @@ export function apply(ctx: ClientContext): void {
         },
       })
     }
-    const insertScheduleTab = (entry: unknown, openSession?: (id: string) => void): boolean => {
+    const insertScheduleTab = (entry: unknown): boolean => {
       const registry = findNativeTabRegistry(entry)
       if (registry === undefined) return false
       if (insertedRegistry !== registry) {
@@ -253,7 +257,7 @@ export function apply(ctx: ClientContext): void {
             ? props.openSession as (id: string) => void
             : typeof props.open === 'function'
               ? props.open as (id: string) => void
-              : openSession
+              : undefined
           const opener = createScheduledSessionOpener(ctx, runtime, hostOpen)
           const hostTree = typeof registry.officialTree === 'function'
             ? registry.officialTree as ComponentType<Record<string, unknown>>
@@ -317,12 +321,11 @@ export function apply(ctx: ClientContext): void {
           return
         }
         if (active === undefined) { unwrap(); return }
-        const occupant = pickWrappableWorkspacesEntry(entries) as MutableSlotEntry | undefined
-        const current = occupant?.component
-        if (current !== undefined && isForeignSidebarHost(current)) {
+        if (active.component !== ownedWrapper && isForeignSidebarHost(active.component)) {
           ensureScheduleTab()
           return
         }
+        const occupant = pickWrappableWorkspacesEntry(entries) as MutableSlotEntry | undefined
         if (occupant?.component === undefined) return
         const resolved = resolveOfficialTreeComponent(occupant.component)
         if (resolved === undefined) return
@@ -343,7 +346,6 @@ export function apply(ctx: ClientContext): void {
             ...(innerProps.wide === undefined ? {} : { wide: innerProps.wide }),
             ...(innerProps.useSessions === undefined ? {} : { useSessions: innerProps.useSessions }),
             ...(innerProps.useWorkspaces === undefined ? {} : { useWorkspaces: innerProps.useWorkspaces }),
-            ...(innerProps.renderSlot === undefined ? {} : { renderSlot: innerProps.renderSlot }),
             officialTree: tree,
           })
         }
