@@ -89,8 +89,31 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
   }
 
   const inject = (menu: HTMLElement, task: WorkspaceTaskSettingsTarget): void => {
+    const injectArchive = (wrapper: HTMLElement): void => {
+      if (options.archive === undefined
+        || menu.querySelector(`[${ARCHIVE_ITEM_ATTRIBUTE}="true"]`) !== null
+        || document.querySelector('[data-plugin="@michengai/dsh-archive-manager"]') === null) return
+      const archiveClone = wrapper.cloneNode(true) as HTMLElement
+      const archiveButton = archiveClone.querySelector<HTMLButtonElement>(MENU_ITEM_SELECTOR)
+      if (archiveButton === null) return
+      archiveClone.removeAttribute(ITEM_ATTRIBUTE)
+      archiveButton.removeAttribute(ITEM_ATTRIBUTE)
+      archiveButton.setAttribute(ARCHIVE_ITEM_ATTRIBUTE, 'true')
+      const archiveSpans = archiveButton.querySelectorAll('span')
+      if (archiveSpans[0] !== undefined) archiveSpans[0].innerHTML = hostIconMarkup(IconArchiveOutline)
+      if (archiveSpans[1] !== undefined) archiveSpans[1].textContent = options.archive.label
+      else archiveButton.textContent = options.archive.label
+      archiveButton.addEventListener('click', (event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        closeMenu()
+        window.setTimeout(() => options.archive?.request(task), 0)
+      })
+      wrapper.parentElement?.insertBefore(archiveClone, wrapper)
+    }
     const existing = menu.querySelector<HTMLButtonElement>(`[${ITEM_ATTRIBUTE}="true"]`)
     if (existing !== null) {
+      if (existing.parentElement !== null) injectArchive(existing.parentElement)
       hideOtherItems(menu, existing, hiddenItems)
       return
     }
@@ -144,25 +167,7 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
       }, 0)
     })
     wrapper.parentElement?.insertBefore(clone, wrapper)
-    if (options.archive !== undefined) {
-      const archiveClone = clone.cloneNode(true) as HTMLElement
-      const archiveButton = archiveClone.querySelector<HTMLButtonElement>(MENU_ITEM_SELECTOR)
-      if (archiveButton !== null) {
-        archiveButton.removeAttribute(ITEM_ATTRIBUTE)
-        archiveButton.setAttribute(ARCHIVE_ITEM_ATTRIBUTE, 'true')
-        const archiveSpans = archiveButton.querySelectorAll('span')
-        if (archiveSpans[0] !== undefined) archiveSpans[0].innerHTML = hostIconMarkup(IconArchiveOutline)
-        if (archiveSpans[1] !== undefined) archiveSpans[1].textContent = options.archive.label
-        else archiveButton.textContent = options.archive.label
-        archiveButton.addEventListener('click', (event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          closeMenu()
-          window.setTimeout(() => options.archive?.request(task), 0)
-        })
-        wrapper.parentElement?.insertBefore(archiveClone, wrapper)
-      }
-    }
+    injectArchive(wrapper)
     hideOtherItems(menu, button, hiddenItems)
   }
 
