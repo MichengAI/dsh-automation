@@ -22,3 +22,4 @@ export const IconSettingsOutline = pickHostIcon(icons, 'IconSettingsOutlineRegul
 export const IconListPenOutline = pickHostIcon(icons, 'IconListPenOutlineRegular')
 export const IconCheckOutline = pickHostIcon(icons, 'IconCheckOutlineRegular')
 export const IconQueueOutline = pickHostIcon(icons, 'IconQueueOutlineRegular')
+export const IconArchiveOutline = pickHostIcon(icons, 'IconArchiveOutlineRegular')

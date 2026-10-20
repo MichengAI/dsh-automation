@@ -13,6 +13,8 @@ export const en = {
   "records.groupReadOnly": "Scheduled task groups cannot be renamed or deleted here.",
   "records.groupByTask": "By task",
   "records.sectionTasks": "Tasks",
+  "records.archiveGroup": "Archive all sessions",
+  "records.archiveConfirm": "Archive all unarchived sessions in “{name}”? Running sessions will follow the Host's archive rules.",
 
   "sidebar.treeUnavailable": "The official task tree is unavailable in this Host.",
 
@@ -217,6 +219,8 @@ export const zh: Record<AutomationLocaleKey, string> = {
   "records.groupReadOnly": "定时任务分组不能在这里重命名或删除。",
   "records.groupByTask": "按任务",
   "records.sectionTasks": "任务",
+  "records.archiveGroup": "归档全部会话",
+  "records.archiveConfirm": "确认归档“{name}”下所有未归档会话？运行中的会话遵循宿主的归档规则。",
 
   "sidebar.treeUnavailable": "当前宿主未提供官方任务树。",
 

@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import ts from 'typescript'
 import { createElement } from 'react'
 import { createShellHarness, findNode } from '../tests/sidebar-shell-harness.mjs'
@@ -104,3 +105,70 @@ for (const group of ['A', 'I', 'T', 'AI', 'AT', 'IT', 'AIT']) {
   }
 }
 console.log(`侧栏组合回归通过：${scenarios} 个场景（含全部注册顺序、通知延迟、Codex UI 切换及卸载接管）`)
+
+// 同时运行双方真实外壳及 effect，覆盖仅检查注册表无法发现的页签状态冲突。
+const { createImShellHarness } = await import(pathToFileURL(resolve(process.argv[2], 'tests/sidebar-shell-harness.mjs')).href)
+for (const owners of [['automation', 'im'], ['im', 'automation']]) {
+  const values = new Map([
+    [`dsh-${owners[0] === 'im' ? 'im-connect' : 'automation'}.sidebar-tab`, 'channels'],
+    [`dsh-${owners[1] === 'im' ? 'im-connect' : 'automation'}.sidebar-tab`, 'tasks'],
+  ])
+  const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) }
+  let current = 'normal'
+  const useSessions = select => select({ current, byId: { [current]: { retainedBy: { mainView: 1 } } } })
+  const create = owner => {
+    const registry = owner === 'im' ? imHelpers.createNativeTabRegistry(null) : tabs.createNativeTabRegistry(null)
+    const contributions = {
+      channels: { id: 'channels', label: '频道', matchSession: id => id.startsWith('im:'), render: () => createElement('channel-view') },
+      schedule: { id: 'schedule', label: '定时', matchSession: id => id.startsWith(model.AUTOMATION_SESSION_PREFIX), render: () => createElement('schedule-view') },
+    }
+    const removers = Object.fromEntries(Object.entries(contributions).map(([id, tab]) => [id, registry.insert(tab)]))
+    const listeners = new Set()
+    class Button {
+      constructor(row) { this.row = row; this.innerText = this.textContent = 'New chat' }
+      getAttribute() { return null }
+      closest(selector) { return selector === 'button' || this.row ? this : null }
+    }
+    const shell = owner === 'im'
+      ? createImShellHarness(storage, im)
+      : createShellHarness({
+          window: { localStorage: storage }, Element: Button,
+          document: { addEventListener: (_, fn) => listeners.add(fn), removeEventListener: (_, fn) => listeners.delete(fn) },
+        })
+    const props = owner === 'im' ? { nativeTabs: registry, useSessions } : { tabRegistry: registry, useSessions }
+    const render = () => owner === 'im' ? shell.render(props) : shell.renderWithEffects(props)
+    const control = () => findNode(render(), node => node.type === 'segmented-tabs')
+    return {
+      value: () => control().props.value,
+      select: id => { control().props.onChange(id); render() },
+      remove: id => removers[id](), restore: id => { removers[id] = registry.insert(contributions[id]) },
+      click: row => {
+        const button = new Button(row)
+        if (owner === 'im') shell.click(button)
+        else for (const listener of [...listeners]) listener({ target: button })
+      },
+    }
+  }
+  const first = create(owners[0])
+  assert.equal(first.value(), 'channels', `${owners}: 旧存储未恢复`)
+  first.select('schedule')
+  const second = create(owners[1])
+  assert.equal(second.value(), 'schedule', `${owners}: 换壳丢失页签`)
+  assert.equal(values.get('dsh-native-sidebar.tab'), 'schedule')
+  for (const [owner, shell] of [[owners[0], first], [owners[1], second]]) {
+    shell.select('schedule')
+    current = 'im:channel'
+    assert.equal(shell.value(), 'schedule', `${owner}: 频道会话抢页签`)
+    shell.click(true)
+    assert.equal(shell.value(), 'schedule', `${owner}: 会话行被当作新建控件`)
+    shell.click(false)
+    assert.equal(shell.value(), 'tasks', `${owner}: 新建控件没有切回任务`)
+    const foreign = owner === 'im' ? 'schedule' : 'channels'
+    shell.select(foreign)
+    shell.remove(foreign)
+    assert.equal(shell.value(), 'tasks', `${owner}: 失效页签未回退`)
+    shell.restore(foreign)
+    assert.equal(shell.value(), foreign, `${owner}: 重新接入未恢复选择`)
+  }
+}
+console.log('双方真实外壳状态回归通过：2 种接管顺序，覆盖旧值迁移、换壳恢复、会话跟随、新建识别及贡献注销/重接入')

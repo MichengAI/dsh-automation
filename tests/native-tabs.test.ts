@@ -55,6 +55,19 @@ test('统一过滤器保留当前会话，并在增删过滤器后随 revision �
   assert.equal(applySessionFilters(state, registry), state)
 })
 
+test('同一快照在相同 revision 的不同注册表之间不能串用过滤缓存', () => {
+  const state = { ids: ['a', 'b'], byId: { a: {}, b: {} } }
+  const first = createNativeTabRegistry(null)
+  const second = createNativeTabRegistry(null)
+  first.addSessionFilter(id => id !== 'b')
+  second.addSessionFilter(id => id !== 'a')
+  const filtered = applySessionFilters(state, first)
+  assert.equal(applySessionFilters(state, first), filtered)
+  assert.equal(first.getRevision(), second.getRevision())
+  assert.deepEqual(applySessionFilters(state, second).ids, ['b'])
+  assert.equal(applySessionFilters(state, first), filtered)
+})
+
 test('会话打开器按 order 分发，未匹配时回退宿主', () => {
   const registry = createNativeTabRegistry(null)
   const calls: string[] = []

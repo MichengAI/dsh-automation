@@ -11,6 +11,8 @@ export declare const en: {
     readonly "records.groupReadOnly": "Scheduled task groups cannot be renamed or deleted here.";
     readonly "records.groupByTask": "By task";
     readonly "records.sectionTasks": "Tasks";
+    readonly "records.archiveGroup": "Archive all sessions";
+    readonly "records.archiveConfirm": "Archive all unarchived sessions in “{name}”? Running sessions will follow the Host's archive rules.";
     readonly "sidebar.treeUnavailable": "The official task tree is unavailable in this Host.";
     readonly "sidebar.workspaces": "Workspaces";
     readonly "sidebar.search": "Search";

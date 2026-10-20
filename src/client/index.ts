@@ -12,10 +12,9 @@ import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefi
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
 import { createHostWorkspace, pickHostDirectory } from './workspace-create.js'
 import { NativeScheduleShell, ScheduledRecordsView } from './ScheduleRail.js'
-import { AUTOMATION_SESSION_PREFIX, automationIdFromTaskWorkspaceId, canOpenClientSession, collectScheduledSessionIds, ensureOpenScheduledSession, groupScheduledSessions, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
+import { AUTOMATION_SESSION_PREFIX, canOpenClientSession, collectScheduledSessionIds, ensureOpenScheduledSession, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
 import { IconClockOutline } from './host-icons.js'
 import { hostIconMarkup } from './host-icon-markup.js'
-import { installTaskSettingsMenuInjector } from './workspace-menu.js'
 import { installStyles } from './styles.js'
 import { openSettingsSection } from './settings-navigation.js'
 import { installSettingsNavIcon } from './settings-nav-icon.js'
@@ -120,25 +119,6 @@ export function apply(ctx: ClientContext): void {
     () => [t('tab'), 'Scheduled tasks', '定时任务'],
     () => hostIconMarkup(IconClockOutline, 16),
   ), 'dsh-automation: settings icon')
-  ctx.effect(() => installTaskSettingsMenuInjector({
-    label: () => t('session.taskSettings'),
-    resolveTask: (workspaceId) => {
-      const automationId = automationIdFromTaskWorkspaceId(workspaceId)
-      if (automationId === undefined) return undefined
-      const snapshot = runtime.source.getSnapshot().snapshot
-      if (snapshot === undefined) return undefined
-      const group = groupScheduledSessions(snapshot.automations, snapshot.runs)
-        .find(item => item.id === automationId)
-      return group === undefined
-        ? undefined
-        : {
-            id: automationId,
-            name: group.name,
-            sessionIds: group.sessions.map(session => session.id),
-          }
-    },
-    openTaskSettings,
-  }), 'dsh-automation: task settings menu')
   // 官方任务树只在会话空闲时渲染 leading 槽位；这里用官方时钟图标标记定时会话。
   ctx.slots.inject('sidebar.session.row.leading', () => ctx.slots.register({
     name: 'sidebar.session.row.leading',

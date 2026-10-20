@@ -17,3 +17,4 @@ export declare const IconSettingsOutline: import("./host-icon-resolve.js").HostI
 export declare const IconListPenOutline: import("./host-icon-resolve.js").HostIcon;
 export declare const IconCheckOutline: import("./host-icon-resolve.js").HostIcon;
 export declare const IconQueueOutline: import("./host-icon-resolve.js").HostIcon;
+export declare const IconArchiveOutline: import("./host-icon-resolve.js").HostIcon;

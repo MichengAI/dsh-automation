@@ -15,6 +15,7 @@ import {
   resolveCurrentSessionId,
   hasCodexUiSidebar,
   readNativeSidebarTab,
+  isHostNewSessionControl,
   isOwnAutomationWrapper,
   pickWrappableWorkspacesEntry,
   resolveOfficialTreeComponent,
@@ -29,6 +30,11 @@ import {
   automationIdFromTaskWorkspaceId,
 } from '../src/client/schedule-rail-model.ts'
 import { createRecordsViewStore } from '../src/client/records-view-store.ts'
+
+test('新建控件识别完整标签和快捷键，不匹配会话标题子串', () => {
+  for (const label of ['新会话', 'New chat\nCtrl+N', '新建任务']) assert.equal(isHostNewSessionControl(label), true)
+  for (const label of ['排查 New chat 错误', '新建任务的回归测试', 'New session notes']) assert.equal(isHostNewSessionControl(label), false)
+})
 
 test('当前会话没变时不要抢用户点的定时页签', () => {
   assert.equal(shouldFollowSessionTab('im:wecom:1', 'im:wecom:1'), false)

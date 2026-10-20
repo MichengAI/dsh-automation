@@ -57,7 +57,7 @@ export interface NativeSessionOpener {
   open(sessionId: string, hostOpen?: (id: string) => void): void
 }
 
-const sessionFilterCache = new WeakMap<object, { readonly revision: number; readonly result: unknown }>()
+const sessionFilterCache = new WeakMap<NativeTabRegistry, WeakMap<object, { readonly revision: number; readonly result: unknown }>>()
 
 /**
  * 统一应用注册表里的会话过滤器。
@@ -68,13 +68,18 @@ export function applySessionFilters<T extends FilterableSessionState>(state: T, 
   const filters = registry?.sessionFilters ?? []
   if (filters.length === 0) return state
   const revision = typeof registry?.getRevision === 'function' ? registry.getRevision() : null
+  let cache = registry === undefined ? undefined : sessionFilterCache.get(registry)
+  if (revision !== null && registry !== undefined && cache === undefined) {
+    cache = new WeakMap()
+    sessionFilterCache.set(registry, cache)
+  }
   if (revision !== null) {
-    const cached = sessionFilterCache.get(state)
+    const cached = cache?.get(state)
     if (cached !== undefined && cached.revision === revision) return cached.result as T
   }
   const ids = (state.ids ?? []).filter(id => filters.every(filter => filter(String(id))))
   if (ids.length === (state.ids ?? []).length) {
-    if (revision !== null) sessionFilterCache.set(state, { revision, result: state })
+    if (revision !== null) cache?.set(state, { revision, result: state })
     return state
   }
   const byId: Record<string, unknown> = {}
@@ -83,7 +88,7 @@ export function applySessionFilters<T extends FilterableSessionState>(state: T, 
     if (row !== undefined) byId[id] = row
   }
   const result = { ...state, ids, byId } as T
-  if (revision !== null) sessionFilterCache.set(state, { revision, result })
+  if (revision !== null) cache?.set(state, { revision, result })
   return result
 }
 

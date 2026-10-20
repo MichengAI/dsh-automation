@@ -3,7 +3,7 @@ import type { AutomationStatus } from './protocol.js';
 export declare const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
 /** 记录视图把每个自动化任务合成一个官方工作区分组，id 进入这个命名空间避免与真实工作区冲突。 */
 export declare const AUTOMATION_TASK_WORKSPACE_PREFIX = "dsh-automation-task:";
-export declare const NATIVE_SIDEBAR_TAB_KEY = "dsh-automation.sidebar-tab";
+export declare const NATIVE_SIDEBAR_TAB_KEY = "dsh-native-sidebar.tab";
 export interface ScheduleRailSession {
     readonly id: string;
     readonly running: boolean;
@@ -75,6 +75,8 @@ export declare function collectScheduledSessionIds(runs: readonly {
     readonly sessionId?: string | null;
 }[] | undefined): Set<string>;
 export declare function readNativeSidebarTab(raw: string | null): NativeSidebarTab;
+/** 新建控件允许附带快捷键，但会话行仍须由调用方排除。 */
+export declare function isHostNewSessionControl(label: string): boolean;
 /** 协作页签（频道/定时）以 registry 为准，不能因 sidebar.channels slot 未就绪就把点击打回任务。 */
 /** 只有当前会话变了才跟随切页签，避免点「定时」时被频道/任务会话打回去闪烁。 */
 export declare function shouldFollowSessionTab(previousCurrent: string | null | undefined, current: string | null | undefined): boolean;

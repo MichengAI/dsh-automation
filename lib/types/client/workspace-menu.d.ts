@@ -1,7 +1,7 @@
 /**
  * 官方工作区 … 菜单没有 slot，只有写死的「重命名 / 删除工作区」。
  * 记录视图的合成任务组需要「任务设置」，因此像归档插件一样监听菜单节点并注入。
- * 真实工作区不处理，归档全部会话仍由归档插件注入。
+ * 真实工作区不处理；合成任务组由记录视图按真实会话 ID 归档。
  */
 export interface WorkspaceTaskSettingsTarget {
     readonly id: string;
@@ -17,6 +17,10 @@ export interface TaskSettingsMenuInjectorOptions {
         name: string;
         sessionIds: string[];
     }) => void;
+    readonly archive?: {
+        readonly label: string;
+        readonly request: (task: WorkspaceTaskSettingsTarget) => void;
+    };
 }
 /**
  * 安装工作区菜单注入器。

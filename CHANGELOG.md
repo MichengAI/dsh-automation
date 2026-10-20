@@ -6,10 +6,13 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
+- Share the sidebar tab selection with IM while migrating both legacy keys; preserve selection on initial load and shell takeover, exclude session rows from new-chat detection, and verify both real shells' state effects in the composition regression.
+
 - Scheduled sessions are no longer hidden from the official task tree; idle scheduled sessions show the official clock icon before the row status.
 - Channel sessions now appear in the official task tree; opening one no longer forces the sidebar to switch to the Channels tab.
 - The Records view now renders the official workspace tree. It offers no add-workspace, rename, or group deletion; groups only expand and collapse.
-- The task group's `…` menu injects Task settings; archive-all remains the Archive Manager's injection.
+- The task group's `…` menu offers Task settings and Archive all sessions. Archiving confirms first and submits real session IDs serially; unrelated third-party menu items are preserved, while real workspaces retain the Archive Manager's behavior.
+- Scope session-filter cache hits to their registry as well as revision, so replacing a sidebar registry cannot reuse another registry's filtered snapshot.
 - The Records view adds a By task grouping selected by default and can switch to By workspace, Workspace tree, or Flat. Grouping and ordering use an independent view state and no longer affect the main task tree. By workspace keeps every workspace and filters only sessions to scheduled runs.
 - Fix the Records view's reuse of the official WorkspaceBrowser missing the `retainAccountKeys` view action, which crashed the error boundary and removed the whole workspace header, search, and sort controls.
 - Restore the Records view header's create button in the old add-workspace position; it now opens the New scheduled task dialog instead of the add-workspace flow, and the incorrect add-workspace shortcut hint is removed.

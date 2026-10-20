@@ -1,10 +1,10 @@
 import { hostIconMarkup } from './host-icon-markup.js'
-import { IconCheckOutline, IconListPenOutline, IconSettingsOutline } from './host-icons.js'
+import { IconArchiveOutline, IconCheckOutline, IconListPenOutline, IconSettingsOutline } from './host-icons.js'
 
 /**
  * 官方工作区 … 菜单没有 slot，只有写死的「重命名 / 删除工作区」。
  * 记录视图的合成任务组需要「任务设置」，因此像归档插件一样监听菜单节点并注入。
- * 真实工作区不处理，归档全部会话仍由归档插件注入。
+ * 真实工作区不处理；合成任务组由记录视图按真实会话 ID 归档。
  */
 
 export interface WorkspaceTaskSettingsTarget {
@@ -18,9 +18,14 @@ export interface TaskSettingsMenuInjectorOptions {
   readonly label: string | (() => string)
   readonly resolveTask: (workspaceId: string) => WorkspaceTaskSettingsTarget | undefined
   readonly openTaskSettings: (request: { automationId: string; name: string; sessionIds: string[] }) => void
+  readonly archive?: {
+    readonly label: string
+    readonly request: (task: WorkspaceTaskSettingsTarget) => void
+  }
 }
 
 const ITEM_ATTRIBUTE = 'data-dsh-automation-task-settings'
+const ARCHIVE_ITEM_ATTRIBUTE = 'data-dsh-automation-archive-task'
 const WORKSPACE_ROW_SELECTOR = '[data-row-key^="workspace:"]'
 const MENU_SELECTOR = '[role="menu"]'
 const MENU_ITEM_SELECTOR = 'button[role="menuitem"]'
@@ -37,9 +42,17 @@ function checkIcon(): string {
   return checkIconMarkup ??= hostIconMarkup(IconCheckOutline)
 }
 
-function hideOtherItems(menu: HTMLElement, ours: HTMLButtonElement): void {
+function hideOtherItems(
+  menu: HTMLElement,
+  ours: HTMLButtonElement,
+  hiddenItems: Map<HTMLButtonElement, { display: string; ariaHidden: string | null }>,
+): void {
   for (const item of menu.querySelectorAll<HTMLButtonElement>(MENU_ITEM_SELECTOR)) {
     if (item === ours) continue
+    // 归档插件按真实工作区查成员，无法处理合成组；改用本插件传递真实会话 ID 的入口。
+    if (!item.hasAttribute('data-dsham-archive-workspace')
+      && !/^(重命名|Rename|删除工作区|Delete workspace)$/i.test((item.textContent ?? '').trim())) continue
+    if (!hiddenItems.has(item)) hiddenItems.set(item, { display: item.style.display, ariaHidden: item.getAttribute('aria-hidden') })
     item.style.display = 'none'
     item.setAttribute('aria-hidden', 'true')
   }
@@ -55,6 +68,7 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
   let workspaceId: string | undefined
   let rememberedAt = 0
   let frame: number | undefined
+  const hiddenItems = new Map<HTMLButtonElement, { display: string; ariaHidden: string | null }>()
 
   const rememberWorkspace = (event: Event): void => {
     const target = event.target instanceof Element ? event.target : undefined
@@ -77,7 +91,7 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
   const inject = (menu: HTMLElement, task: WorkspaceTaskSettingsTarget): void => {
     const existing = menu.querySelector<HTMLButtonElement>(`[${ITEM_ATTRIBUTE}="true"]`)
     if (existing !== null) {
-      hideOtherItems(menu, existing)
+      hideOtherItems(menu, existing, hiddenItems)
       return
     }
     const items = [...menu.querySelectorAll<HTMLButtonElement>(MENU_ITEM_SELECTOR)]
@@ -100,6 +114,8 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
     button.removeAttribute('aria-disabled')
     button.removeAttribute('disabled')
     button.disabled = false
+    button.style.display = ''
+    button.removeAttribute('aria-hidden')
     button.style.opacity = ''
     button.style.cursor = ''
     button.setAttribute(ITEM_ATTRIBUTE, 'true')
@@ -128,7 +144,26 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
       }, 0)
     })
     wrapper.parentElement?.insertBefore(clone, wrapper)
-    hideOtherItems(menu, button)
+    if (options.archive !== undefined) {
+      const archiveClone = clone.cloneNode(true) as HTMLElement
+      const archiveButton = archiveClone.querySelector<HTMLButtonElement>(MENU_ITEM_SELECTOR)
+      if (archiveButton !== null) {
+        archiveButton.removeAttribute(ITEM_ATTRIBUTE)
+        archiveButton.setAttribute(ARCHIVE_ITEM_ATTRIBUTE, 'true')
+        const archiveSpans = archiveButton.querySelectorAll('span')
+        if (archiveSpans[0] !== undefined) archiveSpans[0].innerHTML = hostIconMarkup(IconArchiveOutline)
+        if (archiveSpans[1] !== undefined) archiveSpans[1].textContent = options.archive.label
+        else archiveButton.textContent = options.archive.label
+        archiveButton.addEventListener('click', (event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          closeMenu()
+          window.setTimeout(() => options.archive?.request(task), 0)
+        })
+        wrapper.parentElement?.insertBefore(archiveClone, wrapper)
+      }
+    }
+    hideOtherItems(menu, button, hiddenItems)
   }
 
   const scan = (): void => {
@@ -153,7 +188,12 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
     observer.disconnect()
     document.removeEventListener('pointerdown', rememberWorkspace, true)
     document.removeEventListener('click', rememberWorkspace, true)
-    for (const item of document.querySelectorAll(`[${ITEM_ATTRIBUTE}="true"]`)) item.parentElement?.remove()
+    for (const item of document.querySelectorAll(`[${ITEM_ATTRIBUTE}="true"], [${ARCHIVE_ITEM_ATTRIBUTE}="true"]`)) item.parentElement?.remove()
+    for (const [item, original] of hiddenItems) {
+      item.style.display = original.display
+      if (original.ariaHidden === null) item.removeAttribute('aria-hidden')
+      else item.setAttribute('aria-hidden', original.ariaHidden)
+    }
   }
 }
 

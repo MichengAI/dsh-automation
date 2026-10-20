@@ -6,7 +6,7 @@ import { probeService } from './workspace-create.js'
 export const AUTOMATION_SESSION_PREFIX = 'dsh-automation-session-'
 /** 记录视图把每个自动化任务合成一个官方工作区分组，id 进入这个命名空间避免与真实工作区冲突。 */
 export const AUTOMATION_TASK_WORKSPACE_PREFIX = 'dsh-automation-task:'
-export const NATIVE_SIDEBAR_TAB_KEY = 'dsh-automation.sidebar-tab'
+export const NATIVE_SIDEBAR_TAB_KEY = 'dsh-native-sidebar.tab'
 
 export interface ScheduleRailSession {
   readonly id: string
@@ -167,6 +167,11 @@ export function collectScheduledSessionIds(runs: readonly { readonly sessionId?:
 export function readNativeSidebarTab(raw: string | null): NativeSidebarTab {
   if (raw === 'channels' || raw === 'schedule' || raw === 'tasks') return raw
   return 'tasks'
+}
+
+/** 新建控件允许附带快捷键，但会话行仍须由调用方排除。 */
+export function isHostNewSessionControl(label: string): boolean {
+  return /^(新会话|新建任务|New chat|New session)(?:\s+(?:Ctrl|Alt|Shift|Meta)(?:\+[^\s+]+)*)?$/i.test(label.trim())
 }
 
 
