@@ -9,9 +9,22 @@ import * as nativeTabs from '../src/client/native-tabs.ts'
 export function createShellHarness(browser = {}) {
   const state = []
   let cursor = 0
+  let expectedHookCount = null
   let effects
   let menuOptions
   let dirty = false
+  function finalizeRender() {
+    if (expectedHookCount !== null && cursor !== expectedHookCount) {
+      const error = new Error(
+        cursor < expectedHookCount
+          ? `Rendered fewer hooks than expected (${cursor} vs ${expectedHookCount})`
+          : `Rendered more hooks than during the previous render (${cursor} vs ${expectedHookCount})`
+      )
+      error.name = cursor < expectedHookCount ? 'Minified React error #300' : 'Minified React error #310'
+      throw error
+    }
+    expectedHookCount = cursor
+  }
   const react = {
     Component, Fragment, createElement,
     useState(initial) {
@@ -27,15 +40,35 @@ export function createShellHarness(browser = {}) {
       if (!(index in state)) state[index] = { current: value }
       return state[index]
     },
-    useMemo: calculate => calculate(),
-    useCallback: callback => callback,
+    useMemo(calculate, deps) {
+      const index = cursor++
+      const old = state[index]
+      if (old && deps && deps.length === old.deps?.length && deps.every((value, i) => Object.is(value, old.deps[i]))) {
+        return old.value
+      }
+      const value = calculate()
+      state[index] = { deps, value }
+      return value
+    },
+    useCallback(callback, deps) {
+      const index = cursor++
+      const old = state[index]
+      if (old && deps && deps.length === old.deps?.length && deps.every((value, i) => Object.is(value, old.deps[i]))) {
+        return old.value
+      }
+      state[index] = { deps, value: callback }
+      return callback
+    },
     useEffect(callback, deps) {
       const index = cursor++
       const old = state[index]
       if (old && deps && deps.length === old.deps?.length && deps.every((value, i) => Object.is(value, old.deps[i]))) return
       effects?.push(() => { old?.cleanup?.(); state[index] = { deps, cleanup: callback() } })
     },
-    useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
+    useSyncExternalStore: (_subscribe, snapshot) => {
+      cursor++
+      return snapshot()
+    },
   }
   const source = readFileSync(new URL('../src/client/ScheduleRail.tsx', import.meta.url), 'utf8')
   const code = ts.transpileModule(source, {
@@ -69,6 +102,7 @@ export function createShellHarness(browser = {}) {
       for (let attempt = 0; attempt < 10; attempt++) {
         cursor = 0; effects = []; dirty = false
         const tree = exports.NativeScheduleShell({ ...defaults, ...props })
+        finalizeRender()
         const pending = effects
         effects = undefined
         for (const effect of pending) effect()
@@ -93,11 +127,13 @@ export function createShellHarness(browser = {}) {
     menuOptions: () => menuOptions,
     render(props) {
       cursor = 0
-      return exports.NativeScheduleShell({
+      const tree = exports.NativeScheduleShell({
         t: key => key,
         runtime: { source: { subscribe: () => () => {}, getSnapshot: () => snapshot } },
         ...props,
       })
+      finalizeRender()
+      return tree
     },
   }
 }

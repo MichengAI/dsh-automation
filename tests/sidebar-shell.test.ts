@@ -56,3 +56,32 @@ test('已选频道卸载后回到任务树，重新注册后可恢复频道且�
   registry.insert({ id: 'channels', label: '频道', render: () => 'new-channel-body' })
   assert.equal(findNode(shell.render(props), (node: JSX.Element) => node.props.role === 'tabpanel').props.children, 'new-channel-body')
 })
+
+test('侧栏在展开(wide: true)与收起(wide: false)之间切换时，Hook 调用顺序和数量保持一致，不破坏外壳渲染', () => {
+  const registry = createNativeTabRegistry(null)
+  registry.insert({ id: 'channels', label: '频道', order: 20, render: () => 'channel-body' })
+  const shell = createShellHarness()
+  const Official = (props: Record<string, unknown>): JSX.Element => ({ type: 'official-tree', props } as unknown as JSX.Element)
+  const propsWide = { officialTree: Official, tabRegistry: registry, wide: true }
+  const propsNarrow = { officialTree: Official, tabRegistry: registry, wide: false }
+
+  // 1. 初次渲染宽栏：应包含分段器
+  const wide1 = shell.render(propsWide)
+  assert.ok(findNode(wide1, (node: JSX.Element) => node.type === 'segmented-tabs'))
+
+  // 2. 切换到收起窄栏（模拟收起侧栏 / 手机开抽屉）：Hook 数量必须严格一致，不抛 React #300/#310
+  const narrow1 = shell.render(propsNarrow)
+  assert.equal(findNode(narrow1, (node: JSX.Element) => node.type === 'segmented-tabs'), undefined)
+  assert.ok(findNode(narrow1, (node: JSX.Element) => node.type === Official))
+
+  // 3. 再次展开：Hook 数量依然一致，分段器重新正常呈现
+  const wide2 = shell.render(propsWide)
+  assert.ok(findNode(wide2, (node: JSX.Element) => node.type === 'segmented-tabs'))
+
+  // 4. 反复多次切换保持稳定
+  for (let i = 0; i < 5; i++) {
+    shell.render(propsNarrow)
+    shell.render(propsWide)
+  }
+})
+
