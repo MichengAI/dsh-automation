@@ -75,6 +75,18 @@ export declare function collectScheduledSessionIds(runs: readonly {
     readonly sessionId?: string | null;
 }[] | undefined): Set<string>;
 export declare function readNativeSidebarTab(raw: string | null): NativeSidebarTab;
+/** 迁移前各插件各写一份页签选择；新键统一后只在迁移时读一次。 */
+export declare const LEGACY_AUTOMATION_TAB_KEY = "dsh-automation.sidebar-tab";
+export declare const IM_TAB_KEY = "dsh-im-connect.sidebar-tab";
+type TabStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+/**
+ * 读取侧栏页签选择：新键优先，缺失时回退到两边旧键并写回新键。
+ *
+ * 只清理本插件自己的旧键；`dsh-im-connect.sidebar-tab` 属于 IM，旧版 IM 仍会读它，
+ * 由 IM 自己迁移后清理，这里删掉会让旧版 IM 丢失用户选择。
+ * 存储不可用（隐私模式）时一律回落到任务页。
+ */
+export declare function readStoredSidebarTab(storage: TabStorage | undefined): NativeSidebarTab;
 /** 新建控件允许附带快捷键，但会话行仍须由调用方排除。 */
 export declare function isHostNewSessionControl(label: string): boolean;
 /** 协作页签（频道/定时）以 registry 为准，不能因 sidebar.channels slot 未就绪就把点击打回任务。 */
@@ -114,7 +126,8 @@ export interface SyntheticTaskGroup {
     readonly id: string;
     readonly name: string;
     readonly sessionIds: readonly string[];
-    readonly createdAt?: string;
+    /** 任务自身的创建时间（ISO-8601）；官方树用它排序并渲染分组悬停卡片。 */
+    readonly createdAt: string;
 }
 export declare function automationTaskWorkspaceId(automationId: string): string;
 export declare function automationIdFromTaskWorkspaceId(workspaceId: string | undefined): string | undefined;
@@ -171,3 +184,4 @@ export declare function isOwnAutomationWrapper(component: unknown): boolean;
 export declare function resolveOfficialTreeComponent(component: unknown): unknown;
 export declare function isAutomationWorkspaceWrapper(item: unknown): boolean;
 export declare function pickWrappableWorkspacesEntry(entries: readonly unknown[]): unknown;
+export {};

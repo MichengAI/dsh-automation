@@ -84,11 +84,8 @@ export function SortMenu({
       onClick={() => setOpen(prev => !prev)}
     >
       <span className="dsh-st-menu-select-label">{currentLabel}</span>
-      <IconChevronDownOutline
-        className="dsh-st-menu-select-arrow"
-        size={12}
-        style={{ marginLeft: 4, transition: 'transform 150ms ease', transform: open ? 'rotate(180deg)' : 'none' }}
-      />
+      {/* 宿主图标只转发 className；箭头旋转由 .is-open 下的样式表规则负责。 */}
+      <IconChevronDownOutline className="dsh-st-menu-select-arrow" size={12} />
     </Button>
   )
 

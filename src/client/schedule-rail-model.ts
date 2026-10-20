@@ -169,6 +169,37 @@ export function readNativeSidebarTab(raw: string | null): NativeSidebarTab {
   return 'tasks'
 }
 
+/** 迁移前各插件各写一份页签选择；新键统一后只在迁移时读一次。 */
+export const LEGACY_AUTOMATION_TAB_KEY = 'dsh-automation.sidebar-tab'
+export const IM_TAB_KEY = 'dsh-im-connect.sidebar-tab'
+
+type TabStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+
+/**
+ * 读取侧栏页签选择：新键优先，缺失时回退到两边旧键并写回新键。
+ *
+ * 只清理本插件自己的旧键；`dsh-im-connect.sidebar-tab` 属于 IM，旧版 IM 仍会读它，
+ * 由 IM 自己迁移后清理，这里删掉会让旧版 IM 丢失用户选择。
+ * 存储不可用（隐私模式）时一律回落到任务页。
+ */
+export function readStoredSidebarTab(storage: TabStorage | undefined): NativeSidebarTab {
+  if (storage === undefined) return 'tasks'
+  let raw: string | null
+  try {
+    raw = storage.getItem(NATIVE_SIDEBAR_TAB_KEY)
+      ?? storage.getItem(LEGACY_AUTOMATION_TAB_KEY)
+      ?? storage.getItem(IM_TAB_KEY)
+  } catch {
+    return 'tasks'
+  }
+  const tab = readNativeSidebarTab(raw)
+  try {
+    storage.setItem(NATIVE_SIDEBAR_TAB_KEY, tab)
+    storage.removeItem(LEGACY_AUTOMATION_TAB_KEY)
+  } catch { /* 存储不可用或只读时不重试；下次挂载会再迁移一次 */ }
+  return tab
+}
+
 /** 新建控件允许附带快捷键，但会话行仍须由调用方排除。 */
 export function isHostNewSessionControl(label: string): boolean {
   return /^(新会话|新建任务|New chat|New session)(?:\s+(?:Ctrl|Alt|Shift|Meta)(?:\+[^\s+]+)*)?$/i.test(label.trim())
@@ -317,7 +348,8 @@ export interface SyntheticTaskGroup {
   readonly id: string
   readonly name: string
   readonly sessionIds: readonly string[]
-  readonly createdAt?: string
+  /** 任务自身的创建时间（ISO-8601）；官方树用它排序并渲染分组悬停卡片。 */
+  readonly createdAt: string
 }
 
 export function automationTaskWorkspaceId(automationId: string): string {
@@ -342,13 +374,12 @@ export function syntheticTaskWorkspaceState<T extends WorkspaceListState>(
 ): T {
   const src = (state ?? { items: [], archivedSessionIds: [] }) as T
   const key = groups
-    .map(group => `${group.id}\0${group.name}\0${group.createdAt ?? ''}\0${group.sessionIds.join(',')}`)
+    .map(group => `${group.id}\0${group.name}\0${group.createdAt}\0${group.sessionIds.join(',')}`)
     .join('\0\0')
   if (typeof src === 'object' && src !== null) {
     const hit = syntheticWorkspaceCache.get(src)
     if (hit !== undefined && hit.key === key) return hit.result as T
   }
-  const createdAt = new Date(0).toISOString()
   const items = groups.map((group) => {
     const workspaceId = automationTaskWorkspaceId(group.id)
     return {
@@ -357,8 +388,8 @@ export function syntheticTaskWorkspaceState<T extends WorkspaceListState>(
       title: group.name,
       path: '',
       sessionIds: [...group.sessionIds],
-      createdAt: group.createdAt ?? createdAt,
-      updatedAt: group.createdAt ?? createdAt,
+      createdAt: group.createdAt,
+      updatedAt: group.createdAt,
     }
   })
   const result = { ...src, items } as T

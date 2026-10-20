@@ -6,12 +6,15 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## Unreleased
 
-- Share the sidebar tab selection with IM while migrating both legacy keys; preserve selection on initial load and shell takeover, exclude session rows from new-chat detection, and verify both real shells' state effects in the composition regression.
+- Share the sidebar tab selection with IM while migrating both legacy keys; preserve selection on initial load and shell takeover, exclude session rows from new-chat detection, and verify both real shells' state effects in the composition regression. The stored key is migrated to `dsh-native-sidebar.tab` on read; only this plugin's own legacy key is removed, because older IM builds still read theirs.
 
 - Scheduled sessions are no longer hidden from the official task tree; idle scheduled sessions show the official clock icon before the row status.
 - Channel sessions now appear in the official task tree; opening one no longer forces the sidebar to switch to the Channels tab.
+- Records groups are synthesized with the automation definition's own `createdAt` (falling back to its earliest run only when the definition is gone), so the official group hover card no longer shows 1970.
+- Cancel a pending "new scheduled task" or "task settings" request when the settings surface never opens, so a later manual visit does not replay it.
+- Fix dropdown chevrons not flipping when a menu opens: host icon components only destructure `size`/`className`/`strokeWidth`, so the rotation now lives in the stylesheet under `.is-open` instead of a dropped `style` prop.
 - The Records view now renders the official workspace tree. It offers no add-workspace, rename, or group deletion; groups only expand and collapse.
-- The task group's `…` menu offers Task settings and Archive all sessions. Archiving confirms first and submits real session IDs serially; unrelated third-party menu items are preserved, while real workspaces retain the Archive Manager's behavior.
+- The task group's `…` menu offers only Task settings; unrelated third-party menu items are preserved, while the host's own rename/delete rows are hidden because synthetic groups cannot be renamed or deleted. Group archiving is not offered.
 - Scope session-filter cache hits to their registry as well as revision, so replacing a sidebar registry cannot reuse another registry's filtered snapshot.
 - The Records view adds a By task grouping selected by default and can switch to By workspace, Workspace tree, or Flat. Grouping and ordering use an independent view state and no longer affect the main task tree. By workspace keeps every workspace and filters only sessions to scheduled runs.
 - Fix the Records view's reuse of the official WorkspaceBrowser missing the `retainAccountKeys` view action, which crashed the error boundary and removed the whole workspace header, search, and sort controls.

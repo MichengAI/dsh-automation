@@ -63,7 +63,31 @@ function pluginUpdateCopy(lang: string): UpdateStrings {
   return lang.toLowerCase().startsWith('en') ? EN : ZH
 }
 
-function describePluginUpdate(lang: string, payload: UpdatePayload | undefined, phase: UpdatePhase, notice: UpdateNotice) {
+/** 更新弹窗渲染所需的派生视图。 */
+interface PluginUpdateView {
+  readonly copy: UpdateStrings
+  readonly busy: boolean
+  readonly message: string
+  readonly kind: string
+  readonly loading: boolean
+  readonly updateLabel: string
+  readonly disabled: boolean
+  readonly currentVersion: string
+  readonly latestVersion: string
+  readonly profileName: string
+  readonly profileRaw: string
+  readonly latestRaw: string
+}
+
+/** 更新流程的可订阅句柄，供弹窗订阅状态并发起检查/升级。 */
+interface UpdateFlow {
+  subscribe(listener: () => void): () => void
+  view(lang: string): PluginUpdateView
+  check(): Promise<void>
+  update(): Promise<void>
+}
+
+function describePluginUpdate(lang: string, payload: UpdatePayload | undefined, phase: UpdatePhase, notice: UpdateNotice): PluginUpdateView {
   const base = pluginUpdateCopy(lang)
   const desktop = payload?.profileName === 'desktop'
   const copy = desktop ? { ...base, manualHint: base.manualHintDesktop, restart: base.restartDesktop } : base
@@ -92,7 +116,7 @@ function describePluginUpdate(lang: string, payload: UpdatePayload | undefined, 
   }
 }
 
-function createUpdateFlow(request: (method: 'GET' | 'POST') => Promise<UpdatePayload>, initial?: UpdatePayload, onPayload?: (value: UpdatePayload) => void) {
+function createUpdateFlow(request: (method: 'GET' | 'POST') => Promise<UpdatePayload>, initial?: UpdatePayload, onPayload?: (value: UpdatePayload) => void): UpdateFlow {
   let phase: UpdatePhase = 'idle'
   let current = initial
   let notice: UpdateNotice = { type: 'status' }
@@ -149,7 +173,7 @@ function HostIcon(props: { readonly node: HTMLElement }): React.ReactElement {
 }
 
 function UpdateDialog(props: {
-  readonly flow: ReturnType<typeof createUpdateFlow>
+  readonly flow: UpdateFlow
   readonly packageName: string
   readonly zhName: string
   readonly enName: string

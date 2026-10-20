@@ -48,12 +48,14 @@ export declare function readSessionEvents(session: SessionEventReader): readonly
 export declare function watchSessionEvents(ctx: {
     on?(name: string, listener: (...args: any[]) => void): () => void;
 }, session: unknown, fromSeq: number): SessionEventWatch;
-/** 增量能产出正文或结束原因时用增量；否则回退同步快照。 */
-export declare function summarizeCollectedRun(live: readonly SessionEventLike[], session: SessionEventReader, firstSeq: number): ReturnType<typeof summarizeRun>;
-export declare function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): {
+/** 一次执行的可读结论：正文加上终止原因。 */
+export interface RunSummary {
     readonly text: string;
     readonly reason?: Record<string, any>;
-};
+}
+/** 增量能产出正文或结束原因时用增量；否则回退同步快照。 */
+export declare function summarizeCollectedRun(live: readonly SessionEventLike[], session: SessionEventReader, firstSeq: number): RunSummary;
+export declare function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): RunSummary;
 export declare function executeAutomationRun(ctx: Context, definition: AutomationDefinition, run: AutomationRun, config: ExecutorConfig): Promise<RunCompletion>;
 export declare function pinAutomationSessionTitle(ctx: Context, session: unknown, title: string): void;
 export {};

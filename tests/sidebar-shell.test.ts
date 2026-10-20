@@ -12,7 +12,6 @@ test('点击已注册的频道必须渲染贡献组件，不能跨槽调用工�
   const hostOpenCalls: string[] = []
   const props = {
     tabRegistry: registry,
-    hasChannels: () => true,
     hostProps: { marker: 'host-props', open: (id: string) => { hostOpenCalls.push(id) } },
     renderSlot: (): never => assert.fail('频道不是工作区声明的子槽位，不允许跨槽调用'),
   }
@@ -32,7 +31,7 @@ test('点击已注册的频道必须渲染贡献组件，不能跨槽调用工�
 test('频道槽有条目但贡献尚未就绪时不显示不可用入口，迟到注册后即可点击', () => {
   const registry = createNativeTabRegistry(null)
   const shell = createShellHarness()
-  const props = { tabRegistry: registry, hasChannels: () => true, renderSlot: () => assert.fail('不允许跨槽调用') }
+  const props = { tabRegistry: registry, renderSlot: () => assert.fail('不允许跨槽调用') }
   let tree = shell.render(props)
   assert.equal(findNode(tree, (node: JSX.Element) => node.type === 'segmented-tabs').props.items.some((item: { value: string }) => item.value === 'channels'), false)
   registry.insert({ id: 'channels', label: '频道', render: () => 'late-channel-body' })
@@ -48,7 +47,7 @@ test('已选频道卸载后回到任务树，重新注册后可恢复频道且�
   const remove = registry.insert({ id: 'channels', label: '频道', render: () => 'channel-body' })
   const shell = createShellHarness()
   const Official = (): null => null
-  const props = { officialTree: Official, tabRegistry: registry, hasChannels: () => true, renderSlot: () => assert.fail('不允许跨槽调用') }
+  const props = { officialTree: Official, tabRegistry: registry, renderSlot: () => assert.fail('不允许跨槽调用') }
   findNode(shell.render(props), (node: JSX.Element) => node.type === 'segmented-tabs').props.onChange('channels')
   remove()
   const tree = shell.render(props)

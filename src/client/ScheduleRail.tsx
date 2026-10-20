@@ -1,5 +1,5 @@
 import { Component, createElement, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type CSSProperties, type ReactNode } from 'react'
-import { Button, Modal, SegmentedTabs, type SegmentedTab } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SegmentedTabs, type SegmentedTab } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.js'
 import { IconClockOutline, IconFolderClose, IconQueueOutline } from './host-icons.js'
 import type { AutomationRuntime } from './runtime.js'
@@ -15,8 +15,8 @@ import {
   syntheticTaskWorkspaceState,
   NATIVE_SIDEBAR_TAB_KEY,
   ownedSidebarTabIds,
-  readNativeSidebarTab,
   isHostNewSessionControl,
+  readStoredSidebarTab,
   resolveVisibleSidebarTab,
   shouldFollowSessionTab,
   tabForSessionId,
@@ -124,27 +124,35 @@ export function ScheduledRecordsView({
     const snapshot = automationState.snapshot
     if (snapshot === undefined) return []
     const archived = new Set(archivedIds)
+    // 官方树用 createdAt 渲染分组悬停卡片；优先用任务定义自身的创建时间，
+    // 只有任务已被删除、只剩执行记录时才退回最早一次执行时间，避免伪造 1970。
     const createdAtById = new Map<string, string>()
+    for (const automation of snapshot.automations) {
+      // 旧快照或被裁剪的视图模型可能缺 createdAt，此时退回执行时间而不是伪造时间戳。
+      if (typeof automation.createdAt === 'string' && automation.createdAt !== '') {
+        createdAtById.set(automation.id, automation.createdAt)
+      }
+    }
+    const earliestRunAtById = new Map<string, string>()
     for (const run of snapshot.runs) {
       if (run.sessionId === undefined || run.sessionId === '') continue
+      if (createdAtById.has(run.automationId)) continue
       const at = run.startedAt ?? run.scheduledFor
-      const previous = createdAtById.get(run.automationId)
-      if (previous === undefined || Date.parse(at) < Date.parse(previous)) createdAtById.set(run.automationId, at)
+      if (Number.isNaN(Date.parse(at))) continue
+      const earliest = earliestRunAtById.get(run.automationId)
+      if (earliest === undefined || Date.parse(at) < Date.parse(earliest)) earliestRunAtById.set(run.automationId, at)
     }
-    return groupScheduledSessions(snapshot.automations, snapshot.runs)
-      .map((group) => {
-        const sessionIds = group.sessions
-          .filter(session => scheduledSessionVisible(session.id, archived, archivedFilter))
-          .map(session => session.id)
-        const createdAt = createdAtById.get(group.id)
-        return {
-          id: group.id,
-          name: group.name,
-          sessionIds,
-          ...(createdAt === undefined ? {} : { createdAt }),
-        }
-      })
-      .filter(group => group.sessionIds.length > 0)
+    const groups: SyntheticTaskGroup[] = []
+    for (const group of groupScheduledSessions(snapshot.automations, snapshot.runs)) {
+      const sessionIds = group.sessions
+        .filter(session => scheduledSessionVisible(session.id, archived, archivedFilter))
+        .map(session => session.id)
+      const createdAt = createdAtById.get(group.id) ?? earliestRunAtById.get(group.id)
+      // 没有可信创建时间的分组不合成：官方树会据此排序并渲染悬停卡片。
+      if (createdAt === undefined || sessionIds.length === 0) continue
+      groups.push({ id: group.id, name: group.name, sessionIds, createdAt })
+    }
+    return groups
   }, [archivedFilter, archivedIds, automationState.snapshot])
   const useScheduledSessions = useCallback<SessionSelector>((selector, eq) => {
     if (useSessions === undefined) return selector(EMPTY_SESSION_STATE)
@@ -320,14 +328,7 @@ export function NativeScheduleShell({
   readonly wide?: boolean
 }): JSX.Element | null {
   const Official = officialTree
-  const [tab, setTab] = useState<string>(() => {
-    try {
-      return readNativeSidebarTab(window.localStorage.getItem(NATIVE_SIDEBAR_TAB_KEY)
-        ?? window.localStorage.getItem('dsh-automation.sidebar-tab')
-        ?? window.localStorage.getItem('dsh-im-connect.sidebar-tab'))
-    }
-    catch { return 'tasks' }
-  })
+  const [tab, setTab] = useState<string>(() => (typeof window === 'undefined' ? 'tasks' : readStoredSidebarTab(window.localStorage)))
   const extraTabs = useSyncExternalStore(
     tabRegistry?.subscribe ?? noopSubscribe,
     () => tabRegistry?.getTabs() ?? EMPTY_EXTRA_TABS,

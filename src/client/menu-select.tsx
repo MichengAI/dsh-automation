@@ -115,11 +115,8 @@ export function MenuSelect(props: MenuSelectProps): React.ReactElement {
       },
     },
       React.createElement('span', { className: 'dsh-st-menu-select-label' }, currentText),
-      React.createElement(IconChevronDownOutline, {
-        className: 'dsh-st-menu-select-arrow',
-        size: 12,
-        style: { marginLeft: 4, transition: 'transform 150ms ease', transform: open ? 'rotate(180deg)' : 'none' },
-      }),
+      // 宿主图标只转发 className；箭头旋转由 .is-open 下的样式表规则负责。
+      React.createElement(IconChevronDownOutline, { className: 'dsh-st-menu-select-arrow', size: 12 }),
     ),
     items,
   }))

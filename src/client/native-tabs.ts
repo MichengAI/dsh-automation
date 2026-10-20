@@ -62,6 +62,9 @@ const sessionFilterCache = new WeakMap<NativeTabRegistry, WeakMap<object, { read
 /**
  * 统一应用注册表里的会话过滤器。
  * 没有过滤器时直接返回原 state，避免外壳为无人使用的过滤器付出重渲染成本。
+ *
+ * 缓存键是「注册表 + 快照 + revision」：换壳后的新注册表不会命中旧结果。
+ * 旧版注册表没有 `getRevision` 时退化为每次重算（结果仍正确，只是不再复用）。
  */
 export function applySessionFilters<T extends FilterableSessionState>(state: T, registry?: NativeTabRegistry): T {
   if (state === null || typeof state !== 'object') return state

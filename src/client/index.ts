@@ -7,19 +7,21 @@ import {
   createNativeTabRegistry,
   findNativeTabRegistry,
   isForeignSidebarHost,
+  type NativeTabRegistry,
 } from './native-tabs.js'
 import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
-import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
+import { createAutomationRuntime, installAutomationSessionSync, type AutomationRuntime } from './runtime.js'
 import { createHostWorkspace, pickHostDirectory } from './workspace-create.js'
 import { NativeScheduleShell, ScheduledRecordsView } from './ScheduleRail.js'
-import { AUTOMATION_SESSION_PREFIX, canOpenClientSession, collectScheduledSessionIds, ensureOpenScheduledSession, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
+import { ScheduleOverview } from './schedule-overview.js'
+import { AUTOMATION_SESSION_PREFIX, canOpenClientSession, collectScheduledSessionIds, ensureOpenScheduledSession, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent, type ClientSessionOpenAccess } from './schedule-rail-model.js'
 import { IconClockOutline } from './host-icons.js'
 import { hostIconMarkup } from './host-icon-markup.js'
 import { installStyles } from './styles.js'
 import { openSettingsSection } from './settings-navigation.js'
 import { installSettingsNavIcon } from './settings-nav-icon.js'
-import { requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
-import { requestAutomationCreateTask } from './create-task-request.js'
+import { clearAutomationTaskSettingsRequest, requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
+import { clearAutomationCreateTaskRequest, requestAutomationCreateTask } from './create-task-request.js'
 import { observePluginUpdate, type PluginUpdateIconName } from './plugin-update-ui.js'
 
 export const name = 'dsh-automation-client'
@@ -105,6 +107,8 @@ export function apply(ctx: ClientContext): void {
     openSettingsSection(
       [t('tab'), 'Scheduled tasks', '定时任务'],
       () => { requestAutomationTaskSettings(request) },
+      // 与新建一致：设置页没打开就撤掉挂起请求，避免下次手动进入设置时误开旧任务。
+      () => { clearAutomationTaskSettingsRequest(window.sessionStorage) },
     )
   }
   const openCreateTask = (): void => {
@@ -112,6 +116,8 @@ export function apply(ctx: ClientContext): void {
     openSettingsSection(
       [t('tab'), 'Scheduled tasks', '定时任务'],
       () => { requestAutomationCreateTask() },
+      // 设置页始终没打开时必须撤掉挂起标记，否则下次手动打开设置会莫名弹出新建框。
+      () => { clearAutomationCreateTaskRequest(window.sessionStorage) },
     )
   }
   ctx.effect(() => installAutomationSessionSync(runtime, () => ctx.sessions), 'dsh-automation: session sync')
@@ -161,12 +167,33 @@ export function apply(ctx: ClientContext): void {
       addWorkspace,
     })
   }))
+  // Codex UI 通过该插槽判断「定时」TAB 是否可用；注册总览后由宿主负责呈现页签。
+  ctx.slots.inject('sidebar.schedule', () => ctx.slots.register({
+    name: 'sidebar.schedule',
+    id: 'dsh-automation-schedule-overview',
+    order: 10,
+    locale: NS,
+    inject: () => ({ openTaskSettings, openCreateTask }),
+  }, function CodexUiScheduleOverview(props: {
+    openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
+    openCreateTask?: () => void
+  }) {
+    const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
+    return createElement(ScheduleOverview, {
+      t,
+      automations: state.snapshot?.automations ?? [],
+      ...(state.snapshot?.serverNow === undefined ? {} : { serverNow: state.snapshot.serverNow }),
+      openTaskSettings: props.openTaskSettings ?? openTaskSettings,
+      openCreateTask: props.openCreateTask ?? openCreateTask,
+      onToggleAutomation: (automationId, mutation) => runtime.mutateAutomation(automationId, mutation),
+    })
+  }))
   ctx.slots.inject('sidebar.workspaces', () => {
     let wrappedEntry: MutableSlotEntry | undefined
     let originalComp: ComponentType<any> | undefined
     let ownedWrapper: HostComponent | undefined
-    let ownedRegistry: ReturnType<typeof createNativeTabRegistry> | undefined
-    let insertedRegistry: ReturnType<typeof createNativeTabRegistry> | undefined
+    let ownedRegistry: NativeTabRegistry | undefined
+    let insertedRegistry: NativeTabRegistry | undefined
     let removeInsertedTab = (): void => undefined
     let removeInsertedOpener = (): void => undefined
     let syncing = false
@@ -197,7 +224,7 @@ export function apply(ctx: ClientContext): void {
       ownedWrapper = undefined
       ownedRegistry = undefined
     }
-    const installScheduledOpener = (registry: ReturnType<typeof createNativeTabRegistry>): (() => void) => {
+    const installScheduledOpener = (registry: NativeTabRegistry): (() => void) => {
       if (!Array.isArray(registry.sessionOpeners) || typeof registry.addSessionOpener !== 'function') return () => undefined
       if (registry.sessionOpeners.some(item => item.id === 'automation')) return () => undefined
       return registry.addSessionOpener({
@@ -367,11 +394,13 @@ export function apply(ctx: ClientContext): void {
 
 function createScheduledSessionOpener(
   ctx: ClientContext,
-  runtime: ReturnType<typeof createAutomationRuntime>,
+  runtime: AutomationRuntime,
   hostOpen?: (sessionId: string) => void,
 ): (sessionId: string) => void {
+  // 宿主服务可能晚于本插件挂载，仍需延迟探测；探测成功后缓存，避免每次打开都重新反射。
+  let access: ClientSessionOpenAccess | undefined
   return (sessionId) => {
-    const access = resolveClientSessionOpenAccess(ctx)
+    const resolved = access ??= resolveClientSessionOpenAccess(ctx)
     void ensureOpenScheduledSession({
       id: sessionId,
       adopt: (id) => runtime.adoptSession(id),
@@ -380,7 +409,7 @@ function createScheduledSessionOpener(
         return (snap?.ids ?? []).includes(id) || snap?.byId?.[id] !== undefined
       },
       ...(ctx.sessions?.refresh === undefined ? {} : { refresh: () => ctx.sessions!.refresh!() }),
-      ...(canOpenClientSession(access) ? { openRuntime: (id: string) => { openClientSession(access, id) } } : {}),
+      ...(canOpenClientSession(resolved) ? { openRuntime: (id: string) => { openClientSession(resolved, id) } } : {}),
       ...(hostOpen === undefined ? {} : { openHost: hostOpen }),
     })
   }

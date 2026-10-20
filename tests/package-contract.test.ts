@@ -140,14 +140,15 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
 
 test("客户端入口在插件生命周期内安装常驻会话同步桥", async () => {
   const source = await readFile(new URL("src/client/index.ts", root), "utf8");
+  // 只校验接线事实，不锁定导入顺序、局部变量名或行的拆分方式。
   assert.match(
     source,
-    /import \{ createAutomationRuntime, installAutomationSessionSync \} from '\.\/runtime\.js'/,
+    /import \{[^}]*\bcreateAutomationRuntime\b[^}]*\binstallAutomationSessionSync\b[^}]*\} from '\.\/runtime\.js'/,
   );
   assert.match(
     source,
-    /ctx\.effect\(\(\) => installAutomationSessionSync\(runtime, \(\) => ctx\.sessions\), 'dsh-automation: session sync'\)/,
+    /ctx\.effect\(\(\) => installAutomationSessionSync\(runtime, \(\) => ctx\.sessions\)/,
   );
   assert.match(source, /resolveClientSessionOpenAccess\(ctx\)/);
-  assert.match(source, /openClientSession\(access, id\)/);
+  assert.match(source, /openClientSession\(/);
 });

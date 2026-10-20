@@ -55,7 +55,9 @@ const CSS_TEXT = `
 .dsh-st-menu-select-trigger.is-open{border-color:var(--dsw-alias-state-business-primary,#4c8dff)}
 .dsh-st-menu-select-trigger:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary,#4c8dff);outline-offset:2px}
 .dsh-st-menu-select-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dsh-st-menu-select-arrow{flex:none;color:var(--dsw-alias-label-tertiary)}
+/* 宿主图标组件只解构 size/className/strokeWidth，传入的 style 会被丢弃；旋转必须由样式表驱动。 */
+.dsh-st-menu-select-arrow{flex:none;margin-left:4px;color:var(--dsw-alias-label-tertiary);transition:transform 150ms ease}
+.dsh-st-menu-select-trigger.is-open .dsh-st-menu-select-arrow{transform:rotate(180deg)}
 .dsh-st-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-tertiary);font-size:12px}
 .dsh-st-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:var(--dsw-radius-xs,4px);background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,.06))}
 .dsh-st-timeline{display:flex;flex-direction:column;gap:22px;padding-left:10px}

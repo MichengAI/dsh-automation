@@ -127,21 +127,24 @@ export function watchSessionEvents(
   return { events, stop }
 }
 
+/** 一次执行的可读结论：正文加上终止原因。 */
+export interface RunSummary {
+  readonly text: string
+  readonly reason?: Record<string, any>
+}
+
 /** 增量能产出正文或结束原因时用增量；否则回退同步快照。 */
 export function summarizeCollectedRun(
   live: readonly SessionEventLike[],
   session: SessionEventReader,
   firstSeq: number,
-): ReturnType<typeof summarizeRun> {
+): RunSummary {
   const fromLive = summarizeRun(live, firstSeq)
   if (fromLive.text !== '' || fromLive.reason !== undefined) return fromLive
   return summarizeRun(readSessionEvents(session), firstSeq)
 }
 
-export function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): {
-  readonly text: string
-  readonly reason?: Record<string, any>
-} {
+export function summarizeRun(events: readonly SessionEventLike[], firstSeq: number): RunSummary {
   let started = false
   let text = ''
   let reason: Record<string, any> | undefined

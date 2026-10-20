@@ -43,7 +43,7 @@ export function createShellHarness(browser = {}) {
   }).outputText
   const modules = {
     react,
-    '@deepseek-ai/dsh-client-ui-primitives': { SegmentedTabs: 'segmented-tabs', Modal: 'modal', Button: 'button' },
+    '@deepseek-ai/dsh-client-ui-primitives': { SegmentedTabs: 'segmented-tabs' },
     './schedule-rail-model.js': model,
     './records-view-store.js': recordsStore,
     './native-tabs.js': nativeTabs,
