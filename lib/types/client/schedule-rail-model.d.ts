@@ -44,10 +44,6 @@ export interface NativeWorkspaceLike {
     readonly updatedAt?: string;
 }
 export type NativeSidebarTab = 'tasks' | 'channels' | 'schedule';
-export { formatRunStamp } from '../run-title.js';
-/** 定时会话标题复刻任务树：优先用 Session 真实标题，没有再用执行时间兜底。 */
-export declare function scheduledSessionTitle(liveTitle: string | undefined, fallbackLabel: string): string;
-export declare function sessionUpdatedAtIso(value: number | string | undefined, fallback: string): string;
 export declare function groupScheduledSessions(automations: readonly {
     readonly id: string;
     readonly name: string;
@@ -71,8 +67,6 @@ export declare function deriveTaskOverviewRows(automations: readonly OverviewAut
 export type ArchivedSessionFilter = 'default' | 'show' | 'only';
 /** 默认隐藏已归档；显示和仅归档跟官方筛选同一套规则。空 id 一律不展示。 */
 export declare function scheduledSessionVisible(sessionId: string | undefined, archived: ReadonlySet<string>, filter: ArchivedSessionFilter): boolean;
-/** 归档立即摘掉。宿主会话簿经常晚于自动化快照，缺席不能当成已删除。 */
-export declare function keepScheduledSessionLink(sessionId: string | undefined, archived: ReadonlySet<string>, _presentIds?: ReadonlySet<string>): boolean;
 /** 当前打开的是定时会话，但快照还没有这条执行记录时，侧栏应立刻再拉一次。 */
 export declare function scheduledSessionNeedsSnapshotRefresh(sessionId: string | null | undefined, runs: readonly {
     readonly sessionId?: string;
@@ -172,33 +166,6 @@ export type WrapperFlags = {
 };
 export declare function wrapperFlags(component: unknown): WrapperFlags;
 export declare function isOwnAutomationWrapper(component: unknown): boolean;
-export declare function isMarkedWorkspaceWrapper(component: unknown): boolean;
 export declare function resolveOfficialTreeComponent(component: unknown): unknown;
 export declare function isAutomationWorkspaceWrapper(item: unknown): boolean;
 export declare function pickWrappableWorkspacesEntry(entries: readonly unknown[]): unknown;
-export type WorkspaceGroupMode = 'workspace' | 'workspace-tree' | 'list';
-/** 官方按工作区树：子目录挂到路径最长的已打开工作区下面。 */
-export declare function owningParentFolder(path: string, candidates: readonly string[]): string | undefined;
-export interface WorkspaceTreeGroup<T> {
-    readonly id: string;
-    readonly name: string;
-    readonly depth: number;
-    readonly keep?: boolean;
-    readonly sessions: readonly T[];
-}
-/** 定时会话按宿主工作区归组，工作区路径嵌套时缩进。没有工作区的会话进未分组。 */
-export declare function groupScheduledSessionsByWorkspaceTree<T extends {
-    readonly id?: string;
-}>(sessions: readonly T[], workspaces: readonly NativeWorkspaceLike[], ungroupedLabel: string): WorkspaceTreeGroup<T>[];
-export type WorkspaceListSort = 'manual' | 'time';
-export interface SearchableRailGroup {
-    readonly name: string;
-    readonly sessions: readonly {
-        readonly title?: string;
-        readonly label?: string;
-        readonly updatedAt?: string;
-    }[];
-    /** 按工作区树时，没有自己的会话、只用来托住子工作区的父级也要留着。 */
-    readonly keep?: boolean;
-}
-export declare function applyWorkspaceBrowserQuery<T extends SearchableRailGroup>(groups: readonly T[], query: string, sort: WorkspaceListSort, groupMode?: WorkspaceGroupMode): T[];

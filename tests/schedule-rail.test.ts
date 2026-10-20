@@ -5,11 +5,8 @@ import {
   collectScheduledSessionIds,
   deriveTaskOverviewRows,
   groupScheduledSessions,
-  keepScheduledSessionLink,
   scheduledSessionVisible,
   scheduledSessionNeedsSnapshotRefresh,
-  scheduledSessionTitle,
-  sessionUpdatedAtIso,
   canOpenClientSession,
   ensureOpenScheduledSession,
   openClientSession,
@@ -18,12 +15,9 @@ import {
   resolveCurrentSessionId,
   hasCodexUiSidebar,
   readNativeSidebarTab,
-  isMarkedWorkspaceWrapper,
+  isOwnAutomationWrapper,
   pickWrappableWorkspacesEntry,
   resolveOfficialTreeComponent,
-  applyWorkspaceBrowserQuery,
-  groupScheduledSessionsByWorkspaceTree,
-  owningParentFolder,
   ownedSidebarTabIds,
   resolveVisibleSidebarTab,
   shouldFollowSessionTab,
@@ -120,7 +114,7 @@ test('already wrapped official trees are not wrapped again', () => {
   function Wrapped() { return null }
   Wrapped.__dshAutomationWrapped = true
   const official = { options: { id: 'workspace-browser' }, component: Wrapped }
-  if (isMarkedWorkspaceWrapper(Wrapped) !== true) throw new Error('missing wrap mark')
+  if (isOwnAutomationWrapper(Wrapped) !== true) throw new Error('missing wrap mark')
   if (pickWrappableWorkspacesEntry([official]) !== undefined) throw new Error('should skip wrapped occupant')
 })
 
@@ -130,7 +124,6 @@ test('unified native tab wrapper markers prevent double wrapping', () => {
   Shell.__dshNativeTabWrapped = true
   Shell.__dshNativeTabOriginal = Official
   Shell.__dshNativeTabOwner = 'im-connect'
-  assert.equal(isMarkedWorkspaceWrapper(Shell), true)
   assert.equal(resolveOfficialTreeComponent(Shell), Official)
   const entry = { options: { id: 'im' }, component: Shell }
   assert.equal(pickWrappableWorkspacesEntry([entry]), entry)
@@ -270,13 +263,6 @@ test('刷新后仍未入簿则回退到宿主打开', async () => {
   })
   assert.deepEqual(steps, ['adopt', 'refresh', 'host:dsh-automation-session-abc'])
 })
-test('定时会话标题优先用真实 Session 名，和任务树一致', () => {
-  assert.equal(scheduledSessionTitle('集成本地Agents到dsh评估', '2026-08-17 01:37 - 哈哈哈'), '集成本地Agents到dsh评估')
-  assert.equal(scheduledSessionTitle('   ', '2026-08-17 01:37 - 哈哈哈'), '2026-08-17 01:37 - 哈哈哈')
-  assert.equal(sessionUpdatedAtIso('2026-08-17T01:37:00.000Z', 'fallback'), '2026-08-17T01:37:00.000Z')
-  assert.equal(sessionUpdatedAtIso(undefined, 'fallback'), 'fallback')
-})
-
 test('删除任务后仍保留会话文件夹', () => {
   const groups = groupScheduledSessions([], [
     {
@@ -296,28 +282,6 @@ test('删除任务后仍保留会话文件夹', () => {
 
 
 
-test('工作区搜索按名称过滤，筛选可按时间或名称排序', () => {
-  const groups = [
-    { name: '报表', sessions: [{ title: '早报', updatedAt: '2026-08-18T01:00:00.000Z' }] },
-    { name: '审查', sessions: [{ title: '代码', updatedAt: '2026-08-18T03:00:00.000Z' }] },
-  ]
-  assert.deepEqual(applyWorkspaceBrowserQuery(groups, '审', 'manual').map((item) => item.name), ['审查'])
-  assert.deepEqual(applyWorkspaceBrowserQuery(groups, '', 'time').map((item) => item.name), ['审查', '报表'])
-  assert.deepEqual(applyWorkspaceBrowserQuery(groups, '', 'manual').map((item) => item.name), ['报表', '审查'])
-  assert.equal(applyWorkspaceBrowserQuery(groups, '', 'time', 'list').length, 1)
-  assert.equal(applyWorkspaceBrowserQuery(groups, '', 'time', 'list')[0]?.sessions.length, 2)
-})
-
-
-test('定时页只立刻隐藏已归档会话，宿主会话簿滞后时仍显示新执行记录', () => {
-  const archived = new Set(['gone-archived'])
-  const present = new Set(['older-session'])
-  assert.equal(keepScheduledSessionLink('brand-new-run', archived, present), true)
-  assert.equal(keepScheduledSessionLink('gone-archived', archived, present), false)
-  assert.equal(keepScheduledSessionLink('unknown-but-no-presence-map', archived), true)
-  assert.equal(keepScheduledSessionLink('', archived, present), false)
-})
-
 test('归档筛选对齐会话列表，定时列表不把置顶排到前面', () => {
   const archived = new Set(['gone'])
   assert.equal(scheduledSessionVisible('live', archived, 'default'), true)
@@ -326,23 +290,6 @@ test('归档筛选对齐会话列表，定时列表不把置顶排到前面', ()
   assert.equal(scheduledSessionVisible('live', archived, 'only'), false)
   assert.equal(scheduledSessionVisible('gone', archived, 'only'), true)
   assert.equal(scheduledSessionVisible('', archived, 'show'), false)
-})
-
-test('按工作区树把子目录挂到路径最长的父工作区下', () => {
-  assert.equal(owningParentFolder('D:/repo/plugin', ['D:/repo', 'D:/other']), 'D:/repo')
-  assert.equal(owningParentFolder('D:/repo', ['D:/repo']), undefined)
-  const groups = groupScheduledSessionsByWorkspaceTree(
-    [{ id: 'run-child' }],
-    [
-      { workspaceId: 'parent', title: 'repo', path: 'D:/repo', sessionIds: [] },
-      { workspaceId: 'child', title: 'plugin', path: 'D:/repo/plugin', sessionIds: ['run-child'] },
-    ],
-    '未分组',
-  )
-  assert.deepEqual(groups.map((group) => [group.name, group.depth, group.sessions.map((session) => session.id)]), [
-    ['repo', 0, []],
-    ['plugin', 1, ['run-child']],
-  ])
 })
 
 test('当前已打开的定时会话若还没进快照，应立刻再拉一次执行记录', () => {

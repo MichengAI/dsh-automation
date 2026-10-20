@@ -134,9 +134,6 @@ export interface CreateAutomationInput {
     readonly model?: string | null;
     readonly reasoningEffort?: string | null | undefined;
 }
-export interface SnapshotRequest {
-    readonly sessionId?: string;
-}
 export interface CreateRequest {
     readonly sessionId?: string;
     readonly input: CreateAutomationInput;

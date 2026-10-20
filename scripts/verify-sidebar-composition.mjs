@@ -42,8 +42,6 @@ for (const group of ['A', 'I', 'T', 'AI', 'AT', 'IT', 'AIT']) {
             createScheduledSessionOpener: (_ctx, _runtime, open) => open,
             ScheduledRecordsView: 'scheduled-records',
             openCreateTask() {},
-            NativeScheduleSessionList: 'schedule-list',
-            scheduledListHostActions: () => ({}),
             isSessionSelector: value => typeof value === 'function',
             isWorkspaceSelector: value => typeof value === 'function',
           })
