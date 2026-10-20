@@ -4,7 +4,7 @@
 
 以下记录待发布变更及近期已发布版本。Git 标签与 GitHub Release 现已和这些条目同步；历史条目继续保留原始发布提交链接。
 
-## 未发布
+## 1.0.5 - 2026-10-20
 
 - 与 IM 统一使用共享侧栏页签存储，兼容两边旧键；初次加载和换壳保留用户选择，会话行标题不再触发新建识别。组合回归新增双方真实外壳的状态交互验证。读取时把旧键迁移到 `dsh-native-sidebar.tab`；只清理本插件自己的旧键，旧版 IM 仍在读它自己的键。
 
@@ -26,7 +26,7 @@
 - 设置页工具按钮、菜单下拉箭头、注入官方工作区/视图菜单的图标、任务时间、频道页签和设置导航图标改用宿主图标；仅保留 GitHub 品牌图标自绘。
 - 删除官方树缺失或报错时回退的自绘任务/记录列表，以及旧 `sidebar.schedule` 槽位；缺少官方树时改为显示不可用提示。
 - 删除受支持宿主不会触发的空图标渲染、`pickHostExport` 和旧 `events` 读取回退；缺失宿主图标改为直接报错。
-- 修复侧边栏折叠后展开时「任务 / 频道 / 定时」页签消失：`NativeScheduleShell` 的 `wide === false` 提前返回移到所有 Hook 之后，避免 React Hook 顺序错误。
+- 修复侧边栏折叠后展开或移动端抽屉打开时报错 React #300/#310 导致会话列表消失：`NativeScheduleShell` 的 `wide === false` 提前返回移到所有 Hook 之后，避免 React Hook 顺序错误（Issue #18）。
 - 统一侧栏包裹协议：新增 `__dshNativeTabWrapped`、`__dshNativeTabOriginal`、`__dshNativeTabOwner`，保留旧标记兼容；包裹组件统一命名 `DshNativeTabWorkspaceShell`。
 - 官方任务树不再过滤 `im:` 会话，频道与任务共享同一批会话；删除 `filterTaskSessionState`、`filterWorkspaceListState` 及相关缓存和测试。
 - 统一官方任务树的会话过滤器：automation 与 IM 插件都通过 `NativeTabRegistry.sessionFilters` 应用过滤，并新增 `getRevision()`，过滤器增删后立即重新计算，不再取决于哪个插件先包裹侧栏。

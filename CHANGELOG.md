@@ -4,7 +4,7 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
-## Unreleased
+## 1.0.5 - 2026-10-20
 
 - Share the sidebar tab selection with IM while migrating both legacy keys; preserve selection on initial load and shell takeover, exclude session rows from new-chat detection, and verify both real shells' state effects in the composition regression. The stored key is migrated to `dsh-native-sidebar.tab` on read; only this plugin's own legacy key is removed, because older IM builds still read theirs.
 
@@ -26,7 +26,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Settings toolbar buttons, dropdown chevrons, icons injected into official workspace/view menus, task schedule rows, channel tabs, and the settings-nav icon now use host icons; only the GitHub brand mark remains custom-drawn.
 - Delete the self-drawn Tasks/Records fallback lists and the legacy `sidebar.schedule` slot; show an unavailable message when the official tree is missing.
 - Delete the empty-icon renderer, `pickHostExport`, and legacy `events` reader fallbacks that supported hosts cannot reach; a missing host icon now throws.
-- Fix the Tasks / Channels / Scheduled tabs disappearing after collapsing and expanding the sidebar: move the `wide === false` return in `NativeScheduleShell` below every hook to keep hook order stable.
+- Fix the Tasks / Channels / Scheduled tabs disappearing after collapsing and expanding the sidebar: move the `wide === false` return in `NativeScheduleShell` below every hook to keep hook order stable (Issue #18).
 - Unify the sidebar wrapper protocol with `__dshNativeTabWrapped`, `__dshNativeTabOriginal`, and `__dshNativeTabOwner` while keeping legacy flags readable; name both wrappers `DshNativeTabWorkspaceShell`.
 - Stop filtering `im:` sessions from the official task tree; Channels and Tasks now share the same sessions. Remove `filterTaskSessionState`, `filterWorkspaceListState`, their caches, and related tests.
 - Unify official task-tree session filters: both automation and IM apply filters through `NativeTabRegistry.sessionFilters`, with a new `getRevision()` so adding or removing a filter recomputes immediately regardless of which plugin wrapped the sidebar first.
