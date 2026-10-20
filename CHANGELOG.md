@@ -6,35 +6,11 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## 1.0.5 - 2026-10-20
 
-- Share the sidebar tab selection with IM while migrating both legacy keys; preserve selection on initial load and shell takeover, exclude session rows from new-chat detection, and verify both real shells' state effects in the composition regression. The stored key is migrated to `dsh-native-sidebar.tab` on read; only this plugin's own legacy key is removed, because older IM builds still read theirs.
-
-- Scheduled sessions are no longer hidden from the official task tree; idle scheduled sessions show the official clock icon before the row status.
-- Channel sessions now appear in the official task tree; opening one no longer forces the sidebar to switch to the Channels tab.
-- Records groups are synthesized with the automation definition's own `createdAt` (falling back to its earliest run only when the definition is gone), so the official group hover card no longer shows 1970.
-- Cancel a pending "new scheduled task" or "task settings" request when the settings surface never opens, so a later manual visit does not replay it.
-- Fix dropdown chevrons not flipping when a menu opens: host icon components only destructure `size`/`className`/`strokeWidth`, so the rotation now lives in the stylesheet under `.is-open` instead of a dropped `style` prop.
-- The Records view now renders the official workspace tree. It offers no add-workspace, rename, or group deletion; groups only expand and collapse.
-- The task group's `…` menu offers only Task settings; unrelated third-party menu items are preserved, while the host's own rename/delete rows are hidden because synthetic groups cannot be renamed or deleted. Group archiving is not offered.
-- Scope session-filter cache hits to their registry as well as revision, so replacing a sidebar registry cannot reuse another registry's filtered snapshot.
-- The Records view adds a By task grouping selected by default and can switch to By workspace, Workspace tree, or Flat. Grouping and ordering use an independent view state and no longer affect the main task tree. By workspace keeps every workspace and filters only sessions to scheduled runs.
-- Fix the Records view's reuse of the official WorkspaceBrowser missing the `retainAccountKeys` view action, which crashed the error boundary and removed the whole workspace header, search, and sort controls.
-- Restore the Records view header's create button in the old add-workspace position; it now opens the New scheduled task dialog instead of the add-workspace flow, and the incorrect add-workspace shortcut hint is removed.
-- Fix the Records view being 12px narrower than the Tasks tree: the official WorkspaceBrowser already reserves right padding, and the records container added it a second time, pulling the header, search, sort and group rows inward.
-- The Scheduled → Tasks overview now has search, sort, and create buttons; the search icon uses the same 14px size as Records, sort uses the same official sliders icon, search filters by task name, and create opens the scheduled-task dialog.
-- Align the Records / Tasks view switcher with the Archive Manager tabs: 32px container, 28px tabs, 6–12px adaptive horizontal padding, 13/20 typography, 6px icon gap, and matching selected states; tabs no longer wrap when the Mica skin narrows the sidebar.
-- The top-level Tasks / Channels / Scheduled tabs now use the same format; the indicator width follows the actual tab count and labels stay on one line.
-- Settings toolbar buttons, dropdown chevrons, icons injected into official workspace/view menus, task schedule rows, channel tabs, and the settings-nav icon now use host icons; only the GitHub brand mark remains custom-drawn.
-- Delete the self-drawn Tasks/Records fallback lists and the legacy `sidebar.schedule` slot; show an unavailable message when the official tree is missing.
-- Delete the empty-icon renderer, `pickHostExport`, and legacy `events` reader fallbacks that supported hosts cannot reach; a missing host icon now throws.
-- Fix the Tasks / Channels / Scheduled tabs disappearing after collapsing and expanding the sidebar: move the `wide === false` return in `NativeScheduleShell` below every hook to keep hook order stable (Issue #18).
-- Unify the sidebar wrapper protocol with `__dshNativeTabWrapped`, `__dshNativeTabOriginal`, and `__dshNativeTabOwner` while keeping legacy flags readable; name both wrappers `DshNativeTabWorkspaceShell`.
-- Stop filtering `im:` sessions from the official task tree; Channels and Tasks now share the same sessions. Remove `filterTaskSessionState`, `filterWorkspaceListState`, their caches, and related tests.
-- Unify official task-tree session filters: both automation and IM apply filters through `NativeTabRegistry.sessionFilters`, with a new `getRevision()` so adding or removing a filter recomputes immediately regardless of which plugin wrapped the sidebar first.
-- Unify official task-tree session opening: add `NativeTabRegistry.sessionOpeners` to match scheduled/channel openers in order and fall back to the host; scheduled sessions still adopt/refresh and channel sessions still resolve/ensure regardless of which plugin wrapped first.
-- Delete the custom session list, search toolbar, row menus, and hover cards; session management now reuses the official components.
-- Fix the Scheduled tab disappearing when a foreign sidebar host changes: distinguish automation and IM wrappers with the shared display name, and reattach the tab/opener when the foreign host changes.
-- Preserve the stored sidebar tab on first load; match new-session controls by their own label instead of session titles.
-- Reduce per-row automation subscriptions and guard menu injection and foreign opener matchers.
+- Fix the session list (including pinned sessions) being cleared when collapsing the sidebar on desktop or opening the drawer on mobile (Issue #18).
+- The Records view now adopts the host's native workspace tree: supporting independent grouping by task or workspace, official sorting, and direct shortcuts to Task settings from group menus, with a restored New scheduled task button in the header.
+- Tasks overview enhancements: added search, sorting, and create buttons, allowing quick filtering by task name.
+- Seamless sidebar tab coordination: top-level Tasks, Channels, and Scheduled tabs as well as Records/Tasks view tabs match host styling with adaptive padding that prevents label wrapping. Tab selection is shared and preserved alongside the IM plugin across reloads.
+- Session integration and icon refinements: idle scheduled sessions show the official clock icon in the main task tree, and dropdown arrows now flip correctly when expanding menus.
 
 ## 1.0.4 - 2026-10-19
 
