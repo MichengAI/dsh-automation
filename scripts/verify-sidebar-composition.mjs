@@ -56,6 +56,8 @@ for (const group of ['A', 'I', 'T', 'AI', 'AT', 'IT', 'AIT']) {
           if (installed.has('I')) assert.ok(entry.component.__imConnectWrapped || ids.includes('channels'), `${order}: 缺频道`)
           if (installed.has('T')) assert.ok(ids.includes('schedule'), `${order}: 缺定时`)
           assert.equal(new Set(ids).size, ids.length)
+          if (!installed.has('I')) assert.ok(!ids.includes('channels'), `${order}: 未加载 IM 却出现频道页签`)
+          if (!installed.has('T')) assert.ok(!ids.includes('schedule'), `${order}: 未加载自动化却出现定时页签`)
           const isChannelNode = node => node.type === 'im-channel-rail' || node.type?.name === 'ChannelOfficialView'
           if (installed.has('I') && ids.includes('channels')) {
             const channel = contributions.find(tab => tab.id === 'channels').render({})
