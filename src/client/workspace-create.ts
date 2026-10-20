@@ -51,6 +51,20 @@ export function probeService(ctx: unknown, name: string): unknown {
   }
 }
 
+/** 解析宿主归档接口并保留服务实例作为 this；菜单仅在接口可用时显示归档项。 */
+export function resolveHostArchiveSession(
+  ctx: unknown,
+): ((sessionId: string) => void | Promise<void>) | undefined {
+  for (const name of ['uiWorkspace', 'workspaces']) {
+    const service = probeService(ctx, name)
+    const archiveSession = readMember(service, 'archiveSession')
+    if (typeof archiveSession === 'function') {
+      return (sessionId) => archiveSession.call(service, sessionId) as void | Promise<void>
+    }
+  }
+  return undefined
+}
+
 /** 统一解析宿主选目录的返回值：字符串、{ path }、{ filePaths }，取消则 undefined。 */
 export function parsePickedPath(value: unknown): string | undefined {
   if (typeof value === 'string' && value.trim() !== '') return value

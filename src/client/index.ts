@@ -10,7 +10,7 @@ import {
 } from './native-tabs.js'
 import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
-import { createHostWorkspace, pickHostDirectory } from './workspace-create.js'
+import { createHostWorkspace, pickHostDirectory, resolveHostArchiveSession } from './workspace-create.js'
 import { NativeScheduleShell, ScheduledRecordsView } from './ScheduleRail.js'
 import { AUTOMATION_SESSION_PREFIX, canOpenClientSession, collectScheduledSessionIds, ensureOpenScheduledSession, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
 import { IconClockOutline } from './host-icons.js'
@@ -107,6 +107,7 @@ export function apply(ctx: ClientContext): void {
       () => { requestAutomationTaskSettings(request) },
     )
   }
+  const archiveSession = resolveHostArchiveSession(ctx)
   const openCreateTask = (): void => {
     requestAutomationCreateTask()
     openSettingsSection(
@@ -319,6 +320,7 @@ export function apply(ctx: ClientContext): void {
             t,
             runtime,
             hostProps: innerProps as Record<string, unknown>,
+            ...(archiveSession === undefined ? {} : { archiveSession }),
             openSession,
             openTaskSettings,
             openCreateTask,

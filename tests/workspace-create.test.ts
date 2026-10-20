@@ -5,6 +5,7 @@ import {
   parsePickedPath,
   pickHostDirectory,
   probeService,
+  resolveHostArchiveSession,
   WorkspacePickerUnavailableError,
 } from '../src/client/workspace-create.ts'
 
@@ -50,6 +51,24 @@ test('probeService 没有反射面时才回退到 get 和属性读取', () => {
   assert.deepEqual(probeService({ dialog: { b: 2 } }, 'dialog'), { b: 2 })
   assert.equal(probeService(null, 'dialog'), undefined)
   assert.equal(probeService('text', 'dialog'), undefined)
+})
+
+test('resolveHostArchiveSession 从宿主服务解析归档方法并保留 this', async () => {
+  const calls: string[] = []
+  const service = {
+    marker: 'ui-workspace',
+    archiveSession(this: { marker: string }, sessionId: string) {
+      calls.push(`${this.marker}:${sessionId}`)
+    },
+  }
+  const archiveSession = resolveHostArchiveSession({
+    get: (name: string) => name === 'uiWorkspace' ? service : undefined,
+  })
+
+  assert.equal(typeof archiveSession, 'function')
+  await archiveSession?.('session-1')
+  assert.deepEqual(calls, ['ui-workspace:session-1'])
+  assert.equal(resolveHostArchiveSession({ get: () => ({}) }), undefined)
 })
 
 test('parsePickedPath 统一解析字符串、path、filePaths 和取消状态', () => {

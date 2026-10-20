@@ -89,6 +89,7 @@ export function ScheduledRecordsView({
   runtime,
   officialTree,
   hostProps,
+  archiveSession,
   openSession,
   openTaskSettings,
   openCreateTask,
@@ -100,6 +101,7 @@ export function ScheduledRecordsView({
   readonly runtime: AutomationRuntime
   readonly officialTree?: ComponentType<Record<string, unknown>>
   readonly hostProps?: Record<string, unknown>
+  readonly archiveSession?: (sessionId: string) => void | Promise<void>
   readonly openSession?: (sessionId: string) => void
   readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
   readonly openCreateTask?: () => void
@@ -188,7 +190,7 @@ export function ScheduledRecordsView({
   const rawRenameWorkspace = hostFunction<HostWorkspaceAction>(hostProps, 'renameWorkspace')
   const rawDeleteWorkspace = hostFunction<HostWorkspaceAction>(hostProps, 'deleteWorkspace')
   const rawInsertWorkspaceBefore = hostFunction<HostWorkspaceAction>(hostProps, 'insertWorkspaceBefore')
-  const rawArchiveSession = hostFunction<(id: string) => void | Promise<void>>(hostProps, 'archiveSession')
+  const rawArchiveSession = hostFunction<(id: string) => void | Promise<void>>(hostProps, 'archiveSession') ?? archiveSession
   const resolveTask = useCallback((workspaceId: string): WorkspaceTaskSettingsTarget | undefined => {
     const automationId = automationIdFromTaskWorkspaceId(workspaceId)
     const snapshot = runtime.source.getSnapshot().snapshot
@@ -341,6 +343,7 @@ export function NativeScheduleShell({
   runtime,
   officialTree,
   hostProps,
+  archiveSession,
   openSession,
   openTaskSettings,
   openCreateTask,
@@ -353,6 +356,7 @@ export function NativeScheduleShell({
   readonly runtime: AutomationRuntime
   readonly officialTree?: ComponentType<Record<string, unknown>>
   readonly hostProps?: Record<string, unknown>
+  readonly archiveSession?: (sessionId: string) => void | Promise<void>
   readonly openSession?: (sessionId: string) => void
   readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
   readonly openCreateTask?: () => void
@@ -475,6 +479,7 @@ export function NativeScheduleShell({
           runtime={runtime}
           {...(Official === undefined ? {} : { officialTree: Official })}
           {...(hostProps === undefined ? {} : { hostProps })}
+          {...(archiveSession === undefined ? {} : { archiveSession })}
           {...(openSession === undefined ? {} : { openSession })}
           {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
           {...(openCreateTask === undefined ? {} : { openCreateTask })}
