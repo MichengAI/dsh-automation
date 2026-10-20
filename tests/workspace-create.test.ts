@@ -71,6 +71,20 @@ test('resolveHostArchiveSession 从宿主服务解析归档方法并保留 this'
   assert.equal(resolveHostArchiveSession({ get: () => ({}) }), undefined)
 })
 
+test('resolveHostArchiveSession 兼容旧上下文直接暴露的 workspaces 属性', async () => {
+  const calls: string[] = []
+  const ctx = {
+    get: () => undefined,
+    reflect: { get: () => undefined },
+    workspaces: { archiveSession: (sessionId: string) => { calls.push(sessionId) } },
+  }
+
+  const archiveSession = resolveHostArchiveSession(ctx)
+  assert.equal(typeof archiveSession, 'function')
+  await archiveSession?.('session-legacy')
+  assert.deepEqual(calls, ['session-legacy'])
+})
+
 test('parsePickedPath 统一解析字符串、path、filePaths 和取消状态', () => {
   assert.equal(parsePickedPath('D:/repo/app'), 'D:/repo/app')
   assert.equal(parsePickedPath({ path: 'D:/repo/app' }), 'D:/repo/app')

@@ -55,8 +55,12 @@ export function probeService(ctx: unknown, name: string): unknown {
 export function resolveHostArchiveSession(
   ctx: unknown,
 ): ((sessionId: string) => void | Promise<void>) | undefined {
-  for (const name of ['uiWorkspace', 'workspaces']) {
-    const service = probeService(ctx, name)
+  const services = [probeService(ctx, 'uiWorkspace'), probeService(ctx, 'workspaces')]
+  // IM 仍需兼容旧 HostContext 直接暴露的 workspaces 属性；Cordis getter 未注入时可能抛错。
+  try {
+    services.push(readMember(ctx, 'workspaces'))
+  } catch { /* 未注入时保留服务探测结果 */ }
+  for (const service of services) {
     const archiveSession = readMember(service, 'archiveSession')
     if (typeof archiveSession === 'function') {
       return (sessionId) => archiveSession.call(service, sessionId) as void | Promise<void>
