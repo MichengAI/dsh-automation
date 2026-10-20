@@ -9,8 +9,8 @@ export declare class WorkspacePickerUnavailableError extends Error {
  * reflect.get 存在却返回 undefined 时不越过它硬读属性，避免读未注入的服务。
  */
 export declare function probeService(ctx: unknown, name: string): unknown;
-/** 解析宿主归档接口并保留服务实例作为 this；菜单仅在接口可用时显示归档项。 */
-export declare function resolveHostArchiveSession(ctx: unknown): ((sessionId: string) => void | Promise<void>) | undefined;
+/** 创建延迟解析的归档回调，兼容 uiWorkspace 服务和旧 HostContext.workspaces。 */
+export declare function createHostArchiveSession(ctx: unknown): (sessionId: string) => void | Promise<void>;
 /** 统一解析宿主选目录的返回值：字符串、{ path }、{ filePaths }，取消则 undefined。 */
 export declare function parsePickedPath(value: unknown): string | undefined;
 /** 让宿主登记工作区；宿主没有该方法或拒绝时返回 false，调用方改走运行时登记。 */

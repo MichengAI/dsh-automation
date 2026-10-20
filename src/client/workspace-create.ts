@@ -11,7 +11,11 @@ export class WorkspacePickerUnavailableError extends Error {
 /** 反射读成员：只接受对象，避免在未校验的形状上做断言访问。 */
 function readMember(owner: unknown, key: string): unknown {
   if (owner === null || (typeof owner !== 'object' && typeof owner !== 'function')) return undefined
-  return Reflect.get(owner, key)
+  try {
+    return Reflect.get(owner, key)
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -51,22 +55,18 @@ export function probeService(ctx: unknown, name: string): unknown {
   }
 }
 
-/** 解析宿主归档接口并保留服务实例作为 this；菜单仅在接口可用时显示归档项。 */
-export function resolveHostArchiveSession(
-  ctx: unknown,
-): ((sessionId: string) => void | Promise<void>) | undefined {
-  const services = [probeService(ctx, 'uiWorkspace'), probeService(ctx, 'workspaces')]
-  // IM 仍需兼容旧 HostContext 直接暴露的 workspaces 属性；Cordis getter 未注入时可能抛错。
-  try {
-    services.push(readMember(ctx, 'workspaces'))
-  } catch { /* 未注入时保留服务探测结果 */ }
-  for (const service of services) {
-    const archiveSession = readMember(service, 'archiveSession')
-    if (typeof archiveSession === 'function') {
-      return (sessionId) => archiveSession.call(service, sessionId) as void | Promise<void>
+/** 创建延迟解析的归档回调，兼容 uiWorkspace 服务和旧 HostContext.workspaces。 */
+export function createHostArchiveSession(ctx: unknown): (sessionId: string) => void | Promise<void> {
+  return (sessionId) => {
+    const services = [probeService(ctx, 'uiWorkspace'), probeService(ctx, 'workspaces'), readMember(ctx, 'workspaces')]
+    for (const service of services) {
+      const archiveSession = readMember(service, 'archiveSession')
+      if (typeof archiveSession === 'function') {
+        return archiveSession.call(service, sessionId) as void | Promise<void>
+      }
     }
+    throw new Error('host archiveSession unavailable')
   }
-  return undefined
 }
 
 /** 统一解析宿主选目录的返回值：字符串、{ path }、{ filePaths }，取消则 undefined。 */

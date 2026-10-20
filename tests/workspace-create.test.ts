@@ -5,7 +5,7 @@ import {
   parsePickedPath,
   pickHostDirectory,
   probeService,
-  resolveHostArchiveSession,
+  createHostArchiveSession,
   WorkspacePickerUnavailableError,
 } from '../src/client/workspace-create.ts'
 
@@ -53,25 +53,25 @@ test('probeService 没有反射面时才回退到 get 和属性读取', () => {
   assert.equal(probeService('text', 'dialog'), undefined)
 })
 
-test('resolveHostArchiveSession 从宿主服务解析归档方法并保留 this', async () => {
+test('createHostArchiveSession 延迟从宿主服务解析归档方法并保留 this', async () => {
   const calls: string[] = []
+  let current: unknown
   const service = {
     marker: 'ui-workspace',
     archiveSession(this: { marker: string }, sessionId: string) {
       calls.push(`${this.marker}:${sessionId}`)
     },
   }
-  const archiveSession = resolveHostArchiveSession({
-    get: (name: string) => name === 'uiWorkspace' ? service : undefined,
+  const archiveSession = createHostArchiveSession({
+    get: (name: string) => name === 'uiWorkspace' ? current : undefined,
   })
 
-  assert.equal(typeof archiveSession, 'function')
+  current = service
   await archiveSession?.('session-1')
   assert.deepEqual(calls, ['ui-workspace:session-1'])
-  assert.equal(resolveHostArchiveSession({ get: () => ({}) }), undefined)
 })
 
-test('resolveHostArchiveSession 兼容旧上下文直接暴露的 workspaces 属性', async () => {
+test('createHostArchiveSession 兼容旧上下文直接暴露的 workspaces 属性', async () => {
   const calls: string[] = []
   const ctx = {
     get: () => undefined,
@@ -79,10 +79,14 @@ test('resolveHostArchiveSession 兼容旧上下文直接暴露的 workspaces 属
     workspaces: { archiveSession: (sessionId: string) => { calls.push(sessionId) } },
   }
 
-  const archiveSession = resolveHostArchiveSession(ctx)
+  const archiveSession = createHostArchiveSession(ctx)
   assert.equal(typeof archiveSession, 'function')
   await archiveSession?.('session-legacy')
   assert.deepEqual(calls, ['session-legacy'])
+})
+
+test('createHostArchiveSession 在宿主没有归档 API 时显式失败', async () => {
+  await assert.rejects(async () => createHostArchiveSession({ get: () => undefined })('session-1'), /archiveSession unavailable/)
 })
 
 test('parsePickedPath 统一解析字符串、path、filePaths 和取消状态', () => {

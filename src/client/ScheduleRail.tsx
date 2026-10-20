@@ -190,7 +190,12 @@ export function ScheduledRecordsView({
   const rawRenameWorkspace = hostFunction<HostWorkspaceAction>(hostProps, 'renameWorkspace')
   const rawDeleteWorkspace = hostFunction<HostWorkspaceAction>(hostProps, 'deleteWorkspace')
   const rawInsertWorkspaceBefore = hostFunction<HostWorkspaceAction>(hostProps, 'insertWorkspaceBefore')
-  const rawArchiveSession = hostFunction<(id: string) => void | Promise<void>>(hostProps, 'archiveSession') ?? archiveSession
+  const hostArchiveSession = hostFunction<(id: string) => void | Promise<void>>(hostProps, 'archiveSession')
+  const rawArchiveSession = hostArchiveSession ?? archiveSession
+  const archiveManagerInstalled = typeof document !== 'undefined'
+    && document.querySelector('[data-plugin="@michengai/dsh-archive-manager"]') !== null
+  const canArchiveTaskGroup = rawArchiveSession !== undefined
+    && (hostArchiveSession !== undefined || archiveManagerInstalled)
   const resolveTask = useCallback((workspaceId: string): WorkspaceTaskSettingsTarget | undefined => {
     const automationId = automationIdFromTaskWorkspaceId(workspaceId)
     const snapshot = runtime.source.getSnapshot().snapshot
@@ -204,12 +209,12 @@ export function ScheduledRecordsView({
       label: () => t('session.taskSettings'),
       resolveTask,
       openTaskSettings,
-      ...(rawArchiveSession === undefined ? {} : {
+      ...(canArchiveTaskGroup ? {
         archive: {
           label: t('records.archiveGroup'),
           request: (task: WorkspaceTaskSettingsTarget) => { setArchiveError(undefined); setArchiveTarget(task) },
         },
-      }),
+      } : {}),
     })
   }, [groupBy, openTaskSettings, rawArchiveSession, resolveTask, t, view])
   const confirmArchive = async (): Promise<void> => {
