@@ -3,12 +3,11 @@ import type { SessionSelector, Translate, WorkspaceSelector } from './contracts.
 import type { AutomationRuntime } from './runtime.js';
 import { type NativeTabRegistry } from './native-tabs.js';
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js';
-export declare function ScheduledRecordsView({ t, runtime, officialTree, hostProps, archiveSession, openSession, openTaskSettings, openCreateTask, useSessions, useWorkspaces, wide, }: {
+export declare function ScheduledRecordsView({ t, runtime, officialTree, hostProps, openSession, openTaskSettings, openCreateTask, useSessions, useWorkspaces, wide, }: {
     readonly t: Translate;
     readonly runtime: AutomationRuntime;
     readonly officialTree?: ComponentType<Record<string, unknown>>;
     readonly hostProps?: Record<string, unknown>;
-    readonly archiveSession?: (sessionId: string) => void | Promise<void>;
     readonly openSession?: (sessionId: string) => void;
     readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void;
     readonly openCreateTask?: () => void;
@@ -16,12 +15,11 @@ export declare function ScheduledRecordsView({ t, runtime, officialTree, hostPro
     readonly useWorkspaces?: WorkspaceSelector;
     readonly wide?: boolean;
 }): JSX.Element;
-export declare function NativeScheduleShell({ t, runtime, officialTree, hostProps, archiveSession, openSession, openTaskSettings, openCreateTask, useSessions, useWorkspaces, tabRegistry, wide, }: {
+export declare function NativeScheduleShell({ t, runtime, officialTree, hostProps, openSession, openTaskSettings, openCreateTask, useSessions, useWorkspaces, tabRegistry, wide, }: {
     readonly t: Translate;
     readonly runtime: AutomationRuntime;
     readonly officialTree?: ComponentType<Record<string, unknown>>;
     readonly hostProps?: Record<string, unknown>;
-    readonly archiveSession?: (sessionId: string) => void | Promise<void>;
     readonly openSession?: (sessionId: string) => void;
     readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void;
     readonly openCreateTask?: () => void;

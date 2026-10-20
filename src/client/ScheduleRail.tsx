@@ -28,7 +28,6 @@ import {
 import { SCHEDULE_VIEW_PANEL_ID, ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import { getRecordsViewStore, type RecordsViewState } from './records-view-store.js'
 import { installTaskGroupOption, installTaskSettingsMenuInjector, type WorkspaceTaskSettingsTarget } from './workspace-menu.js'
-import { archiveTaskSessions } from './task-group-archive.js'
 import { applySessionFilters, openRegisteredSession, type NativeSidebarTab as ExtraSidebarTab, type NativeTabRegistry } from './native-tabs.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
@@ -89,7 +88,6 @@ export function ScheduledRecordsView({
   runtime,
   officialTree,
   hostProps,
-  archiveSession,
   openSession,
   openTaskSettings,
   openCreateTask,
@@ -101,7 +99,6 @@ export function ScheduledRecordsView({
   readonly runtime: AutomationRuntime
   readonly officialTree?: ComponentType<Record<string, unknown>>
   readonly hostProps?: Record<string, unknown>
-  readonly archiveSession?: (sessionId: string) => void | Promise<void>
   readonly openSession?: (sessionId: string) => void
   readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
   readonly openCreateTask?: () => void
@@ -111,10 +108,6 @@ export function ScheduledRecordsView({
 }): JSX.Element {
   const Official = officialTree
   const [view, setView] = useState<ScheduleView>('runs')
-  const [archiveTarget, setArchiveTarget] = useState<WorkspaceTaskSettingsTarget | undefined>()
-  const [archiving, setArchiving] = useState(false)
-  const [archiveError, setArchiveError] = useState<string | undefined>()
-  const archiveLock = useRef(false)
   const automationState = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const scheduledIds = useMemo(() => collectScheduledSessionIds(automationState.snapshot?.runs), [automationState.snapshot])
   const archivedIds = useWorkspaces === undefined
@@ -190,8 +183,6 @@ export function ScheduledRecordsView({
   const rawRenameWorkspace = hostFunction<HostWorkspaceAction>(hostProps, 'renameWorkspace')
   const rawDeleteWorkspace = hostFunction<HostWorkspaceAction>(hostProps, 'deleteWorkspace')
   const rawInsertWorkspaceBefore = hostFunction<HostWorkspaceAction>(hostProps, 'insertWorkspaceBefore')
-  const hostArchiveSession = hostFunction<(id: string) => void | Promise<void>>(hostProps, 'archiveSession')
-  const rawArchiveSession = hostArchiveSession ?? archiveSession
   const resolveTask = useCallback((workspaceId: string): WorkspaceTaskSettingsTarget | undefined => {
     const automationId = automationIdFromTaskWorkspaceId(workspaceId)
     const snapshot = runtime.source.getSnapshot().snapshot
@@ -205,31 +196,8 @@ export function ScheduledRecordsView({
       label: () => t('session.taskSettings'),
       resolveTask,
       openTaskSettings,
-      ...(rawArchiveSession === undefined ? {} : {
-        archive: {
-          label: t('records.archiveGroup'),
-          request: (task: WorkspaceTaskSettingsTarget) => { setArchiveError(undefined); setArchiveTarget(task) },
-        },
-      }),
     })
-  }, [groupBy, openTaskSettings, rawArchiveSession, resolveTask, t, view])
-  const confirmArchive = async (): Promise<void> => {
-    if (archiveTarget === undefined || rawArchiveSession === undefined || archiveLock.current) return
-    archiveLock.current = true
-    setArchiving(true)
-    setArchiveError(undefined)
-    try {
-      // 确认时重新取成员；运行产生新会话、任务删除或部分归档后重试时都不依赖旧菜单快照。
-      const current = resolveTask(automationTaskWorkspaceId(archiveTarget.id))
-      await archiveTaskSessions(current?.sessionIds ?? [], new Set(archivedIds), rawArchiveSession)
-      setArchiveTarget(undefined)
-    } catch (error: unknown) {
-      setArchiveError(error instanceof Error ? error.message : t('error.action'))
-    } finally {
-      archiveLock.current = false
-      setArchiving(false)
-    }
-  }
+  }, [groupBy, openTaskSettings, resolveTask, t, view])
   const searchScheduledSessions = useCallback(async (query: string, signal: AbortSignal): Promise<SessionSearchResult> => {
     if (rawSearch === undefined) return { items: [], hasMore: false }
     const result = await rawSearch(query, signal)
@@ -305,19 +273,6 @@ export function ScheduledRecordsView({
       )
   return (
     <div className="dsh-st-n">
-      <Modal
-        open={archiveTarget !== undefined}
-        closeLabel={t('form.cancel')}
-        title={t('records.archiveGroup')}
-        onClose={() => { if (!archiveLock.current) setArchiveTarget(undefined) }}
-        footer={<>
-          <Button variant="outline" disabled={archiving} onClick={() => setArchiveTarget(undefined)}>{t('form.cancel')}</Button>
-          <Button variant="primary" disabled={archiving} onClick={() => { void confirmArchive() }}>{t('records.archiveGroup')}</Button>
-        </>}
-      >
-        <p>{t('records.archiveConfirm', { name: archiveTarget?.name ?? '' })}</p>
-        {archiveError === undefined ? null : <p role="alert">{archiveError}</p>}
-      </Modal>
       <div className="dsh-st-n-views-wrap">
         <ScheduleViewSwitch t={t} view={view} onChange={setView} />
       </div>
@@ -344,7 +299,6 @@ export function NativeScheduleShell({
   runtime,
   officialTree,
   hostProps,
-  archiveSession,
   openSession,
   openTaskSettings,
   openCreateTask,
@@ -357,7 +311,6 @@ export function NativeScheduleShell({
   readonly runtime: AutomationRuntime
   readonly officialTree?: ComponentType<Record<string, unknown>>
   readonly hostProps?: Record<string, unknown>
-  readonly archiveSession?: (sessionId: string) => void | Promise<void>
   readonly openSession?: (sessionId: string) => void
   readonly openTaskSettings?: (request: AutomationTaskSettingsRequest) => void
   readonly openCreateTask?: () => void
@@ -480,7 +433,6 @@ export function NativeScheduleShell({
           runtime={runtime}
           {...(Official === undefined ? {} : { officialTree: Official })}
           {...(hostProps === undefined ? {} : { hostProps })}
-          {...(archiveSession === undefined ? {} : { archiveSession })}
           {...(openSession === undefined ? {} : { openSession })}
           {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
           {...(openCreateTask === undefined ? {} : { openCreateTask })}

@@ -5,7 +5,6 @@ import ts from 'typescript'
 import * as model from '../src/client/schedule-rail-model.ts'
 import * as recordsStore from '../src/client/records-view-store.ts'
 import * as nativeTabs from '../src/client/native-tabs.ts'
-import * as taskGroupArchive from '../src/client/task-group-archive.ts'
 
 export function createShellHarness(browser = {}) {
   const state = []
@@ -52,7 +51,6 @@ export function createShellHarness(browser = {}) {
       installTaskGroupOption: () => () => undefined,
       installTaskSettingsMenuInjector: options => { menuOptions = options; return () => {} },
     },
-    './task-group-archive.js': taskGroupArchive,
     './host-icons.js': { IconClockOutline: 'clock-icon', IconFolderClose: 'folder-icon', IconQueueOutline: 'queue-icon' },
     './schedule-overview.js': { SCHEDULE_VIEW_PANEL_ID: 'schedule-panel', ScheduleViewSwitch: 'view-switch', ScheduleOverview: 'overview' },
   }

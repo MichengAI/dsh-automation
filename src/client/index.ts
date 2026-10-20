@@ -10,7 +10,7 @@ import {
 } from './native-tabs.js'
 import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
 import { createAutomationRuntime, installAutomationSessionSync } from './runtime.js'
-import { createHostArchiveSession, createHostWorkspace, pickHostDirectory } from './workspace-create.js'
+import { createHostWorkspace, pickHostDirectory } from './workspace-create.js'
 import { NativeScheduleShell, ScheduledRecordsView } from './ScheduleRail.js'
 import { AUTOMATION_SESSION_PREFIX, canOpenClientSession, collectScheduledSessionIds, ensureOpenScheduledSession, hasCodexUiSidebar, openClientSession, pickWrappableWorkspacesEntry, resolveClientSessionOpenAccess, resolveOfficialTreeComponent } from './schedule-rail-model.js'
 import { IconClockOutline } from './host-icons.js'
@@ -107,7 +107,6 @@ export function apply(ctx: ClientContext): void {
       () => { requestAutomationTaskSettings(request) },
     )
   }
-  const archiveSession = createHostArchiveSession(ctx)
   const openCreateTask = (): void => {
     requestAutomationCreateTask()
     openSettingsSection(
@@ -250,7 +249,6 @@ export function apply(ctx: ClientContext): void {
             ...(hostTree === undefined ? {} : { officialTree: hostTree }),
             hostProps: props,
             openSession: opener,
-            ...(archiveSession === undefined ? {} : { archiveSession }),
             ...(openTaskSettings === undefined ? {} : { openTaskSettings }),
             ...(openCreateTask === undefined ? {} : { openCreateTask }),
             ...(isSessionSelector(props.useSessions) ? { useSessions: props.useSessions } : {}),
@@ -321,7 +319,6 @@ export function apply(ctx: ClientContext): void {
             t,
             runtime,
             hostProps: innerProps as Record<string, unknown>,
-            ...(archiveSession === undefined ? {} : { archiveSession }),
             openSession,
             openTaskSettings,
             openCreateTask,

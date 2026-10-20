@@ -55,20 +55,6 @@ export function probeService(ctx: unknown, name: string): unknown {
   }
 }
 
-/** 创建延迟解析的归档回调，兼容 uiWorkspace 服务和旧 HostContext.workspaces。 */
-export function createHostArchiveSession(ctx: unknown): (sessionId: string) => void | Promise<void> {
-  return (sessionId) => {
-    const services = [probeService(ctx, 'uiWorkspace'), probeService(ctx, 'workspaces'), readMember(ctx, 'workspaces')]
-    for (const service of services) {
-      const archiveSession = readMember(service, 'archiveSession')
-      if (typeof archiveSession === 'function') {
-        return archiveSession.call(service, sessionId) as void | Promise<void>
-      }
-    }
-    throw new Error('host archiveSession unavailable')
-  }
-}
-
 /** 统一解析宿主选目录的返回值：字符串、{ path }、{ filePaths }，取消则 undefined。 */
 export function parsePickedPath(value: unknown): string | undefined {
   if (typeof value === 'string' && value.trim() !== '') return value
