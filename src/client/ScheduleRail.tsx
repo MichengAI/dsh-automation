@@ -27,7 +27,7 @@ import {
 import { SCHEDULE_VIEW_PANEL_ID, ScheduleOverview, ScheduleViewSwitch, type ScheduleView } from './schedule-overview.js'
 import { getRecordsViewStore, type RecordsViewState } from './records-view-store.js'
 import { installTaskGroupOption } from './workspace-menu.js'
-import type { NativeSidebarTab as ExtraSidebarTab, NativeTabRegistry } from './native-tabs.js'
+import { applySessionFilters, openRegisteredSession, type NativeSidebarTab as ExtraSidebarTab, type NativeTabRegistry } from './native-tabs.js'
 import type { AutomationTaskSettingsRequest } from './task-settings-request.js'
 
 const EMPTY_EXTRA_TABS: ExtraSidebarTab[] = []
@@ -314,6 +314,11 @@ export function NativeScheduleShell({
     () => tabRegistry?.getTabs() ?? EMPTY_EXTRA_TABS,
     () => EMPTY_EXTRA_TABS,
   )
+  const registryRevision = useSyncExternalStore(
+    tabRegistry?.subscribe ?? noopSubscribe,
+    () => typeof tabRegistry?.getRevision === 'function' ? tabRegistry.getRevision() : 0,
+    () => 0,
+  )
   // 只有注册表提供了可渲染的频道贡献，才显示频道入口；不跨用工作区的子槽位权限。
   const channelsReady = extraTabs.some(item => item.id === 'channels')
   const currentId = useSessions?.((state) => resolveCurrentSessionId(state))
@@ -369,15 +374,24 @@ export function NativeScheduleShell({
   const rawOfficialProps = { ...(hostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
   const rawOpen = hostFunction<(sessionId: string) => void>(hostProps, 'open')
   const openSidebarSession = useCallback((sessionId: string) => {
+    if (tabRegistry !== undefined && Array.isArray(tabRegistry.sessionOpeners) && tabRegistry.sessionOpeners.length > 0) {
+      openRegisteredSession(sessionId, tabRegistry, rawOpen)
+      return
+    }
     if (scheduledIds.has(sessionId) && openSession !== undefined) {
       openSession(sessionId)
       return
     }
     rawOpen?.(sessionId)
-  }, [openSession, rawOpen, scheduledIds])
+  }, [openSession, rawOpen, scheduledIds, tabRegistry, registryRevision])
+  const useFilteredSessions = useCallback<SessionSelector>((selector, equals) => {
+    if (useSessions === undefined) return selector({ ids: [], byId: {} })
+    return useSessions(state => selector(applySessionFilters(state, tabRegistry)), equals)
+  }, [useSessions, tabRegistry, registryRevision])
   const filteredOfficialProps = {
     ...rawOfficialProps,
     open: openSidebarSession,
+    ...(useSessions === undefined ? {} : { useSessions: useFilteredSessions }),
   }
   const renderOfficial = (props: Record<string, unknown>): ReactNode => {
     if (Official === undefined) return <TreeUnavailable t={t} />
@@ -482,7 +496,7 @@ export function NativeScheduleShell({
         {visibleTab === 'schedule'
           ? scheduleBody
           : activeForeignTab !== undefined
-            ? activeForeignTab.render({ ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true }) as ReactNode
+            ? activeForeignTab.render({ ...(hostProps ?? {}), openSession: openSidebarSession, open: openSidebarSession, useSessions, wide: true }) as ReactNode
             : renderOfficial(filteredOfficialProps)}
       </div>
     </div>

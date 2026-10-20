@@ -16,8 +16,8 @@ const im = readFileSync(resolve(process.argv[2], 'lib/client.js'), 'utf8')
 const block = extractBlock(auto, '    let wrappedEntry:', "\n  ctx.slots.inject('conversation.input.left'", '定时生命周期')
 const autoBody = ts.transpileModule(extractBlock(block, '    let wrappedEntry:', '\n  })', '定时生命周期闭包', ['notifyPeers', 'ownedWrapper']), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
 const imBody = extractBlock(im, '        let wrappedEntry = null;', '\n      });\n    }\n\n    exports.apply', 'IM 生命周期', ['notifyPeers', 'ownedWrapper'])
-const registry = extractBlock(im, '    function createNativeTabRegistry(', '    function applyRegistryFilters(', 'IM 注册表', ['function attachNativeTabRegistry(', 'function findNativeTabRegistry('])
-const imHelpers = new Function(registry + '; return { createNativeTabRegistry, attachNativeTabRegistry, findNativeTabRegistry };')()
+const registry = extractBlock(im, '    function openRegisteredSession(', '    function applySessionFilters(', 'IM 注册表', ['function createNativeTabRegistry(', 'function attachNativeTabRegistry(', 'function findNativeTabRegistry('])
+const imHelpers = new Function(registry + '; return { openRegisteredSession, createNativeTabRegistry, attachNativeTabRegistry, findNativeTabRegistry };')()
 const permutations = list => list.length < 2 ? [list] : list.flatMap((p, i) => permutations(list.filter((_, j) => i !== j)).map(rest => [p, ...rest]))
 let scenarios = 0
 for (const group of ['A', 'I', 'T', 'AI', 'AT', 'IT', 'AIT']) {
@@ -32,11 +32,16 @@ for (const group of ['A', 'I', 'T', 'AI', 'AT', 'IT', 'AIT']) {
           ? h.start(imBody, {
             ...imHelpers, h: createElement,
             ImSidebarFallbackBoundary: 'im-boundary', LocalizedChannelRail: 'im-channel-rail',
+            HostThemeProvider: 'host-theme',
+            ChannelOfficialView: () => createElement('im-channel-rail'),
+            openChannelSettings() {}, openImSettings() {},
           })
           : h.start(autoBody, {
             ...tabs, ...model, createElement,
             hasCodexUiSidebar: () => installed.has('C'),
             createScheduledSessionOpener: (_ctx, _runtime, open) => open,
+            ScheduledRecordsView: 'scheduled-records',
+            openCreateTask() {},
             NativeScheduleSessionList: 'schedule-list',
             scheduledListHostActions: () => ({}),
             isSessionSelector: value => typeof value === 'function',
@@ -53,18 +58,19 @@ for (const group of ['A', 'I', 'T', 'AI', 'AT', 'IT', 'AIT']) {
           if (installed.has('I')) assert.ok(entry.component.__imConnectWrapped || ids.includes('channels'), `${order}: 缺频道`)
           if (installed.has('T')) assert.ok(ids.includes('schedule'), `${order}: 缺定时`)
           assert.equal(new Set(ids).size, ids.length)
+          const isChannelNode = node => node.type === 'im-channel-rail' || node.type?.name === 'ChannelOfficialView'
           if (installed.has('I') && ids.includes('channels')) {
             const channel = contributions.find(tab => tab.id === 'channels').render({})
-            assert.ok(findNode(channel, node => node.type === 'im-channel-rail'), `${order}: 频道贡献无法渲染`)
+            assert.ok(findNode(channel, isChannelNode), `${order}: 频道贡献无法渲染`)
             if (entry.component.__dshAutomationWrapped) {
               const shell = createShellHarness()
               const props = { tabRegistry: registry, renderSlot: () => assert.fail('频道不得跨槽渲染') }
               findNode(shell.render(props), node => node.type === 'segmented-tabs').props.onChange('channels')
-              assert.ok(findNode(shell.render(props), node => node.type === 'im-channel-rail'), `${order}: 点击频道没有走贡献组件`)
+              assert.ok(findNode(shell.render(props), isChannelNode), `${order}: 点击频道没有走贡献组件`)
             }
           }
           if (installed.has('T')) {
-            assert.equal(contributions.find(tab => tab.id === 'schedule').render({}).type, 'schedule-list', `${order}: 定时贡献无法渲染`)
+            assert.equal(contributions.find(tab => tab.id === 'schedule').render({}).type, 'scheduled-records', `${order}: 定时贡献无法渲染`)
           }
         }
         for (const p of order) {

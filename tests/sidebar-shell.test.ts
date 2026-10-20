@@ -9,12 +9,11 @@ test('点击已注册的频道必须渲染贡献组件，不能跨槽调用工�
   const calls: Record<string, unknown>[] = []
   registry.insert({ id: 'channels', label: '频道', order: 20, render: props => { calls.push(props); return 'channel-body' } })
   const shell = createShellHarness()
-  const openSession = (): void => undefined
+  const hostOpenCalls: string[] = []
   const props = {
     tabRegistry: registry,
     hasChannels: () => true,
-    openSession,
-    hostProps: { marker: 'host-props' },
+    hostProps: { marker: 'host-props', open: (id: string) => { hostOpenCalls.push(id) } },
     renderSlot: (): never => assert.fail('频道不是工作区声明的子槽位，不允许跨槽调用'),
   }
   const initial = shell.render(props)
@@ -24,7 +23,9 @@ test('点击已注册的频道必须渲染贡献组件，不能跨槽调用工�
   const selected = shell.render(props)
   assert.equal(findNode(selected, (node: JSX.Element) => node.props.role === 'tabpanel').props.children, 'channel-body')
   assert.equal(calls.length, 1)
-  assert.equal(calls[0]?.openSession, openSession)
+  assert.equal(typeof calls[0]?.openSession, 'function')
+  ;(calls[0]?.openSession as (id: string) => void)('session-1')
+  assert.deepEqual(hostOpenCalls, ['session-1'])
   assert.equal(calls[0]?.marker, 'host-props')
 })
 

@@ -23,6 +23,8 @@
 - 修复侧边栏折叠后展开时「任务 / 频道 / 定时」页签消失：`NativeScheduleShell` 的 `wide === false` 提前返回移到所有 Hook 之后，避免 React Hook 顺序错误。
 - 统一侧栏包裹协议：新增 `__dshNativeTabWrapped`、`__dshNativeTabOriginal`、`__dshNativeTabOwner`，保留旧标记兼容；包裹组件统一命名 `DshNativeTabWorkspaceShell`。
 - 官方任务树不再过滤 `im:` 会话，频道与任务共享同一批会话；删除 `filterTaskSessionState`、`filterWorkspaceListState` 及相关缓存和测试。
+- 统一官方任务树的会话过滤器：automation 与 IM 插件都通过 `NativeTabRegistry.sessionFilters` 应用过滤，并新增 `getRevision()`，过滤器增删后立即重新计算，不再取决于哪个插件先包裹侧栏。
+- 统一官方任务树的会话打开：新增 `NativeTabRegistry.sessionOpeners`，按时序匹配定时/频道 opener，未匹配时回退宿主；无论谁先包裹，定时会话都会 adopt/refresh，频道会话都会 resolve/ensure。
 - 删除自绘会话列表、搜索工具栏、行菜单和悬停卡，会话管理统一复用官方组件。
 
 ## 1.0.4 - 2026-10-19

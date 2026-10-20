@@ -184,6 +184,7 @@ export function apply(ctx: ClientContext): void {
     let ownedRegistry: ReturnType<typeof createNativeTabRegistry> | undefined
     let insertedRegistry: ReturnType<typeof createNativeTabRegistry> | undefined
     let removeInsertedTab = (): void => undefined
+    let removeInsertedOpener = (): void => undefined
     let syncing = false
     let retryTimer: number | undefined
     // 直接替换 component 不触发宿主插槽通知；与 IM 共用事件，在本次同步完成后重新协调。
@@ -198,6 +199,8 @@ export function apply(ctx: ClientContext): void {
       stopRetry()
       removeInsertedTab()
       removeInsertedTab = (): void => undefined
+      removeInsertedOpener()
+      removeInsertedOpener = (): void => undefined
       insertedRegistry = undefined
       if (wrappedEntry !== undefined) {
         if (originalComp !== undefined && wrappedEntry.component === ownedWrapper) wrappedEntry.component = originalComp
@@ -210,13 +213,34 @@ export function apply(ctx: ClientContext): void {
       ownedWrapper = undefined
       ownedRegistry = undefined
     }
+    const installScheduledOpener = (registry: ReturnType<typeof createNativeTabRegistry>): (() => void) => {
+      if (!Array.isArray(registry.sessionOpeners) || typeof registry.addSessionOpener !== 'function') return () => undefined
+      if (registry.sessionOpeners.some(item => item.id === 'automation')) return () => undefined
+      return registry.addSessionOpener({
+        id: 'automation',
+        order: 10,
+        matchSession: (sessionId) => {
+          if (sessionId.startsWith(AUTOMATION_SESSION_PREFIX)) return true
+          const snapshot = runtime.source.getSnapshot().snapshot
+          return snapshot?.runs?.some(run => run.sessionId === sessionId) === true
+        },
+        open: (sessionId, hostOpen) => {
+          createScheduledSessionOpener(ctx, runtime, hostOpen)(sessionId)
+        },
+      })
+    }
     const insertScheduleTab = (entry: unknown, openSession?: (id: string) => void): boolean => {
       const registry = findNativeTabRegistry(entry)
       if (registry === undefined) return false
       if (insertedRegistry !== registry) {
         removeInsertedTab()
         removeInsertedTab = (): void => undefined
+        removeInsertedOpener()
+        removeInsertedOpener = (): void => undefined
         insertedRegistry = registry
+      }
+      if (Array.isArray(registry.sessionOpeners) && !registry.sessionOpeners.some(item => item.id === 'automation')) {
+        removeInsertedOpener = installScheduledOpener(registry)
       }
       if (registry.getTabs().some(item => item.id === 'schedule')) return true
       removeInsertedTab = registry.insert({
@@ -260,6 +284,8 @@ export function apply(ctx: ClientContext): void {
       // 当前显示外壳不再提供旧表时立即释放自有贡献，等待新表就绪通知。
       removeInsertedTab()
       removeInsertedTab = (): void => undefined
+      removeInsertedOpener()
+      removeInsertedOpener = (): void => undefined
       insertedRegistry = undefined
       return false
     }

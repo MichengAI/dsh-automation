@@ -23,6 +23,8 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 - Fix the Tasks / Channels / Scheduled tabs disappearing after collapsing and expanding the sidebar: move the `wide === false` return in `NativeScheduleShell` below every hook to keep hook order stable.
 - Unify the sidebar wrapper protocol with `__dshNativeTabWrapped`, `__dshNativeTabOriginal`, and `__dshNativeTabOwner` while keeping legacy flags readable; name both wrappers `DshNativeTabWorkspaceShell`.
 - Stop filtering `im:` sessions from the official task tree; Channels and Tasks now share the same sessions. Remove `filterTaskSessionState`, `filterWorkspaceListState`, their caches, and related tests.
+- Unify official task-tree session filters: both automation and IM apply filters through `NativeTabRegistry.sessionFilters`, with a new `getRevision()` so adding or removing a filter recomputes immediately regardless of which plugin wrapped the sidebar first.
+- Unify official task-tree session opening: add `NativeTabRegistry.sessionOpeners` to match scheduled/channel openers in order and fall back to the host; scheduled sessions still adopt/refresh and channel sessions still resolve/ensure regardless of which plugin wrapped first.
 - Delete the custom session list, search toolbar, row menus, and hover cards; session management now reuses the official components.
 
 ## 1.0.4 - 2026-10-19
