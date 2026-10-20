@@ -250,6 +250,7 @@ export function apply(ctx: ClientContext): void {
             ...(hostTree === undefined ? {} : { officialTree: hostTree }),
             hostProps: props,
             openSession: opener,
+            ...(archiveSession === undefined ? {} : { archiveSession }),
             ...(openTaskSettings === undefined ? {} : { openTaskSettings }),
             ...(openCreateTask === undefined ? {} : { openCreateTask }),
             ...(isSessionSelector(props.useSessions) ? { useSessions: props.useSessions } : {}),
