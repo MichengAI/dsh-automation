@@ -55,6 +55,18 @@ type HostShortcutSelector = <Selected>(
 ) => Selected
 const EMPTY_SHORTCUTS: readonly HostShortcut[] = []
 
+interface HostWorkspaceShortcutState {
+  readonly searchRequest?: number
+  readonly addRequested?: boolean
+  readonly directoryBusy?: boolean
+  readonly renameTarget?: unknown
+}
+type HostWorkspaceShortcutSelector = <Selected>(
+  select: (state: HostWorkspaceShortcutState) => Selected,
+  equals?: (left: Selected, right: Selected) => boolean,
+) => Selected
+const EMPTY_SHORTCUT_STATE: HostWorkspaceShortcutState = { searchRequest: 0, addRequested: false, directoryBusy: false, renameTarget: null }
+
 function noDirectoryFlow<T>(select: (occupied: boolean) => T): T {
   return select(false)
 }
@@ -83,6 +95,8 @@ function TreeUnavailable({ t }: { readonly t: Translate }): JSX.Element {
 
 
 
+const SCHEDULE_VIEW_STORAGE_KEY = 'dsh-automation.schedule-view'
+
 export function ScheduledRecordsView({
   t,
   runtime,
@@ -107,7 +121,20 @@ export function ScheduledRecordsView({
   readonly wide?: boolean
 }): JSX.Element {
   const Official = officialTree
-  const [view, setView] = useState<ScheduleView>('runs')
+  const [view, setView] = useState<ScheduleView>(() => {
+    if (typeof window === 'undefined') return 'runs'
+    try {
+      const stored = window.localStorage.getItem(SCHEDULE_VIEW_STORAGE_KEY)
+      return stored === 'overview' ? 'overview' : 'runs'
+    } catch {
+      return 'runs'
+    }
+  })
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SCHEDULE_VIEW_STORAGE_KEY, view)
+    } catch { /* 隐私模式或无存储时忽略 */ }
+  }, [view])
   const automationState = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const scheduledIds = useMemo(() => collectScheduledSessionIds(automationState.snapshot?.runs), [automationState.snapshot])
   const archivedIds = useWorkspaces === undefined
@@ -174,6 +201,11 @@ export function ScheduledRecordsView({
 
   const rawOfficialProps = { ...(hostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
   const rawUseShortcuts = hostFunction<HostShortcutSelector>(hostProps, 'useShortcuts')
+  const rawUseWorkspaceShortcuts = hostFunction<HostWorkspaceShortcutSelector>(hostProps, 'useWorkspaceShortcuts')
+  const useIsolatedWorkspaceShortcuts = useCallback<HostWorkspaceShortcutSelector>((select, equals) => {
+    if (rawUseWorkspaceShortcuts === undefined) return select(EMPTY_SHORTCUT_STATE)
+    return rawUseWorkspaceShortcuts(state => select({ ...(state ?? {}), searchRequest: 0 }), equals)
+  }, [rawUseWorkspaceShortcuts])
   // 头部「＋」现在是新建定时任务，不能继续显示宿主的“添加工作区”快捷键。
   const useRecordsShortcuts = useCallback<HostShortcutSelector>((select, equals) => {
     if (rawUseShortcuts === undefined) return select(EMPTY_SHORTCUTS)
@@ -237,6 +269,8 @@ export function ScheduledRecordsView({
   const useCreateTaskFlow = useCallback(<T,>(select: (available: boolean) => T): T => select(true), [])
   const scheduledOfficialProps = {
     ...rawOfficialProps,
+    expandSidebar: noop,
+    ...(rawUseWorkspaceShortcuts === undefined ? {} : { useWorkspaceShortcuts: useIsolatedWorkspaceShortcuts }),
     useStore: useRecordsStore,
     actions: recordsStore.actions,
     t: recordsT,
@@ -391,27 +425,18 @@ export function NativeScheduleShell({
 
   const rawOfficialProps = { ...(hostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
   const rawOpen = hostFunction<(sessionId: string) => void>(hostProps, 'open')
-  const rawExpandSidebar = hostFunction<() => void>(hostProps, 'expandSidebar')
-  const allowExpandSidebarRef = useRef(false)
-  const previousWide = useRef(wide)
-  useEffect(() => {
-    if (previousWide.current !== wide) {
-      previousWide.current = wide
-      allowExpandSidebarRef.current = false
-    }
-    const timer = setTimeout(() => {
-      allowExpandSidebarRef.current = true
-    }, 120)
-    return () => clearTimeout(timer)
-  }, [wide])
-  const safeExpandSidebar = useCallback(() => {
-    if (wide === false && !allowExpandSidebarRef.current) return
-    rawExpandSidebar?.()
-  }, [rawExpandSidebar, wide])
+  const rawUseWorkspaceShortcuts = hostFunction<HostWorkspaceShortcutSelector>(hostProps, 'useWorkspaceShortcuts')
+  const useIsolatedWorkspaceShortcuts = useCallback<HostWorkspaceShortcutSelector>((select, equals) => {
+    if (rawUseWorkspaceShortcuts === undefined) return select(EMPTY_SHORTCUT_STATE)
+    return rawUseWorkspaceShortcuts(state => select({ ...(state ?? {}), searchRequest: 0 }), equals)
+  }, [rawUseWorkspaceShortcuts])
   const guardedHostProps = useMemo(() => {
-    if (rawExpandSidebar === undefined) return hostProps
-    return { ...(hostProps ?? {}), expandSidebar: safeExpandSidebar }
-  }, [hostProps, rawExpandSidebar, safeExpandSidebar])
+    return {
+      ...(hostProps ?? {}),
+      expandSidebar: noop,
+      ...(rawUseWorkspaceShortcuts === undefined ? {} : { useWorkspaceShortcuts: useIsolatedWorkspaceShortcuts }),
+    }
+  }, [hostProps, rawUseWorkspaceShortcuts, useIsolatedWorkspaceShortcuts])
   const guardedOfficialProps = { ...(guardedHostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
   const openSidebarSession = useCallback((sessionId: string) => {
     if (tabRegistry !== undefined && Array.isArray(tabRegistry.sessionOpeners) && tabRegistry.sessionOpeners.length > 0) {
