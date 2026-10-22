@@ -391,6 +391,28 @@ export function NativeScheduleShell({
 
   const rawOfficialProps = { ...(hostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
   const rawOpen = hostFunction<(sessionId: string) => void>(hostProps, 'open')
+  const rawExpandSidebar = hostFunction<() => void>(hostProps, 'expandSidebar')
+  const allowExpandSidebarRef = useRef(false)
+  const previousWide = useRef(wide)
+  useEffect(() => {
+    if (previousWide.current !== wide) {
+      previousWide.current = wide
+      allowExpandSidebarRef.current = false
+    }
+    const timer = setTimeout(() => {
+      allowExpandSidebarRef.current = true
+    }, 120)
+    return () => clearTimeout(timer)
+  }, [wide])
+  const safeExpandSidebar = useCallback(() => {
+    if (wide === false && !allowExpandSidebarRef.current) return
+    rawExpandSidebar?.()
+  }, [rawExpandSidebar, wide])
+  const guardedHostProps = useMemo(() => {
+    if (rawExpandSidebar === undefined) return hostProps
+    return { ...(hostProps ?? {}), expandSidebar: safeExpandSidebar }
+  }, [hostProps, rawExpandSidebar, safeExpandSidebar])
+  const guardedOfficialProps = { ...(guardedHostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
   const openSidebarSession = useCallback((sessionId: string) => {
     if (tabRegistry !== undefined && Array.isArray(tabRegistry.sessionOpeners) && tabRegistry.sessionOpeners.length > 0) {
       openRegisteredSession(sessionId, tabRegistry, rawOpen)
@@ -407,14 +429,14 @@ export function NativeScheduleShell({
     return useSessions(state => selector(applySessionFilters(state, tabRegistry)), equals)
   }, [useSessions, tabRegistry, registryRevision])
   const filteredOfficialProps = {
-    ...rawOfficialProps,
+    ...guardedOfficialProps,
     open: openSidebarSession,
     ...(useSessions === undefined ? {} : { useSessions: useFilteredSessions }),
   }
   const renderOfficial = (props: Record<string, unknown>): ReactNode => {
     if (Official === undefined) return <TreeUnavailable t={t} />
     return (
-      <OfficialTreeGuard fallback={createElement(Official, rawOfficialProps)}>
+      <OfficialTreeGuard fallback={createElement(Official, guardedOfficialProps)}>
         {createElement(Official, props)}
       </OfficialTreeGuard>
     )
@@ -433,7 +455,7 @@ export function NativeScheduleShell({
           t={t}
           runtime={runtime}
           {...(Official === undefined ? {} : { officialTree: Official })}
-          {...(hostProps === undefined ? {} : { hostProps })}
+          {...(guardedHostProps === undefined ? {} : { hostProps: guardedHostProps })}
           {...(openSession === undefined ? {} : { openSession })}
           {...(openTaskSettings === undefined ? {} : { openTaskSettings })}
           {...(openCreateTask === undefined ? {} : { openCreateTask })}
@@ -442,8 +464,10 @@ export function NativeScheduleShell({
           {...(wide === undefined ? {} : { wide })}
         />
       )
-    : hostedSchedule.render({ ...(hostProps ?? {}), openSession, open: openSession, useSessions, wide: true }) as ReactNode
+    : hostedSchedule.render({ ...(guardedHostProps ?? {}), openSession, open: openSession, useSessions, wide: true }) as ReactNode
 
+  const tasksLabel = t('sidebar.tasksTab')
+  const scheduleLabel = t('sidebar.tab')
   const sidebarTabItems = useMemo<readonly [SegmentedTab<string>, ...SegmentedTab<string>[]]>(() => {
     const items: SegmentedTab<string>[] = [
       {
@@ -453,7 +477,7 @@ export function NativeScheduleShell({
         label: (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
             <IconFolderClose size={14} />
-            <span>{t('sidebar.tasksTab')}</span>
+            <span>{tasksLabel}</span>
           </span>
         ),
       },
@@ -483,12 +507,12 @@ export function NativeScheduleShell({
       label: (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
           <IconClockOutline size={14} />
-          <span>{t('sidebar.tab')}</span>
+          <span>{scheduleLabel}</span>
         </span>
       ),
     })
     return items as unknown as readonly [SegmentedTab<string>, ...SegmentedTab<string>[]]
-  }, [channelsReady, foreignTabs, t])
+  }, [channelsReady, foreignTabs, scheduleLabel, tasksLabel])
 
   if (wide === false) return <>{renderOfficial(filteredOfficialProps)}</>
 
