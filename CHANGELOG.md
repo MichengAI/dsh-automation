@@ -4,6 +4,12 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 1.0.6 - 2026-10-22
+
+- Fix sidebar rebound on collapse after searching: prevent the official workspace tree from mistakenly triggering `expandSidebar` on narrow rail mount due to historical search requests, keeping sidebar collapse stable (Issue #20).
+- Fix sidebar tabs remaining in English in Chinese locale: resolve segment tab memo caching, dynamically refreshing tab labels to "任务" (Tasks) and "定时" (Scheduled) once locale dictionaries are ready (Issue #20).
+- Secondary view persistence: preserve the active view selection (Records vs. Tasks) in local storage so collapsing the sidebar or remounting does not reset view state.
+
 ## 1.0.5 - 2026-10-20
 
 - Fix the session list (including pinned sessions) being cleared when collapsing the sidebar on desktop or opening the drawer on mobile (Issue #18).
