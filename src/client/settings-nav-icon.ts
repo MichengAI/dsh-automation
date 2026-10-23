@@ -5,7 +5,6 @@
  * 会与宿主/皮肤的内容级图标规则互相覆盖。这里改为插入独立的宿主时钟图标，
  * 只通过 marker 属性隐藏宿主 svg，卸载时可以完整还原。
  */
-export const SETTINGS_NAV_ICON_CLASS = 'dsh-st-nav-icon-schedule'
 export const SETTINGS_NAV_ICON_MARKER = 'data-dsh-schedule-nav'
 const SETTINGS_NAV_ROW_SELECTOR = '[role="dialog"] nav button'
 
@@ -14,45 +13,30 @@ function wantedLabels(labels: () => readonly string[]): Set<string> {
 }
 
 /**
- * 为目标导航按钮注入 mask 图标。
- *
- * @param button 设置弹窗导航按钮
- * @param labels 返回当前语言下目标分区名称的函数
- * @returns 是否发生了实际变更；重复调用保持幂等
+ * 100% 对齐 dshmarket：用纯属性标记控制 ::before 伪元素渲染图标。
+ * 不修改任何 DOM 节点，避免移动端列表项排版下与文字重叠冲突。
  */
-export function applySettingsNavIcon(button: HTMLButtonElement, labels: () => readonly string[], markup?: () => string): boolean {
+export function applySettingsNavIcon(button: HTMLButtonElement, labels: () => readonly string[], _markup?: () => string): boolean {
   const text = (button.textContent ?? '').replace(/\s+/g, ' ').trim()
-  if (!wantedLabels(labels).has(text)) return false
-  // 只认宿主直接渲染在按钮里的图标；侧栏入口把图标包在自己的容器里，
-  // 插入额外图标会打乱其网格布局（文字被挤进图标列并逐字换行）。
-  if (button.querySelector(':scope > svg') === null) return false
-  if (
-    button.getAttribute(SETTINGS_NAV_ICON_MARKER) === '1'
-    && button.querySelector(`.${SETTINGS_NAV_ICON_CLASS}`) !== null
-  ) return false
-
-  button.setAttribute(SETTINGS_NAV_ICON_MARKER, '1')
-  if (button.querySelector(`.${SETTINGS_NAV_ICON_CLASS}`) === null) {
-    const icon = document.createElement('span')
-    icon.className = SETTINGS_NAV_ICON_CLASS
-    icon.setAttribute('aria-hidden', 'true')
-    if (markup !== undefined) icon.innerHTML = markup()
-    button.prepend(icon)
+  const isOwn = wantedLabels(labels).has(text)
+  if (isOwn) {
+    if (button.getAttribute(SETTINGS_NAV_ICON_MARKER) === '') return false
+    button.setAttribute(SETTINGS_NAV_ICON_MARKER, '')
+    return true
   }
-  return true
+  if (button.hasAttribute(SETTINGS_NAV_ICON_MARKER)) {
+    button.removeAttribute(SETTINGS_NAV_ICON_MARKER)
+    return true
+  }
+  return false
 }
 
 /**
- * 还原导航按钮：移除 marker 与插件插入的图标，宿主 svg 从未被修改。
- *
- * @returns 是否清理了插件留下的内容
+ * 还原导航按钮：移除 marker，宿主 svg 恢复显示。
  */
 export function restoreSettingsNavIcon(button: HTMLButtonElement): boolean {
-  const marked = button.hasAttribute(SETTINGS_NAV_ICON_MARKER)
-  const icon = button.querySelector(`.${SETTINGS_NAV_ICON_CLASS}`)
-  if (!marked && icon === null) return false
+  if (!button.hasAttribute(SETTINGS_NAV_ICON_MARKER)) return false
   button.removeAttribute(SETTINGS_NAV_ICON_MARKER)
-  icon?.remove()
   return true
 }
 

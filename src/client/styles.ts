@@ -2,8 +2,9 @@ const STYLE_ID = 'dsh-automation-styles'
 const STYLE_OWNER = '@michengai/dsh-automation'
 
 const CSS_TEXT = `
-/* 设置导航图标：隐藏宿主 svg，改用独立宿主图标元素，避免改写宿主图标内容。 */
-[data-dsh-schedule-nav="1"]>svg{display:none!important}
+/* 设置导航图标：隐藏宿主 svg，改用 ::before 伪元素渲染图标，避免改写宿主图标内容与破坏移动端列表结构。 */
+[data-dsh-schedule-nav]>svg{display:none!important}
+[data-dsh-schedule-nav]::before{content:'';flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20fill%3D%22black%22%20d%3D%22M8%201.15A6.85%206.85%200%201%200%208%2014.85%206.85%206.85%200%200%200%208%201.15Zm0%201.4a5.45%205.45%200%201%201%200%2010.9%205.45%205.45%200%200%201%200-10.9Z%22%2F%3E%3Cpath%20fill%3D%22black%22%20d%3D%22M8.62%204.35H7.28v4.2l3.02%201.78.67-1.13-2.35-1.39V4.35Z%22%2F%3E%3C%2Fsvg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20fill%3D%22black%22%20d%3D%22M8%201.15A6.85%206.85%200%201%200%208%2014.85%206.85%206.85%200%200%200%208%201.15Zm0%201.4a5.45%205.45%200%201%201%200%2010.9%205.45%205.45%200%200%201%200-10.9Z%22%2F%3E%3Cpath%20fill%3D%22black%22%20d%3D%22M8.62%204.35H7.28v4.2l3.02%201.78.67-1.13-2.35-1.39V4.35Z%22%2F%3E%3C%2Fsvg%3E") center/contain no-repeat;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:16px 16px;mask-size:16px 16px}
 .dsh-st-nav-icon-schedule{display:inline-flex;align-items:center;justify-content:center;flex:none;width:16px;height:16px}
 .dsh-st-nav-icon-schedule svg{display:block}
 .dsh-st-shell{container-type:inline-size;min-width:0;box-sizing:border-box;width:100%;padding:0 0 32px;color:var(--dsw-alias-label-primary);font-family:var(--dsw-font-family,system-ui)}

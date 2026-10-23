@@ -3,7 +3,6 @@ import test from 'node:test'
 import {
   applySettingsNavIcon,
   restoreSettingsNavIcon,
-  SETTINGS_NAV_ICON_CLASS,
   SETTINGS_NAV_ICON_MARKER,
 } from '../src/client/settings-nav-icon.js'
 
@@ -67,9 +66,6 @@ function fakeButton(textContent: string, hostSvg = true, nestedSvg = false) {
     querySelector(selector) {
       if (selector === ':scope > svg') return hostSvg ? svg : null
       if (selector === 'svg') return hostSvg || nestedSvg ? svg : null
-      if (selector === `.${SETTINGS_NAV_ICON_CLASS}`) {
-        return children.find(node => node.className === SETTINGS_NAV_ICON_CLASS) ?? null
-      }
       return null
     },
     prepend(node) {
@@ -80,18 +76,15 @@ function fakeButton(textContent: string, hostSvg = true, nestedSvg = false) {
   return { button, svg, attributes }
 }
 
-test('设置导航图标插入独立宿主图标元素，不改写宿主 svg', () => {
+test('设置导航图标使用纯属性标记，不改写宿主 svg', () => {
   const restoreDocument = installFakeDocument()
   try {
     const { button, svg, attributes } = fakeButton('定时任务')
     const labels = () => ['Scheduled tasks', '定时任务']
 
     assert.equal(applySettingsNavIcon(button as unknown as HTMLButtonElement, labels), true)
-    assert.equal(attributes.get(SETTINGS_NAV_ICON_MARKER), '1')
-    assert.equal(button.children.length, 1)
-    const icon = button.children[0]
-    assert.equal(icon?.className, SETTINGS_NAV_ICON_CLASS)
-    assert.equal(icon?.attributes.get('aria-hidden'), 'true')
+    assert.equal(attributes.get(SETTINGS_NAV_ICON_MARKER), '')
+    assert.equal(button.children.length, 0, '禁止向 button 插入任何真实 DOM 节点')
     assert.equal(svg.innerHTML, '<path d="host"/>', '宿主 svg 内容必须保持原样')
   } finally {
     restoreDocument()
@@ -106,31 +99,16 @@ test('设置导航图标重复应用保持幂等', () => {
 
     assert.equal(applySettingsNavIcon(button as unknown as HTMLButtonElement, labels), true)
     assert.equal(applySettingsNavIcon(button as unknown as HTMLButtonElement, labels), false)
-    assert.equal(button.children.length, 1)
   } finally {
     restoreDocument()
   }
 })
 
-test('不匹配的导航项或缺少宿主 svg 时不注入', () => {
+test('不匹配的导航项时不标记', () => {
   const restoreDocument = installFakeDocument()
   try {
     const labels = () => ['定时任务']
     assert.equal(applySettingsNavIcon(fakeButton('通用设置').button as unknown as HTMLButtonElement, labels), false)
-    assert.equal(applySettingsNavIcon(fakeButton('定时任务', false).button as unknown as HTMLButtonElement, labels), false)
-    assert.equal(fakeButton('通用设置').button.children.length, 0)
-  } finally {
-    restoreDocument()
-  }
-})
-
-test('图标包在容器里时不注入，避免打乱侧栏网格布局', () => {
-  const restoreDocument = installFakeDocument()
-  try {
-    const { button } = fakeButton('定时任务', false, true)
-    assert.equal(applySettingsNavIcon(button as unknown as HTMLButtonElement, () => ['定时任务']), false)
-    assert.equal(button.children.length, 0)
-    assert.equal(button.hasAttribute(SETTINGS_NAV_ICON_MARKER), false)
   } finally {
     restoreDocument()
   }

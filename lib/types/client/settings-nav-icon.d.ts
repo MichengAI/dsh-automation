@@ -5,20 +5,14 @@
  * 会与宿主/皮肤的内容级图标规则互相覆盖。这里改为插入独立的宿主时钟图标，
  * 只通过 marker 属性隐藏宿主 svg，卸载时可以完整还原。
  */
-export declare const SETTINGS_NAV_ICON_CLASS = "dsh-st-nav-icon-schedule";
 export declare const SETTINGS_NAV_ICON_MARKER = "data-dsh-schedule-nav";
 /**
- * 为目标导航按钮注入 mask 图标。
- *
- * @param button 设置弹窗导航按钮
- * @param labels 返回当前语言下目标分区名称的函数
- * @returns 是否发生了实际变更；重复调用保持幂等
+ * 100% 对齐 dshmarket：用纯属性标记控制 ::before 伪元素渲染图标。
+ * 不修改任何 DOM 节点，避免移动端列表项排版下与文字重叠冲突。
  */
-export declare function applySettingsNavIcon(button: HTMLButtonElement, labels: () => readonly string[], markup?: () => string): boolean;
+export declare function applySettingsNavIcon(button: HTMLButtonElement, labels: () => readonly string[], _markup?: () => string): boolean;
 /**
- * 还原导航按钮：移除 marker 与插件插入的图标，宿主 svg 从未被修改。
- *
- * @returns 是否清理了插件留下的内容
+ * 还原导航按钮：移除 marker，宿主 svg 恢复显示。
  */
 export declare function restoreSettingsNavIcon(button: HTMLButtonElement): boolean;
 /**
