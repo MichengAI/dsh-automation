@@ -97,7 +97,10 @@ export function apply(ctx: ClientContext): void {
   }
   const api = async (path: string, options?: RequestInit): Promise<any> => {
     const targetUrl = resolveApiUrl(`/api/michengai/dsh-automation${path}`)
-    const res = await fetch(targetUrl, options)
+    const headers = Object.assign({
+      'x-michengai-client': '1',
+    }, options?.headers)
+    const res = await fetch(targetUrl, { ...options, headers })
     const json = await res.json()
     if (!res.ok) throw new Error(json?.error ?? 'request failed')
     return json

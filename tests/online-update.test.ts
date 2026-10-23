@@ -51,7 +51,7 @@ test('在线更新与侧边栏配置：SettingsManager、持久化、HTTP API �
     assert.ok(routes.has('/api/michengai/dsh-automation/online-update'))
 
     // 辅助测试 HTTP 请求
-    const callHandler = async (path: string, method: string, body?: unknown) => {
+    const callHandler = async (path: string, method: string, body?: unknown, reqHeaders?: Record<string, string>) => {
       const handler = routes.get(path)
       assert.ok(handler, `route must exist: ${path}`)
       let status = 0
@@ -67,8 +67,13 @@ test('在线更新与侧边栏配置：SettingsManager、持久化、HTTP API �
         },
       }
       const rawBody = body !== undefined ? JSON.stringify(body) : ''
+      const defaultHeaders = method === 'POST' ? {
+        'x-michengai-client': '1',
+        'content-type': 'application/json',
+      } : {}
       const req = {
         method,
+        headers: { ...defaultHeaders, ...reqHeaders },
         on(event: string, cb: any) {
           if (event === 'data' && rawBody) cb(Buffer.from(rawBody, 'utf8'))
           if (event === 'end') cb()
@@ -104,7 +109,33 @@ test('在线更新与侧边栏配置：SettingsManager、持久化、HTTP API �
     assert.equal(updatePost.json.enabled, true)
     assert.equal(manager.isUpdateEnabled(), true)
 
+    // 测试写请求防御：缺少 x-michengai-client 标记头应返回 403
+    const noMarkerPost = await callHandler('/api/michengai/dsh-automation/online-update', 'POST', { enabled: true }, {
+      'x-michengai-client': '',
+      'content-type': 'application/json',
+    })
+    assert.equal(noMarkerPost.status, 403, '无标记头写请求必须被 403 拒绝')
+
+    // 测试写请求防御：非法 content-type 应返回 415
+    const badTypePost = await callHandler('/api/michengai/dsh-automation/online-update', 'POST', { enabled: true }, {
+      'x-michengai-client': '1',
+      'content-type': 'text/plain',
+    })
+    assert.equal(badTypePost.status, 415, '非法 content-type 必须被 415 拒绝')
+
     offApi()
+
+    // 宿主 connection.requestRejection 门禁拦截测试
+    const authedCtx = {
+      ...fakeCtx,
+      get: (name: string) => (name === 'connection' ? {
+        requestRejection: () => 401 as const,
+      } : undefined),
+    }
+    const offAuthApi = registerSettingsApi(authedCtx, manager)
+    const rejectGet = await callHandler('/api/michengai/dsh-automation/sidebar-entry', 'GET')
+    assert.equal(rejectGet.status, 401, '宿主认证未通过时必须返回 401')
+    offAuthApi()
 
     // 4. 宿主锁定测试（hostUpdateDisabled = true）
     const lockedManager = new SettingsManager({

@@ -107,7 +107,7 @@ Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.5` instea
 
 ## Configuration & Optional Toggles
 
-The plugin adheres to the standard DSH extension configuration specification:
+The plugin supports unified management via the host plugin configuration card:
 > **Sidebar → Plugins → Click `@michengai/dsh-automation` details** (registered in the host `plugins.bundle.config` slot).
 
 Two native toggle switches are available:

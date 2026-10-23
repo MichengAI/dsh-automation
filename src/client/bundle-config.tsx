@@ -275,6 +275,9 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ enabled: next }),
       })
+      if (typeof options.onOnlineUpdateChange === 'function') {
+        try { options.onOnlineUpdateChange(next) } catch {}
+      }
       return next
     } catch (err) {
       if (currentEpoch === updateEpoch) {

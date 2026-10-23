@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
+export declare const SETTINGS_API_HEADER = "x-michengai-client";
 export interface PersistedSettings {
     sidebarEntry?: boolean | undefined;
     onlineUpdate?: boolean | undefined;

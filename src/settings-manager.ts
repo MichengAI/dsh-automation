@@ -1,40 +1,44 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { homedir } from 'node:os'
-import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { resolveUpdateRuntime } from './plugin-updater.ts'
+
+export const SETTINGS_API_HEADER = 'x-michengai-client'
+const MAX_SETTINGS_BODY_BYTES = 64 * 1024
 
 export interface PersistedSettings {
   sidebarEntry?: boolean | undefined
   onlineUpdate?: boolean | undefined
 }
 
-type UpdateContext = Context & { webServer: { register(route: { kind: 'exact'; path: string; handler(request: any, response: any): Promise<void> }): () => void }; get?(name: string): unknown }
-
-function isLoopbackAddress(value: string | undefined): boolean {
-  const address = value?.toLowerCase().replace(/^\[|\]$/g, '')
-  return address === 'localhost' || address === 'localhost.' || address === '::1'
-    || address?.startsWith('127.') === true || address?.startsWith('::ffff:127.') === true
+type UpdateContext = Context & {
+  webServer: { register(route: { kind: 'exact'; path: string; handler(request: any, response: any): Promise<void> }): () => void }
+  get?(name: string): unknown
 }
 
 function resolveProfileDir(ctx: Context): string {
-  const optionalService = (serviceContext: Context, name: string): unknown => {
-    try {
-      return (serviceContext as UpdateContext).get?.(name)
-    } catch {
-      return undefined
-    }
+  try {
+    return resolveUpdateRuntime(ctx as any).profileDir
+  } catch {
+    const env = process.env
+    const home = process.env.USERPROFILE ?? process.env.HOME ?? ''
+    return resolve(env.DSH_PROFILE_DIR ?? resolve(home, '.dsh', 'profiles', 'web'))
   }
-  const profiles = optionalService(ctx, 'desktopProfiles') as { current?: { dir?: unknown } } | undefined
-  if (profiles?.current?.dir !== undefined && typeof profiles.current.dir === 'string') {
-    return resolve(profiles.current.dir)
-  }
-  const launched = optionalService(ctx, 'profileContext') as { dir?: unknown } | undefined
-  if (launched?.dir !== undefined && typeof launched.dir === 'string') {
-    return resolve(launched.dir)
-  }
-  const env = process.env
-  const home = homedir()
-  return resolve(env.DSH_PROFILE_DIR ?? resolve(home, '.dsh', 'profiles', 'web'))
+}
+
+function header(request: { headers?: Record<string, string | string[] | undefined> }, name: string): string | undefined {
+  const value = request.headers?.[name]
+  return Array.isArray(value) ? value[0] : value
+}
+
+function validateApiMutation(request: { method?: string; headers?: Record<string, string | string[] | undefined> }): { status: number; error: string } | undefined {
+  const method = (request.method ?? 'GET').toUpperCase()
+  if (method === 'GET' || method === 'HEAD') return undefined
+  const marker = header(request, SETTINGS_API_HEADER)
+  if (marker !== '1') return { status: 403, error: 'forbidden mutation request' }
+  const contentType = header(request, 'content-type')?.split(';', 1)[0]?.trim().toLowerCase()
+  if (contentType !== 'application/json') return { status: 415, error: 'content-type must be application/json' }
+  return undefined
 }
 
 export class SettingsManager {
@@ -127,24 +131,60 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
     res.end(JSON.stringify(body))
   }
 
-  const readBody = (req: any): Promise<any> => new Promise((resolveBody) => {
+  const checkAuthAndMutation = (request: any, response: any): boolean => {
+    const connection = (typeof ctx.get === 'function' ? ctx.get('connection') : undefined) as {
+      requestRejection?: (request: { headers: any }) => 401 | 403 | undefined
+    } | undefined
+    if (typeof connection?.requestRejection === 'function') {
+      const rejection = connection.requestRejection(request)
+      if (rejection !== undefined) {
+        json(response, rejection, { ok: false, error: rejection === 401 ? '请先登录 DSH / Sign in to DSH first' : '宿主拒绝此请求 / Request forbidden' })
+        return false
+      }
+    }
+    const mutationError = validateApiMutation(request)
+    if (mutationError !== undefined) {
+      json(response, mutationError.status, { ok: false, error: mutationError.error })
+      return false
+    }
+    return true
+  }
+
+  const readBody = (req: any): Promise<{ ok: boolean; status?: number; data?: any; error?: string }> => new Promise((resolveBody) => {
     const chunks: Buffer[] = []
-    req.on('data', (chunk: Buffer) => chunks.push(chunk))
+    let received = 0
+    let oversized = false
+
+    req.on('data', (chunk: Buffer) => {
+      received += chunk.length
+      if (received > MAX_SETTINGS_BODY_BYTES) {
+        oversized = true
+        return
+      }
+      chunks.push(chunk)
+    })
+
     req.on('end', () => {
+      if (oversized) {
+        resolveBody({ ok: false, status: 413, error: 'payload too large' })
+        return
+      }
       try {
         const raw = Buffer.concat(chunks).toString('utf8')
-        resolveBody(raw ? JSON.parse(raw) : {})
+        resolveBody({ ok: true, data: raw ? JSON.parse(raw) : {} })
       } catch {
-        resolveBody(null)
+        resolveBody({ ok: false, status: 400, error: 'invalid json' })
       }
     })
-    req.on('error', () => resolveBody(null))
+
+    req.on('error', () => resolveBody({ ok: false, status: 400, error: 'read error' }))
   })
 
   const offSidebar = host.webServer.register({
     kind: 'exact',
     path: '/api/michengai/dsh-automation/sidebar-entry',
     handler: async (request: any, response: any) => {
+      if (!checkAuthAndMutation(request, response)) return
       const method = request.method
       if (method === 'GET' || method === 'HEAD') {
         if (method === 'HEAD') {
@@ -156,12 +196,12 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
         return
       }
       if (method === 'POST') {
-        const body = await readBody(request)
-        if (!body || typeof body.enabled !== 'boolean') {
-          json(response, 400, { ok: false, error: 'enabled 必须是布尔值' })
+        const bodyRes = await readBody(request)
+        if (!bodyRes.ok || !bodyRes.data || typeof bodyRes.data.enabled !== 'boolean') {
+          json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? 'enabled 必须是布尔值' })
           return
         }
-        const enabled = await manager.setSidebarEntry(body.enabled)
+        const enabled = await manager.setSidebarEntry(bodyRes.data.enabled)
         json(response, 200, { ok: true, enabled })
         return
       }
@@ -174,6 +214,7 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
     kind: 'exact',
     path: '/api/michengai/dsh-automation/online-update',
     handler: async (request: any, response: any) => {
+      if (!checkAuthAndMutation(request, response)) return
       const method = request.method
       if (method === 'GET' || method === 'HEAD') {
         if (method === 'HEAD') {
@@ -193,12 +234,12 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
           json(response, 403, { ok: false, error: '在线更新已被宿主配置锁定禁用' })
           return
         }
-        const body = await readBody(request)
-        if (!body || typeof body.enabled !== 'boolean') {
-          json(response, 400, { ok: false, error: 'enabled 必须是布尔值' })
+        const bodyRes = await readBody(request)
+        if (!bodyRes.ok || !bodyRes.data || typeof bodyRes.data.enabled !== 'boolean') {
+          json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? 'enabled 必须是布尔值' })
           return
         }
-        const enabled = await manager.setOnlineUpdate(body.enabled)
+        const enabled = await manager.setOnlineUpdate(bodyRes.data.enabled)
         json(response, 200, { ok: true, enabled })
         return
       }

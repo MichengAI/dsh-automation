@@ -7,6 +7,8 @@ import { resolveApiUrl } from './api-base.js'
 
 export { handlePluginUpdateEscape, manualPluginUpdateCommand }
 
+export const PLUGIN_UPDATE_TOGGLE_EVENT = 'dsh-automation-update-toggle'
+
 export type PluginUpdateUiOptions = {
   readonly endpoint: string
   readonly packageName: string
@@ -337,9 +339,17 @@ export function observePluginUpdate(options: PluginUpdateUiOptions): () => void 
     frame = window.requestAnimationFrame(() => { frame = undefined; applyControls() })
   })
   observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['lang'] })
+  const onToggle = (): void => {
+    applyControls()
+    if (!options.isEnabled || options.isEnabled()) {
+      void load().catch(() => {})
+    }
+  }
+  if (typeof window !== 'undefined') window.addEventListener(PLUGIN_UPDATE_TOGGLE_EVENT, onToggle)
   applyControls()
   void load().catch(() => {})
   return () => {
+    if (typeof window !== 'undefined') window.removeEventListener(PLUGIN_UPDATE_TOGGLE_EVENT, onToggle)
     controller.abort(); observer.disconnect(); closeDialog(); unmountCheck()
     if (frame !== undefined) window.cancelAnimationFrame(frame)
     document.querySelectorAll(`[data-mpi-check="${options.packageName}"],.mpi-version[data-package="${options.packageName}"]`).forEach(node => node.remove())

@@ -107,7 +107,7 @@ dsh --profile web --dump-config
 
 ## 插件配置与可选开关
 
-插件遵循 DSH 官方扩展配置规范，配置项位于：
+插件支持在 DSH 插件扩展配置中统一管理：
 > **主界面侧边栏「插件」→ 点击 `@michengai/dsh-automation` 详情页**（对应宿主 `plugins.bundle.config` 插槽）。
 
 此处提供两个原生扁平行开关：

@@ -134,9 +134,25 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
   // 5. 在线更新控制与 Bug 3 修复验证
   assert.equal(controller.isOnlineUpdateEnabled(), true)
   assert.equal(controller.isOnlineUpdateLocked(), false)
-  await controller.setOnlineUpdate(false)
-  assert.equal(controller.isOnlineUpdateEnabled(), false)
-  assert.equal(clientUpdate, false)
+  let changeCount = 0
+  const toggleController = setupSidebarEntry(mockCtx, {
+    callApi: async (path: string, options?: RequestInit) => {
+      if (path === '/online-update') {
+        if (options?.method === 'POST') {
+          return { ok: true, enabled: false }
+        }
+        return { ok: true, enabled: true, locked: false }
+      }
+      return { ok: true, enabled: false }
+    },
+    renderPanel: () => createElement('div'),
+    ns: 'dsh-automation',
+    onOnlineUpdateChange: () => { changeCount += 1 },
+  })
+  await toggleController.setOnlineUpdate(false)
+  assert.equal(toggleController.isOnlineUpdateEnabled(), false)
+  assert.ok(changeCount >= 2, '乐观更新与保存成功后均派发变更通知')
+  toggleController.destroy()
 
   controller.destroy()
 
