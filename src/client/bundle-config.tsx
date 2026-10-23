@@ -6,22 +6,34 @@ import type { ClientContext } from './contracts.js'
 export const BUNDLE_KEY = '@michengai/dsh-automation'
 export const SIDEBAR_PANEL_ID = 'dsh-automation'
 export const SIDEBAR_PANEL_ORDER = 4
-export const HIDE_OFFICIAL_SCHEDULE_STYLE_ID = 'dsh-automation-hide-official-schedule'
+export const HIDE_OFFICIAL_SCHEDULE_STYLE_TAG = 'dsh-automation-hide-official-schedule'
+export const STORAGE_KEY_HIDE_OFFICIAL = 'dsh-automation.hide-official-schedule'
 
 const HIDE_OFFICIAL_SCHEDULE_CSS = `
-button[aria-label="自动化任务"],
-button[aria-label="Automation tasks"] {
+nav button[aria-label="自动化任务"],
+nav button[aria-label="Automation tasks"] {
   display: none !important;
 }
 `
 
+export function readCachedHideOfficial(): boolean {
+  if (typeof localStorage === 'undefined') return true
+  try {
+    const cached = localStorage.getItem(STORAGE_KEY_HIDE_OFFICIAL)
+    if (cached === 'false') return false
+  } catch {}
+  return true
+}
+
 export function applyHideOfficialScheduleStyle(hidden: boolean): void {
   if (typeof document === 'undefined') return
-  const existing = document.querySelector(`style[data-plugin-style="${HIDE_OFFICIAL_SCHEDULE_STYLE_ID}"]`)
+  const selector = `style[data-plugin="${BUNDLE_KEY}"][data-plugin-css="${HIDE_OFFICIAL_SCHEDULE_STYLE_TAG}"]`
+  const existing = document.querySelector(selector)
   if (hidden) {
     if (!existing) {
       const style = document.createElement('style')
-      style.dataset.pluginStyle = HIDE_OFFICIAL_SCHEDULE_STYLE_ID
+      style.dataset.plugin = BUNDLE_KEY
+      style.dataset.pluginCss = HIDE_OFFICIAL_SCHEDULE_STYLE_TAG
       style.textContent = HIDE_OFFICIAL_SCHEDULE_CSS
       document.head.appendChild(style)
     }
@@ -339,14 +351,26 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
   let onlineUpdateLocked = false
   let updateEpoch = 0
 
-  let hideOfficialScheduleEnabled = true
+  let hideOfficialScheduleEnabled = readCachedHideOfficial()
   let officialEpoch = 0
-  applyHideOfficialScheduleStyle(true)
+  applyHideOfficialScheduleStyle(hideOfficialScheduleEnabled)
+
+  const syncOfficialPanelReset = (hidden: boolean): void => {
+    if (hidden && layoutService?.panelInfo && typeof layoutService.selectPanel === 'function') {
+      try {
+        if (layoutService.panelInfo.getSnapshot().activePanelId === 'schedules') {
+          layoutService.selectPanel(null)
+        }
+      } catch {}
+    }
+  }
 
   const setHideOfficialSchedule = async (next: boolean): Promise<boolean> => {
     const currentEpoch = ++officialEpoch
     hideOfficialScheduleEnabled = next
+    try { localStorage.setItem(STORAGE_KEY_HIDE_OFFICIAL, String(next)) } catch {}
     applyHideOfficialScheduleStyle(next)
+    syncOfficialPanelReset(next)
     notify()
     try {
       await callApi('/official-schedule', {
@@ -358,6 +382,7 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     } catch (err) {
       if (currentEpoch === officialEpoch) {
         hideOfficialScheduleEnabled = !next
+        try { localStorage.setItem(STORAGE_KEY_HIDE_OFFICIAL, String(!next)) } catch {}
         applyHideOfficialScheduleStyle(!next)
         notify()
       }
@@ -425,7 +450,9 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     .then((res: any) => {
       if (officialEpoch === loadOfficialEpoch && res && typeof res.enabled === 'boolean') {
         hideOfficialScheduleEnabled = res.enabled
+        try { localStorage.setItem(STORAGE_KEY_HIDE_OFFICIAL, String(res.enabled)) } catch {}
         applyHideOfficialScheduleStyle(hideOfficialScheduleEnabled)
+        syncOfficialPanelReset(hideOfficialScheduleEnabled)
         notify()
       }
     })

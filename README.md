@@ -132,6 +132,17 @@ Two native toggle switches are available:
     ```
     When locked, the updater is completely disabled at startup, and the UI toggle is disabled with a locked notice.
 
+### 3. Hide Official Automation Entry (`hideOfficialSchedule`)
+- **Default**: On (`true`)
+- **Description**: Controls whether to hide the host's built-in "Automation tasks" (`ui-schedule`) entry to avoid conflict.
+- **Effect**:
+  - **Clean Sidebar**: Installed by default with the built-in entry hidden, avoiding duplicate icons;
+  - **Instant Response**: Toggling off immediately restores the built-in icon;
+  - **Zero Residual Changes**: Toggling off or uninstalling the plugin restores the built-in entry automatically.
+
+### 4. Storage Directory Configuration (`stateDir`)
+- Supports configuring a custom state directory via `stateDir` in `cordis.patch.yml`. Settings are saved to `settings.json` within that directory, falling back to the active profile directory when omitted.
+
 ## Updates
 
 The settings title shows the installed version and a **Check for updates** button. When a newer release is available, **Update automatically** runs only when the DSH CLI or Desktop update service is available; otherwise, the dialog provides a profile-specific manual command to copy and run.

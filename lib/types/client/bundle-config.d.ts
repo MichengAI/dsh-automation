@@ -3,7 +3,9 @@ import type { ClientContext } from './contracts.js';
 export declare const BUNDLE_KEY = "@michengai/dsh-automation";
 export declare const SIDEBAR_PANEL_ID = "dsh-automation";
 export declare const SIDEBAR_PANEL_ORDER = 4;
-export declare const HIDE_OFFICIAL_SCHEDULE_STYLE_ID = "dsh-automation-hide-official-schedule";
+export declare const HIDE_OFFICIAL_SCHEDULE_STYLE_TAG = "dsh-automation-hide-official-schedule";
+export declare const STORAGE_KEY_HIDE_OFFICIAL = "dsh-automation.hide-official-schedule";
+export declare function readCachedHideOfficial(): boolean;
 export declare function applyHideOfficialScheduleStyle(hidden: boolean): void;
 export declare function AutomationSidebarIcon(props: {
     readonly size?: number;
