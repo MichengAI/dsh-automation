@@ -29,9 +29,9 @@ export const Config = z.object({
   runTimeoutMinutes: z.number().step(1).min(1).max(1_440).default(60),
   misfireGraceMinutes: z.number().step(1).min(0).max(10_080).default(15),
   historyLimit: z.number().step(1).min(1).max(5_000).default(200),
-  stateDir: z.string().optional(),
-  updater: z.boolean().optional(),
-  onlineUpdate: z.boolean().optional(),
+  stateDir: z.string(),
+  updater: z.boolean(),
+  onlineUpdate: z.boolean(),
 })
 
 const MUTATING_TOOLS = new Set([
