@@ -4,7 +4,7 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
-## Unreleased
+## 1.0.7 - 2026-10-23
 
 - **Dedicated Sidebar Activity Bar Entry**: Supports toggling a dedicated scheduled tasks icon on the primary activity bar from the plugin bundle configuration card. Enabled by default on new installs to seamlessly replace the built-in entry, expanding into a full 960px centered workbench for editing long prompts, recurrence rules, and audit logs.
 - **Hide Official Automation Entry Toggle**: Supports toggling whether to hide the host's built-in "Automation tasks" (`ui-schedule`) entry. Enabled by default; automatically resets active panel to default conversation if official panel is open; features persistent client caching against network flicker; restores built-in entry cleanly when disabled or if this plugin is uninstalled.
