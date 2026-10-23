@@ -1,6 +1,7 @@
 import { registerHooks } from 'node:module'
 
 const runtimeStub = new URL('./dsh-runtime-stub.mjs', import.meta.url).href
+const primitivesStub = new URL('./primitives-stub.mjs', import.meta.url).href
 const runtimePackages = new Set([
   '@deepseek-ai/dsh-agent',
   '@deepseek-ai/dsh-llm',
@@ -14,6 +15,7 @@ const runtimePackages = new Set([
 registerHooks({
   resolve(specifier, context, nextResolve) {
     if (runtimePackages.has(specifier)) return { url: runtimeStub, shortCircuit: true }
+    if (specifier === '@deepseek-ai/dsh-client-ui-primitives') return { url: primitivesStub, shortCircuit: true }
     return nextResolve(specifier, context)
   },
 })

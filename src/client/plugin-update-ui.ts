@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { handlePluginUpdateEscape, manualPluginUpdateCommand } from './plugin-update-model.js'
 import { installPluginUpdateStyle } from './styles.js'
+import { resolveApiUrl } from './api-base.js'
 
 export { handlePluginUpdateEscape, manualPluginUpdateCommand }
 
@@ -14,6 +15,7 @@ export type PluginUpdateUiOptions = {
   readonly zhName: string
   readonly enName: string
   readonly createIcon: (name: PluginUpdateIconName) => HTMLElement
+  readonly isEnabled?: () => boolean
 }
 
 export type PluginUpdateIconName = 'refresh' | 'download' | 'copy' | 'close'
@@ -158,7 +160,7 @@ function validPayload(value: unknown): value is UpdatePayload {
 
 async function requestStatus(endpoint: string, method: 'GET' | 'POST', signal?: AbortSignal): Promise<UpdatePayload> {
   const signalOption = signal === undefined ? {} : { signal }
-  const response = await fetch(endpoint, method === 'GET' ? { cache: 'no-store', ...signalOption } : {
+  const response = await fetch(resolveApiUrl(endpoint), method === 'GET' ? { cache: 'no-store', ...signalOption } : {
     method: 'POST', headers: { 'content-type': 'application/json', [UPDATE_HEADER]: '1' }, body: '{}', ...signalOption,
   })
   const value: unknown = await response.json()
@@ -269,6 +271,26 @@ export function observePluginUpdate(options: PluginUpdateUiOptions): () => void 
     const row = document.querySelector(options.titleRowSelector)
     if (row === null) return
     const heading = row.querySelector('h1,h2')
+    const links = row.querySelector(options.linksSelector)
+
+    if (options.isEnabled && !options.isEnabled()) {
+      if (dialogHost !== undefined) closeDialog()
+      if (links !== null) {
+        const existing = links.querySelector<HTMLElement>(`[data-mpi-check="${options.packageName}"]`)
+        if (existing !== null) {
+          unmountCheck()
+          existing.remove()
+        }
+      }
+      if (heading !== null) {
+        const version = heading.querySelector<HTMLElement>(`.mpi-version[data-package="${options.packageName}"]`)
+        if (version !== null) {
+          version.remove()
+        }
+      }
+      return
+    }
+
     if (heading !== null && payload !== undefined) {
       let version = heading.querySelector<HTMLElement>(`.mpi-version[data-package="${options.packageName}"]`)
       if (version === null) {
@@ -281,7 +303,6 @@ export function observePluginUpdate(options: PluginUpdateUiOptions): () => void 
       if (version.textContent !== versionLabel) version.textContent = versionLabel
     }
     if (buttonHost !== undefined && !buttonHost.isConnected) unmountCheck()
-    const links = row.querySelector(options.linksSelector)
     if (links === null) return
     const existing = links.querySelector<HTMLElement>(`[data-mpi-check="${options.packageName}"]`)
     if (existing !== null) {
@@ -297,10 +318,19 @@ export function observePluginUpdate(options: PluginUpdateUiOptions): () => void 
     buttonRoot = createRoot(host) as MountedRoot
     renderCheck()
   }
-  const load = async (): Promise<UpdatePayload> => {
-    payload = await requestStatus(options.endpoint, 'GET', controller.signal)
-    applyControls()
-    return payload
+  const load = async (): Promise<UpdatePayload | undefined> => {
+    if (options.isEnabled && !options.isEnabled()) {
+      applyControls()
+      return undefined
+    }
+    try {
+      payload = await requestStatus(options.endpoint, 'GET', controller.signal)
+      applyControls()
+      return payload
+    } catch {
+      applyControls()
+      return undefined
+    }
   }
   const observer = new MutationObserver(() => {
     if (frame !== undefined) return

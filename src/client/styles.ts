@@ -170,6 +170,12 @@ const CSS_TEXT = `
 .dsh-st-create-dialog{width:min(720px,100%) !important;max-height:100%}
 .dsh-st-create-content{flex:1;min-height:0;overflow:hidden}
 .dsh-st-create-content>div:last-child{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.dsh-st-main-panel{box-sizing:border-box;height:100%;min-height:0;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:28px clamp(24px,4vw,48px) 48px}
+.dsh-st-main-panel>*{width:100%;max-width:960px}
+.dsh-st-bundle-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:0.5px solid var(--dsw-alias-border-l2)}
+.dsh-st-bundle-label-box{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;text-align:left}
+.dsh-st-bundle-title{font-size:13px;font-weight:500;line-height:20px;color:var(--dsw-alias-label-primary)}
+.dsh-st-bundle-desc{font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary)}
 `
 
 export function installStyles(): () => void {

@@ -23,6 +23,8 @@ import { installSettingsNavIcon } from './settings-nav-icon.js'
 import { clearAutomationTaskSettingsRequest, requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
 import { clearAutomationCreateTaskRequest, requestAutomationCreateTask } from './create-task-request.js'
 import { observePluginUpdate, type PluginUpdateIconName } from './plugin-update-ui.js'
+import { resolveApiUrl } from './api-base.js'
+import { setupSidebarEntry } from './bundle-config.js'
 
 export const name = 'dsh-automation-client'
 export const inject = ['slots', 'locale', 'connection', 'sessions']
@@ -81,15 +83,6 @@ type HostComponent = ComponentType<any> & {
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => installStyles(), 'dsh-automation: styles')
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-automation: locale')
-  ctx.effect(() => observePluginUpdate({
-    endpoint: '/api/michengai/dsh-automation/update',
-    packageName: '@michengai/dsh-automation',
-    titleRowSelector: '.dsh-st-heading-row',
-    linksSelector: '.dsh-st-heading-links',
-    zhName: '定时任务',
-    enName: 'Scheduled tasks',
-    createIcon: createPluginUpdateIcon,
-  }), 'dsh-automation: plugin update ui')
   const t = ctx.locale.bind(NS)
   const permissionT = ctx.locale.bind('permission.access')
   const modelT = ctx.locale.bind('model')
@@ -102,6 +95,45 @@ export function apply(ctx: ClientContext): void {
     const registered = await runtime.registerWorkspace(picked)
     return registered.id
   }
+  const api = async (path: string, options?: RequestInit): Promise<any> => {
+    const targetUrl = resolveApiUrl(`/api/michengai/dsh-automation${path}`)
+    const res = await fetch(targetUrl, options)
+    const json = await res.json()
+    if (!res.ok) throw new Error(json?.error ?? 'request failed')
+    return json
+  }
+  const sidebarController = setupSidebarEntry(ctx, {
+    callApi: api,
+    renderPanel: (ownerProps) => createElement(AutomationView, {
+      t,
+      permissionT: ownerProps.permissionT ?? permissionT,
+      modelT: ownerProps.modelT ?? modelT,
+      runtime,
+      addWorkspace,
+      ...(ownerProps.close === undefined ? {} : { closeSettings: ownerProps.close }),
+    }),
+    ns: NS,
+    injectProps: () => ({
+      createWorkspace: (input: { path: string }) => createHostWorkspace(ctx, input.path),
+      pickDirectory: () => pickHostDirectory(ctx),
+      permissionT,
+      modelT,
+    }),
+    onOnlineUpdateChange: () => {
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('dsh-automation-update-toggle'))
+    },
+  })
+  ctx.effect(() => () => sidebarController.destroy(), 'dsh-automation: sidebar entry')
+  ctx.effect(() => observePluginUpdate({
+    endpoint: '/api/michengai/dsh-automation/update',
+    packageName: '@michengai/dsh-automation',
+    titleRowSelector: '.dsh-st-heading-row',
+    linksSelector: '.dsh-st-heading-links',
+    zhName: '定时任务',
+    enName: 'Scheduled tasks',
+    createIcon: createPluginUpdateIcon,
+    isEnabled: () => sidebarController.isOnlineUpdateEnabled(),
+  }), 'dsh-automation: plugin update ui')
   const openTaskSettings = (request: AutomationTaskSettingsRequest): void => {
     requestAutomationTaskSettings(request)
     openSettingsSection(
@@ -439,3 +471,7 @@ function readSlotEntries(ctx: ClientContext, name: string): readonly unknown[] {
     return []
   }
 }
+
+export { resolveApiUrl } from './api-base.js'
+export { setupSidebarEntry } from './bundle-config.js'
+

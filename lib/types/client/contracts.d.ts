@@ -21,6 +21,7 @@ export interface ClientRpc {
 export interface SlotRegisterOptions {
     readonly name: string;
     readonly id?: string;
+    readonly key?: string;
     readonly order?: number;
     readonly locale?: string;
     readonly label?: () => string;

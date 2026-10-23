@@ -103,6 +103,34 @@ dsh --profile web --dump-config
 ```
 
 Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.5` instead of `@latest` when needed.
+- **Reverse Proxy Deployment**: Supports running DSH behind a reverse proxy with a path prefix (e.g. `/app/dsh/`). Plugin API and update check endpoints resolve relative to the document base URI (`document.baseURI`) to avoid 404 errors caused by stripped path prefixes.
+
+## Configuration & Optional Toggles
+
+The plugin adheres to the standard DSH extension configuration specification:
+> **Sidebar → Plugins → Click `@michengai/dsh-automation` details** (registered in the host `plugins.bundle.config` slot).
+
+Two native toggle switches are available:
+
+### 1. Sidebar Entry (`sidebarEntry`)
+- **Default**: Off (`false`)
+- **Description**: Displays a dedicated **Scheduled Tasks** icon on the primary activity bar.
+- **Effect**:
+  - When enabled, clicking the sidebar icon opens the full task center inside a **960px centered view** (aligned with official plugin manager conventions), providing ample room for editing multi-step prompts, schedules, and inspect runs;
+  - When toggled off, cleanly unregisters the slot and safely switches away if the panel was active;
+  - The standard Settings modal and the workspace rail tabs remain fully available and in sync regardless of this toggle.
+
+### 2. Online Update (`onlineUpdate` / `updater`)
+- **Default**: On (`true`)
+- **Description**: Controls whether the plugin checks for and installs online updates.
+- **Effect**:
+  - **UI Integration**: Disabling the switch instantly removes update chips and check buttons from the settings header;
+  - **Server-Side Enforcement**: All update check and install requests return `HTTP 403` when disabled;
+  - **Host/Platform Lockdown**: Supports declarative lockdown in Cordis configuration (bundle patch):
+    ```yaml
+    updater: false # or onlineUpdate: false
+    ```
+    When locked, the updater is completely disabled at startup, and the UI toggle is disabled with a locked notice.
 
 ## Updates
 

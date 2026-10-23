@@ -8,6 +8,7 @@ import { registerAutomationRpc } from './rpc.ts'
 import { AutomationService } from './service.ts'
 import { registerAutomationTools } from './tools.ts'
 import { registerPluginUpdater } from './plugin-updater.ts'
+import { registerSettingsApi, SettingsManager } from './settings-manager.ts'
 
 export const name = 'dsh-automation'
 export const inject = [
@@ -19,12 +20,18 @@ export interface Config {
   readonly runTimeoutMinutes?: number
   readonly misfireGraceMinutes?: number
   readonly historyLimit?: number
+  readonly stateDir?: string
+  readonly updater?: boolean
+  readonly onlineUpdate?: boolean
 }
 
 export const Config = z.object({
   runTimeoutMinutes: z.number().step(1).min(1).max(1_440).default(60),
   misfireGraceMinutes: z.number().step(1).min(0).max(10_080).default(15),
   historyLimit: z.number().step(1).min(1).max(5_000).default(200),
+  stateDir: z.string().optional(),
+  updater: z.boolean().optional(),
+  onlineUpdate: z.boolean().optional(),
 })
 
 const MUTATING_TOOLS = new Set([
@@ -75,11 +82,19 @@ export function humanApprovalReason(toolName: string): string {
 }
 
 export async function apply(ctx: Context, rawConfig: Config): Promise<void> {
+  const hostUpdateDisabled = rawConfig.updater === false || rawConfig.onlineUpdate === false
+  const settingsManager = new SettingsManager({
+    ctx,
+    ...(rawConfig.stateDir !== undefined ? { stateDir: rawConfig.stateDir } : {}),
+    hostUpdateDisabled,
+  })
   ctx.effect(() => registerPluginUpdater(ctx, {
     endpoint: '/api/michengai/dsh-automation/update',
     packageName: '@michengai/dsh-automation',
     manifestUrl: new URL('../package.json', import.meta.url),
+    isEnabled: async () => !hostUpdateDisabled && settingsManager.isUpdateEnabled(),
   }), 'dsh-automation: plugin updater')
+  ctx.effect(() => registerSettingsApi(ctx, settingsManager), 'dsh-automation: settings api')
   const config = rawConfig as Required<Config>
   await ctx.effect(async () => {
     let alive = true

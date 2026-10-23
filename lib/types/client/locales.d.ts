@@ -15,6 +15,13 @@ export declare const en: {
     readonly "sidebar.workspaces": "Workspaces";
     readonly "sidebar.search": "Search";
     readonly "sidebar.clearSearch": "Clear search";
+    readonly "sidebar.entry.title": "Sidebar entry";
+    readonly "sidebar.entry.desc": "Show dedicated scheduled tasks entry in the primary sidebar";
+    readonly "sidebar.entry.toggle": "Toggle sidebar entry";
+    readonly "update.entry.title": "Online update";
+    readonly "update.entry.desc": "Check for updates and notify when new versions are available";
+    readonly "update.entry.toggle": "Toggle online update";
+    readonly "error.update.disabled": "locked by host configuration";
     readonly "header.lead": "Plan automatic tasks, or trigger them by hand. Describe the recurring work in any chat to create it quickly.";
     readonly "header.githubProject": "GitHub";
     readonly "header.githubFeedback": "Issues";

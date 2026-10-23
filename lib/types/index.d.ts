@@ -6,6 +6,9 @@ export interface Config {
     readonly runTimeoutMinutes?: number;
     readonly misfireGraceMinutes?: number;
     readonly historyLimit?: number;
+    readonly stateDir?: string;
+    readonly updater?: boolean;
+    readonly onlineUpdate?: boolean;
 }
 export declare const Config: any;
 export type SessionApprovalPolicy = 'ask' | 'never';

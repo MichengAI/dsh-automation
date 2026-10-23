@@ -8,6 +8,7 @@ export type PluginUpdateUiOptions = {
     readonly zhName: string;
     readonly enName: string;
     readonly createIcon: (name: PluginUpdateIconName) => HTMLElement;
+    readonly isEnabled?: () => boolean;
 };
 export type PluginUpdateIconName = 'refresh' | 'download' | 'copy' | 'close';
 export declare function observePluginUpdate(options: PluginUpdateUiOptions): () => void;

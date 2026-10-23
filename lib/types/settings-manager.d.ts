@@ -1,0 +1,23 @@
+import type { Context } from '@deepseek-ai/cordis';
+export interface PersistedSettings {
+    sidebarEntry?: boolean | undefined;
+    onlineUpdate?: boolean | undefined;
+}
+export declare class SettingsManager {
+    private readonly file;
+    private readonly hostUpdateDisabled;
+    private store;
+    constructor(options: {
+        ctx: Context;
+        stateDir?: string;
+        hostUpdateDisabled?: boolean;
+    });
+    private load;
+    private flush;
+    getSidebarEntry(): boolean;
+    setSidebarEntry(enabled: boolean): Promise<boolean>;
+    isHostUpdateDisabled(): boolean;
+    isUpdateEnabled(): boolean;
+    setOnlineUpdate(enabled: boolean): Promise<boolean>;
+}
+export declare function registerSettingsApi(ctx: Context, manager: SettingsManager): () => void;
