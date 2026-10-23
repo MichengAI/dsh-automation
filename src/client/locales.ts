@@ -25,6 +25,9 @@ export const en = {
   "update.entry.title": "Online update",
   "update.entry.desc": "Check for updates and notify when new versions are available",
   "update.entry.toggle": "Toggle online update",
+  "officialSchedule.entry.title": "Hide official automation entry",
+  "officialSchedule.entry.desc": "Hide built-in 'Automation tasks' sidebar entry to avoid conflict. Restores automatically when disabled or uninstalled.",
+  "officialSchedule.entry.toggle": "Toggle hide official automation entry",
   "error.update.disabled": "locked by host configuration",
   "header.lead":
     "Plan automatic tasks, or trigger them by hand. Describe the recurring work in any chat to create it quickly.",
@@ -236,6 +239,9 @@ export const zh: Record<AutomationLocaleKey, string> = {
   "update.entry.title": "在线更新",
   "update.entry.desc": "定期检查新版本并在有更新时提示",
   "update.entry.toggle": "切换在线更新",
+  "officialSchedule.entry.title": "屏蔽官方自动化入口",
+  "officialSchedule.entry.desc": "隐藏宿主自带的「自动化任务」侧栏入口，避免与本插件冲突。卸载本插件或关闭此项后自动恢复。",
+  "officialSchedule.entry.toggle": "切换屏蔽官方自动化入口",
   "error.update.disabled": "已被宿主配置锁定禁用",
   "header.lead":
     "按计划自动执行任务，也可随时手动触发。在任意对话中描述你想定期做的事，即可快速创建",

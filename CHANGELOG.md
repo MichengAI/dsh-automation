@@ -7,6 +7,7 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 ## Unreleased
 
 - **Dedicated Sidebar Activity Bar Entry**: Supports toggling a dedicated scheduled tasks icon on the primary activity bar from the plugin bundle configuration card. When enabled, expands into a full 960px centered workbench for editing long prompts, recurrence rules, and audit logs.
+- **Hide Official Automation Entry Toggle**: Supports toggling whether to hide the host's built-in "Automation tasks" (`ui-schedule`) entry. Enabled by default; if disabled or if this plugin is uninstalled, the built-in entry restores automatically without residual changes.
 - **Online Update Switch & Enterprise Lockdown**: Supports toggling update check status from the plugin card. Supports declaring `updater: false` or `onlineUpdate: false` in Cordis configuration for full lockdown (403 blocked and UI disabled with notice).
 - **Reverse Proxy Subpath Support**: Resolves API endpoints against `document.baseURI` with trailing slash guards, preventing 404 errors when DSH is hosted behind reverse proxies with path prefixes.
 - **Persistent Settings & Security Hardening**: Supports `stateDir` configuration; secures settings HTTP endpoints with host authentication check, CSRF marker validation, and payload size bounds.

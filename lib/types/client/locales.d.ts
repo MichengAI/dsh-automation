@@ -21,6 +21,9 @@ export declare const en: {
     readonly "update.entry.title": "Online update";
     readonly "update.entry.desc": "Check for updates and notify when new versions are available";
     readonly "update.entry.toggle": "Toggle online update";
+    readonly "officialSchedule.entry.title": "Hide official automation entry";
+    readonly "officialSchedule.entry.desc": "Hide built-in 'Automation tasks' sidebar entry to avoid conflict. Restores automatically when disabled or uninstalled.";
+    readonly "officialSchedule.entry.toggle": "Toggle hide official automation entry";
     readonly "error.update.disabled": "locked by host configuration";
     readonly "header.lead": "Plan automatic tasks, or trigger them by hand. Describe the recurring work in any chat to create it quickly.";
     readonly "header.githubProject": "GitHub";

@@ -6,6 +6,31 @@ import type { ClientContext } from './contracts.js'
 export const BUNDLE_KEY = '@michengai/dsh-automation'
 export const SIDEBAR_PANEL_ID = 'dsh-automation'
 export const SIDEBAR_PANEL_ORDER = 4
+export const HIDE_OFFICIAL_SCHEDULE_STYLE_ID = 'dsh-automation-hide-official-schedule'
+
+const HIDE_OFFICIAL_SCHEDULE_CSS = `
+button[aria-label="自动化任务"],
+button[aria-label="Automation tasks"] {
+  display: none !important;
+}
+`
+
+export function applyHideOfficialScheduleStyle(hidden: boolean): void {
+  if (typeof document === 'undefined') return
+  const existing = document.querySelector(`style[data-plugin-style="${HIDE_OFFICIAL_SCHEDULE_STYLE_ID}"]`)
+  if (hidden) {
+    if (!existing) {
+      const style = document.createElement('style')
+      style.dataset.pluginStyle = HIDE_OFFICIAL_SCHEDULE_STYLE_ID
+      style.textContent = HIDE_OFFICIAL_SCHEDULE_CSS
+      document.head.appendChild(style)
+    }
+  } else {
+    if (existing) {
+      existing.remove()
+    }
+  }
+}
 
 export function AutomationSidebarIcon(props: { readonly size?: number }): ReactElement {
   const size = props.size !== undefined && typeof props.size === 'number' ? props.size : 16
@@ -21,6 +46,9 @@ export interface BundleConfigCardProps {
   readonly onlineUpdateDisabled?: boolean
   readonly onlineUpdateLocked?: boolean
   readonly onToggleOnlineUpdate?: (next: boolean) => void
+  readonly hideOfficialScheduleEnabled?: boolean
+  readonly hideOfficialScheduleDisabled?: boolean
+  readonly onToggleHideOfficialSchedule?: (next: boolean) => void
 }
 
 export function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactElement {
@@ -33,6 +61,9 @@ export function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactE
     onlineUpdateDisabled = false,
     onlineUpdateLocked = false,
     onToggleOnlineUpdate,
+    hideOfficialScheduleEnabled = true,
+    hideOfficialScheduleDisabled = false,
+    onToggleHideOfficialSchedule,
   } = props
 
   const rows = [
@@ -70,6 +101,23 @@ export function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactE
     )
   }
 
+  if (typeof onToggleHideOfficialSchedule === 'function') {
+    rows.push(
+      createElement('div', { key: 'official-schedule', className: 'dsh-st-bundle-row' },
+        createElement('div', { className: 'dsh-st-bundle-label-box' },
+          createElement('span', { className: 'dsh-st-bundle-title' }, t('officialSchedule.entry.title')),
+          createElement('span', { className: 'dsh-st-bundle-desc' }, t('officialSchedule.entry.desc')),
+        ),
+        createElement(Switch, {
+          checked: hideOfficialScheduleEnabled,
+          onChange: onToggleHideOfficialSchedule,
+          label: t('officialSchedule.entry.toggle'),
+          disabled: hideOfficialScheduleDisabled,
+        }),
+      ),
+    )
+  }
+
   return createElement(Fragment, null, rows)
 }
 
@@ -80,6 +128,8 @@ export interface BundleConfigWrapperProps {
   readonly getOnlineUpdateEnabled?: () => boolean
   readonly getOnlineUpdateLocked?: () => boolean
   readonly setOnlineUpdate?: (next: boolean) => Promise<boolean>
+  readonly getHideOfficialScheduleEnabled?: () => boolean
+  readonly setHideOfficialSchedule?: (next: boolean) => Promise<boolean>
   readonly subscribe: (listener: () => void) => () => void
 }
 
@@ -87,8 +137,10 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
   const [enabled, setEnabled] = useState(props.getEnabled)
   const [onlineUpdateEnabled, setOnlineUpdateEnabled] = useState(props.getOnlineUpdateEnabled ? props.getOnlineUpdateEnabled : () => true)
   const [onlineUpdateLocked, setOnlineUpdateLocked] = useState(props.getOnlineUpdateLocked ? props.getOnlineUpdateLocked : () => false)
+  const [hideOfficialScheduleEnabled, setHideOfficialScheduleEnabled] = useState(props.getHideOfficialScheduleEnabled ? props.getHideOfficialScheduleEnabled : () => true)
   const [savingSidebar, setSavingSidebar] = useState(false)
   const [savingUpdate, setSavingUpdate] = useState(false)
+  const [savingOfficialSchedule, setSavingOfficialSchedule] = useState(false)
 
   useEffect(() => {
     setEnabled(props.getEnabled())
@@ -98,6 +150,9 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
     if (props.getOnlineUpdateLocked) {
       setOnlineUpdateLocked(props.getOnlineUpdateLocked())
     }
+    if (props.getHideOfficialScheduleEnabled) {
+      setHideOfficialScheduleEnabled(props.getHideOfficialScheduleEnabled())
+    }
     const unsub = props.subscribe(() => {
       setEnabled(props.getEnabled())
       if (props.getOnlineUpdateEnabled) {
@@ -105,6 +160,9 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
       }
       if (props.getOnlineUpdateLocked) {
         setOnlineUpdateLocked(props.getOnlineUpdateLocked())
+      }
+      if (props.getHideOfficialScheduleEnabled) {
+        setHideOfficialScheduleEnabled(props.getHideOfficialScheduleEnabled())
       }
     })
     return () => { unsub() }
@@ -134,6 +192,19 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
     })
   } : undefined
 
+  const setHideOfficialScheduleFn = props.setHideOfficialSchedule
+  const onToggleHideOfficialSchedule = setHideOfficialScheduleFn ? (next: boolean): void => {
+    setSavingOfficialSchedule(true)
+    setHideOfficialScheduleEnabled(next)
+    setHideOfficialScheduleFn(next).catch(() => {
+      if (props.getHideOfficialScheduleEnabled) {
+        setHideOfficialScheduleEnabled(props.getHideOfficialScheduleEnabled())
+      }
+    }).finally(() => {
+      setSavingOfficialSchedule(false)
+    })
+  } : undefined
+
   return createElement(AutomationBundleConfigCard, {
     t: props.t,
     enabled,
@@ -143,6 +214,9 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
     onlineUpdateDisabled: savingUpdate,
     onlineUpdateLocked,
     ...(onToggleOnlineUpdate !== undefined ? { onToggleOnlineUpdate } : {}),
+    hideOfficialScheduleEnabled,
+    hideOfficialScheduleDisabled: savingOfficialSchedule,
+    ...(onToggleHideOfficialSchedule !== undefined ? { onToggleHideOfficialSchedule } : {}),
   })
 }
 
@@ -161,6 +235,8 @@ export interface SidebarController {
   isOnlineUpdateEnabled(): boolean
   isOnlineUpdateLocked(): boolean
   setOnlineUpdate(next: boolean): Promise<boolean>
+  isHideOfficialScheduleEnabled(): boolean
+  setHideOfficialSchedule(next: boolean): Promise<boolean>
   destroy(): void
 }
 
@@ -173,6 +249,8 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
       isOnlineUpdateEnabled: () => true,
       isOnlineUpdateLocked: () => false,
       setOnlineUpdate: async () => false,
+      isHideOfficialScheduleEnabled: () => true,
+      setHideOfficialSchedule: async () => false,
       destroy: () => {},
     }
   }
@@ -261,6 +339,32 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
   let onlineUpdateLocked = false
   let updateEpoch = 0
 
+  let hideOfficialScheduleEnabled = true
+  let officialEpoch = 0
+  applyHideOfficialScheduleStyle(true)
+
+  const setHideOfficialSchedule = async (next: boolean): Promise<boolean> => {
+    const currentEpoch = ++officialEpoch
+    hideOfficialScheduleEnabled = next
+    applyHideOfficialScheduleStyle(next)
+    notify()
+    try {
+      await callApi('/official-schedule', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ enabled: next }),
+      })
+      return next
+    } catch (err) {
+      if (currentEpoch === officialEpoch) {
+        hideOfficialScheduleEnabled = !next
+        applyHideOfficialScheduleStyle(!next)
+        notify()
+      }
+      throw err
+    }
+  }
+
   const setOnlineUpdate = async (next: boolean): Promise<boolean> => {
     if (onlineUpdateLocked) return onlineUpdateEnabled
     const currentEpoch = ++updateEpoch
@@ -316,6 +420,17 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     })
     .catch(() => {})
 
+  const loadOfficialEpoch = officialEpoch
+  callApi('/official-schedule')
+    .then((res: any) => {
+      if (officialEpoch === loadOfficialEpoch && res && typeof res.enabled === 'boolean') {
+        hideOfficialScheduleEnabled = res.enabled
+        applyHideOfficialScheduleStyle(hideOfficialScheduleEnabled)
+        notify()
+      }
+    })
+    .catch(() => {})
+
   if (typeof (ctx as any).inject === 'function') {
     (ctx as any).inject(['layout'], (scoped: any) => {
       layoutService = scoped.layout
@@ -341,6 +456,8 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
         getOnlineUpdateEnabled: () => onlineUpdateEnabled,
         getOnlineUpdateLocked: () => onlineUpdateLocked,
         setOnlineUpdate: setOnlineUpdate,
+        getHideOfficialScheduleEnabled: () => hideOfficialScheduleEnabled,
+        setHideOfficialSchedule: setHideOfficialSchedule,
         subscribe: (fn) => {
           listeners.add(fn)
           return () => { listeners.delete(fn) }
@@ -356,8 +473,11 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     isOnlineUpdateEnabled: () => onlineUpdateEnabled,
     isOnlineUpdateLocked: () => onlineUpdateLocked,
     setOnlineUpdate,
+    isHideOfficialScheduleEnabled: () => hideOfficialScheduleEnabled,
+    setHideOfficialSchedule,
     destroy: () => {
       listeners.clear()
+      applyHideOfficialScheduleStyle(false)
       if (offRow) {
         try { offRow() } catch {}
         offRow = null

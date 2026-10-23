@@ -3,6 +3,8 @@ import type { ClientContext } from './contracts.js';
 export declare const BUNDLE_KEY = "@michengai/dsh-automation";
 export declare const SIDEBAR_PANEL_ID = "dsh-automation";
 export declare const SIDEBAR_PANEL_ORDER = 4;
+export declare const HIDE_OFFICIAL_SCHEDULE_STYLE_ID = "dsh-automation-hide-official-schedule";
+export declare function applyHideOfficialScheduleStyle(hidden: boolean): void;
 export declare function AutomationSidebarIcon(props: {
     readonly size?: number;
 }): ReactElement;
@@ -15,6 +17,9 @@ export interface BundleConfigCardProps {
     readonly onlineUpdateDisabled?: boolean;
     readonly onlineUpdateLocked?: boolean;
     readonly onToggleOnlineUpdate?: (next: boolean) => void;
+    readonly hideOfficialScheduleEnabled?: boolean;
+    readonly hideOfficialScheduleDisabled?: boolean;
+    readonly onToggleHideOfficialSchedule?: (next: boolean) => void;
 }
 export declare function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactElement;
 export interface BundleConfigWrapperProps {
@@ -24,6 +29,8 @@ export interface BundleConfigWrapperProps {
     readonly getOnlineUpdateEnabled?: () => boolean;
     readonly getOnlineUpdateLocked?: () => boolean;
     readonly setOnlineUpdate?: (next: boolean) => Promise<boolean>;
+    readonly getHideOfficialScheduleEnabled?: () => boolean;
+    readonly setHideOfficialSchedule?: (next: boolean) => Promise<boolean>;
     readonly subscribe: (listener: () => void) => () => void;
 }
 export declare function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProps): ReactElement;
@@ -41,6 +48,8 @@ export interface SidebarController {
     isOnlineUpdateEnabled(): boolean;
     isOnlineUpdateLocked(): boolean;
     setOnlineUpdate(next: boolean): Promise<boolean>;
+    isHideOfficialScheduleEnabled(): boolean;
+    setHideOfficialSchedule(next: boolean): Promise<boolean>;
     destroy(): void;
 }
 export declare function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntryOptions): SidebarController;

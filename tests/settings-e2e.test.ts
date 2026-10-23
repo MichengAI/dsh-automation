@@ -121,6 +121,32 @@ test('SettingsManager HTTP API 真实服务端端到端 (13项用例覆盖)', as
     const d9 = await res9.json() as any
     assert.strictEqual(d9.enabled, false)
 
+    // 9.1 GET /official-schedule -> 200，默认开启（enabled: true）
+    const resOfficialGet = await fetch(`${base}/api/michengai/dsh-automation/official-schedule`)
+    assert.strictEqual(resOfficialGet.status, 200)
+    const dOfficialGet = await resOfficialGet.json() as any
+    assert.strictEqual(dOfficialGet.ok, true)
+    assert.strictEqual(dOfficialGet.enabled, true)
+
+    // 9.2 POST /official-schedule 修改为 false -> 200 且数据落盘
+    const resOfficialPost = await fetch(`${base}/api/michengai/dsh-automation/official-schedule`, {
+      method: 'POST',
+      headers: { 'x-michengai-client': '1', 'content-type': 'application/json' },
+      body: JSON.stringify({ enabled: false }),
+    })
+    assert.strictEqual(resOfficialPost.status, 200)
+    const dOfficialPost = await resOfficialPost.json() as any
+    assert.strictEqual(dOfficialPost.ok, true)
+    assert.strictEqual(dOfficialPost.enabled, false)
+
+    const diskSettingsUpdated = JSON.parse(fs.readFileSync(path.join(tmpDir, 'settings.json'), 'utf8'))
+    assert.strictEqual(diskSettingsUpdated.hideOfficialSchedule, false)
+
+    // 9.3 GET /official-schedule 再次读取确认
+    const resOfficialGetAfter = await fetch(`${base}/api/michengai/dsh-automation/official-schedule`)
+    const dOfficialGetAfter = await resOfficialGetAfter.json() as any
+    assert.strictEqual(dOfficialGetAfter.enabled, false)
+
     // 10. connection.requestRejection = 401 拦截
     rejectionCode = 401
     const res10 = await fetch(`${base}/api/michengai/dsh-automation/sidebar-entry`)

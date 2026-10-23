@@ -3,6 +3,7 @@ export declare const SETTINGS_API_HEADER = "x-michengai-client";
 export interface PersistedSettings {
     sidebarEntry?: boolean | undefined;
     onlineUpdate?: boolean | undefined;
+    hideOfficialSchedule?: boolean | undefined;
 }
 export declare class SettingsManager {
     private readonly file;
@@ -17,6 +18,8 @@ export declare class SettingsManager {
     private flush;
     getSidebarEntry(): boolean;
     setSidebarEntry(enabled: boolean): Promise<boolean>;
+    getHideOfficialSchedule(): boolean;
+    setHideOfficialSchedule(enabled: boolean): Promise<boolean>;
     isHostUpdateDisabled(): boolean;
     isUpdateEnabled(): boolean;
     setOnlineUpdate(enabled: boolean): Promise<boolean>;

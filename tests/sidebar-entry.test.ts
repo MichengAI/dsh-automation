@@ -171,4 +171,62 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
   await lockedController.setOnlineUpdate(true)
   assert.equal(lockedController.isOnlineUpdateEnabled(), false, '宿主锁定状态下拒绝开启在线更新')
   lockedController.destroy()
+
+  // 7. 验证屏蔽官方自动化入口的生命周期与样式标签清理
+  let styleCreated = false
+  let styleRemoved = false
+  const mockStyleElement: any = {
+    dataset: {},
+    remove: () => {
+      styleRemoved = true
+      styleCreated = false
+    },
+  }
+  ;(globalThis as any).document = {
+    querySelector: (selector: string) => {
+      if (selector.includes('dsh-automation-hide-official-schedule')) {
+        return styleCreated ? mockStyleElement : null
+      }
+      return null
+    },
+    createElement: (tag: string) => {
+      if (tag === 'style') {
+        return mockStyleElement
+      }
+      return {}
+    },
+    head: {
+      appendChild: (el: any) => {
+        if (el === mockStyleElement) {
+          styleCreated = true
+          styleRemoved = false
+        }
+      },
+    },
+  }
+
+  const officialController = setupSidebarEntry(mockCtx, {
+    callApi: async (path: string, options?: RequestInit) => {
+      if (path === '/official-schedule') {
+        if (options?.method === 'POST') return { ok: true, enabled: false }
+        return { ok: true, enabled: true }
+      }
+      return {}
+    },
+    renderPanel: () => createElement('div'),
+    ns: 'dsh-automation',
+  })
+
+  assert.equal(officialController.isHideOfficialScheduleEnabled(), true, '默认开启屏蔽官方自动化入口')
+  assert.equal(styleCreated, true, '默认挂载隐藏样式标签')
+
+  await officialController.setHideOfficialSchedule(false)
+  assert.equal(officialController.isHideOfficialScheduleEnabled(), false, '成功关闭屏蔽')
+  assert.equal(styleRemoved, true, '关闭屏蔽后样式标签被立即移除')
+
+  await officialController.setHideOfficialSchedule(true)
+  assert.equal(officialController.isHideOfficialScheduleEnabled(), true, '重新开启屏蔽')
+
+  officialController.destroy()
+  assert.equal(styleRemoved, true, '插件销毁/卸载时样式标签被自动清理复原')
 })

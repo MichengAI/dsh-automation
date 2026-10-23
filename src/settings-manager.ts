@@ -10,6 +10,7 @@ const MAX_SETTINGS_BODY_BYTES = 64 * 1024
 export interface PersistedSettings {
   sidebarEntry?: boolean | undefined
   onlineUpdate?: boolean | undefined
+  hideOfficialSchedule?: boolean | undefined
 }
 
 type UpdateContext = Context & {
@@ -72,6 +73,7 @@ export class SettingsManager {
         this.store = {
           sidebarEntry: typeof item.sidebarEntry === 'boolean' ? item.sidebarEntry : undefined,
           onlineUpdate: typeof item.onlineUpdate === 'boolean' ? item.onlineUpdate : undefined,
+          hideOfficialSchedule: typeof item.hideOfficialSchedule === 'boolean' ? item.hideOfficialSchedule : undefined,
         }
       }
     } catch {
@@ -98,6 +100,17 @@ export class SettingsManager {
   async setSidebarEntry(enabled: boolean): Promise<boolean> {
     if (typeof enabled !== 'boolean') throw new Error('enabled 必须是布尔值')
     this.store.sidebarEntry = enabled
+    this.flush()
+    return enabled
+  }
+
+  getHideOfficialSchedule(): boolean {
+    return this.store.hideOfficialSchedule !== false
+  }
+
+  async setHideOfficialSchedule(enabled: boolean): Promise<boolean> {
+    if (typeof enabled !== 'boolean') throw new Error('enabled 必须是布尔值')
+    this.store.hideOfficialSchedule = enabled
     this.flush()
     return enabled
   }
@@ -249,8 +262,42 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
     },
   })
 
+  const offOfficial = host.webServer.register({
+    kind: 'exact',
+    path: '/api/michengai/dsh-automation/official-schedule',
+    handler: async (request: any, response: any) => {
+      if (!checkAuthAndMutation(request, response)) return
+      const method = request.method
+      if (method === 'GET' || method === 'HEAD') {
+        if (method === 'HEAD') {
+          response.writeHead(200, { 'cache-control': 'no-store' })
+          response.end()
+          return
+        }
+        json(response, 200, {
+          ok: true,
+          enabled: manager.getHideOfficialSchedule(),
+        })
+        return
+      }
+      if (method === 'POST') {
+        const bodyRes = await readBody(request)
+        if (!bodyRes.ok || !bodyRes.data || typeof bodyRes.data.enabled !== 'boolean') {
+          json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? 'enabled 必须是布尔值' })
+          return
+        }
+        const enabled = await manager.setHideOfficialSchedule(bodyRes.data.enabled)
+        json(response, 200, { ok: true, enabled })
+        return
+      }
+      response.writeHead(405, { allow: 'GET, HEAD, POST' })
+      response.end()
+    },
+  })
+
   return () => {
     try { offSidebar() } catch {}
     try { offUpdate() } catch {}
+    try { offOfficial() } catch {}
   }
 }
