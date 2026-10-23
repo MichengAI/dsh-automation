@@ -105,43 +105,56 @@ dsh --profile web --dump-config
 Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.5` instead of `@latest` when needed.
 - **Reverse Proxy Deployment**: Supports running DSH behind a reverse proxy with a path prefix (e.g. `/app/dsh/`). Plugin API and update check endpoints resolve relative to the document base URI (`document.baseURI`) to avoid 404 errors caused by stripped path prefixes.
 
-## Configuration & Optional Toggles
+## Plugin Configuration & Toggles
 
-The plugin supports unified management via the host plugin configuration card:
-> **Sidebar → Plugins → Click `@michengai/dsh-automation` details** (registered in the host `plugins.bundle.config` slot).
+The plugin follows standard DSH bundle configuration conventions. Options are located at:
+> **Sidebar → Plugins → Click `@michengai/dsh-automation` details** (the host's `plugins.bundle.config` slot).
 
-Two native toggle switches are available:
+Three native switches are available:
 
 ### 1. Sidebar Entry (`sidebarEntry`)
-- **Default**: Off (`false`)
+- **Default**: Enabled (`true`) / Seamless takeover on new installs
 - **Description**: Displays a dedicated **Scheduled Tasks** icon on the primary activity bar.
 - **Effect**:
-  - When enabled, clicking the sidebar icon opens the full task center inside a **960px centered view** (aligned with official plugin manager conventions), providing ample room for editing multi-step prompts, schedules, and inspect runs;
-  - When toggled off, cleanly unregisters the slot and safely switches away if the panel was active;
-  - The standard Settings modal and the workspace rail tabs remain fully available and in sync regardless of this toggle.
+  - **960px Centered View**: When enabled, clicking the sidebar icon opens the full task center inside a **960px centered container** (matching host plugin manager conventions). This eliminates vertical scrolling constraints in narrow settings dialogs, providing ample room for multi-step prompts, schedules, and audit records;
+  - **Clean Unregister**: When toggled off, cleanly unregisters the slot and safely switches away if the panel was active;
+  - **Live Synchronization**: The standard Settings modal and the workspace rail tabs remain fully available and in sync regardless of this toggle.
 
-### 2. Online Update (`onlineUpdate` / `updater`)
-- **Default**: On (`true`)
-- **Description**: Controls whether the plugin checks for and installs online updates.
+### 2. Online Updates (`onlineUpdate` / `updater`)
+- **Default**: Enabled (`true`)
+- **Description**: Controls whether the plugin checks for and installs updates from npm.
 - **Effect**:
-  - **UI Integration**: Disabling the switch instantly removes update chips and check buttons from the settings header;
-  - **Server-Side Enforcement**: All update check and install requests return `HTTP 403` when disabled;
-  - **Host/Platform Lockdown**: Supports declarative lockdown in Cordis configuration (bundle patch):
+  - **Dynamic UI Sync**: Disabling the toggle hides update chips and check buttons from the settings header immediately without requiring a full page reload;
+  - **Endpoint Guard**: When disabled, the update API route returns `HTTP 403` for all check and install requests, preventing unreviewed updates;
+  - **Host / Platform Lock**: For curated plugin indexes (such as VibeDev) or restricted enterprise environments, this can be locked directly via Cordis configuration (bundle patch) without needing UI interaction:
     ```yaml
     updater: false # or onlineUpdate: false
     ```
-    When locked, the updater is completely disabled at startup, and the UI toggle is disabled with a locked notice.
+    Once configured, the built-in updater is disabled at startup and the UI toggle is disabled with a locked notice;
+  - **Update Mode**: When an update is detected, **Update automatically** runs only when the DSH CLI or Desktop update service is available; otherwise, the dialog provides a profile-specific manual command to copy and run.
 
 ### 3. Hide Official Automation Entry (`hideOfficialSchedule`)
-- **Default**: On (`true`)
+- **Default**: Enabled (`true`, paired with Sidebar Entry)
 - **Description**: Controls whether to hide the host's built-in "Automation tasks" (`ui-schedule`) entry to avoid conflict.
 - **Effect**:
-  - **Clean Sidebar**: Installed by default with the built-in entry hidden, avoiding duplicate icons;
-  - **Instant Response**: Toggling off immediately restores the built-in icon;
-  - **Zero Residual Changes**: Toggling off or uninstalling the plugin restores the built-in entry automatically.
+  - **Clean Sidebar & Seamless Takeover**: Hidden by default on fresh installs while the plugin's own sidebar entry is displayed, avoiding duplicate icons;
+  - **Smart Panel Reset**: When hiding takes effect, if the main view is currently displaying the official schedules panel, it safely resets back to the default conversation view, preventing orphan views;
+  - **Flicker-Free Persistent Caching**: Features client-side local storage caching, eliminating icon flicker even on slow or offline networks;
+  - **Zero Residual Changes**: Toggling off or uninstalling the plugin restores the built-in entry automatically;
+  - **Upgrade Safety**: If an upgrading user had previously disabled `sidebarEntry`, the official entry remains visible by default, avoiding an empty activity bar.
 
-### 4. Storage Directory Configuration (`stateDir`)
-- Supports configuring a custom state directory via `stateDir` in `cordis.patch.yml`. Settings are saved to `settings.json` within that directory, falling back to the active profile directory when omitted.
+### 4. Storage & Host Configuration (`cordis.patch.yml`)
+The following configuration parameters can be declared under your profile's `cordis.patch.yml`:
+```yaml
+- id: dsh-automation
+  name: '@michengai/dsh-automation'
+  config:
+    stateDir: D:/Data/dsh-automation   # Optional: custom path for settings.json, defaults to active profile directory
+    runTimeoutMinutes: 60              # Optional: task execution timeout in minutes (default: 60, max: 1440)
+    misfireGraceMinutes: 15            # Optional: grace window for missed runs in minutes (default: 15, max: 10080)
+    historyLimit: 200                  # Optional: max audit log entries to retain (default: 200, max: 5000)
+    updater: false                     # Optional: enterprise lockdown for updates (alias: onlineUpdate: false)
+```
 
 ## Updates
 
