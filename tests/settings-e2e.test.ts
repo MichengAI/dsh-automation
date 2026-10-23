@@ -147,6 +147,14 @@ test('SettingsManager HTTP API 真实服务端端到端 (13项用例覆盖)', as
     const dOfficialGetAfter = await resOfficialGetAfter.json() as any
     assert.strictEqual(dOfficialGetAfter.enabled, false)
 
+    // 9.4 验证老用户升级防死区：若曾存 sidebarEntry=false 且无 hideOfficialSchedule，默认不隐藏官方入口
+    const legacyUserDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-legacy-user-'))
+    fs.writeFileSync(path.join(legacyUserDir, 'settings.json'), JSON.stringify({ sidebarEntry: false }), 'utf8')
+    const legacyManager = new SettingsManager({ ctx: fakeCtx, stateDir: legacyUserDir })
+    assert.strictEqual(legacyManager.getSidebarEntry(), false)
+    assert.strictEqual(legacyManager.getHideOfficialSchedule(), false, '老用户关闭侧栏时新键缺失默认跟随 sidebarEntry 保持 false，杜绝无入口死区')
+    fs.rmSync(legacyUserDir, { recursive: true, force: true })
+
     // 10. connection.requestRejection = 401 拦截
     rejectionCode = 401
     const res10 = await fetch(`${base}/api/michengai/dsh-automation/sidebar-entry`)

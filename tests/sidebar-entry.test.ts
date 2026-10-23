@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createElement } from 'react'
-import { setupSidebarEntry, BUNDLE_KEY, SIDEBAR_PANEL_ID, SIDEBAR_PANEL_ORDER } from '../src/client/bundle-config.tsx'
+import {
+  setupSidebarEntry,
+  BUNDLE_KEY,
+  SIDEBAR_PANEL_ID,
+  SIDEBAR_PANEL_ORDER,
+  readCachedSidebarEntry,
+  readCachedHideOfficial,
+  STORAGE_KEY_SIDEBAR_ENTRY,
+  STORAGE_KEY_HIDE_OFFICIAL,
+} from '../src/client/bundle-config.tsx'
 
 test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async () => {
   const slotRegistrations = new Map<string, { meta: any; component: any }>()
@@ -244,4 +253,19 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
 
   officialController.destroy()
   assert.equal(styleRemoved, true, '插件销毁/卸载时样式标签被自动清理复原')
+
+  // 8. 验证缓存推导：无 hideOfficial 缓存时跟随 sidebarEntry 缓存，杜绝升级死区
+  const origLocal = (globalThis as any).localStorage
+  const memStore = new Map<string, string>()
+  ;(globalThis as any).localStorage = {
+    getItem: (k: string) => memStore.get(k) ?? null,
+    setItem: (k: string, v: string) => memStore.set(k, v),
+  }
+  assert.equal(readCachedSidebarEntry(), true)
+  assert.equal(readCachedHideOfficial(), true)
+  memStore.set(STORAGE_KEY_SIDEBAR_ENTRY, 'false')
+  assert.equal(readCachedHideOfficial(), false, '无 hideOfficial 缓存且 sidebarEntry 为 false 时安全回退为 false')
+  memStore.set(STORAGE_KEY_HIDE_OFFICIAL, 'true')
+  assert.equal(readCachedHideOfficial(), true, '显式设置 hideOfficial=true 时优先遵循显式值')
+  ;(globalThis as any).localStorage = origLocal
 })

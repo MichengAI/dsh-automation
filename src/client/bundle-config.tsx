@@ -30,9 +30,10 @@ export function readCachedHideOfficial(): boolean {
   if (typeof localStorage === 'undefined') return true
   try {
     const cached = localStorage.getItem(STORAGE_KEY_HIDE_OFFICIAL)
+    if (cached === 'true') return true
     if (cached === 'false') return false
   } catch {}
-  return true
+  return readCachedSidebarEntry()
 }
 
 export function applyHideOfficialScheduleStyle(hidden: boolean): void {

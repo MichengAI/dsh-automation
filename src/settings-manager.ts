@@ -105,7 +105,7 @@ export class SettingsManager {
   }
 
   getHideOfficialSchedule(): boolean {
-    return this.store.hideOfficialSchedule !== false
+    return this.store.hideOfficialSchedule ?? this.getSidebarEntry()
   }
 
   async setHideOfficialSchedule(enabled: boolean): Promise<boolean> {
