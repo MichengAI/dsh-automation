@@ -1,5 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { resolveUpdateRuntime } from './plugin-updater.ts'
 
@@ -21,7 +22,7 @@ function resolveProfileDir(ctx: Context): string {
     return resolveUpdateRuntime(ctx as any).profileDir
   } catch {
     const env = process.env
-    const home = process.env.USERPROFILE ?? process.env.HOME ?? ''
+    const home = homedir()
     return resolve(env.DSH_PROFILE_DIR ?? resolve(home, '.dsh', 'profiles', 'web'))
   }
 }

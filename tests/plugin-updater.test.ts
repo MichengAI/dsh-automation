@@ -114,3 +114,101 @@ test('白名单先写临时文件再替换，不留下临时文件', async () =>
     await rm(dir, { recursive: true, force: true })
   }
 })
+
+test('observePluginUpdate: 响应 PLUGIN_UPDATE_TOGGLE_EVENT 并即时同步控件与版本徽章', async () => {
+  const { observePluginUpdate, PLUGIN_UPDATE_TOGGLE_EVENT } = await import('../src/client/plugin-update-ui.ts')
+  const listeners = new Map<string, Set<EventListener>>()
+
+  const originalWindow = globalThis.window
+  const originalDoc = globalThis.document
+
+  try {
+    const fakeWindow = {
+      addEventListener(event: string, fn: EventListener) {
+        if (!listeners.has(event)) listeners.set(event, new Set())
+        listeners.get(event)!.add(fn)
+      },
+      removeEventListener(event: string, fn: EventListener) {
+        listeners.get(event)?.delete(fn)
+      },
+      dispatchEvent(event: { type: string }) {
+        for (const fn of listeners.get(event.type) ?? []) fn(event as any)
+      },
+      requestAnimationFrame: (cb: () => void) => { cb(); return 1 },
+      cancelAnimationFrame: () => {},
+    }
+
+    const titleRow = {
+      querySelector(selector: string) {
+        if (selector === 'h1,h2') return heading
+        if (selector === '.dsh-st-heading-links') return links
+        return null
+      },
+    }
+    const heading = {
+      querySelector: () => null,
+      append: () => {},
+    }
+    let removedCheck = false
+    const existingCheck = {
+      remove() { removedCheck = true },
+    }
+    const links = {
+      querySelector(selector: string) {
+        if (selector.includes('data-mpi-check')) return existingCheck
+        return null
+      },
+      append: () => {},
+    }
+
+    const fakeDoc = {
+      body: {},
+      head: { append: () => {} },
+      documentElement: {
+        lang: 'zh-CN',
+      },
+      getElementById: () => null,
+      querySelector(selector: string) {
+        if (selector === '.dsh-st-heading-row') return titleRow
+        return null
+      },
+      querySelectorAll: () => [],
+      createElement: () => ({ dataset: {}, append: () => {}, remove: () => {}, setAttribute: () => {} }),
+    }
+
+    globalThis.window = fakeWindow as any
+    globalThis.document = fakeDoc as any
+    globalThis.HTMLStyleElement = class HTMLStyleElement {} as any
+    globalThis.MutationObserver = class MutationObserver {
+      observe() {}
+      disconnect() {}
+    } as any
+
+    let enabled = false
+    const cleanup = observePluginUpdate({
+      endpoint: '/api/michengai/dsh-automation/update',
+      packageName: '@michengai/dsh-automation',
+      titleRowSelector: '.dsh-st-heading-row',
+      linksSelector: '.dsh-st-heading-links',
+      zhName: '定时任务',
+      enName: 'Scheduled tasks',
+      createIcon: () => ({}) as any,
+      isEnabled: () => enabled,
+    })
+
+    assert.ok(listeners.get(PLUGIN_UPDATE_TOGGLE_EVENT)?.size! > 0, '注册了 update-toggle 事件监听')
+    assert.equal(removedCheck, true, '初始禁用状态下移除了检查按钮')
+
+    // 触发事件通知
+    removedCheck = false
+    fakeWindow.dispatchEvent({ type: PLUGIN_UPDATE_TOGGLE_EVENT })
+
+    cleanup()
+    assert.equal(listeners.get(PLUGIN_UPDATE_TOGGLE_EVENT)?.size, 0, '卸载后清除了 update-toggle 事件监听')
+  } finally {
+    delete (globalThis as any).HTMLStyleElement
+    delete (globalThis as any).MutationObserver
+    globalThis.window = originalWindow
+    globalThis.document = originalDoc
+  }
+})

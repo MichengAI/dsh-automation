@@ -4,6 +4,13 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## Unreleased
+
+- **Dedicated Sidebar Activity Bar Entry**: Supports toggling a dedicated scheduled tasks icon on the primary activity bar from the plugin bundle configuration card. When enabled, expands into a full 960px centered workbench for editing long prompts, recurrence rules, and audit logs.
+- **Online Update Switch & Enterprise Lockdown**: Supports toggling update check status from the plugin card. Supports declaring `updater: false` or `onlineUpdate: false` in Cordis configuration for full lockdown (403 blocked and UI disabled with notice).
+- **Reverse Proxy Subpath Support**: Resolves API endpoints against `document.baseURI` with trailing slash guards, preventing 404 errors when DSH is hosted behind reverse proxies with path prefixes.
+- **Persistent Settings & Security Hardening**: Supports `stateDir` configuration; secures settings HTTP endpoints with host authentication check, CSRF marker validation, and payload size bounds.
+
 ## 1.0.6 - 2026-10-22
 
 - Fix sidebar rebound on collapse after searching: prevent the official workspace tree from mistakenly triggering `expandSidebar` on narrow rail mount due to historical search requests, keeping sidebar collapse stable (Issue #20).

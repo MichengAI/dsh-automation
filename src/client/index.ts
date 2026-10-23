@@ -22,7 +22,7 @@ import { openSettingsSection } from './settings-navigation.js'
 import { installSettingsNavIcon } from './settings-nav-icon.js'
 import { clearAutomationTaskSettingsRequest, requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
 import { clearAutomationCreateTaskRequest, requestAutomationCreateTask } from './create-task-request.js'
-import { observePluginUpdate, type PluginUpdateIconName } from './plugin-update-ui.js'
+import { observePluginUpdate, PLUGIN_UPDATE_TOGGLE_EVENT, type PluginUpdateIconName } from './plugin-update-ui.js'
 import { resolveApiUrl } from './api-base.js'
 import { setupSidebarEntry } from './bundle-config.js'
 
@@ -123,7 +123,7 @@ export function apply(ctx: ClientContext): void {
       modelT,
     }),
     onOnlineUpdateChange: () => {
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('dsh-automation-update-toggle'))
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(PLUGIN_UPDATE_TOGGLE_EVENT))
     },
   })
   ctx.effect(() => () => sidebarController.destroy(), 'dsh-automation: sidebar entry')
