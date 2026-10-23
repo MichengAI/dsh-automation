@@ -26,13 +26,13 @@ test('在线更新与侧边栏配置：SettingsManager、持久化、HTTP API �
       stateDir: dir,
       hostUpdateDisabled: false,
     })
-    assert.equal(manager.getSidebarEntry(), false, '默认侧边栏入口为 false')
+    assert.equal(manager.getSidebarEntry(), true, '默认侧边栏入口为 true（平替接管官方入口）')
     assert.equal(manager.isUpdateEnabled(), true, '默认在线更新为 true')
     assert.equal(manager.isHostUpdateDisabled(), false, '默认未被宿主锁定')
 
     // 2. 状态变更与落盘
-    await manager.setSidebarEntry(true)
-    assert.equal(manager.getSidebarEntry(), true)
+    await manager.setSidebarEntry(false)
+    assert.equal(manager.getSidebarEntry(), false)
     await manager.setOnlineUpdate(false)
     assert.equal(manager.isUpdateEnabled(), false)
 
@@ -42,7 +42,7 @@ test('在线更新与侧边栏配置：SettingsManager、持久化、HTTP API �
       stateDir: dir,
       hostUpdateDisabled: false,
     })
-    assert.equal(reloaded.getSidebarEntry(), true, '持久化加载侧边栏入口')
+    assert.equal(reloaded.getSidebarEntry(), false, '从磁盘加载持久化侧边栏设置')
     assert.equal(reloaded.isUpdateEnabled(), false, '持久化加载在线更新状态')
 
     // 3. HTTP API 交互
@@ -88,13 +88,13 @@ test('在线更新与侧边栏配置：SettingsManager、持久化、HTTP API �
     const sideGet = await callHandler('/api/michengai/dsh-automation/sidebar-entry', 'GET')
     assert.equal(sideGet.status, 200)
     assert.equal(sideGet.json.ok, true)
-    assert.equal(sideGet.json.enabled, true)
+    assert.equal(sideGet.json.enabled, false)
 
     // 测试 POST sidebar-entry
-    const sidePost = await callHandler('/api/michengai/dsh-automation/sidebar-entry', 'POST', { enabled: false })
+    const sidePost = await callHandler('/api/michengai/dsh-automation/sidebar-entry', 'POST', { enabled: true })
     assert.equal(sidePost.status, 200)
-    assert.equal(sidePost.json.enabled, false)
-    assert.equal(manager.getSidebarEntry(), false)
+    assert.equal(sidePost.json.enabled, true)
+    assert.equal(manager.getSidebarEntry(), true)
 
     // 测试 GET online-update：必须返回 locked 字段（避免 Bug 3）
     const updateGet = await callHandler('/api/michengai/dsh-automation/online-update', 'GET')

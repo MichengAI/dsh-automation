@@ -78,8 +78,8 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
     }),
   })
 
-  // 1. 默认关闭状态
-  assert.equal(controller.isEnabled(), false)
+  // 1. 默认平替接管开启状态
+  assert.equal(controller.isEnabled(), true)
   assert.equal(controller.isSupported(), false)
   assert.equal(slotRegistrations.has('main'), false)
   assert.equal(slotRegistrations.has('sidebar.panellist'), false)
@@ -89,11 +89,7 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
   assert.ok(panellistHandler, '必须注入 sidebar.panellist')
   panellistHandler!()
   assert.equal(controller.isSupported(), true)
-
-  // 2. 开启侧边栏入口
-  await controller.setEnabled(true)
-  assert.equal(controller.isEnabled(), true)
-  assert.ok(slotRegistrations.has('main'), '开启后注册 main 槽位')
+  assert.ok(slotRegistrations.has('main'), '平替接管：插槽支持后自动注册 main 槽位')
   assert.equal(slotRegistrations.get('main')?.meta.key, SIDEBAR_PANEL_ID)
 
   // 验证 Bug 1 修复：main 槽位 inject 注入了完整的工作区与目录选择函数
@@ -107,16 +103,23 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
   assert.equal(typeof injected.modelT, 'function', 'main 必须注入 modelT')
 
   // 验证 sidebar.panellist 注册
-  assert.ok(slotRegistrations.has('sidebar.panellist'), '开启后注册 sidebar.panellist 槽位')
+  assert.ok(slotRegistrations.has('sidebar.panellist'), '平替接管：插槽支持后自动注册 sidebar.panellist 槽位')
   assert.equal(slotRegistrations.get('sidebar.panellist')?.meta.id, SIDEBAR_PANEL_ID)
   assert.equal(slotRegistrations.get('sidebar.panellist')?.meta.order, SIDEBAR_PANEL_ORDER)
 
-  // 3. 当前处于该面板时关闭侧边栏入口，验证触发 selectPanel(null)
+  // 2. 当前处于该面板时关闭侧边栏入口，验证触发 selectPanel(null)
   currentActivePanel = SIDEBAR_PANEL_ID
   await controller.setEnabled(false)
   assert.equal(controller.isEnabled(), false)
   assert.equal(slotRegistrations.has('main'), false, '关闭后注销 main')
   assert.equal(slotRegistrations.get('sidebar.panellist'), undefined, '关闭后注销 sidebar.panellist')
+  assert.equal(currentActivePanel, null, '关闭面板时如果当前激活该面板，安全调用 selectPanel(null)')
+
+  // 3. 再次开启侧边栏入口
+  await controller.setEnabled(true)
+  assert.equal(controller.isEnabled(), true)
+  assert.ok(slotRegistrations.has('main'), '重新开启后注册 main')
+  assert.ok(slotRegistrations.has('sidebar.panellist'), '重新开启后注册 sidebar.panellist')
   assert.equal(currentActivePanel, null, '关闭面板时如果当前激活该面板，安全调用 selectPanel(null)')
 
   // 4. 验证 plugins.bundle.config 插槽卡片
@@ -172,11 +175,18 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
   assert.equal(lockedController.isOnlineUpdateEnabled(), false, '宿主锁定状态下拒绝开启在线更新')
   lockedController.destroy()
 
-  // 7. 验证屏蔽官方自动化入口的生命周期与样式标签清理
+  // 7. 验证屏蔽官方自动化入口的生命周期与样式标签清理及激活态重置
   let styleCreated = false
   let styleRemoved = false
+  let styleContent = ''
   const mockStyleElement: any = {
     dataset: {},
+    set textContent(val: string) {
+      styleContent = val
+    },
+    get textContent() {
+      return styleContent
+    },
     remove: () => {
       styleRemoved = true
       styleCreated = false
@@ -205,6 +215,9 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
     },
   }
 
+  // 模拟当前正停留在官方 schedules 页面
+  currentActivePanel = 'schedules'
+
   const officialController = setupSidebarEntry(mockCtx, {
     callApi: async (path: string, options?: RequestInit) => {
       if (path === '/official-schedule') {
@@ -219,6 +232,8 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
 
   assert.equal(officialController.isHideOfficialScheduleEnabled(), true, '默认开启屏蔽官方自动化入口')
   assert.equal(styleCreated, true, '默认挂载隐藏样式标签')
+  assert.ok(styleContent.includes('nav button[aria-label='), 'CSS 选择器精准限定在 nav 侧栏容器内')
+  assert.equal(currentActivePanel, null, '隐藏官方入口时自动将官方 schedules 面板重置切回默认会话')
 
   await officialController.setHideOfficialSchedule(false)
   assert.equal(officialController.isHideOfficialScheduleEnabled(), false, '成功关闭屏蔽')

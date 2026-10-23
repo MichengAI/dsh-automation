@@ -94,7 +94,7 @@ export class SettingsManager {
   }
 
   getSidebarEntry(): boolean {
-    return this.store.sidebarEntry === true
+    return this.store.sidebarEntry !== false
   }
 
   async setSidebarEntry(enabled: boolean): Promise<boolean> {

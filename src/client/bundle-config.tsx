@@ -8,6 +8,7 @@ export const SIDEBAR_PANEL_ID = 'dsh-automation'
 export const SIDEBAR_PANEL_ORDER = 4
 export const HIDE_OFFICIAL_SCHEDULE_STYLE_TAG = 'dsh-automation-hide-official-schedule'
 export const STORAGE_KEY_HIDE_OFFICIAL = 'dsh-automation.hide-official-schedule'
+export const STORAGE_KEY_SIDEBAR_ENTRY = 'dsh-automation.sidebar-entry'
 
 const HIDE_OFFICIAL_SCHEDULE_CSS = `
 nav button[aria-label="自动化任务"],
@@ -15,6 +16,15 @@ nav button[aria-label="Automation tasks"] {
   display: none !important;
 }
 `
+
+export function readCachedSidebarEntry(): boolean {
+  if (typeof localStorage === 'undefined') return true
+  try {
+    const cached = localStorage.getItem(STORAGE_KEY_SIDEBAR_ENTRY)
+    if (cached === 'false') return false
+  } catch {}
+  return true
+}
 
 export function readCachedHideOfficial(): boolean {
   if (typeof localStorage === 'undefined') return true
@@ -35,7 +45,10 @@ export function applyHideOfficialScheduleStyle(hidden: boolean): void {
       style.dataset.plugin = BUNDLE_KEY
       style.dataset.pluginCss = HIDE_OFFICIAL_SCHEDULE_STYLE_TAG
       style.textContent = HIDE_OFFICIAL_SCHEDULE_CSS
-      document.head.appendChild(style)
+      const container = document.head ?? document.documentElement
+      if (container) {
+        container.appendChild(style)
+      }
     }
   } else {
     if (existing) {
@@ -268,7 +281,7 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
   }
 
   const { callApi, renderPanel, ns } = options
-  let sidebarEntryEnabled = false
+  let sidebarEntryEnabled = readCachedSidebarEntry()
   let sidebarSupported = false
   let offPanel: (() => void) | null = null
   let offRow: (() => void) | null = null
@@ -328,6 +341,7 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
   const setEnabled = async (next: boolean): Promise<boolean> => {
     const currentEpoch = ++epoch
     sidebarEntryEnabled = next
+    try { localStorage.setItem(STORAGE_KEY_SIDEBAR_ENTRY, String(next)) } catch {}
     sync()
     notify()
     try {
@@ -340,6 +354,7 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     } catch (err) {
       if (currentEpoch === epoch) {
         sidebarEntryEnabled = !next
+        try { localStorage.setItem(STORAGE_KEY_SIDEBAR_ENTRY, String(!next)) } catch {}
         sync()
         notify()
       }
@@ -425,6 +440,7 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     .then((res: any) => {
       if (epoch === loadEpoch && res && typeof res.enabled === 'boolean') {
         sidebarEntryEnabled = res.enabled
+        try { localStorage.setItem(STORAGE_KEY_SIDEBAR_ENTRY, String(res.enabled)) } catch {}
         sync()
         notify()
       }
@@ -461,6 +477,7 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
   if (typeof (ctx as any).inject === 'function') {
     (ctx as any).inject(['layout'], (scoped: any) => {
       layoutService = scoped.layout
+      syncOfficialPanelReset(hideOfficialScheduleEnabled)
     })
   }
 

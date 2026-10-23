@@ -51,12 +51,12 @@ test('SettingsManager HTTP API 真实服务端端到端 (13项用例覆盖)', as
   const base = `http://127.0.0.1:${addr.port}`
 
   try {
-    // 1. GET /sidebar-entry -> 200 放行
+    // 1. GET /sidebar-entry -> 200 放行，默认开启（enabled: true，平替接管官方入口）
     const res1 = await fetch(`${base}/api/michengai/dsh-automation/sidebar-entry`)
     assert.strictEqual(res1.status, 200)
     const d1 = await res1.json() as any
     assert.strictEqual(d1.ok, true)
-    assert.strictEqual(d1.enabled, false)
+    assert.strictEqual(d1.enabled, true)
 
     // 2. GET /online-update -> 200 放行
     const res2 = await fetch(`${base}/api/michengai/dsh-automation/online-update`)
