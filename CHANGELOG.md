@@ -4,6 +4,10 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 1.0.8 - 2026-10-24
+
+- Support DeepSeek Harness `0.2.1-rc.3` while retaining all existing supported versions.
+
 ## 1.0.7 - 2026-10-23
 
 - **Dedicated Sidebar Activity Bar Entry**: Supports toggling a dedicated scheduled tasks icon on the primary activity bar from the plugin bundle configuration card. Enabled by default on new installs to seamlessly replace the built-in entry, expanding into a full 960px centered workbench for editing long prompts, recurrence rules, and audit logs.
