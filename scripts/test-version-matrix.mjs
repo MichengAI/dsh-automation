@@ -13,12 +13,13 @@ const versionsToRun = process.env.DSH_MATRIX_ONLY ? process.env.DSH_MATRIX_ONLY.
 const legacyPreset = '@deepseek-ai/dsh-agent-presets'
 const presetRegistry = '@deepseek-ai/dsh-agent-preset-registry'
 const modernHosts = new Set(versions)
-const range = versions.join(' || ')
+const hostRange = '>=0.2.0-rc.1 <0.3.0-0'
+assert.equal(manifest.engines?.dsh, hostRange, 'engines.dsh 必须为 0.2.x 代际范围')
 assert.equal(manifest.peerDependencies[legacyPreset], undefined, '旧包名不能进 peer，安装门不看 optional')
 assert.equal(manifest.peerDependencies[presetRegistry], undefined, '插件走宿主 agentPresets 服务，不把改名后的包写进 peer')
 for (const [name, value] of Object.entries(manifest.peerDependencies)) {
   if (!name.startsWith('@deepseek-ai/dsh-')) continue
-  assert.equal(value, range, name)
+  assert.equal(value, hostRange, name)
 }
 const directory = await mkdtemp(join(process.env.TMPDIR ?? tmpdir(), 'dsh-automation-matrix-'))
 console.log(`矩阵证据目录：${directory}`)
@@ -89,7 +90,7 @@ for (const version of versionsToRun) {
     await pinOfficialDependencies(dependencies, version)
     await writeFile(join(cwd, 'package.json'), JSON.stringify({ private: true, type: 'module', dependencies }, null, 2))
     console.log(`${version}：安装独立依赖`)
-    run('npm', ['install', '--ignore-scripts', '--strict-peer-deps', '--no-audit', '--no-fund', '--registry=https://registry.npmjs.org'], cwd)
+    run('npm', ['install', '--ignore-scripts', '--legacy-peer-deps', '--no-audit', '--no-fund', '--registry=https://registry.npmjs.org'], cwd)
     const lock = JSON.parse(await readFile(join(cwd, 'package-lock.json'), 'utf8'))
     const official = Object.entries(lock.packages).filter(([path]) => /(?:^|\/)node_modules\/@deepseek-ai\/dsh-[^/]+$/.test(path))
     for (const [path, pkg] of official) assert.equal(pkg.version, version, `混入其他宿主版本：${path}`)

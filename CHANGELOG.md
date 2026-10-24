@@ -4,11 +4,12 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
-## 1.0.9 - 2026-10-24
+## 1.0.10 - 2026-10-24
 
 - Upgrade host admission policy: Declare `engines.dsh: ">=0.2.0-rc.1 <0.3.0-0"` to support the entire DeepSeek Harness `0.2.x` line (including `0.2.0-rc.1` onwards, future alphas, RCs, and stable releases) without requiring routine plugin version bumps.
 - Decouple peerDependencies locks: Broaden all `@deepseek-ai/dsh-*` peer dependencies to the `0.2.x` generation range.
 - Upgrade build-time development dependencies: Synchronize all `@deepseek-ai/dsh-*` devDependencies to latest `0.2.1-rc.3`.
+- Matrix test adaptation: Update isolated dependency installation logic to handle prerelease generation ranges.
 
 ## 1.0.8 - 2026-10-24
 
