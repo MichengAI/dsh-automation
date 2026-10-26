@@ -1,0 +1,15 @@
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dsh_svg_auto_g" x1="6" y1="6" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+  <!-- Circular Arrow Loop Track (Clockwise Loop) -->
+  <path d="M18 7C24.075 7 29 11.925 29 18C29 20.3 28.3 22.4 27.1 24.1" stroke="url(#dsh_svg_auto_g)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M29.5 13.5L29 18.5L24 18" stroke="url(#dsh_svg_auto_g)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18 29C11.925 29 7 24.075 7 18C7 15.7 7.7 13.6 8.9 11.9" stroke="url(#dsh_svg_auto_g)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M6.5 22.5L7 17.5L12 18" stroke="url(#dsh_svg_auto_g)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Sharp Lightning Pulse in Center -->
+  <path d="M19.5 10.5L13.5 19H18L16.5 25.5L22.5 17H18L19.5 10.5Z" fill="#F59E0B" stroke="#FFFFFF" stroke-width="1.4" stroke-linejoin="round"/>
+</svg>
