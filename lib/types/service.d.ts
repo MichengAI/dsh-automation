@@ -42,6 +42,7 @@ export interface CreateRequest {
     readonly permissionPreset?: PermissionPreset;
     readonly workspaceId?: string;
     readonly cwd?: string;
+    readonly workspace?: string;
     readonly provider?: string | null;
     readonly model?: string | null;
     readonly reasoningEffort?: string | null;
@@ -51,6 +52,7 @@ export interface AutomationScope {
     readonly sessionId: string;
     readonly creatorKind: "agent" | "web";
     readonly hostWide?: boolean;
+    readonly allWorkspaces?: boolean;
 }
 export interface AutomationSnapshot {
     readonly generatedAt: string;
@@ -71,6 +73,7 @@ export interface AutomationSnapshot {
 export interface AutomationDefinitionView extends AutomationDefinition {
     readonly nextRunAt: string | null;
     readonly lastRun: AutomationRun | null;
+    readonly workspaceTitle?: string | undefined;
 }
 /** 可安全返回给 RPC/工具调用方的输入、状态或权限错误。 */
 export declare class AutomationRequestError extends Error {
@@ -102,6 +105,7 @@ export declare class AutomationService {
     create(scope: AutomationScope, request: CreateRequest, signal?: AbortSignal): Promise<AutomationDefinition>;
     update(scope: AutomationScope, id: string, input: Omit<UpdateAutomationInput, "now"> & {
         readonly status?: "active" | "paused";
+        readonly workspace?: string;
     }, signal?: AbortSignal): Promise<AutomationDefinition>;
     delete(scope: AutomationScope, id: string, signal?: AbortSignal): Promise<{
         readonly id: string;
@@ -118,6 +122,7 @@ export declare class AutomationService {
         readonly path: string;
     }>;
     adoptSession(sessionId: string): Promise<void>;
+    private findRegisteredWorkspace;
     private resolveUpdateWorkspace;
     private collectOptions;
     private resolveCreateTarget;

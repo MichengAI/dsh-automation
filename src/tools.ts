@@ -39,6 +39,7 @@ interface CreateArgs extends ScheduleArgs, ModelArgs {
   readonly time_zone: string
   readonly max_concurrent_runs?: number
   readonly permission?: PermissionPreset
+  readonly workspace?: string
 }
 
 interface UpdateArgs extends ScheduleArgs, ModelArgs {
@@ -48,6 +49,11 @@ interface UpdateArgs extends ScheduleArgs, ModelArgs {
   readonly status?: 'active' | 'paused'
   readonly max_concurrent_runs?: number
   readonly permission?: PermissionPreset
+  readonly workspace?: string
+}
+
+interface ListArgs {
+  readonly all_workspaces?: boolean
 }
 
 interface IdArgs { readonly id: string }
@@ -171,6 +177,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         every_days: { type: 'integer', description: '自定义计划每隔几天运行，范围 1-365。' },
         max_concurrent_runs: { type: 'integer', description: '同一自动化的并发运行上限，必须为正整数，默认 1' },
         permission: { type: 'string', enum: permissionNames },
+        workspace: { type: 'string', description: '可选。目标工作区的名称（如 yyrenting）、ID 或目录路径。省略时默认使用当前会话所在工作区。' },
         ...MODEL_PARAMETERS,
       },
       output: JSON_OUTPUT,
@@ -183,6 +190,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
             schedule: scheduleFromArgs(args, new Date().toISOString()),
             ...(args.max_concurrent_runs === undefined ? {} : { maxConcurrentRuns: args.max_concurrent_runs }),
             ...(args.permission === undefined ? {} : { permissionPreset: args.permission }),
+            ...(args.workspace === undefined ? {} : { workspace: args.workspace }),
             ...modelFromArgs(args),
           }, exec.signal)
           return json({ ok: true, automation: value })
@@ -196,13 +204,16 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_list',
-      description: '列出当前工作区的自动化规则、下次运行时间和最近一次结果，以及可选模型目录 models、各模型 reasoning.efforts、全局 defaultModel 和目录加载失败 modelFailures。指定或修复模型前先查询目录，使用其中的 provider/model ID 和推理等级。',
-      parameters: {},
+      description: '列出自动化规则、下次运行时间和最近一次结果，以及可选模型目录 models、各模型 reasoning.efforts、全局 defaultModel 和目录加载失败 modelFailures。默认列出当前工作区，可通过 all_workspaces: true 列出所有工作区。指定或修复模型前先查询目录，使用其中的 provider/model ID 和推理等级。',
+      parameters: {
+        all_workspaces: { type: 'boolean', description: '是否列出所有已注册工作区的自动化任务。默认 false（仅当前工作区）。跨工作区管理时请设为 true。' },
+      },
       output: JSON_OUTPUT,
-      async execute(_args: Record<string, never>, exec: ToolRunContext) {
+      async execute(args: ListArgs, exec: ToolRunContext) {
         if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
         try {
-          const snapshot = await service.snapshot(scope, exec.signal)
+          const listScope = args.all_workspaces ? { ...scope, allWorkspaces: true } : scope
+          const snapshot = await service.snapshot(listScope, exec.signal)
           return json({
             ok: true,
             generatedAt: snapshot.generatedAt,
@@ -222,12 +233,13 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_update',
-      description: '更新当前工作区中一条自动化的名称、任务说明、计划、模型、推理等级、权限或暂停/恢复状态。仅暂停或修改模型不需要其他字段。返回保存后的完整定义；provider 和 model 均为 null 表示跟随运行时全局选择。',
+      description: '更新一条自动化的名称、任务说明、计划、工作区、模型、推理等级、权限或暂停/恢复状态。支持通过 workspace 参数迁移工作区（支持工作区名称/ID/路径）。仅暂停或修改模型不需要其他字段。返回保存后的完整定义；provider 和 model 均为 null 表示跟随运行时全局选择。',
       parameters: {
         id: { type: 'string', required: true },
         name: { type: 'string' },
         prompt: { type: 'string' },
         status: { type: 'string', enum: ['active', 'paused'] },
+        workspace: { type: 'string', description: '目标工作区的名称（如 yyrenting）、ID 或目录路径。用于将任务迁移或关联到其他工作区。' },
         kind: { type: 'string', enum: ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom'] },
         time_zone: { type: 'string' },
         at: { type: 'string' },
@@ -246,10 +258,11 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
         try {
           validateScheduleSelector(args)
-          const input: { -readonly [K in keyof Omit<UpdateAutomationInput, 'now'>]: UpdateAutomationInput[K] } = { ...modelFromArgs(args) }
+          const input: { -readonly [K in keyof Omit<UpdateAutomationInput, 'now'>]: UpdateAutomationInput[K] } & { workspace?: string } = { ...modelFromArgs(args) }
           if (args.name !== undefined) input.name = String(args.name)
           if (args.prompt !== undefined) input.prompt = String(args.prompt)
           if (args.status !== undefined) input.status = args.status
+          if (args.workspace !== undefined) input.workspace = String(args.workspace)
           if (args.max_concurrent_runs !== undefined) input.maxConcurrentRuns = args.max_concurrent_runs
           if (args.permission !== undefined) input.permissionPreset = args.permission
           if (args.kind !== undefined) input.schedule = scheduleFromArgs(args, new Date().toISOString())
@@ -284,7 +297,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_run_now',
-      description: '立即排队执行一次已有自动化。仍会使用全新 Session 和该规则保存的权限边界。',
+      description: '立即排队执行一次已有自动化（支持当前或任意工作区的自动化）。仍会使用全新 Session 和该规则保存的工作区与权限边界。',
       parameters: { id: { type: 'string', required: true } },
       output: JSON_OUTPUT,
       async execute(args: IdArgs, exec: ToolRunContext) {
@@ -301,7 +314,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_delete',
-      description: '删除当前工作区的自动化定义，但保留运行历史用于审计。',
+      description: '删除指定的自动化定义，但保留运行历史用于审计。',
       parameters: { id: { type: 'string', required: true } },
       output: JSON_OUTPUT,
       async execute(args: IdArgs, exec: ToolRunContext) {

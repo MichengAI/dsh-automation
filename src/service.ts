@@ -83,6 +83,7 @@ export interface CreateRequest {
   readonly permissionPreset?: PermissionPreset;
   readonly workspaceId?: string;
   readonly cwd?: string;
+  readonly workspace?: string;
   readonly provider?: string | null;
   readonly model?: string | null;
   readonly reasoningEffort?: string | null;
@@ -93,6 +94,7 @@ export interface AutomationScope {
   readonly sessionId: string;
   readonly creatorKind: "agent" | "web";
   readonly hostWide?: boolean;
+  readonly allWorkspaces?: boolean;
 }
 
 export interface AutomationSnapshot {
@@ -112,6 +114,7 @@ export interface AutomationSnapshot {
 export interface AutomationDefinitionView extends AutomationDefinition {
   readonly nextRunAt: string | null;
   readonly lastRun: AutomationRun | null;
+  readonly workspaceTitle?: string | undefined;
 }
 
 /** 可安全返回给 RPC/工具调用方的输入、状态或权限错误。 */
@@ -293,12 +296,16 @@ export class AutomationService {
       const options = await this.collectOptions();
       const scoped =
         scope.hostWide === true ? undefined : await this.resolveScope(scope);
-      const workspaceId = scoped?.workspace.id;
+      const filterWorkspaceId =
+        scope.hostWide === true || scope.allWorkspaces === true
+          ? undefined
+          : scoped?.workspace.id;
+      const workspaceMap = new Map(options.workspaces.map((w) => [w.id, w.title]));
       const definitions = [...this.definitions.entries()]
         .map(([, definition]) => definition)
         .filter(
           (definition) =>
-            workspaceId === undefined || definition.workspaceId === workspaceId,
+            filterWorkspaceId === undefined || definition.workspaceId === filterWorkspaceId,
         )
         .sort(
           (left, right) =>
@@ -309,8 +316,8 @@ export class AutomationService {
         .map(([, run]) => run)
         .filter(
           (run) =>
-            workspaceId === undefined ||
-            run.targetSnapshot.workspaceId === workspaceId,
+            filterWorkspaceId === undefined ||
+            run.targetSnapshot.workspaceId === filterWorkspaceId,
         )
         .sort(compareRuns);
       const lastByAutomation = new Map<string, AutomationRun>();
@@ -335,6 +342,7 @@ export class AutomationService {
         defaultPermission: this.defaultPermission(),
         definitions: definitions.map((definition) => ({
           ...definition,
+          workspaceTitle: workspaceMap.get(definition.workspaceId),
           nextRunAt:
             definition.status === "active"
               ? nextOccurrence(definition.schedule, now)
@@ -401,6 +409,7 @@ export class AutomationService {
     id: string,
     input: Omit<UpdateAutomationInput, "now"> & {
       readonly status?: "active" | "paused";
+      readonly workspace?: string;
     },
     signal?: AbortSignal,
   ): Promise<AutomationDefinition> {
@@ -408,7 +417,7 @@ export class AutomationService {
       const current = await this.ownedDefinition(scope, id);
       throwIfCancelled(signal);
       const now = toIso();
-      const { status, ...rawFields } = input;
+      const { status, workspace: workspaceSelector, ...rawFields } = input;
       const fields = normalizeModelFields(rawFields);
       validateModelPair(fields);
       let normalizedFields =
@@ -425,9 +434,14 @@ export class AutomationService {
       ) {
         normalizedFields = { ...normalizedFields, reasoningEffort: null };
       }
-      if (fields.workspaceId !== undefined || fields.cwd !== undefined) {
+      if (
+        workspaceSelector !== undefined ||
+        fields.workspaceId !== undefined ||
+        fields.cwd !== undefined
+      ) {
         const target = await this.resolveUpdateWorkspace(
           current,
+          workspaceSelector,
           fields.workspaceId,
           fields.cwd,
         );
@@ -533,10 +547,7 @@ export class AutomationService {
         throw new AutomationRequestError(`unknown automation run '${runId}'`);
       throwIfCancelled(signal);
       if (scope.hostWide !== true) {
-        const { workspace } = await this.resolveScope(scope);
-        if (run.targetSnapshot.workspaceId !== workspace.id) {
-          throw new AutomationRequestError("该运行记录属于其他工作区。");
-        }
+        await this.resolveScope(scope);
       }
       return this.runs.update(runId, (current) =>
         current.unread ? { ...current, unread: false } : current,
@@ -664,30 +675,102 @@ export class AutomationService {
     await workspace.attachSession(SessionId(id));
   }
 
-  private async resolveUpdateWorkspace(
-    current: AutomationDefinition,
-    workspaceId?: string,
-    cwd?: string,
-  ): Promise<{ readonly id: string; readonly path: string }> {
-    const requestedId = workspaceId?.trim() || current.workspaceId;
-    const requestedPath = cwd?.trim() || current.cwd;
+  private async findRegisteredWorkspace(
+    selector: string,
+  ): Promise<{ readonly id: string; readonly path: string; readonly title?: string | undefined } | undefined> {
+    const trimmed = selector.trim();
+    if (!trimmed) return undefined;
     const registry = this.ctx.workspaceRegistry as {
       get?: (id: unknown) => any;
       resolveByPath?: (path: string) => Promise<any> | any;
+      list?: () => Iterable<any>;
+      values?: () => Iterable<any>;
+      entries?: () => Iterable<[string, any]>;
     };
-    const byId = registry.get?.(WorkspaceId(requestedId));
-    const byPath = await registry.resolveByPath?.(requestedPath);
-    if (
-      byId === undefined ||
-      byPath === undefined ||
-      String(byId.id) !== String(byPath.id) ||
-      String(byId.path) !== String(byPath.path)
-    ) {
-      throw new AutomationRequestError(
-        "更新后的工作区必须是同一个已注册目录。",
-      );
+    const byId = registry.get?.(WorkspaceId(trimmed));
+    if (byId && byId.id && byId.path) {
+      return { id: String(byId.id), path: String(byId.path), title: byId.title ? String(byId.title) : undefined };
     }
-    return { id: String(byId.id), path: String(byId.path) };
+    const byPath = await registry.resolveByPath?.(trimmed);
+    if (byPath && byPath.id && byPath.path) {
+      return { id: String(byPath.id), path: String(byPath.path), title: byPath.title ? String(byPath.title) : undefined };
+    }
+    const raw =
+      registry.list !== undefined
+        ? [...registry.list()]
+        : registry.values !== undefined
+          ? [...registry.values()]
+          : registry.entries !== undefined
+            ? [...registry.entries()].map(([, v]) => v)
+            : [];
+    const normalizedTarget = trimmed.toLowerCase().replace(/\\/g, "/").replace(/\/$/, "");
+    const candidates = raw
+      .map((item) => ({
+        id: String(item.id ?? item.workspaceId ?? ""),
+        title: String(item.title ?? item.name ?? ""),
+        path: String(item.path ?? item.cwd ?? ""),
+      }))
+      .filter((item) => item.id !== "" && item.path !== "");
+
+    for (const item of candidates) {
+      if (item.id.toLowerCase() === normalizedTarget) return item;
+      if (item.title.toLowerCase() === normalizedTarget) return item;
+      const itemNormPath = item.path.toLowerCase().replace(/\\/g, "/").replace(/\/$/, "");
+      if (itemNormPath === normalizedTarget) return item;
+    }
+
+    for (const item of candidates) {
+      const itemNormPath = item.path.replace(/\\/g, "/").replace(/\/$/, "");
+      const basename = itemNormPath.split("/").pop()?.toLowerCase();
+      if (basename && basename === normalizedTarget) {
+        return item;
+      }
+    }
+
+    return undefined;
+  }
+
+  private async resolveUpdateWorkspace(
+    current: AutomationDefinition,
+    workspaceSelector?: string,
+    workspaceId?: string,
+    cwd?: string,
+  ): Promise<{ readonly id: string; readonly path: string }> {
+    if (workspaceSelector !== undefined && workspaceSelector.trim() !== "") {
+      const found = await this.findRegisteredWorkspace(workspaceSelector);
+      if (found === undefined) {
+        throw new AutomationRequestError(`所选工作区「${workspaceSelector}」不存在或目录未注册。`);
+      }
+      return { id: found.id, path: found.path };
+    }
+    const reqId = workspaceId?.trim();
+    const reqPath = cwd?.trim();
+    if (reqId && reqPath) {
+      const byId = await this.findRegisteredWorkspace(reqId);
+      const byPath = await this.findRegisteredWorkspace(reqPath);
+      if (
+        byId === undefined ||
+        byPath === undefined ||
+        byId.id !== byPath.id ||
+        byId.path !== byPath.path
+      ) {
+        throw new AutomationRequestError(
+          "更新后的工作区必须是同一个已注册目录。",
+        );
+      }
+      return { id: byId.id, path: byId.path };
+    }
+    if (reqId) {
+      const byId = await this.findRegisteredWorkspace(reqId);
+      if (byId === undefined) throw new AutomationRequestError("所选工作区不存在或目录未注册。");
+      return { id: byId.id, path: byId.path };
+    }
+    if (reqPath) {
+      const byPath = await this.findRegisteredWorkspace(reqPath);
+      if (byPath === undefined) throw new AutomationRequestError("所选工作区不存在或目录未注册。");
+      return { id: byPath.id, path: byPath.path };
+    }
+    return { id: current.workspaceId, path: current.cwd };
   }
 
   private async collectOptions(): Promise<{
@@ -753,34 +836,42 @@ export class AutomationService {
     let provider: string | null = explicit.provider === undefined ? fallbackPair?.provider ?? null : explicit.provider;
     let model: string | null = explicit.model === undefined ? fallbackPair?.model ?? null : explicit.model;
     let consultedSession = false;
-    if (workspaceId !== "" || cwd !== "") {
-      const registry = this.ctx.workspaceRegistry as {
-        get?: (id: unknown) => any;
-        resolveByPath?: (path: string) => Promise<any> | any;
-      };
-      const byId =
-        workspaceId === ""
-          ? undefined
-          : registry.get?.(WorkspaceId(workspaceId));
-      const byPath =
-        cwd === "" ? undefined : await registry.resolveByPath?.(cwd);
-      if (
-        workspaceId !== "" &&
-        cwd !== "" &&
-        (byId === undefined ||
-          byPath === undefined ||
-          String(byId.id) !== String(byPath.id) ||
-          String(byId.path) !== String(byPath.path))
-      ) {
-        throw new AutomationRequestError(
-          "创建任务的工作区 ID 和目录必须指向同一个已注册目录。",
-        );
+    if (request.workspace !== undefined && request.workspace.trim() !== "") {
+      const found = await this.findRegisteredWorkspace(request.workspace);
+      if (found === undefined) {
+        throw new AutomationRequestError(`所选工作区「${request.workspace}」不存在或目录未注册。`);
       }
-      const workspace = byId ?? byPath;
-      if (workspace === undefined)
-        throw new AutomationRequestError("所选工作区不存在或目录未注册。");
-      workspaceId = String(workspace.id);
-      cwd = String(workspace.path);
+      workspaceId = found.id;
+      cwd = found.path;
+    } else if (workspaceId !== "" || cwd !== "") {
+      if (workspaceId !== "" && cwd !== "") {
+        const byId = await this.findRegisteredWorkspace(workspaceId);
+        const byPath = await this.findRegisteredWorkspace(cwd);
+        if (
+          byId === undefined ||
+          byPath === undefined ||
+          byId.id !== byPath.id ||
+          byId.path !== byPath.path
+        ) {
+          throw new AutomationRequestError(
+            "创建任务的工作区 ID 和目录必须指向同一个已注册目录。",
+          );
+        }
+        workspaceId = byId.id;
+        cwd = byId.path;
+      } else if (workspaceId !== "") {
+        const byId = await this.findRegisteredWorkspace(workspaceId);
+        if (byId === undefined)
+          throw new AutomationRequestError("所选工作区不存在或目录未注册。");
+        workspaceId = byId.id;
+        cwd = byId.path;
+      } else {
+        const byPath = await this.findRegisteredWorkspace(cwd);
+        if (byPath === undefined)
+          throw new AutomationRequestError("所选工作区不存在或目录未注册。");
+        workspaceId = byPath.id;
+        cwd = byPath.path;
+      }
     } else {
       const resolved = await this.resolveScope(scope);
       workspaceId = resolved.workspace.id;
@@ -831,10 +922,9 @@ export class AutomationService {
     const definition = this.definitions.get(id);
     if (definition === undefined)
       throw new AutomationRequestError(`unknown automation '${id}'`);
-    if (scope.hostWide === true) return definition;
-    const { workspace } = await this.resolveScope(scope);
-    if (definition.workspaceId !== workspace.id)
-      throw new AutomationRequestError("该自动化属于其他工作区。");
+    if (scope.hostWide !== true) {
+      await this.resolveScope(scope);
+    }
     return definition;
   }
 

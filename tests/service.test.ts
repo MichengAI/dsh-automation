@@ -1122,3 +1122,87 @@ test("定时任务有剩余并发名额时准入，降低上限后等待现有�
   await internals.startQueuedRuns();
   assert.equal(started.length, 1);
 });
+
+test("Agent 工具支持跨工作区查询、修改、迁移工作空间及运行与删除", async () => {
+  const ws1 = { id: "ws_1", title: "demo", path: "D:\\work\\demo" };
+  const ws2 = { id: "ws_2", title: "yyrenting", path: "D:\\Repository\\yyrenting" };
+  const wsList = [ws1, ws2];
+  const definitionWs2 = sampleDefinition({
+    id: "auto_weather",
+    name: "每日深圳天气查询",
+    workspaceId: "ws_2",
+    cwd: "D:\\Repository\\yyrenting",
+  });
+  const { service, definitions } = await makeService(
+    { definitions: [definitionWs2] },
+    {},
+    {
+      workspaceRegistry: {
+        get(id: unknown) {
+          return wsList.find(w => w.id === String(id));
+        },
+        async resolveByPath(path: string) {
+          return wsList.find(w => w.path === path);
+        },
+        list() {
+          return wsList;
+        },
+      },
+    },
+  );
+
+  const tools = new Map<string, any>();
+  const agent = {
+    id: "session_1", // 属于 ws_1
+    ctx: { tools: { register(tool: any) { tools.set(tool.name, tool); return () => {}; } } },
+  };
+  const dispose = registerAutomationTools(service, agent as any);
+  const context = { agent, signal: new AbortController().signal };
+
+  try {
+    // 1. 默认仅列出当前工作区 (ws_1)，不包含 ws_2 任务
+    const listDefault = await tools.get("automation_list").execute({}, context);
+    assert.equal(listDefault.ok, true);
+    assert.equal(listDefault.automations.length, 0);
+
+    // 2. all_workspaces: true 可查到 ws_2 任务并带有工作区信息
+    const listAll = await tools.get("automation_list").execute({ all_workspaces: true }, context);
+    assert.equal(listAll.ok, true);
+    assert.equal(listAll.automations.length, 1);
+    assert.equal(listAll.automations[0].id, "auto_weather");
+    assert.equal(listAll.automations[0].workspaceTitle, "yyrenting");
+
+    // 3. 跨工作区修改提示词和状态
+    const updated = await tools.get("automation_update").execute({
+      id: "auto_weather",
+      prompt: "新天气查询提示词",
+      status: "paused",
+    }, context);
+    assert.equal(updated.ok, true);
+    assert.equal(updated.automation.prompt, "新天气查询提示词");
+    assert.equal(updated.automation.status, "paused");
+
+    // 4. 迁移工作空间至 demo (通过别名/标题 "demo")
+    const migrated = await tools.get("automation_update").execute({
+      id: "auto_weather",
+      workspace: "demo",
+    }, context);
+    assert.equal(migrated.ok, true);
+    assert.equal(migrated.automation.workspaceId, "ws_1");
+    assert.equal(migrated.automation.cwd, "D:\\work\\demo");
+
+    // 5. 跨工作区立即运行 (run_now)
+    const runResult = await tools.get("automation_run_now").execute({ id: "auto_weather" }, context);
+    assert.equal(runResult.ok, true);
+    assert.equal(runResult.run.automationId, "auto_weather");
+
+    // 6. 跨工作区删除 (delete)
+    const deleteResult = await tools.get("automation_delete").execute({ id: "auto_weather" }, context);
+    assert.equal(deleteResult.ok, true);
+    assert.equal(definitions.get("auto_weather"), undefined);
+  } finally {
+    dispose();
+    await service.dispose();
+  }
+});
+
