@@ -40,6 +40,7 @@ interface CreateArgs extends ScheduleArgs, ModelArgs {
   readonly max_concurrent_runs?: number
   readonly permission?: PermissionPreset
   readonly workspace?: string
+  readonly cross_workspace?: boolean
 }
 
 interface UpdateArgs extends ScheduleArgs, ModelArgs {
@@ -182,13 +183,15 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         max_concurrent_runs: { type: 'integer', description: '同一自动化的并发运行上限，必须为正整数，默认 1' },
         permission: { type: 'string', enum: permissionNames },
         workspace: { type: 'string', description: '可选。目标工作区的名称（如 yyrenting）、ID 或目录路径。省略时默认使用当前会话所在工作区。' },
+        cross_workspace: { type: 'boolean', description: '若目标工作区非当前会话所在工作区，必须显式设为 true。' },
         ...MODEL_PARAMETERS,
       },
       output: JSON_OUTPUT,
       async execute(args: CreateArgs, exec: ToolRunContext) {
         if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
         try {
-          const value = await service.create(scope, {
+          const opScope = args.cross_workspace ? { ...scope, crossWorkspace: true } : scope
+          const value = await service.create(opScope, {
             name: args.name,
             prompt: args.prompt,
             schedule: scheduleFromArgs(args, new Date().toISOString()),

@@ -446,6 +446,16 @@ export class AutomationService {
           fields.workspaceId,
           fields.cwd,
         );
+        if (scope.hostWide !== true) {
+          const { workspace } = await this.resolveScope(scope);
+          if (target.id !== workspace.id && scope.crossWorkspace !== true) {
+            const targetWs = (this.ctx.workspaceRegistry as any)?.get?.(WorkspaceId(target.id));
+            const targetName = targetWs?.title ?? targetWs?.path ?? target.id;
+            throw new AutomationRequestError(
+              `将自动化迁移到其他工作区「${targetName}」（ID: ${target.id}）需要显式确认。请设置 cross_workspace: true，或切换到目标工作区会话执行。`,
+            );
+          }
+        }
         normalizedFields = {
           ...normalizedFields,
           workspaceId: target.id,
@@ -924,6 +934,31 @@ export class AutomationService {
           provider = sessionPair.provider;
           model = sessionPair.model;
         }
+      }
+    }
+    if (!consultedSession && scope.hostWide !== true) {
+      let currentWsId: string | undefined;
+      const agent = this.ctx.agents.get(SessionId(scope.sessionId));
+      if (agent === undefined) {
+        throw new AutomationRequestError(
+          "自动化界面或工具需要一个存活的来源 Session。",
+        );
+      }
+      const agentCwd = agent.session.header.cwd;
+      if (agentCwd !== undefined) {
+        try {
+          const currentWs = await this.ctx.workspaceRegistry.resolveByPath(agentCwd);
+          currentWsId = currentWs?.id;
+        } catch {
+          // 来源会话目录未注册或路径不全时保留 undefined
+        }
+      }
+      if (workspaceId !== currentWsId && scope.crossWorkspace !== true) {
+        const targetWs = (this.ctx.workspaceRegistry as any)?.get?.(WorkspaceId(workspaceId));
+        const targetName = targetWs?.title ?? targetWs?.path ?? workspaceId;
+        throw new AutomationRequestError(
+          `将自动化创建到其他工作区「${targetName}」（ID: ${workspaceId}）需要显式确认。请设置 cross_workspace: true，或切换到目标工作区会话执行。`,
+        );
       }
     }
     assertInheritedPair(omitted, provider, model, consultedSession);

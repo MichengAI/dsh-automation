@@ -4,6 +4,15 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 1.0.12 - 2026-10-27
+
+- **Cross-Workspace Automation Operations & Workspace Migration**: Resolves limitations in managing scheduled tasks across multiple workspaces (Issue #24).
+  - `automation_update` accepts an optional `workspace` parameter (matching by workspace title, ID, absolute path, or directory basename) to migrate existing automations between workspaces with automatic path reconciliation;
+  - `automation_create` accepts an optional `workspace` parameter to create tasks directly in target workspaces without requiring the session to switch directories;
+  - `automation_list` adds `all_workspaces: true` flag to discover automations across all registered workspaces with human-friendly `workspaceTitle` metadata;
+  - **Bidirectional Cross-Workspace Security Guard**: To safeguard against prompt injection and silent sandbox escapes, cross-workspace operations (including task migration, mutations to foreign tasks, `run_now`, `delete`, and cross-workspace creation) are rejected by default with actionable guidance unless `cross_workspace: true` is explicitly provided;
+  - **Resilient Resolution & Ambiguity Protection**: Bypasses host `TypeError` on unqualified path identifiers and detects duplicate workspace names with clear guidance.
+
 ## 1.0.11 - 2026-10-27
 
 - **Show Automation Sessions in Task Tree Switch (`taskTreeSessions`)**: Adds a new configuration toggle under the plugin bundle configuration card, disabled by default. When disabled, scheduled task run sessions are automatically filtered out from the primary workspace task tree, keeping daily development workspaces uncluttered while leaving all runs fully accessible for audit and replay under "Schedule → Records". Powered by the standard `NativeTabRegistry.sessionFilters` contract without invasive host interception, coexisting smoothly with third-party filters such as IM Connect (Issues #19, #23).

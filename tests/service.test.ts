@@ -1132,6 +1132,7 @@ test("Agent 工具支持跨工作区查询、修改、迁移工作空间及运�
     name: "每日深圳天气查询",
     workspaceId: "ws_2",
     cwd: "D:\\Repository\\yyrenting",
+    maxConcurrentRuns: 5,
   });
   const { service, definitions } = await makeService(
     { definitions: [definitionWs2] },
@@ -1182,7 +1183,8 @@ test("Agent 工具支持跨工作区查询、修改、迁移工作空间及运�
     assert.equal(listAll.automations[0].id, "auto_weather");
     assert.equal(listAll.automations[0].workspaceTitle, "yyrenting");
 
-    // 3. 跨工作区修改未传 cross_workspace 时必须被拒绝，并返回目标工作区引导提示
+    // 3. 跨工作区操作未传 cross_workspace 时必须被拒绝，并返回目标工作区引导提示
+    // 3.1 update 未确认拒绝
     const rejectedUpdate = await tools.get("automation_update").execute({
       id: "auto_weather",
       prompt: "新天气查询提示词",
@@ -1191,7 +1193,19 @@ test("Agent 工具支持跨工作区查询、修改、迁移工作空间及运�
     assert.match(rejectedUpdate.message, /该自动化属于工作区「yyrenting」/);
     assert.match(rejectedUpdate.message, /cross_workspace: true/);
 
-    // 4. 显式声明 cross_workspace: true 时跨工作区修改成功
+    // 3.2 run_now 未确认拒绝
+    const rejectedRun = await tools.get("automation_run_now").execute({ id: "auto_weather" }, context);
+    assert.equal(rejectedRun.ok, false);
+    assert.match(rejectedRun.message, /该自动化属于工作区「yyrenting」/);
+    assert.match(rejectedRun.message, /cross_workspace: true/);
+
+    // 3.3 delete 未确认拒绝
+    const rejectedDelete = await tools.get("automation_delete").execute({ id: "auto_weather" }, context);
+    assert.equal(rejectedDelete.ok, false);
+    assert.match(rejectedDelete.message, /该自动化属于工作区「yyrenting」/);
+    assert.match(rejectedDelete.message, /cross_workspace: true/);
+
+    // 4. 显式声明 cross_workspace: true 时跨工作区修改和立即运行成功
     const updated = await tools.get("automation_update").execute({
       id: "auto_weather",
       prompt: "新天气查询提示词",
@@ -1202,7 +1216,50 @@ test("Agent 工具支持跨工作区查询、修改、迁移工作空间及运�
     assert.equal(updated.automation.prompt, "新天气查询提示词");
     assert.equal(updated.automation.status, "paused");
 
-    // 5. 迁移工作空间至 demo (通过别名/标题 "demo"，真宿主契约下 resolveByPath 会抛 TypeError 但被捕获并成功匹配)
+    const runNowResult = await tools.get("automation_run_now").execute({ id: "auto_weather", cross_workspace: true }, context);
+    assert.equal(runNowResult.ok, true);
+    assert.equal(runNowResult.run.automationId, "auto_weather");
+    const ws2RunId = runNowResult.run.id;
+
+    // 5. markRead 针对别区记录测试：未确认拒绝，显式确认后成功
+    await assert.rejects(
+      () => service.markRead({ sessionId: "session_1", creatorKind: "agent" }, ws2RunId),
+      /该运行记录属于工作区「yyrenting」/,
+    );
+    const marked = await service.markRead({ sessionId: "session_1", creatorKind: "agent", crossWorkspace: true }, ws2RunId);
+    assert.equal(marked.unread, false);
+
+    // 6. 跨工作区新建：直接新建到 yyrenting (ws_2) 未确认拒绝，确认后成功
+    const rejectedCreate = await tools.get("automation_create").execute({
+      name: "跨区新建",
+      prompt: "新任务",
+      kind: "hourly",
+      minute: 10,
+      time_zone: "UTC",
+      workspace: "yyrenting",
+    }, context);
+    assert.equal(rejectedCreate.ok, false);
+    assert.match(rejectedCreate.message, /将自动化创建到其他工作区「yyrenting」/);
+
+    const allowedCreate = await tools.get("automation_create").execute({
+      name: "跨区新建",
+      prompt: "新任务",
+      kind: "hourly",
+      minute: 10,
+      time_zone: "UTC",
+      workspace: "yyrenting",
+      cross_workspace: true,
+    }, context);
+    assert.equal(allowedCreate.ok, true);
+    assert.equal(allowedCreate.automation.workspaceId, "ws_2");
+
+    // 7. 迁移工作空间：未传 cross_workspace 拒绝迁移，传了之后迁移至 demo (ws_1)
+    const rejectedMigrate = await tools.get("automation_update").execute({
+      id: "auto_weather",
+      workspace: "demo",
+    }, context);
+    assert.equal(rejectedMigrate.ok, false);
+
     const migrated = await tools.get("automation_update").execute({
       id: "auto_weather",
       workspace: "demo",
@@ -1212,7 +1269,7 @@ test("Agent 工具支持跨工作区查询、修改、迁移工作空间及运�
     assert.equal(migrated.automation.workspaceId, "ws_1");
     assert.equal(migrated.automation.cwd, "D:\\work\\demo");
 
-    // 6. 不存在的工作区抛出明确中文错误，而不是外泄英文 TypeError/ENOENT
+    // 8. 不存在的工作区抛出明确中文错误，而不是外泄英文 TypeError/ENOENT
     const notFoundWorkspace = await tools.get("automation_update").execute({
       id: "auto_weather",
       workspace: "non_existent_workspace",
@@ -1221,15 +1278,32 @@ test("Agent 工具支持跨工作区查询、修改、迁移工作空间及运�
     assert.equal(notFoundWorkspace.ok, false);
     assert.match(notFoundWorkspace.message, /所选工作区「non_existent_workspace」不存在或目录未注册。/);
 
-    // 7. 跨工作区立即运行 (run_now)：未确认时拒绝，确认后接受
-    const rejectedRun = await tools.get("automation_run_now").execute({ id: "auto_weather" }, context);
-    // 因为第5步已迁移至当前工作区 ws_1，现在任务已属于 ws_1，故本会话直接可运行
-    assert.equal(rejectedRun.ok, true);
+    // 9. 任务已迁移至当前工作区 ws_1，此时不带 cross_workspace 也可运行
+    const localRun = await tools.get("automation_run_now").execute({ id: "auto_weather" }, context);
+    assert.equal(localRun.ok, true);
 
-    // 8. 跨工作区删除 (delete)
-    const deleteResult = await tools.get("automation_delete").execute({ id: "auto_weather" }, context);
+    // 9.1 迁出到其他工作区 (ws_2)：未声明 cross_workspace 必须被阻断
+    const rejectedOutMigrate = await tools.get("automation_update").execute({
+      id: "auto_weather",
+      workspace: "yyrenting",
+    }, context);
+    assert.equal(rejectedOutMigrate.ok, false);
+    assert.match(rejectedOutMigrate.message, /将自动化迁移到其他工作区「yyrenting」/);
+
+    // 9.2 声明 cross_workspace: true 允许迁出至 ws_2
+    const allowedOutMigrate = await tools.get("automation_update").execute({
+      id: "auto_weather",
+      workspace: "yyrenting",
+      cross_workspace: true,
+    }, context);
+    assert.equal(allowedOutMigrate.ok, true);
+    assert.equal(allowedOutMigrate.automation.workspaceId, "ws_2");
+
+    // 10. 删除任务（其他区带 cross_workspace 删）
+    const deleteResult = await tools.get("automation_delete").execute({ id: "auto_weather", cross_workspace: true }, context);
     assert.equal(deleteResult.ok, true);
     assert.equal(definitions.get("auto_weather"), undefined);
+    await tools.get("automation_delete").execute({ id: allowedCreate.automation.id, cross_workspace: true }, context);
   } finally {
     dispose();
     await service.dispose();
@@ -1265,3 +1339,48 @@ test("存在多个同名工作区时迁移会提示歧义并阻止误操作", as
   }
 });
 
+test("来源会话目录未注册工作区时，显式指定工作区并确认 cross_workspace 可创建成功", async () => {
+  const ws = { id: "ws_registered", title: "registered", path: "D:/repo/reg" };
+  const { service } = await makeService(
+    {},
+    {},
+    {
+      workspaceRegistry: {
+        get(id: unknown) { return String(id) === ws.id ? ws : undefined; },
+        async resolveByPath(p: string) { return p === ws.path ? ws : undefined; },
+        list() { return [ws]; },
+      },
+      agents: {
+        get() {
+          return {
+            session: {
+              header: { cwd: "D:/unregistered/path" },
+              requestHeader: () => ({ config: { provider: "deepseek", model: "v4" } }),
+            },
+            ctx: {},
+          };
+        },
+      },
+    },
+  );
+  try {
+    const scope = { sessionId: "session_1", creatorKind: "agent" as const };
+    const request = {
+      name: "未注册目录会话创建任务",
+      prompt: "执行",
+      schedule: { kind: "once" as const, at: "2099-01-01T00:00:00.000Z", timeZone: "UTC" },
+      workspace: "registered",
+    };
+    // 未带 cross_workspace 提示需要显式确认
+    await assert.rejects(
+      () => service.create(scope, request),
+      /将自动化创建到其他工作区「registered」.*需要显式确认/,
+    );
+    // 声明 cross_workspace: true 成功创建
+    const created = await service.create({ ...scope, crossWorkspace: true }, request);
+    assert.equal(created.workspaceId, "ws_registered");
+    assert.equal(created.cwd, "D:/repo/reg");
+  } finally {
+    await service.dispose();
+  }
+});
