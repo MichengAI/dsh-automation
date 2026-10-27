@@ -4,6 +4,11 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 1.0.11 - 2026-10-27
+
+- **Show Automation Sessions in Task Tree Switch (`taskTreeSessions`)**: Adds a new configuration toggle under the plugin bundle configuration card, disabled by default. When disabled, scheduled task run sessions are automatically filtered out from the primary workspace task tree, keeping daily development workspaces uncluttered while leaving all runs fully accessible for audit and replay under "Schedule → Records". Powered by the standard `NativeTabRegistry.sessionFilters` contract without invasive host interception, coexisting smoothly with third-party filters such as IM Connect (Issues #19, #23).
+- **Dual-Mode IM Session ID Compatibility**: Adds forward-compatible dual-mode detection for IM Connect's path-safe session IDs (`dsh-im-session-*`) while maintaining seamless backwards compatibility with legacy `im:` prefixes for sidebar tab mapping and session activation.
+
 ## 1.0.10 - 2026-10-24
 
 - Upgrade host admission policy: Declare `engines.dsh: ">=0.2.0-rc.1 <0.3.0-0"` to support the entire DeepSeek Harness `0.2.x` line (including `0.2.0-rc.1` onwards, future alphas, RCs, and stable releases) without requiring routine plugin version bumps.
