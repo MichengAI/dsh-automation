@@ -24,6 +24,9 @@ export declare const en: {
     readonly "officialSchedule.entry.title": "Hide official automation entry";
     readonly "officialSchedule.entry.desc": "Hide built-in 'Automation tasks' sidebar entry to avoid conflict. Restores automatically when disabled or uninstalled.";
     readonly "officialSchedule.entry.toggle": "Toggle hide official automation entry";
+    readonly "taskTreeSessions.entry.title": "Show automation sessions in task tree";
+    readonly "taskTreeSessions.entry.desc": "Show scheduled task run history in the official workspace task tree. When disabled, sessions are kept only under 'Schedule → Records' for review and will not clutter the task tree.";
+    readonly "taskTreeSessions.entry.toggle": "Toggle show automation sessions in task tree";
     readonly "error.update.disabled": "locked by host configuration";
     readonly "header.lead": "Plan automatic tasks, or trigger them by hand. Describe the recurring work in any chat to create it quickly.";
     readonly "header.githubProject": "GitHub";

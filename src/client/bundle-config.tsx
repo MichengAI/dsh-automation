@@ -9,6 +9,7 @@ export const SIDEBAR_PANEL_ORDER = 4
 export const HIDE_OFFICIAL_SCHEDULE_STYLE_TAG = 'dsh-automation-hide-official-schedule'
 export const STORAGE_KEY_HIDE_OFFICIAL = 'dsh-automation.hide-official-schedule'
 export const STORAGE_KEY_SIDEBAR_ENTRY = 'dsh-automation.sidebar-entry'
+export const STORAGE_KEY_TASK_TREE_SESSIONS = 'dsh-automation.task-tree-sessions'
 
 const HIDE_OFFICIAL_SCHEDULE_CSS = `
 nav button[aria-label="自动化任务"],
@@ -34,6 +35,15 @@ export function readCachedHideOfficial(): boolean {
     if (cached === 'false') return false
   } catch {}
   return readCachedSidebarEntry()
+}
+
+export function readCachedTaskTreeSessions(): boolean {
+  if (typeof localStorage === 'undefined') return false
+  try {
+    const cached = localStorage.getItem(STORAGE_KEY_TASK_TREE_SESSIONS)
+    if (cached === 'true') return true
+  } catch {}
+  return false
 }
 
 export function applyHideOfficialScheduleStyle(hidden: boolean): void {
@@ -75,6 +85,9 @@ export interface BundleConfigCardProps {
   readonly hideOfficialScheduleEnabled?: boolean
   readonly hideOfficialScheduleDisabled?: boolean
   readonly onToggleHideOfficialSchedule?: (next: boolean) => void
+  readonly taskTreeSessionsEnabled?: boolean
+  readonly taskTreeSessionsDisabled?: boolean
+  readonly onToggleTaskTreeSessions?: (next: boolean) => void
 }
 
 export function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactElement {
@@ -90,6 +103,9 @@ export function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactE
     hideOfficialScheduleEnabled = true,
     hideOfficialScheduleDisabled = false,
     onToggleHideOfficialSchedule,
+    taskTreeSessionsEnabled = false,
+    taskTreeSessionsDisabled = false,
+    onToggleTaskTreeSessions,
   } = props
 
   const rows = [
@@ -144,6 +160,23 @@ export function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactE
     )
   }
 
+  if (typeof onToggleTaskTreeSessions === 'function') {
+    rows.push(
+      createElement('div', { key: 'task-tree-sessions', className: 'dsh-st-bundle-row' },
+        createElement('div', { className: 'dsh-st-bundle-label-box' },
+          createElement('span', { className: 'dsh-st-bundle-title' }, t('taskTreeSessions.entry.title')),
+          createElement('span', { className: 'dsh-st-bundle-desc' }, t('taskTreeSessions.entry.desc')),
+        ),
+        createElement(Switch, {
+          checked: taskTreeSessionsEnabled,
+          onChange: onToggleTaskTreeSessions,
+          label: t('taskTreeSessions.entry.toggle'),
+          disabled: taskTreeSessionsDisabled,
+        }),
+      ),
+    )
+  }
+
   return createElement(Fragment, null, rows)
 }
 
@@ -156,6 +189,8 @@ export interface BundleConfigWrapperProps {
   readonly setOnlineUpdate?: (next: boolean) => Promise<boolean>
   readonly getHideOfficialScheduleEnabled?: () => boolean
   readonly setHideOfficialSchedule?: (next: boolean) => Promise<boolean>
+  readonly getTaskTreeSessionsEnabled?: () => boolean
+  readonly setTaskTreeSessions?: (next: boolean) => Promise<boolean>
   readonly subscribe: (listener: () => void) => () => void
 }
 
@@ -164,9 +199,11 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
   const [onlineUpdateEnabled, setOnlineUpdateEnabled] = useState(props.getOnlineUpdateEnabled ? props.getOnlineUpdateEnabled : () => true)
   const [onlineUpdateLocked, setOnlineUpdateLocked] = useState(props.getOnlineUpdateLocked ? props.getOnlineUpdateLocked : () => false)
   const [hideOfficialScheduleEnabled, setHideOfficialScheduleEnabled] = useState(props.getHideOfficialScheduleEnabled ? props.getHideOfficialScheduleEnabled : () => true)
+  const [taskTreeSessionsEnabled, setTaskTreeSessionsEnabled] = useState(props.getTaskTreeSessionsEnabled ? props.getTaskTreeSessionsEnabled : () => false)
   const [savingSidebar, setSavingSidebar] = useState(false)
   const [savingUpdate, setSavingUpdate] = useState(false)
   const [savingOfficialSchedule, setSavingOfficialSchedule] = useState(false)
+  const [savingTaskTreeSessions, setSavingTaskTreeSessions] = useState(false)
 
   useEffect(() => {
     setEnabled(props.getEnabled())
@@ -179,6 +216,9 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
     if (props.getHideOfficialScheduleEnabled) {
       setHideOfficialScheduleEnabled(props.getHideOfficialScheduleEnabled())
     }
+    if (props.getTaskTreeSessionsEnabled) {
+      setTaskTreeSessionsEnabled(props.getTaskTreeSessionsEnabled())
+    }
     const unsub = props.subscribe(() => {
       setEnabled(props.getEnabled())
       if (props.getOnlineUpdateEnabled) {
@@ -189,6 +229,9 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
       }
       if (props.getHideOfficialScheduleEnabled) {
         setHideOfficialScheduleEnabled(props.getHideOfficialScheduleEnabled())
+      }
+      if (props.getTaskTreeSessionsEnabled) {
+        setTaskTreeSessionsEnabled(props.getTaskTreeSessionsEnabled())
       }
     })
     return () => { unsub() }
@@ -231,6 +274,19 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
     })
   } : undefined
 
+  const setTaskTreeSessionsFn = props.setTaskTreeSessions
+  const onToggleTaskTreeSessions = setTaskTreeSessionsFn ? (next: boolean): void => {
+    setSavingTaskTreeSessions(true)
+    setTaskTreeSessionsEnabled(next)
+    setTaskTreeSessionsFn(next).catch(() => {
+      if (props.getTaskTreeSessionsEnabled) {
+        setTaskTreeSessionsEnabled(props.getTaskTreeSessionsEnabled())
+      }
+    }).finally(() => {
+      setSavingTaskTreeSessions(false)
+    })
+  } : undefined
+
   return createElement(AutomationBundleConfigCard, {
     t: props.t,
     enabled,
@@ -243,6 +299,9 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
     hideOfficialScheduleEnabled,
     hideOfficialScheduleDisabled: savingOfficialSchedule,
     ...(onToggleHideOfficialSchedule !== undefined ? { onToggleHideOfficialSchedule } : {}),
+    taskTreeSessionsEnabled,
+    taskTreeSessionsDisabled: savingTaskTreeSessions,
+    ...(onToggleTaskTreeSessions !== undefined ? { onToggleTaskTreeSessions } : {}),
   })
 }
 
@@ -252,6 +311,7 @@ export interface SetupSidebarEntryOptions {
   readonly ns: string
   readonly injectProps?: Record<string, unknown> | (() => Record<string, unknown>)
   readonly onOnlineUpdateChange?: (enabled: boolean) => void
+  readonly onTaskTreeSessionsChange?: (enabled: boolean) => void
 }
 
 export interface SidebarController {
@@ -263,6 +323,8 @@ export interface SidebarController {
   setOnlineUpdate(next: boolean): Promise<boolean>
   isHideOfficialScheduleEnabled(): boolean
   setHideOfficialSchedule(next: boolean): Promise<boolean>
+  isTaskTreeSessionsEnabled(): boolean
+  setTaskTreeSessions(next: boolean): Promise<boolean>
   destroy(): void
 }
 
@@ -277,6 +339,8 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
       setOnlineUpdate: async () => false,
       isHideOfficialScheduleEnabled: () => true,
       setHideOfficialSchedule: async () => false,
+      isTaskTreeSessionsEnabled: () => false,
+      setTaskTreeSessions: async () => false,
       destroy: () => {},
     }
   }
@@ -475,6 +539,54 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     })
     .catch(() => {})
 
+  let taskTreeSessionsEnabled = readCachedTaskTreeSessions()
+  let taskTreeEpoch = 0
+
+  const setTaskTreeSessions = async (next: boolean): Promise<boolean> => {
+    const currentEpoch = ++taskTreeEpoch
+    taskTreeSessionsEnabled = next
+    try { localStorage.setItem(STORAGE_KEY_TASK_TREE_SESSIONS, String(next)) } catch {}
+    notify()
+    if (typeof options.onTaskTreeSessionsChange === 'function') {
+      try { options.onTaskTreeSessionsChange(next) } catch {}
+    }
+    try {
+      await callApi('/task-tree-sessions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ enabled: next }),
+      })
+      if (typeof options.onTaskTreeSessionsChange === 'function') {
+        try { options.onTaskTreeSessionsChange(next) } catch {}
+      }
+      return next
+    } catch (err) {
+      if (currentEpoch === taskTreeEpoch) {
+        taskTreeSessionsEnabled = !next
+        try { localStorage.setItem(STORAGE_KEY_TASK_TREE_SESSIONS, String(!next)) } catch {}
+        notify()
+        if (typeof options.onTaskTreeSessionsChange === 'function') {
+          try { options.onTaskTreeSessionsChange(!next) } catch {}
+        }
+      }
+      throw err
+    }
+  }
+
+  const loadTaskTreeEpoch = taskTreeEpoch
+  callApi('/task-tree-sessions')
+    .then((res: any) => {
+      if (taskTreeEpoch === loadTaskTreeEpoch && res && typeof res.enabled === 'boolean') {
+        taskTreeSessionsEnabled = res.enabled
+        try { localStorage.setItem(STORAGE_KEY_TASK_TREE_SESSIONS, String(res.enabled)) } catch {}
+        notify()
+        if (typeof options.onTaskTreeSessionsChange === 'function') {
+          try { options.onTaskTreeSessionsChange(res.enabled) } catch {}
+        }
+      }
+    })
+    .catch(() => {})
+
   if (typeof (ctx as any).inject === 'function') {
     (ctx as any).inject(['layout'], (scoped: any) => {
       layoutService = scoped.layout
@@ -503,6 +615,8 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
         setOnlineUpdate: setOnlineUpdate,
         getHideOfficialScheduleEnabled: () => hideOfficialScheduleEnabled,
         setHideOfficialSchedule: setHideOfficialSchedule,
+        getTaskTreeSessionsEnabled: () => taskTreeSessionsEnabled,
+        setTaskTreeSessions: setTaskTreeSessions,
         subscribe: (fn) => {
           listeners.add(fn)
           return () => { listeners.delete(fn) }
@@ -520,6 +634,8 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     setOnlineUpdate,
     isHideOfficialScheduleEnabled: () => hideOfficialScheduleEnabled,
     setHideOfficialSchedule,
+    isTaskTreeSessionsEnabled: () => taskTreeSessionsEnabled,
+    setTaskTreeSessions,
     destroy: () => {
       listeners.clear()
       applyHideOfficialScheduleStyle(false)

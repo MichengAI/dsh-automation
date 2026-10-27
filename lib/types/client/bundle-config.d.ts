@@ -6,8 +6,10 @@ export declare const SIDEBAR_PANEL_ORDER = 4;
 export declare const HIDE_OFFICIAL_SCHEDULE_STYLE_TAG = "dsh-automation-hide-official-schedule";
 export declare const STORAGE_KEY_HIDE_OFFICIAL = "dsh-automation.hide-official-schedule";
 export declare const STORAGE_KEY_SIDEBAR_ENTRY = "dsh-automation.sidebar-entry";
+export declare const STORAGE_KEY_TASK_TREE_SESSIONS = "dsh-automation.task-tree-sessions";
 export declare function readCachedSidebarEntry(): boolean;
 export declare function readCachedHideOfficial(): boolean;
+export declare function readCachedTaskTreeSessions(): boolean;
 export declare function applyHideOfficialScheduleStyle(hidden: boolean): void;
 export declare function AutomationSidebarIcon(props: {
     readonly size?: number;
@@ -24,6 +26,9 @@ export interface BundleConfigCardProps {
     readonly hideOfficialScheduleEnabled?: boolean;
     readonly hideOfficialScheduleDisabled?: boolean;
     readonly onToggleHideOfficialSchedule?: (next: boolean) => void;
+    readonly taskTreeSessionsEnabled?: boolean;
+    readonly taskTreeSessionsDisabled?: boolean;
+    readonly onToggleTaskTreeSessions?: (next: boolean) => void;
 }
 export declare function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactElement;
 export interface BundleConfigWrapperProps {
@@ -35,6 +40,8 @@ export interface BundleConfigWrapperProps {
     readonly setOnlineUpdate?: (next: boolean) => Promise<boolean>;
     readonly getHideOfficialScheduleEnabled?: () => boolean;
     readonly setHideOfficialSchedule?: (next: boolean) => Promise<boolean>;
+    readonly getTaskTreeSessionsEnabled?: () => boolean;
+    readonly setTaskTreeSessions?: (next: boolean) => Promise<boolean>;
     readonly subscribe: (listener: () => void) => () => void;
 }
 export declare function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProps): ReactElement;
@@ -44,6 +51,7 @@ export interface SetupSidebarEntryOptions {
     readonly ns: string;
     readonly injectProps?: Record<string, unknown> | (() => Record<string, unknown>);
     readonly onOnlineUpdateChange?: (enabled: boolean) => void;
+    readonly onTaskTreeSessionsChange?: (enabled: boolean) => void;
 }
 export interface SidebarController {
     isEnabled(): boolean;
@@ -54,6 +62,8 @@ export interface SidebarController {
     setOnlineUpdate(next: boolean): Promise<boolean>;
     isHideOfficialScheduleEnabled(): boolean;
     setHideOfficialSchedule(next: boolean): Promise<boolean>;
+    isTaskTreeSessionsEnabled(): boolean;
+    setTaskTreeSessions(next: boolean): Promise<boolean>;
     destroy(): void;
 }
 export declare function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntryOptions): SidebarController;

@@ -134,3 +134,34 @@ test('不完整或不兼容的注册表不参与协作', () => {
     assert.equal(findNativeTabRegistry({ __dshNativeTabs: invalid }), undefined)
   }
 })
+
+test('task-tree-sessions 开关状态与 applySessionFilters 协同：与 IM 并存过滤与独立恢复', () => {
+  const registry = createNativeTabRegistry(null)
+  const state = {
+    ids: ['chat-normal', 'im:wecom:1', 'dsh-automation-session-run-1'],
+    byId: {
+      'chat-normal': { id: 'chat-normal' },
+      'im:wecom:1': { id: 'im:wecom:1' },
+      'dsh-automation-session-run-1': { id: 'dsh-automation-session-run-1' },
+    },
+  }
+
+  // 1. 默认状态：没有过滤定时会话，所有会话可见
+  assert.deepEqual(applySessionFilters(state, registry).ids, ['chat-normal', 'im:wecom:1', 'dsh-automation-session-run-1'])
+
+  // 2. 模拟 IM 插件注册自己的频道过滤器
+  const disposeIm = registry.addSessionFilter(id => !id.startsWith('im:'))
+  assert.deepEqual(applySessionFilters(state, registry).ids, ['chat-normal', 'dsh-automation-session-run-1'])
+
+  // 3. 用户在自动化设置中关闭「在任务树显示定时会话」：注册定时会话过滤器
+  const disposeAutomation = registry.addSessionFilter(id => !id.startsWith('dsh-automation-session-'))
+  assert.deepEqual(applySessionFilters(state, registry).ids, ['chat-normal'], '同时过滤 IM 会话与定时会话')
+
+  // 4. 用户重新开启「在任务树显示定时会话」：注销定时过滤器，IM 过滤仍保留
+  disposeAutomation()
+  assert.deepEqual(applySessionFilters(state, registry).ids, ['chat-normal', 'dsh-automation-session-run-1'])
+
+  // 5. IM 卸载或关闭：全部恢复
+  disposeIm()
+  assert.deepEqual(applySessionFilters(state, registry).ids, ['chat-normal', 'im:wecom:1', 'dsh-automation-session-run-1'])
+})

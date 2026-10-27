@@ -110,7 +110,7 @@ Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.5` instea
 The plugin follows standard DSH bundle configuration conventions. Options are located at:
 > **Sidebar → Plugins → Click `@michengai/dsh-automation` details** (the host's `plugins.bundle.config` slot).
 
-Three native switches are available:
+Four native switches are available:
 
 ### 1. Sidebar Entry (`sidebarEntry`)
 - **Default**: Enabled (`true`) / Seamless takeover on new installs
@@ -143,7 +143,15 @@ Three native switches are available:
   - **Zero Residual Changes**: Toggling off or uninstalling the plugin restores the built-in entry automatically;
   - **Upgrade Safety**: If an upgrading user had previously disabled `sidebarEntry`, the official entry remains visible by default, avoiding an empty activity bar.
 
-### 4. Storage & Host Configuration (`cordis.patch.yml`)
+### 4. Show Automation Sessions in Task Tree (`taskTreeSessions`)
+- **Default**: Disabled (`false`, hides automation sessions in task tree by default to keep workspace clean)
+- **Description**: Controls whether to show scheduled task run sessions in the official workspace task tree.
+- **Effect**:
+  - **Noise Reduction & Isolation**: When disabled, automation sessions (`dsh-automation-session-*`) are automatically filtered out from the primary workspace tree, preventing frequent runs from crowding routine workspaces;
+  - **Lossless Review**: The filter only targets the main task tree. All past runs remain listed under "Schedule → Records" and can be opened for review at any time;
+  - **Lightweight Inter-Plugin Protocol**: Powered by the standard `NativeTabRegistry.sessionFilters` contract without invasive host interception, applying changes instantly and coexisting smoothly with third-party plugins like IM Connect and Archive Manager.
+
+### 5. Storage & Host Configuration (`cordis.patch.yml`)
 The following configuration parameters can be declared under your profile's `cordis.patch.yml`:
 ```yaml
 - id: dsh-automation

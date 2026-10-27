@@ -4,6 +4,7 @@ export interface PersistedSettings {
     sidebarEntry?: boolean | undefined;
     onlineUpdate?: boolean | undefined;
     hideOfficialSchedule?: boolean | undefined;
+    taskTreeSessions?: boolean | undefined;
 }
 export declare class SettingsManager {
     private readonly file;
@@ -20,6 +21,8 @@ export declare class SettingsManager {
     setSidebarEntry(enabled: boolean): Promise<boolean>;
     getHideOfficialSchedule(): boolean;
     setHideOfficialSchedule(enabled: boolean): Promise<boolean>;
+    getTaskTreeSessions(): boolean;
+    setTaskTreeSessions(enabled: boolean): Promise<boolean>;
     isHostUpdateDisabled(): boolean;
     isUpdateEnabled(): boolean;
     setOnlineUpdate(enabled: boolean): Promise<boolean>;

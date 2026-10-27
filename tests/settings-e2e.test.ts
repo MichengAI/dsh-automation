@@ -169,6 +169,29 @@ test('SettingsManager HTTP API 真实服务端端到端 (13项用例覆盖)', as
       body: hugeBody,
     })
     assert.strictEqual(res11.status, 413)
+
+    // 11.1 GET /task-tree-sessions -> 200, 默认关闭 (enabled: false)
+    const resTaskTree1 = await fetch(`${base}/api/michengai/dsh-automation/task-tree-sessions`)
+    assert.strictEqual(resTaskTree1.status, 200)
+    const dTaskTree1 = await resTaskTree1.json() as any
+    assert.strictEqual(dTaskTree1.ok, true)
+    assert.strictEqual(dTaskTree1.enabled, false)
+
+    // 11.2 POST /task-tree-sessions 修改为 true -> 200
+    const resTaskTree2 = await fetch(`${base}/api/michengai/dsh-automation/task-tree-sessions`, {
+      method: 'POST',
+      headers: { 'x-michengai-client': '1', 'content-type': 'application/json' },
+      body: JSON.stringify({ enabled: true }),
+    })
+    assert.strictEqual(resTaskTree2.status, 200)
+    const dTaskTree2 = await resTaskTree2.json() as any
+    assert.strictEqual(dTaskTree2.ok, true)
+    assert.strictEqual(dTaskTree2.enabled, true)
+
+    // 11.3 重新读取确认持久化
+    const resTaskTree3 = await fetch(`${base}/api/michengai/dsh-automation/task-tree-sessions`)
+    const dTaskTree3 = await resTaskTree3.json() as any
+    assert.strictEqual(dTaskTree3.enabled, true)
   } finally {
     server.close()
   }

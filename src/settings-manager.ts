@@ -11,6 +11,7 @@ export interface PersistedSettings {
   sidebarEntry?: boolean | undefined
   onlineUpdate?: boolean | undefined
   hideOfficialSchedule?: boolean | undefined
+  taskTreeSessions?: boolean | undefined
 }
 
 type UpdateContext = Context & {
@@ -74,6 +75,7 @@ export class SettingsManager {
           sidebarEntry: typeof item.sidebarEntry === 'boolean' ? item.sidebarEntry : undefined,
           onlineUpdate: typeof item.onlineUpdate === 'boolean' ? item.onlineUpdate : undefined,
           hideOfficialSchedule: typeof item.hideOfficialSchedule === 'boolean' ? item.hideOfficialSchedule : undefined,
+          taskTreeSessions: typeof item.taskTreeSessions === 'boolean' ? item.taskTreeSessions : undefined,
         }
       }
     } catch {
@@ -111,6 +113,17 @@ export class SettingsManager {
   async setHideOfficialSchedule(enabled: boolean): Promise<boolean> {
     if (typeof enabled !== 'boolean') throw new Error('enabled 必须是布尔值')
     this.store.hideOfficialSchedule = enabled
+    this.flush()
+    return enabled
+  }
+
+  getTaskTreeSessions(): boolean {
+    return this.store.taskTreeSessions === true
+  }
+
+  async setTaskTreeSessions(enabled: boolean): Promise<boolean> {
+    if (typeof enabled !== 'boolean') throw new Error('enabled 必须是布尔值')
+    this.store.taskTreeSessions = enabled
     this.flush()
     return enabled
   }
@@ -295,9 +308,43 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
     },
   })
 
+  const offTaskTreeSessions = host.webServer.register({
+    kind: 'exact',
+    path: '/api/michengai/dsh-automation/task-tree-sessions',
+    handler: async (request: any, response: any) => {
+      if (!checkAuthAndMutation(request, response)) return
+      const method = request.method
+      if (method === 'GET' || method === 'HEAD') {
+        if (method === 'HEAD') {
+          response.writeHead(200, { 'cache-control': 'no-store' })
+          response.end()
+          return
+        }
+        json(response, 200, {
+          ok: true,
+          enabled: manager.getTaskTreeSessions(),
+        })
+        return
+      }
+      if (method === 'POST') {
+        const bodyRes = await readBody(request)
+        if (!bodyRes.ok || !bodyRes.data || typeof bodyRes.data.enabled !== 'boolean') {
+          json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? 'enabled 必须是布尔值' })
+          return
+        }
+        const enabled = await manager.setTaskTreeSessions(bodyRes.data.enabled)
+        json(response, 200, { ok: true, enabled })
+        return
+      }
+      response.writeHead(405, { allow: 'GET, HEAD, POST' })
+      response.end()
+    },
+  })
+
   return () => {
     try { offSidebar() } catch {}
     try { offUpdate() } catch {}
     try { offOfficial() } catch {}
+    try { offTaskTreeSessions() } catch {}
   }
 }

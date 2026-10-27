@@ -105,6 +105,7 @@ export function apply(ctx: ClientContext): void {
     if (!res.ok) throw new Error(json?.error ?? 'request failed')
     return json
   }
+  let syncActiveTaskTreeFilter = (): void => undefined
   const sidebarController = setupSidebarEntry(ctx, {
     callApi: api,
     renderPanel: (ownerProps) => createElement(AutomationView, {
@@ -124,6 +125,9 @@ export function apply(ctx: ClientContext): void {
     }),
     onOnlineUpdateChange: () => {
       if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(PLUGIN_UPDATE_TOGGLE_EVENT))
+    },
+    onTaskTreeSessionsChange: () => {
+      syncActiveTaskTreeFilter()
     },
   })
   ctx.effect(() => () => sidebarController.destroy(), 'dsh-automation: sidebar entry')
@@ -231,6 +235,9 @@ export function apply(ctx: ClientContext): void {
     let insertedRegistry: NativeTabRegistry | undefined
     let removeInsertedTab = (): void => undefined
     let removeInsertedOpener = (): void => undefined
+    let removeInsertedFilter = (): void => undefined
+    let activeFilterRegistry: NativeTabRegistry | undefined
+    let filterInstalled = false
     let syncing = false
     let retryTimer: number | undefined
     // 直接替换 component 不触发宿主插槽通知；与 IM 共用事件，在本次同步完成后重新协调。
@@ -241,12 +248,52 @@ export function apply(ctx: ClientContext): void {
         retryTimer = undefined
       }
     }
+    const clearFilter = (): void => {
+      if (filterInstalled) {
+        removeInsertedFilter()
+        removeInsertedFilter = (): void => undefined
+        filterInstalled = false
+      }
+    }
+    const ensureFilter = (registry?: NativeTabRegistry): void => {
+      if (registry !== activeFilterRegistry) {
+        clearFilter()
+        activeFilterRegistry = registry
+      }
+      if (registry === undefined) {
+        clearFilter()
+        return
+      }
+      const showSessions = typeof sidebarController !== 'undefined' && typeof sidebarController?.isTaskTreeSessionsEnabled === 'function'
+        ? sidebarController.isTaskTreeSessionsEnabled()
+        : false
+      if (showSessions) {
+        clearFilter()
+        return
+      }
+      if (!filterInstalled && typeof registry.addSessionFilter === 'function') {
+        const dispose = registry.addSessionFilter((sessionId) => {
+          if (sessionId.startsWith(AUTOMATION_SESSION_PREFIX)) return false
+          const snapshot = runtime?.source?.getSnapshot?.()?.snapshot
+          return snapshot?.runs?.some(run => run.sessionId === sessionId) !== true
+        })
+        removeInsertedFilter = () => {
+          dispose()
+        }
+        filterInstalled = true
+      }
+    }
+    syncActiveTaskTreeFilter = () => {
+      ensureFilter(insertedRegistry ?? ownedRegistry)
+    }
     const unwrap = (): void => {
       stopRetry()
       removeInsertedTab()
       removeInsertedTab = (): void => undefined
       removeInsertedOpener()
       removeInsertedOpener = (): void => undefined
+      clearFilter()
+      activeFilterRegistry = undefined
       insertedRegistry = undefined
       if (wrappedEntry !== undefined) {
         if (originalComp !== undefined && wrappedEntry.component === ownedWrapper) wrappedEntry.component = originalComp
@@ -288,6 +335,7 @@ export function apply(ctx: ClientContext): void {
       if (Array.isArray(registry.sessionOpeners) && !registry.sessionOpeners.some(item => item.id === 'automation')) {
         removeInsertedOpener = installScheduledOpener(registry)
       }
+      ensureFilter(registry)
       if (registry.getTabs().some(item => item.id === 'schedule')) return true
       removeInsertedTab = registry.insert({
         id: 'schedule',
@@ -401,6 +449,7 @@ export function apply(ctx: ClientContext): void {
         marked.__dshAutomationOriginal = originalComp
         const tree = originalComp
         attachNativeTabRegistry(marked, registry)
+        ensureFilter(registry)
         occupant.component = marked
         ownedWrapper = marked
         wrappedEntry = occupant
@@ -417,7 +466,13 @@ export function apply(ctx: ClientContext): void {
     const unsubSidebar = ctx.slots.subscribe?.('sidebar', sync) ?? (() => undefined)
     window.addEventListener('dsh-native-sidebar-change', sync)
     ensureScheduleTab()
-    return () => { unsub(); unsubSidebar(); window.removeEventListener('dsh-native-sidebar-change', sync); unwrap() }
+    return () => {
+      syncActiveTaskTreeFilter = (): void => undefined
+      unsub()
+      unsubSidebar()
+      window.removeEventListener('dsh-native-sidebar-change', sync)
+      unwrap()
+    }
   })
   ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
     name: 'conversation.input.left',

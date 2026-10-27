@@ -267,5 +267,34 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
   assert.equal(readCachedHideOfficial(), false, '无 hideOfficial 缓存且 sidebarEntry 为 false 时安全回退为 false')
   memStore.set(STORAGE_KEY_HIDE_OFFICIAL, 'true')
   assert.equal(readCachedHideOfficial(), true, '显式设置 hideOfficial=true 时优先遵循显式值')
+
+  // 9. 验证 taskTreeSessions 开关与缓存读取
+  let taskTreeCallbackValue: boolean | undefined = undefined
+  let backendTaskTreeState = false
+  const taskTreeController = setupSidebarEntry(mockCtx, {
+    callApi: async (path: string, options?: RequestInit) => {
+      if (path === '/task-tree-sessions') {
+        if (options?.method === 'POST') {
+          const body = JSON.parse(options.body as string)
+          backendTaskTreeState = body.enabled
+          return { ok: true, enabled: backendTaskTreeState }
+        }
+        return { ok: true, enabled: backendTaskTreeState }
+      }
+      return {}
+    },
+    renderPanel: () => createElement('div'),
+    ns: 'dsh-automation',
+    onTaskTreeSessionsChange: (enabled: boolean) => {
+      taskTreeCallbackValue = enabled
+    },
+  })
+
+  assert.equal(taskTreeController.isTaskTreeSessionsEnabled(), false, '默认在任务树隐藏定时会话')
+  await taskTreeController.setTaskTreeSessions(true)
+  assert.equal(taskTreeController.isTaskTreeSessionsEnabled(), true, '成功开启在任务树显示')
+  assert.equal(backendTaskTreeState, true, '后端状态同步更新为 true')
+  assert.equal(taskTreeCallbackValue, true, 'onTaskTreeSessionsChange 回调收到通知')
+
   ;(globalThis as any).localStorage = origLocal
 })
