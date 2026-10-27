@@ -200,6 +200,7 @@ When specifying or updating a model, send both `provider` and `model` as non-emp
 | Concurrency | Different automations have no plugin-level global concurrency cap, including those in the same directory. The legacy plugin-level global concurrency setting (`maxConcurrentRuns` in plugin config) no longer takes effect; it is separate from the per-task field below. |
 | Minimum interval | Since `0.1.40`, interval schedules accept whole minutes starting at `1`. Missed triggers are not replayed individually; only the latest due occurrence is considered within the recovery window. |
 | Per-task concurrency | Available since `0.1.40`. Set Concurrency in the create/edit dialog (positive integer, default `1`). Queued and running executions share this limit. When full, scheduled triggers become `skipped(overlap)` and manual runs return a limit error. Lowering the limit does not cancel existing runs. Agent create/update tools accept `max_concurrent_runs`; Web RPC accepts `maxConcurrentRuns`. Existing tasks default to `1`. |
+| Workspace scoping | Bound to the origin session workspace by default. Agent tools can specify or migrate tasks via `workspace` (name, ID, path, or directory basename); cross-workspace mutations (`update` / `run_now` / `delete`) require explicit `cross_workspace: true` to prevent unauthorized cross-project escape; `automation_list` supports `all_workspaces: true`. |
 
 A schedule stores future intent. It is not a cached permission grant.
 
@@ -240,7 +241,7 @@ pnpm check
 dsh plugin --profile web add .
 ```
 
-Keep the at-most-once dispatch policy, workspace scoping for Agent tools, and fail-closed unattended approval when changing execution code.
+Keep the at-most-once dispatch policy, default workspace scoping for Agent tools with explicit cross-workspace guards (cross_workspace / all_workspaces), and fail-closed unattended approval when changing execution code.
 
 ## Verification
 

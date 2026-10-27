@@ -50,13 +50,17 @@ interface UpdateArgs extends ScheduleArgs, ModelArgs {
   readonly max_concurrent_runs?: number
   readonly permission?: PermissionPreset
   readonly workspace?: string
+  readonly cross_workspace?: boolean
 }
 
 interface ListArgs {
   readonly all_workspaces?: boolean
 }
 
-interface IdArgs { readonly id: string }
+interface IdArgs {
+  readonly id: string
+  readonly cross_workspace?: boolean
+}
 
 const SCHEDULE_FIELDS = [
   'time_zone', 'at', 'every_minutes', 'minute', 'time', 'weekdays', 'month_day', 'every_days',
@@ -233,13 +237,14 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_update',
-      description: '更新一条自动化的名称、任务说明、计划、工作区、模型、推理等级、权限或暂停/恢复状态。支持通过 workspace 参数迁移工作区（支持工作区名称/ID/路径）。仅暂停或修改模型不需要其他字段。返回保存后的完整定义；provider 和 model 均为 null 表示跟随运行时全局选择。',
+      description: '更新一条自动化的名称、任务说明、计划、工作区、模型、推理等级、权限或暂停/恢复状态。支持通过 workspace 参数迁移工作区（支持工作区名称/ID/路径）。若操作其他工作区的自动化，需显式声明 cross_workspace: true。仅暂停或修改模型不需要其他字段。返回保存后的完整定义；provider 和 model 均为 null 表示跟随运行时全局选择。',
       parameters: {
         id: { type: 'string', required: true },
         name: { type: 'string' },
         prompt: { type: 'string' },
         status: { type: 'string', enum: ['active', 'paused'] },
         workspace: { type: 'string', description: '目标工作区的名称（如 yyrenting）、ID 或目录路径。用于将任务迁移或关联到其他工作区。' },
+        cross_workspace: { type: 'boolean', description: '若目标自动化属于其他工作区，必须显式设为 true 以确认跨工作区操作。' },
         kind: { type: 'string', enum: ['once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom'] },
         time_zone: { type: 'string' },
         at: { type: 'string' },
@@ -267,7 +272,8 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
           if (args.permission !== undefined) input.permissionPreset = args.permission
           if (args.kind !== undefined) input.schedule = scheduleFromArgs(args, new Date().toISOString())
           if (Object.keys(input).length === 0) throw new Error('automation_update 至少需要一个变更字段')
-          const value = await service.update(scope, args.id, input, exec.signal)
+          const opScope = args.cross_workspace ? { ...scope, crossWorkspace: true } : scope
+          const value = await service.update(opScope, args.id, input, exec.signal)
           return json({ ok: true, automation: value })
         } catch (error: unknown) {
           if (exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
@@ -297,13 +303,17 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_run_now',
-      description: '立即排队执行一次已有自动化（支持当前或任意工作区的自动化）。仍会使用全新 Session 和该规则保存的工作区与权限边界。',
-      parameters: { id: { type: 'string', required: true } },
+      description: '立即排队执行一次已有自动化（支持当前或任意工作区的自动化）。若操作其他工作区的自动化，需显式声明 cross_workspace: true。仍会使用全新 Session 和该规则保存的工作区与权限边界。',
+      parameters: {
+        id: { type: 'string', required: true },
+        cross_workspace: { type: 'boolean', description: '若目标自动化属于其他工作区，必须显式设为 true 以确认跨工作区操作。' },
+      },
       output: JSON_OUTPUT,
       async execute(args: IdArgs, exec: ToolRunContext) {
         if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
         try {
-          return json({ ok: true, run: await service.runNow(scope, args.id, exec.signal) })
+          const opScope = args.cross_workspace ? { ...scope, crossWorkspace: true } : scope
+          return json({ ok: true, run: await service.runNow(opScope, args.id, exec.signal) })
         } catch (error: unknown) {
           if (exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
           return json({ ok: false, code: 'automation_error', message: error instanceof Error ? error.message : String(error) })
@@ -314,13 +324,17 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_delete',
-      description: '删除指定的自动化定义，但保留运行历史用于审计。',
-      parameters: { id: { type: 'string', required: true } },
+      description: '删除指定的自动化定义，但保留运行历史用于审计。若操作其他工作区的自动化，需显式声明 cross_workspace: true。',
+      parameters: {
+        id: { type: 'string', required: true },
+        cross_workspace: { type: 'boolean', description: '若目标自动化属于其他工作区，必须显式设为 true 以确认跨工作区操作。' },
+      },
       output: JSON_OUTPUT,
       async execute(args: IdArgs, exec: ToolRunContext) {
         if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
         try {
-          return json({ ok: true, value: await service.delete(scope, args.id, exec.signal) })
+          const opScope = args.cross_workspace ? { ...scope, crossWorkspace: true } : scope
+          return json({ ok: true, value: await service.delete(opScope, args.id, exec.signal) })
         } catch (error: unknown) {
           if (exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
           return json({ ok: false, code: 'automation_error', message: error instanceof Error ? error.message : String(error) })

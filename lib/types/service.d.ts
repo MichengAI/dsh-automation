@@ -53,6 +53,7 @@ export interface AutomationScope {
     readonly creatorKind: "agent" | "web";
     readonly hostWide?: boolean;
     readonly allWorkspaces?: boolean;
+    readonly crossWorkspace?: boolean;
 }
 export interface AutomationSnapshot {
     readonly generatedAt: string;

@@ -200,6 +200,7 @@ dsh --profile web --dump-config
 | 并发 | 不同自动化任务不设插件级全局并发上限，同一目录下也可同时运行。旧插件级全局并发配置（插件 config 中的 `maxConcurrentRuns`）不再生效，与下方任务级字段不同。 |
 | 最短间隔 | 自 `0.1.40` 起，间隔计划支持最短 `1` 分钟，仅接受整数分钟。恢复时仅处理补跑窗口内最近的到期点，不逐次补齐漏掉的触发。 |
 | 单任务并发 | 自 `0.1.40` 起支持。在任务的新建/编辑页设置“并发数量”（正整数，默认 `1`）。同一任务的排队及运行记录共用此上限；满额时定时触发记为 `skipped(overlap)`，手动运行返回上限提示。调低上限不取消已有运行。Agent 创建/更新工具使用 `max_concurrent_runs`，Web RPC 使用 `maxConcurrentRuns`；旧任务默认 `1`。 |
+| 工作区边界 | 默认绑定来源会话工作区。支持 Agent 工具通过 `workspace` 参数指定或迁移到其他工作区（支持名称、ID、路径及末级目录名）；跨工作区操作（`update` / `run_now` / `delete`）需显式声明 `cross_workspace: true` 以防止非预期跨区越权；`automation_list` 支持通过 `all_workspaces: true` 跨区检索。 |
 
 计划只表达未来意图，不是缓存下来的授权。
 
@@ -240,7 +241,7 @@ pnpm check
 dsh plugin --profile web add .
 ```
 
-修改执行逻辑时必须保留 at-most-once 派发、Agent 工具的工作区边界，以及无人值守 fail-closed 审批。
+修改执行逻辑时必须保留 at-most-once 派发、Agent 工具的默认工作区作用域与跨区显式确认（cross_workspace / all_workspaces），以及无人值守 fail-closed 审批。
 
 ## 验证
 

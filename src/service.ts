@@ -95,6 +95,7 @@ export interface AutomationScope {
   readonly creatorKind: "agent" | "web";
   readonly hostWide?: boolean;
   readonly allWorkspaces?: boolean;
+  readonly crossWorkspace?: boolean;
 }
 
 export interface AutomationSnapshot {
@@ -547,7 +548,14 @@ export class AutomationService {
         throw new AutomationRequestError(`unknown automation run '${runId}'`);
       throwIfCancelled(signal);
       if (scope.hostWide !== true) {
-        await this.resolveScope(scope);
+        const { workspace } = await this.resolveScope(scope);
+        if (run.targetSnapshot.workspaceId !== workspace.id && scope.crossWorkspace !== true) {
+          const targetWs = (this.ctx.workspaceRegistry as any)?.get?.(WorkspaceId(run.targetSnapshot.workspaceId));
+          const targetName = targetWs?.title ?? targetWs?.path ?? run.targetSnapshot.workspaceId;
+          throw new AutomationRequestError(
+            `该运行记录属于工作区「${targetName}」（ID: ${run.targetSnapshot.workspaceId}）。跨工作区操作请显式确认设置 cross_workspace: true，或切换到目标工作区会话执行。`,
+          );
+        }
       }
       return this.runs.update(runId, (current) =>
         current.unread ? { ...current, unread: false } : current,
@@ -687,14 +695,27 @@ export class AutomationService {
       values?: () => Iterable<any>;
       entries?: () => Iterable<[string, any]>;
     };
+
+    // 1. 尝试直接按 ID 查（精确且唯一）
     const byId = registry.get?.(WorkspaceId(trimmed));
     if (byId && byId.id && byId.path) {
       return { id: String(byId.id), path: String(byId.path), title: byId.title ? String(byId.title) : undefined };
     }
-    const byPath = await registry.resolveByPath?.(trimmed);
-    if (byPath && byPath.id && byPath.path) {
-      return { id: String(byPath.id), path: String(byPath.path), title: byPath.title ? String(byPath.title) : undefined };
+
+    // 2. 仅当选择器具备路径特征时尝试 resolveByPath，且捕获宿主 TypeError (非全限定) 和 ENOENT
+    const isLikelyPath = trimmed.includes('/') || trimmed.includes('\\') || /^[a-zA-Z]:/.test(trimmed);
+    if (isLikelyPath && typeof registry.resolveByPath === 'function') {
+      try {
+        const byPath = await registry.resolveByPath(trimmed);
+        if (byPath && byPath.id && byPath.path) {
+          return { id: String(byPath.id), path: String(byPath.path), title: byPath.title ? String(byPath.title) : undefined };
+        }
+      } catch {
+        // 忽略非全限定路径或目录不存在抛出的异常，继续尝试注册表枚举匹配
+      }
     }
+
+    // 3. 枚举已注册工作区，进行智能候选匹配
     const raw =
       registry.list !== undefined
         ? [...registry.list()]
@@ -703,29 +724,45 @@ export class AutomationService {
           : registry.entries !== undefined
             ? [...registry.entries()].map(([, v]) => v)
             : [];
-    const normalizedTarget = trimmed.toLowerCase().replace(/\\/g, "/").replace(/\/$/, "");
+    const normalizedTarget = trimmed.toLowerCase().replace(/\\/g, '/').replace(/\/$/, '');
     const candidates = raw
       .map((item) => ({
-        id: String(item.id ?? item.workspaceId ?? ""),
-        title: String(item.title ?? item.name ?? ""),
-        path: String(item.path ?? item.cwd ?? ""),
+        id: String(item.id ?? item.workspaceId ?? ''),
+        title: String(item.title ?? item.name ?? ''),
+        path: String(item.path ?? item.cwd ?? ''),
       }))
-      .filter((item) => item.id !== "" && item.path !== "");
+      .filter((item) => item.id !== '' && item.path !== '');
 
-    for (const item of candidates) {
-      if (item.id.toLowerCase() === normalizedTarget) return item;
-      if (item.title.toLowerCase() === normalizedTarget) return item;
-      const itemNormPath = item.path.toLowerCase().replace(/\\/g, "/").replace(/\/$/, "");
-      if (itemNormPath === normalizedTarget) return item;
-    }
+    // 3.1 精确匹配 ID
+    const matchedById = candidates.filter((item) => item.id.toLowerCase() === normalizedTarget);
+    if (matchedById.length === 1) return matchedById[0];
 
-    for (const item of candidates) {
-      const itemNormPath = item.path.replace(/\\/g, "/").replace(/\/$/, "");
-      const basename = itemNormPath.split("/").pop()?.toLowerCase();
-      if (basename && basename === normalizedTarget) {
-        return item;
-      }
+    // 3.2 精确匹配完整路径
+    const matchedByPath = candidates.filter(
+      (item) => item.path.toLowerCase().replace(/\\/g, '/').replace(/\/$/, '') === normalizedTarget,
+    );
+    if (matchedByPath.length === 1) return matchedByPath[0];
+
+    // 3.3 匹配工作区名称/标题（带歧义保护）
+    const matchedByTitle = candidates.filter((item) => item.title.toLowerCase() === normalizedTarget);
+    if (matchedByTitle.length > 1) {
+      throw new AutomationRequestError(
+        `存在多个名为「${selector}」的工作区，请使用工作区 ID 或绝对路径指定。`,
+      );
     }
+    if (matchedByTitle.length === 1) return matchedByTitle[0];
+
+    // 3.4 匹配末级目录名（带歧义保护）
+    const matchedByBasename = candidates.filter((item) => {
+      const norm = item.path.replace(/\\/g, '/').replace(/\/$/, '');
+      return norm.split('/').pop()?.toLowerCase() === normalizedTarget;
+    });
+    if (matchedByBasename.length > 1) {
+      throw new AutomationRequestError(
+        `存在多个目录名匹配「${selector}」的工作区，请使用工作区 ID 或绝对路径指定。`,
+      );
+    }
+    if (matchedByBasename.length === 1) return matchedByBasename[0];
 
     return undefined;
   }
@@ -923,7 +960,14 @@ export class AutomationService {
     if (definition === undefined)
       throw new AutomationRequestError(`unknown automation '${id}'`);
     if (scope.hostWide !== true) {
-      await this.resolveScope(scope);
+      const { workspace } = await this.resolveScope(scope);
+      if (definition.workspaceId !== workspace.id && scope.crossWorkspace !== true) {
+        const targetWs = (this.ctx.workspaceRegistry as any)?.get?.(WorkspaceId(definition.workspaceId));
+        const targetName = targetWs?.title ?? targetWs?.path ?? definition.workspaceId;
+        throw new AutomationRequestError(
+          `该自动化属于工作区「${targetName}」（ID: ${definition.workspaceId}）。跨工作区操作请显式确认设置 cross_workspace: true，或切换到目标工作区会话执行。`,
+        );
+      }
     }
     return definition;
   }

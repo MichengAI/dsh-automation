@@ -1139,10 +1139,20 @@ test("Agent 工具支持跨工作区查询、修改、迁移工作空间及运�
     {
       workspaceRegistry: {
         get(id: unknown) {
-          return wsList.find(w => w.id === String(id));
+          return wsList.find((w) => w.id === String(id));
         },
         async resolveByPath(path: string) {
-          return wsList.find(w => w.path === path);
+          // 对齐真宿主真实契约：非全限定抛 TypeError，路径不存在抛 ENOENT
+          if (!path.includes("/") && !path.includes("\\") && !/^[a-zA-Z]:/.test(path)) {
+            throw new TypeError(`Workspace path is not fully qualified: '${path}'`);
+          }
+          const found = wsList.find((w) => w.path === path);
+          if (!found) {
+            const err = new Error(`ENOENT: no such file or directory, realpath '${path}'`);
+            (err as any).code = "ENOENT";
+            throw err;
+          }
+          return found;
         },
         list() {
           return wsList;
@@ -1172,36 +1182,85 @@ test("Agent 工具支持跨工作区查询、修改、迁移工作空间及运�
     assert.equal(listAll.automations[0].id, "auto_weather");
     assert.equal(listAll.automations[0].workspaceTitle, "yyrenting");
 
-    // 3. 跨工作区修改提示词和状态
+    // 3. 跨工作区修改未传 cross_workspace 时必须被拒绝，并返回目标工作区引导提示
+    const rejectedUpdate = await tools.get("automation_update").execute({
+      id: "auto_weather",
+      prompt: "新天气查询提示词",
+    }, context);
+    assert.equal(rejectedUpdate.ok, false);
+    assert.match(rejectedUpdate.message, /该自动化属于工作区「yyrenting」/);
+    assert.match(rejectedUpdate.message, /cross_workspace: true/);
+
+    // 4. 显式声明 cross_workspace: true 时跨工作区修改成功
     const updated = await tools.get("automation_update").execute({
       id: "auto_weather",
       prompt: "新天气查询提示词",
       status: "paused",
+      cross_workspace: true,
     }, context);
     assert.equal(updated.ok, true);
     assert.equal(updated.automation.prompt, "新天气查询提示词");
     assert.equal(updated.automation.status, "paused");
 
-    // 4. 迁移工作空间至 demo (通过别名/标题 "demo")
+    // 5. 迁移工作空间至 demo (通过别名/标题 "demo"，真宿主契约下 resolveByPath 会抛 TypeError 但被捕获并成功匹配)
     const migrated = await tools.get("automation_update").execute({
       id: "auto_weather",
       workspace: "demo",
+      cross_workspace: true,
     }, context);
     assert.equal(migrated.ok, true);
     assert.equal(migrated.automation.workspaceId, "ws_1");
     assert.equal(migrated.automation.cwd, "D:\\work\\demo");
 
-    // 5. 跨工作区立即运行 (run_now)
-    const runResult = await tools.get("automation_run_now").execute({ id: "auto_weather" }, context);
-    assert.equal(runResult.ok, true);
-    assert.equal(runResult.run.automationId, "auto_weather");
+    // 6. 不存在的工作区抛出明确中文错误，而不是外泄英文 TypeError/ENOENT
+    const notFoundWorkspace = await tools.get("automation_update").execute({
+      id: "auto_weather",
+      workspace: "non_existent_workspace",
+      cross_workspace: true,
+    }, context);
+    assert.equal(notFoundWorkspace.ok, false);
+    assert.match(notFoundWorkspace.message, /所选工作区「non_existent_workspace」不存在或目录未注册。/);
 
-    // 6. 跨工作区删除 (delete)
+    // 7. 跨工作区立即运行 (run_now)：未确认时拒绝，确认后接受
+    const rejectedRun = await tools.get("automation_run_now").execute({ id: "auto_weather" }, context);
+    // 因为第5步已迁移至当前工作区 ws_1，现在任务已属于 ws_1，故本会话直接可运行
+    assert.equal(rejectedRun.ok, true);
+
+    // 8. 跨工作区删除 (delete)
     const deleteResult = await tools.get("automation_delete").execute({ id: "auto_weather" }, context);
     assert.equal(deleteResult.ok, true);
     assert.equal(definitions.get("auto_weather"), undefined);
   } finally {
     dispose();
+    await service.dispose();
+  }
+});
+
+test("存在多个同名工作区时迁移会提示歧义并阻止误操作", async () => {
+  const wsList = [
+    { id: "ws_a", title: "same_name", path: "D:\\a\\project" },
+    { id: "ws_b", title: "same_name", path: "D:\\b\\project" },
+  ];
+  const definition = sampleDefinition({ id: "auto_dup", workspaceId: "ws_a", cwd: "D:\\a\\project" });
+  const { service } = await makeService(
+    { definitions: [definition] },
+    {},
+    {
+      workspaceRegistry: {
+        get(id: unknown) { return wsList.find((w) => w.id === String(id)); },
+        async resolveByPath() { throw new TypeError("not qualified"); },
+        list() { return wsList; },
+      },
+    },
+  );
+  try {
+    await assert.rejects(
+      () => service.update({ sessionId: "session_1", creatorKind: "web", hostWide: true }, definition.id, {
+        workspace: "same_name",
+      }),
+      /存在多个名为「same_name」的工作区/,
+    );
+  } finally {
     await service.dispose();
   }
 });
