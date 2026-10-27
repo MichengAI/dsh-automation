@@ -29,7 +29,7 @@ export const en = {
   "officialSchedule.entry.desc": "Hide built-in 'Automation tasks' sidebar entry to avoid conflict. Restores automatically when disabled or uninstalled.",
   "officialSchedule.entry.toggle": "Toggle hide official automation entry",
   "taskTreeSessions.entry.title": "Show automation sessions in task tree",
-  "taskTreeSessions.entry.desc": "Show scheduled task run history in the official workspace task tree. When disabled, sessions are kept only under 'Schedule → Records' for review and will not clutter the task tree.",
+  "taskTreeSessions.entry.desc": "Show scheduled task run history in the official workspace task tree. When disabled, sessions are shown only under 'Schedule → Records'.",
   "taskTreeSessions.entry.toggle": "Toggle show automation sessions in task tree",
   "error.update.disabled": "locked by host configuration",
   "header.lead":
@@ -246,7 +246,7 @@ export const zh: Record<AutomationLocaleKey, string> = {
   "officialSchedule.entry.desc": "隐藏宿主自带的「自动化任务」侧栏入口，避免与本插件冲突。卸载本插件或关闭此项后自动恢复。",
   "officialSchedule.entry.toggle": "切换屏蔽官方自动化入口",
   "taskTreeSessions.entry.title": "在任务树显示定时会话",
-  "taskTreeSessions.entry.desc": "在官方工作区任务树中显示定时任务运行历史。关闭后历史会话仅在「定时 → 记录」中保留并可复盘，不再刷满任务树。",
+  "taskTreeSessions.entry.desc": "在官方工作区任务树中显示定时任务运行历史。关闭后历史会话仅在「定时 → 记录」中显示",
   "taskTreeSessions.entry.toggle": "切换在任务树显示定时会话",
   "error.update.disabled": "已被宿主配置锁定禁用",
   "header.lead":
