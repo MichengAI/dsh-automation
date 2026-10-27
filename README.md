@@ -147,9 +147,9 @@ Four native switches are available:
 - **Default**: Disabled (`false`, hides automation sessions in task tree by default to keep workspace clean)
 - **Description**: Controls whether to show scheduled task run sessions in the official workspace task tree.
 - **Effect**:
-  - **Noise Reduction & Isolation**: When disabled, automation sessions (`dsh-automation-session-*`) are automatically filtered out from the primary workspace tree, preventing frequent runs from crowding routine workspaces;
+  - **Noise Reduction & Isolation**: When disabled, automation sessions (either prefixed with `dsh-automation-session-` or tracked in current scheduled runs) are automatically filtered out from the primary workspace tree, preventing frequent runs from crowding routine workspaces;
   - **Lossless Review**: The filter only targets the main task tree. All past runs remain listed under "Schedule → Records" and can be opened for review at any time;
-  - **Lightweight Inter-Plugin Protocol**: Powered by the standard `NativeTabRegistry.sessionFilters` contract without invasive host interception, applying changes instantly and coexisting smoothly with third-party plugins like IM Connect and Archive Manager.
+  - **Lightweight Inter-Plugin Protocol**: Powered by the standard `NativeTabRegistry.sessionFilters` contract without invasive host interception, applying changes instantly and coexisting smoothly with third-party plugins like IM Connect and Archive Manager. Shells lacking this protocol degrade safely with a warning.
 
 ### 5. Storage & Host Configuration (`cordis.patch.yml`)
 The following configuration parameters can be declared under your profile's `cordis.patch.yml`:

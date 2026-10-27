@@ -23,6 +23,9 @@ import {
   resolveVisibleSidebarTab,
   shouldFollowSessionTab,
   tabForSessionId,
+  isImSessionId,
+  IM_SESSION_PREFIX,
+  IM_SESSION_PREFIX_LEGACY,
   scheduledOnlySessionState,
   scheduledRealWorkspaceState,
   syntheticTaskWorkspaceState,
@@ -163,8 +166,9 @@ test('scheduled sessions open through the runtime, not the filtered host tree', 
   const host: string[] = []
   openScheduledSession('dsh-automation-session-abc', (id) => { opened.push(id) }, (id) => { host.push(id) })
   openScheduledSession('im:wecom:1', (id) => { opened.push(id) }, (id) => { host.push(id) })
+  openScheduledSession('dsh-im-session-12345', (id) => { opened.push(id) }, (id) => { host.push(id) })
   openScheduledSession('normal-session', (id) => { opened.push(id) }, (id) => { host.push(id) })
-  assert.deepEqual(opened, ['dsh-automation-session-abc', 'im:wecom:1'])
+  assert.deepEqual(opened, ['dsh-automation-session-abc', 'im:wecom:1', 'dsh-im-session-12345'])
   assert.deepEqual(host, ['normal-session'])
 })
 test('scheduled session open falls back to host when runtime select rejects', () => {
@@ -362,6 +366,21 @@ test('定时会话不再自动切到定时页签', () => {
 test('频道会话不再自动切到频道页签', () => {
   assert.equal(tabForSessionId('im:wecom:1', new Set(), { followChannels: false }), undefined)
   assert.equal(tabForSessionId('im:wecom:1', new Set()), 'channels')
+  assert.equal(tabForSessionId('dsh-im-session-abc', new Set(), { followChannels: false }), undefined)
+  assert.equal(tabForSessionId('dsh-im-session-abc', new Set()), 'channels')
+})
+
+test('isImSessionId 兼容新旧 IM 会话前缀', () => {
+  assert.equal(IM_SESSION_PREFIX_LEGACY, 'im:')
+  assert.equal(IM_SESSION_PREFIX, 'dsh-im-session-')
+  assert.equal(isImSessionId('im:wecom:dm:1'), true)
+  assert.equal(isImSessionId('im:feishu:group:2'), true)
+  assert.equal(isImSessionId('dsh-im-session-550e8400-e29b-41d4-a716-446655440000'), true)
+  assert.equal(isImSessionId('dsh-automation-session-1'), false)
+  assert.equal(isImSessionId('normal-chat'), false)
+  assert.equal(isImSessionId(''), false)
+  assert.equal(isImSessionId(null), false)
+  assert.equal(isImSessionId(undefined), false)
 })
 
 test('记录视图按真实工作区分组时只保留定时会话，但保留工作区', () => {

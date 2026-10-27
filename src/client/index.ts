@@ -238,6 +238,7 @@ export function apply(ctx: ClientContext): void {
     let removeInsertedFilter = (): void => undefined
     let activeFilterRegistry: NativeTabRegistry | undefined
     let filterInstalled = false
+    let warnedUnsupportedFilter = false
     let syncing = false
     let retryTimer: number | undefined
     // 直接替换 component 不触发宿主插槽通知；与 IM 共用事件，在本次同步完成后重新协调。
@@ -254,6 +255,7 @@ export function apply(ctx: ClientContext): void {
         removeInsertedFilter = (): void => undefined
         filterInstalled = false
       }
+      warnedUnsupportedFilter = false
     }
     const ensureFilter = (registry?: NativeTabRegistry): void => {
       if (registry !== activeFilterRegistry) {
@@ -271,16 +273,21 @@ export function apply(ctx: ClientContext): void {
         clearFilter()
         return
       }
-      if (!filterInstalled && typeof registry.addSessionFilter === 'function') {
-        const dispose = registry.addSessionFilter((sessionId) => {
-          if (sessionId.startsWith(AUTOMATION_SESSION_PREFIX)) return false
-          const snapshot = runtime?.source?.getSnapshot?.()?.snapshot
-          return snapshot?.runs?.some(run => run.sessionId === sessionId) !== true
-        })
-        removeInsertedFilter = () => {
-          dispose()
+      if (!filterInstalled) {
+        if (typeof registry.addSessionFilter === 'function') {
+          const dispose = registry.addSessionFilter((sessionId) => {
+            if (sessionId.startsWith(AUTOMATION_SESSION_PREFIX)) return false
+            const snapshot = runtime?.source?.getSnapshot?.()?.snapshot
+            return snapshot?.runs?.some(run => run.sessionId === sessionId) !== true
+          })
+          removeInsertedFilter = () => {
+            dispose()
+          }
+          filterInstalled = true
+        } else if (!warnedUnsupportedFilter) {
+          warnedUnsupportedFilter = true
+          console.warn('[dsh-automation] 外壳注册表未支持 addSessionFilter 协议，无法在任务树过滤会话')
         }
-        filterInstalled = true
       }
     }
     syncActiveTaskTreeFilter = () => {

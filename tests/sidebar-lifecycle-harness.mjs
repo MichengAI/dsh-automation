@@ -48,6 +48,7 @@ export function createHarness(body, kind) {
     findNativeTabRegistry: find,
     subscribeLocale: () => () => {}, subscribeChannelMembership: () => () => {},
     isChannelSession: () => false,
+    AUTOMATION_SESSION_PREFIX: 'dsh-automation-session-',
   }
   const emit = name => { for (const f of [...(subscriptions.get(name) ?? [])]) f() }
   return {

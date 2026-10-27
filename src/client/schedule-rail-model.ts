@@ -4,6 +4,13 @@ import type { AutomationStatus } from './protocol.js'
 import { probeService } from './workspace-create.js'
 
 export const AUTOMATION_SESSION_PREFIX = 'dsh-automation-session-'
+export const IM_SESSION_PREFIX_LEGACY = 'im:'
+export const IM_SESSION_PREFIX = 'dsh-im-session-'
+
+export function isImSessionId(id: string | null | undefined): boolean {
+  if (typeof id !== 'string' || id === '') return false
+  return id.startsWith(IM_SESSION_PREFIX) || id.startsWith(IM_SESSION_PREFIX_LEGACY)
+}
 /** 记录视图把每个自动化任务合成一个官方工作区分组，id 进入这个命名空间避免与真实工作区冲突。 */
 export const AUTOMATION_TASK_WORKSPACE_PREFIX = 'dsh-automation-task:'
 export const NATIVE_SIDEBAR_TAB_KEY = 'dsh-native-sidebar.tab'
@@ -250,7 +257,7 @@ export function tabForSessionId(
     : sessionId.startsWith(AUTOMATION_SESSION_PREFIX)
   if (scheduled) return options.followSchedule === false ? undefined : 'schedule'
   // 频道会话也出现在官方任务树里；从任务树点开时不要强制跳频道页签。
-  if (sessionId.startsWith('im:')) return options.followChannels === false ? undefined : 'channels'
+  if (isImSessionId(sessionId)) return options.followChannels === false ? undefined : 'channels'
   return 'tasks'
 }
 
@@ -480,7 +487,7 @@ export function openScheduledSession(
   openHost?: (sessionId: string) => void,
 ): boolean {
   if (id === '') return false
-  const attempts = id.startsWith(AUTOMATION_SESSION_PREFIX) || id.startsWith('im:')
+  const attempts = id.startsWith(AUTOMATION_SESSION_PREFIX) || isImSessionId(id)
     ? [openRuntime, openHost]
     : [openHost, openRuntime]
   for (const attempt of attempts) {

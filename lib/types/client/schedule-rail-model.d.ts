@@ -1,6 +1,9 @@
 /** 侧栏定时树与原生任务列表的纯函数，供组件和单测共用。 */
 import type { AutomationStatus } from './protocol.js';
 export declare const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
+export declare const IM_SESSION_PREFIX_LEGACY = "im:";
+export declare const IM_SESSION_PREFIX = "dsh-im-session-";
+export declare function isImSessionId(id: string | null | undefined): boolean;
 /** 记录视图把每个自动化任务合成一个官方工作区分组，id 进入这个命名空间避免与真实工作区冲突。 */
 export declare const AUTOMATION_TASK_WORKSPACE_PREFIX = "dsh-automation-task:";
 export declare const NATIVE_SIDEBAR_TAB_KEY = "dsh-native-sidebar.tab";
