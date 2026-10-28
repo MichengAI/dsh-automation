@@ -4,6 +4,13 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 1.0.13 - 2026-10-29
+
+- **Fix "Create in Chat" Feedback from Main Panel**: Resolves an issue where clicking "Create in chat" inside the sidebar main panel produced no visual feedback or navigation (Issue #25).
+  - Injects a graceful exit callback for the sidebar main panel, falling back to `layout.selectPanel(null)` when `ownerProps.close` is omitted to close the panel and return to the active chat session;
+  - Enhances DOM prefill compatibility to support modern DSH Lexical/Slate rich-text composer fields (`[contenteditable="true"]`) alongside standard textarea inputs;
+  - Adds tiered timing retries (30ms, 120ms, 300ms, 600ms) to ensure draft prefill and editor focus succeed as the chat view mounts.
+
 ## 1.0.12 - 2026-10-27
 
 - **Cross-Workspace Automation Operations & Workspace Migration**: Resolves limitations in managing scheduled tasks across multiple workspaces (Issue #24).
