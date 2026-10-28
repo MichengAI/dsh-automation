@@ -38,7 +38,7 @@ import { rowIconStyle } from './plugin-ui.js'
 import { MenuSelect } from './menu-select.js'
 import { CreateModal } from './create-modal.js'
 import { DeleteConfirmation } from './delete-confirmation.js'
-import { setChatPrefill } from './prefill.js'
+import { triggerChatCreation } from './prefill.js'
 import { isTransportError } from './runtime.js'
 import { SortMenu } from './sort-menu.js'
 import type { AutomationRunStatus, AutomationRunViewModel, AutomationViewModel } from './protocol.js'
@@ -193,8 +193,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
         <div className="dsh-st-toolbar">
           <Input className="dsh-st-search" value={query} placeholder={t('search.placeholder')} onChange={event => setQuery(event.target.value)} />
           <Button variant="outline" icon={<IconNewChatOutline size={18} />} onClick={() => {
-            setChatPrefill(t('chat.prompt'))
-            closeSettings?.()
+            triggerChatCreation(t('chat.prompt'), closeSettings)
           }}>{t('action.chatCreate')}</Button>
           <Button variant="primary" icon={<IconPlusOutline size={18} />} disabled={defaultPermission === '' || permissions.length === 0} onClick={() => openCreate()}>{t('action.create')}</Button>
           <Button className="dsh-st-row-icon" variant="outline" size="sm" icon={<IconRefreshOutline size={16} />} aria-label={t('section.refresh')} style={rowIconStyle} onClick={() => { void runtime.refresh() }} />

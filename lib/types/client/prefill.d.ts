@@ -4,3 +4,7 @@ export declare function takeChatPrefill(): string | null;
 export declare function peekChatPrefill(): string | null;
 export declare function subscribeChatPrefill(listener: (text: string | null) => void): () => void;
 export declare function applyPrefillToDom(text: string): boolean;
+export declare function createPanelCloseSettings(ctx: unknown, ownerProps?: {
+    close?: () => void;
+}): () => void;
+export declare function triggerChatCreation(text: string, closeSettings?: () => void): void;

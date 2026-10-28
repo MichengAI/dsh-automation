@@ -371,7 +371,16 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
             const extra = typeof options.injectProps === 'function' ? options.injectProps() : options.injectProps
             return Object.assign({ t: ctx.locale?.bind ? ctx.locale.bind(ns) : undefined }, extra)
           },
-        }, (ownerProps: any) => createElement('div', { className: 'dsh-st-main-panel' }, renderPanel(ownerProps)))
+        }, (ownerProps: any) => createElement('div', { className: 'dsh-st-main-panel' }, renderPanel({
+          ...ownerProps,
+          close: typeof ownerProps?.close === 'function'
+            ? ownerProps.close
+            : () => {
+                if (typeof layoutService?.selectPanel === 'function') {
+                  try { layoutService.selectPanel(null) } catch {}
+                }
+              },
+        })))
         offPanel = typeof res === 'function' ? res : () => {}
       }
       if (!offRow) {

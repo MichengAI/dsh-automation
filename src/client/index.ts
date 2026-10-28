@@ -9,7 +9,7 @@ import {
   isForeignSidebarHost,
   type NativeTabRegistry,
 } from './native-tabs.js'
-import { applyPrefillToDom, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
+import { applyPrefillToDom, createPanelCloseSettings, peekChatPrefill, subscribeChatPrefill, takeChatPrefill } from './prefill.js'
 import { createAutomationRuntime, installAutomationSessionSync, type AutomationRuntime } from './runtime.js'
 import { createHostWorkspace, pickHostDirectory } from './workspace-create.js'
 import { NativeScheduleShell, ScheduledRecordsView } from './ScheduleRail.js'
@@ -114,7 +114,7 @@ export function apply(ctx: ClientContext): void {
       modelT: ownerProps.modelT ?? modelT,
       runtime,
       addWorkspace,
-      ...(ownerProps.close === undefined ? {} : { closeSettings: ownerProps.close }),
+      closeSettings: createPanelCloseSettings(ctx, ownerProps),
     }),
     ns: NS,
     injectProps: () => ({
