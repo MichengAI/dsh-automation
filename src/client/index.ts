@@ -19,7 +19,7 @@ import { IconClockOutline } from './host-icons.js'
 import { hostIconMarkup } from './host-icon-markup.js'
 import { installStyles } from './styles.js'
 import { openSettingsSection } from './settings-navigation.js'
-import { installSettingsNavIcon } from './settings-nav-icon.js'
+import { AutomationNavIcon, installSettingsNavIcon } from './settings-nav-icon.js'
 import { clearAutomationTaskSettingsRequest, requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
 import { clearAutomationCreateTaskRequest, requestAutomationCreateTask } from './create-task-request.js'
 import { observePluginUpdate, PLUGIN_UPDATE_TOGGLE_EVENT, type PluginUpdateIconName } from './plugin-update-ui.js'
@@ -137,6 +137,11 @@ export function apply(ctx: ClientContext): void {
         })
       })
       offSettingsSection = typeof unreg === 'function' ? (unreg as () => void) : () => {}
+      ;(ctx.slots.inject as any)('settings.section.icon', () => (ctx.slots.register as any)({
+        name: 'settings.section.icon',
+        id: 'scheduled-tasks',
+        locale: NS,
+      }, AutomationNavIcon))
     } catch (reason) {
       console.warn('automation: register settings.section failed:', reason)
       offSettingsSection = null

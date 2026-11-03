@@ -1,3 +1,5 @@
+import React from 'react'
+
 /**
  * 设置页导航图标的非侵入式替换。
  *
@@ -7,6 +9,26 @@
  */
 export const SETTINGS_NAV_ICON_MARKER = 'data-dsh-schedule-nav'
 const SETTINGS_NAV_ROW_SELECTOR = '[role="dialog"] nav button'
+
+/** 原生 settings.section.icon 插槽图标组件 */
+export function AutomationNavIcon({ size = 16 }: { size?: number }): React.ReactElement {
+  return React.createElement(
+    'svg',
+    {
+      xmlns: 'http://www.w3.org/2000/svg',
+      viewBox: '0 0 16 16',
+      width: size,
+      height: size,
+      fill: 'currentColor',
+    },
+    React.createElement('path', {
+      d: 'M8 1.15A6.85 6.85 0 1 0 8 14.85 6.85 6.85 0 0 0 8 1.15Zm0 1.4a5.45 5.45 0 1 1 0 10.9 5.45 5.45 0 0 1 0-10.9Z',
+    }),
+    React.createElement('path', {
+      d: 'M8.62 4.35H7.28v4.2l3.02 1.78.67-1.13-2.35-1.39V4.35Z',
+    }),
+  )
+}
 
 function wantedLabels(labels: () => readonly string[]): Set<string> {
   return new Set(labels().map(item => item.trim()).filter(item => item !== ''))

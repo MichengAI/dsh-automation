@@ -4,6 +4,10 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 1.0.14 - 2026-11-03
+
+- **Host compatibility extension & settings icon integration**: verified compatibility across DSH latest prerelease `0.2.2-alpha.3` and all RCs up to `0.2.1-rc.5`; integrated official settings section icon slot to ensure the scheduled tasks settings entry presents the native vector icon on newer hosts.
+
 ## 1.0.13 - 2026-10-29
 
 - **Fix "Create in Chat" Feedback from Main Panel**: Resolves an issue where clicking "Create in chat" inside the sidebar main panel produced no visual feedback or navigation (Issue #25).

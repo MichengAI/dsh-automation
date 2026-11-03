@@ -1,3 +1,4 @@
+import React from 'react';
 /**
  * 设置页导航图标的非侵入式替换。
  *
@@ -6,6 +7,10 @@
  * 只通过 marker 属性隐藏宿主 svg，卸载时可以完整还原。
  */
 export declare const SETTINGS_NAV_ICON_MARKER = "data-dsh-schedule-nav";
+/** 原生 settings.section.icon 插槽图标组件 */
+export declare function AutomationNavIcon({ size }: {
+    size?: number;
+}): React.ReactElement;
 /**
  * 100% 对齐 dshmarket：用纯属性标记控制 ::before 伪元素渲染图标。
  * 不修改任何 DOM 节点，避免移动端列表项排版下与文字重叠冲突。
