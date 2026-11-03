@@ -2,7 +2,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
+import { dirname, join } from "node:path";
 import { Context, Inject } from "@deepseek-ai/cordis";
+
+const requireResolver = createRequire(import.meta.url);
 import { load } from "js-yaml";
 import { applyEntryPatches } from "@deepseek-ai/cordis-plugin-include";
 import LlmRuntime, { LlmAdapter } from "@deepseek-ai/dsh-llm";
@@ -144,6 +149,27 @@ test(`${hostVersion} 真实 AgentLoop 执行自动化、保留权限日志并释
   await ctx.plugin(SessionProjectionRegistry);
   await ctx.plugin(SystemPrompt);
   await ctx.plugin(ToolRuntime);
+  if (typeof ctx.tools?.setExecutor === "function") {
+    try {
+      const toolsDir = dirname(requireResolver.resolve("@deepseek-ai/dsh-tools"));
+      const pipelineUrl = pathToFileURL(join(toolsDir, "pipeline.js")).href;
+      const indexUrl = pathToFileURL(join(toolsDir, "index.js")).href;
+      const { ToolExecutionPipeline, executeToolBatch } = await import(pipelineUrl);
+      const toolsMod = await import(indexUrl);
+      const pipeline = new ToolExecutionPipeline(ctx);
+      ctx.tools.setExecutor({
+        describe: (tools) => ({ schemas: tools.map((d) => toolsMod.projectToolSchema ? toolsMod.projectToolSchema(d, false) : []) }),
+        execute: async (input) => {
+          const isSingleCall = !input.calls && input.name;
+          const batchInput = isSingleCall
+            ? { ...input, calls: [{ id: input.callId, name: input.name, arguments: JSON.stringify(input.arguments ?? {}) }] }
+            : input;
+          const outcome = await executeToolBatch(batchInput, pipeline, () => 10);
+          return isSingleCall ? (outcome.results[0]?.result ?? outcome) : outcome;
+        },
+      });
+    } catch {}
+  }
   await ctx.plugin(AgentRegistry);
   await ctx.plugin(ApprovalService);
   // 此夹具不执行 shell，只提供权限预设读取的宿主能力描述。
