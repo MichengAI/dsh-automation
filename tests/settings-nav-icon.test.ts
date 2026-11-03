@@ -104,6 +104,28 @@ test('设置导航图标重复应用保持幂等', () => {
   }
 })
 
+test('当按钮内已存在原生插槽容器时，不添加 marker 避免双图标', () => {
+  const restoreDocument = installFakeDocument()
+  try {
+    const { button, attributes } = fakeButton('定时任务')
+    const navSpan = {
+      tagName: 'SPAN',
+      className: 'navIcon',
+      attributes: new Map([['aria-hidden', 'true']]),
+      getAttribute(name: string) { return this.attributes.get(name) ?? null },
+      setAttribute(name: string, value: string) { this.attributes.set(name, value) },
+      remove() {},
+    }
+    button.children.push(navSpan as any)
+    const labels = () => ['定时任务']
+
+    assert.equal(applySettingsNavIcon(button as unknown as HTMLButtonElement, labels), false)
+    assert.equal(attributes.has(SETTINGS_NAV_ICON_MARKER), false)
+  } finally {
+    restoreDocument()
+  }
+})
+
 test('不匹配的导航项时不标记', () => {
   const restoreDocument = installFakeDocument()
   try {

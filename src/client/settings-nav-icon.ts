@@ -42,6 +42,17 @@ export function applySettingsNavIcon(button: HTMLButtonElement, labels: () => re
   const text = (button.textContent ?? '').replace(/\s+/g, ' ').trim()
   const isOwn = wantedLabels(labels).has(text)
   if (isOwn) {
+    const hasSlotIcon = Array.from((button as unknown as { children?: Element[] }).children ?? []).some((child: any) =>
+      child.tagName === 'SPAN' &&
+      (child.className?.includes('navIcon') || child.getAttribute?.('aria-hidden') === 'true')
+    ) || Boolean(button.querySelector?.('[class*="navIcon"]'))
+    if (hasSlotIcon) {
+      if (button.hasAttribute(SETTINGS_NAV_ICON_MARKER)) {
+        button.removeAttribute(SETTINGS_NAV_ICON_MARKER)
+        return true
+      }
+      return false
+    }
     if (button.getAttribute(SETTINGS_NAV_ICON_MARKER) === '') return false
     button.setAttribute(SETTINGS_NAV_ICON_MARKER, '')
     return true
