@@ -4,11 +4,14 @@
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
 
+## 1.0.17 - 2026-11-04
+
+- **Settings nav icon fix**: the "Scheduled tasks" entry in the settings sidebar now keeps the clock icon on older DSH hosts (including the bundled desktop client) instead of falling back to the default gear, and still avoids duplicate icons on newer hosts that render the native icon slot.
+- **Icon follows the entry location**: switching the plugin entry between the sidebar and the settings page now shows or hides the settings nav icon accordingly, with no leftover icon after switching to sidebar-only mode.
+
 ## 1.0.16 - 2026-11-03
 
-- **Fix settings nav icon fallback & prevent dual icons**: 
-  - Restrict host slot container detection to `navIcon` class names, preventing older hosts with standard `aria-hidden` wrappers from misdetecting slots and dropping the clock icon fallback to a gear;
-  - Decouple `settings.section.icon` registration into an independent declarative slot injection with proper disposal on location change.
+- **Prevent dual settings nav icons**: gracefully detect host slot container and skip legacy pseudo-element marker, avoiding duplicate nav icons on newer hosts.
 
 ## 1.0.15 - 2026-11-03
 
