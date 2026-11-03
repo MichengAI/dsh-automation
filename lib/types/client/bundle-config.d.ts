@@ -1,12 +1,15 @@
 import { type ReactElement } from 'react';
 import type { ClientContext } from './contracts.js';
+import type { EntryLocation } from '../settings-manager.js';
 export declare const BUNDLE_KEY = "@michengai/dsh-automation";
 export declare const SIDEBAR_PANEL_ID = "dsh-automation";
 export declare const SIDEBAR_PANEL_ORDER = 4;
 export declare const HIDE_OFFICIAL_SCHEDULE_STYLE_TAG = "dsh-automation-hide-official-schedule";
 export declare const STORAGE_KEY_HIDE_OFFICIAL = "dsh-automation.hide-official-schedule";
 export declare const STORAGE_KEY_SIDEBAR_ENTRY = "dsh-automation.sidebar-entry";
+export declare const STORAGE_KEY_ENTRY_LOCATION = "dsh-automation.entry-location";
 export declare const STORAGE_KEY_TASK_TREE_SESSIONS = "dsh-automation.task-tree-sessions";
+export declare function readCachedEntryLocation(): EntryLocation;
 export declare function readCachedSidebarEntry(): boolean;
 export declare function readCachedHideOfficial(): boolean;
 export declare function readCachedTaskTreeSessions(): boolean;
@@ -16,9 +19,11 @@ export declare function AutomationSidebarIcon(props: {
 }): ReactElement;
 export interface BundleConfigCardProps {
     readonly t: (key: string) => string;
-    readonly enabled: boolean;
+    readonly location?: EntryLocation;
+    readonly onLocationChange?: (location: EntryLocation) => void;
+    readonly enabled?: boolean;
     readonly disabled?: boolean;
-    readonly onToggle: (next: boolean) => void;
+    readonly onToggle?: (next: boolean) => void;
     readonly onlineUpdateEnabled?: boolean;
     readonly onlineUpdateDisabled?: boolean;
     readonly onlineUpdateLocked?: boolean;
@@ -33,8 +38,10 @@ export interface BundleConfigCardProps {
 export declare function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactElement;
 export interface BundleConfigWrapperProps {
     readonly t: (key: string) => string;
-    readonly getEnabled: () => boolean;
-    readonly setSidebar: (next: boolean) => Promise<boolean>;
+    readonly getLocation: () => EntryLocation;
+    readonly setLocation: (next: EntryLocation) => Promise<EntryLocation>;
+    readonly getEnabled?: () => boolean;
+    readonly setSidebar?: (next: boolean) => Promise<boolean>;
     readonly getOnlineUpdateEnabled?: () => boolean;
     readonly getOnlineUpdateLocked?: () => boolean;
     readonly setOnlineUpdate?: (next: boolean) => Promise<boolean>;
@@ -52,8 +59,12 @@ export interface SetupSidebarEntryOptions {
     readonly injectProps?: Record<string, unknown> | (() => Record<string, unknown>);
     readonly onOnlineUpdateChange?: (enabled: boolean) => void;
     readonly onTaskTreeSessionsChange?: (enabled: boolean) => void;
+    readonly onLocationChange?: (location: EntryLocation) => void;
 }
 export interface SidebarController {
+    getLocation(): EntryLocation;
+    setLocation(next: EntryLocation): Promise<EntryLocation>;
+    isSettingsSectionEnabled(): boolean;
     isEnabled(): boolean;
     isSupported(): boolean;
     setEnabled(next: boolean): Promise<boolean>;

@@ -7,7 +7,10 @@ import { resolveUpdateRuntime } from './plugin-updater.ts'
 export const SETTINGS_API_HEADER = 'x-michengai-client'
 const MAX_SETTINGS_BODY_BYTES = 64 * 1024
 
+export type EntryLocation = 'both' | 'sidebar' | 'settings'
+
 export interface PersistedSettings {
+  entryLocation?: EntryLocation | undefined
   sidebarEntry?: boolean | undefined
   onlineUpdate?: boolean | undefined
   hideOfficialSchedule?: boolean | undefined
@@ -71,7 +74,12 @@ export class SettingsManager {
       const parsed = JSON.parse(content) as unknown
       if (typeof parsed === 'object' && parsed !== null) {
         const item = parsed as Record<string, unknown>
+        let entryLocation: EntryLocation | undefined
+        if (item.entryLocation === 'both' || item.entryLocation === 'sidebar' || item.entryLocation === 'settings') {
+          entryLocation = item.entryLocation
+        }
         this.store = {
+          entryLocation,
           sidebarEntry: typeof item.sidebarEntry === 'boolean' ? item.sidebarEntry : undefined,
           onlineUpdate: typeof item.onlineUpdate === 'boolean' ? item.onlineUpdate : undefined,
           hideOfficialSchedule: typeof item.hideOfficialSchedule === 'boolean' ? item.hideOfficialSchedule : undefined,
@@ -95,14 +103,30 @@ export class SettingsManager {
     }
   }
 
+  getEntryLocation(): EntryLocation {
+    if (this.store.entryLocation === 'both' || this.store.entryLocation === 'sidebar' || this.store.entryLocation === 'settings') {
+      return this.store.entryLocation
+    }
+    return this.store.sidebarEntry !== false ? 'both' : 'settings'
+  }
+
+  async setEntryLocation(location: EntryLocation): Promise<EntryLocation> {
+    if (location !== 'both' && location !== 'sidebar' && location !== 'settings') {
+      throw new Error('location 必须是 both、sidebar 或 settings')
+    }
+    this.store.entryLocation = location
+    this.store.sidebarEntry = location !== 'settings'
+    this.flush()
+    return location
+  }
+
   getSidebarEntry(): boolean {
-    return this.store.sidebarEntry !== false
+    return this.getEntryLocation() !== 'settings'
   }
 
   async setSidebarEntry(enabled: boolean): Promise<boolean> {
     if (typeof enabled !== 'boolean') throw new Error('enabled 必须是布尔值')
-    this.store.sidebarEntry = enabled
-    this.flush()
+    await this.setEntryLocation(enabled ? 'both' : 'settings')
     return enabled
   }
 
@@ -219,17 +243,32 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
           response.end()
           return
         }
-        json(response, 200, { ok: true, enabled: manager.getSidebarEntry() })
+        const location = manager.getEntryLocation()
+        json(response, 200, { ok: true, location, enabled: location !== 'settings' })
         return
       }
       if (method === 'POST') {
         const bodyRes = await readBody(request)
-        if (!bodyRes.ok || !bodyRes.data || typeof bodyRes.data.enabled !== 'boolean') {
-          json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? 'enabled 必须是布尔值' })
+        if (!bodyRes.ok || !bodyRes.data) {
+          json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? '请求体不能为空' })
           return
         }
-        const enabled = await manager.setSidebarEntry(bodyRes.data.enabled)
-        json(response, 200, { ok: true, enabled })
+        if (typeof bodyRes.data.location === 'string') {
+          const loc = bodyRes.data.location
+          if (loc !== 'both' && loc !== 'sidebar' && loc !== 'settings') {
+            json(response, 400, { ok: false, error: 'location 必须是 both、sidebar 或 settings' })
+            return
+          }
+          const location = await manager.setEntryLocation(loc)
+          json(response, 200, { ok: true, location, enabled: location !== 'settings' })
+          return
+        }
+        if (typeof bodyRes.data.enabled === 'boolean') {
+          const location = await manager.setEntryLocation(bodyRes.data.enabled ? 'both' : 'settings')
+          json(response, 200, { ok: true, location, enabled: location !== 'settings' })
+          return
+        }
+        json(response, 400, { ok: false, error: '缺少合法的 location 或 enabled 参数' })
         return
       }
       response.writeHead(405, { allow: 'GET, HEAD, POST' })

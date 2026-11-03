@@ -8,6 +8,7 @@ export const Switch = (props) => createElement('input', {
 })
 export const Button = (props) => createElement('button', props, props.children)
 export const Modal = (props) => props.open ? createElement('div', { className: props.className }, props.children, props.footer) : null
+export const SegmentedControl = (props) => createElement('div', props, props.children)
 export const SegmentedTabs = (props) => createElement('div', props, props.children)
 export const Input = (props) => createElement('input', props)
 export const Menu = (props) => createElement('div', props, props.children)
@@ -39,6 +40,7 @@ export default new Proxy({
   Switch,
   Button,
   Modal,
+  SegmentedControl,
   SegmentedTabs,
   Input,
   Menu,

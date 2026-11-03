@@ -106,6 +106,58 @@ export function apply(ctx: ClientContext): void {
     return json
   }
   let syncActiveTaskTreeFilter = (): void => undefined
+  let offSettingsSection: (() => void) | null = null
+  let settingsSectionSupported = false
+
+  const mountSettingsSection = () => {
+    if (!settingsSectionSupported || offSettingsSection) return
+    if (sidebarController && !sidebarController.isSettingsSectionEnabled()) return
+    try {
+      const unreg = ctx.slots.register({
+        name: 'settings.section',
+        id: 'scheduled-tasks',
+        order: 35,
+        locale: NS,
+        label: () => t('tab'),
+        icon: 'schedule',
+        inject: () => ({
+          createWorkspace: (input: { path: string }) => createHostWorkspace(ctx, input.path),
+          pickDirectory: () => pickHostDirectory(ctx),
+          permissionT,
+          modelT,
+        }),
+      }, function ScheduledTasksSettings(props: { close?: () => void }) {
+        return createElement(AutomationView, {
+          t,
+          permissionT,
+          modelT,
+          runtime,
+          ...(props.close === undefined ? {} : { closeSettings: props.close }),
+          addWorkspace,
+        })
+      })
+      offSettingsSection = typeof unreg === 'function' ? (unreg as () => void) : () => {}
+    } catch (reason) {
+      console.warn('automation: register settings.section failed:', reason)
+      offSettingsSection = null
+    }
+  }
+
+  const unmountSettingsSection = () => {
+    if (offSettingsSection) {
+      try { offSettingsSection() } catch {}
+      offSettingsSection = null
+    }
+  }
+
+  const syncSettingsSection = () => {
+    if (sidebarController?.isSettingsSectionEnabled?.() ?? true) {
+      mountSettingsSection()
+    } else {
+      unmountSettingsSection()
+    }
+  }
+
   const sidebarController = setupSidebarEntry(ctx, {
     callApi: api,
     renderPanel: (ownerProps) => createElement(AutomationView, {
@@ -128,6 +180,9 @@ export function apply(ctx: ClientContext): void {
     },
     onTaskTreeSessionsChange: () => {
       syncActiveTaskTreeFilter()
+    },
+    onLocationChange: () => {
+      syncSettingsSection()
     },
   })
   ctx.effect(() => () => sidebarController.destroy(), 'dsh-automation: sidebar entry')
@@ -183,29 +238,21 @@ export function apply(ctx: ClientContext): void {
       createElement(IconClockOutline, { size: 16 }),
     )
   }))
-  ctx.slots.inject('settings.section', () => ctx.slots.register({
-    name: 'settings.section',
-    id: 'scheduled-tasks',
-    order: 35,
-    locale: NS,
-    label: () => t('tab'),
-    icon: 'schedule',
-    inject: () => ({
-      createWorkspace: (input: { path: string }) => createHostWorkspace(ctx, input.path),
-      pickDirectory: () => pickHostDirectory(ctx),
-      permissionT,
-      modelT,
-    }),
-  }, function ScheduledTasksSettings(props: { close?: () => void }) {
-    return createElement(AutomationView, {
-      t,
-      permissionT,
-      modelT,
-      runtime,
-      ...(props.close === undefined ? {} : { closeSettings: props.close }),
-      addWorkspace,
-    })
-  }))
+  ctx.slots.inject('settings.section', () => {
+    settingsSectionSupported = true
+    try {
+      mountSettingsSection()
+      return () => {
+        settingsSectionSupported = false
+        unmountSettingsSection()
+      }
+    } catch (reason) {
+      console.warn('automation: register settings.section failed:', reason)
+      return () => {
+        settingsSectionSupported = false
+      }
+    }
+  })
   // Codex UI 通过该插槽判断「定时」TAB 是否可用；注册总览后由宿主负责呈现页签。
   ctx.slots.inject('sidebar.schedule', () => ctx.slots.register({
     name: 'sidebar.schedule',

@@ -1,7 +1,8 @@
 import { createElement, Fragment, useEffect, useState, type ReactElement } from 'react'
-import { Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SegmentedControl, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { IconClockOutline } from './host-icons.js'
 import type { ClientContext } from './contracts.js'
+import type { EntryLocation } from '../settings-manager.js'
 
 export const BUNDLE_KEY = '@michengai/dsh-automation'
 export const SIDEBAR_PANEL_ID = 'dsh-automation'
@@ -9,6 +10,7 @@ export const SIDEBAR_PANEL_ORDER = 4
 export const HIDE_OFFICIAL_SCHEDULE_STYLE_TAG = 'dsh-automation-hide-official-schedule'
 export const STORAGE_KEY_HIDE_OFFICIAL = 'dsh-automation.hide-official-schedule'
 export const STORAGE_KEY_SIDEBAR_ENTRY = 'dsh-automation.sidebar-entry'
+export const STORAGE_KEY_ENTRY_LOCATION = 'dsh-automation.entry-location'
 export const STORAGE_KEY_TASK_TREE_SESSIONS = 'dsh-automation.task-tree-sessions'
 
 const HIDE_OFFICIAL_SCHEDULE_CSS = `
@@ -18,13 +20,19 @@ nav button[aria-label="Automation tasks"] {
 }
 `
 
-export function readCachedSidebarEntry(): boolean {
-  if (typeof localStorage === 'undefined') return true
+export function readCachedEntryLocation(): EntryLocation {
+  if (typeof localStorage === 'undefined') return 'both'
   try {
-    const cached = localStorage.getItem(STORAGE_KEY_SIDEBAR_ENTRY)
-    if (cached === 'false') return false
+    const cached = localStorage.getItem(STORAGE_KEY_ENTRY_LOCATION)
+    if (cached === 'both' || cached === 'sidebar' || cached === 'settings') return cached
+    const sidebar = localStorage.getItem(STORAGE_KEY_SIDEBAR_ENTRY)
+    if (sidebar === 'false') return 'settings'
   } catch {}
-  return true
+  return 'both'
+}
+
+export function readCachedSidebarEntry(): boolean {
+  return readCachedEntryLocation() !== 'settings'
 }
 
 export function readCachedHideOfficial(): boolean {
@@ -75,9 +83,11 @@ export function AutomationSidebarIcon(props: { readonly size?: number }): ReactE
 
 export interface BundleConfigCardProps {
   readonly t: (key: string) => string
-  readonly enabled: boolean
+  readonly location?: EntryLocation
+  readonly onLocationChange?: (location: EntryLocation) => void
+  readonly enabled?: boolean
   readonly disabled?: boolean
-  readonly onToggle: (next: boolean) => void
+  readonly onToggle?: (next: boolean) => void
   readonly onlineUpdateEnabled?: boolean
   readonly onlineUpdateDisabled?: boolean
   readonly onlineUpdateLocked?: boolean
@@ -93,7 +103,9 @@ export interface BundleConfigCardProps {
 export function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactElement {
   const {
     t,
-    enabled,
+    location: propLocation,
+    onLocationChange,
+    enabled = true,
     disabled = false,
     onToggle,
     onlineUpdateEnabled = true,
@@ -108,17 +120,35 @@ export function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactE
     onToggleTaskTreeSessions,
   } = props
 
+  const effectiveLocation: EntryLocation = propLocation ?? (enabled ? 'both' : 'settings')
+
+  const handleLocationChange = (next: string) => {
+    if (next === 'both' || next === 'sidebar' || next === 'settings') {
+      if (typeof onLocationChange === 'function') {
+        onLocationChange(next)
+      } else if (typeof onToggle === 'function') {
+        onToggle(next !== 'settings')
+      }
+    }
+  }
+
   const rows = [
-    createElement('div', { key: 'sidebar-entry', className: 'dsh-st-bundle-row' },
+    createElement('div', { key: 'entry-location', className: 'dsh-st-bundle-row' },
       createElement('div', { className: 'dsh-st-bundle-label-box' },
-        createElement('span', { className: 'dsh-st-bundle-title' }, t('sidebar.entry.title')),
-        createElement('span', { className: 'dsh-st-bundle-desc' }, t('sidebar.entry.desc')),
+        createElement('span', { className: 'dsh-st-bundle-title' }, t('entry.location.title') || t('sidebar.entry.title')),
+        createElement('span', { className: 'dsh-st-bundle-desc' }, t('entry.location.desc') || t('sidebar.entry.desc')),
       ),
-      createElement(Switch, {
-        checked: enabled,
-        onChange: onToggle,
-        label: t('sidebar.entry.toggle'),
+      createElement(SegmentedControl, {
+        id: 'dsh-st-bundle-entry-location',
+        value: effectiveLocation,
+        onChange: handleLocationChange,
+        label: t('entry.location.title') || t('sidebar.entry.title'),
         disabled,
+        options: [
+          { value: 'both', label: t('entry.location.both') || '两边显示' },
+          { value: 'sidebar', label: t('entry.location.sidebar') || '仅侧边栏' },
+          { value: 'settings', label: t('entry.location.settings') || '仅设置' },
+        ],
       }),
     ),
   ]
@@ -182,8 +212,10 @@ export function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactE
 
 export interface BundleConfigWrapperProps {
   readonly t: (key: string) => string
-  readonly getEnabled: () => boolean
-  readonly setSidebar: (next: boolean) => Promise<boolean>
+  readonly getLocation: () => EntryLocation
+  readonly setLocation: (next: EntryLocation) => Promise<EntryLocation>
+  readonly getEnabled?: () => boolean
+  readonly setSidebar?: (next: boolean) => Promise<boolean>
   readonly getOnlineUpdateEnabled?: () => boolean
   readonly getOnlineUpdateLocked?: () => boolean
   readonly setOnlineUpdate?: (next: boolean) => Promise<boolean>
@@ -195,18 +227,18 @@ export interface BundleConfigWrapperProps {
 }
 
 export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProps): ReactElement {
-  const [enabled, setEnabled] = useState(props.getEnabled)
+  const [location, setLocation] = useState<EntryLocation>(props.getLocation)
   const [onlineUpdateEnabled, setOnlineUpdateEnabled] = useState(props.getOnlineUpdateEnabled ? props.getOnlineUpdateEnabled : () => true)
   const [onlineUpdateLocked, setOnlineUpdateLocked] = useState(props.getOnlineUpdateLocked ? props.getOnlineUpdateLocked : () => false)
   const [hideOfficialScheduleEnabled, setHideOfficialScheduleEnabled] = useState(props.getHideOfficialScheduleEnabled ? props.getHideOfficialScheduleEnabled : () => true)
   const [taskTreeSessionsEnabled, setTaskTreeSessionsEnabled] = useState(props.getTaskTreeSessionsEnabled ? props.getTaskTreeSessionsEnabled : () => false)
-  const [savingSidebar, setSavingSidebar] = useState(false)
+  const [savingLocation, setSavingLocation] = useState(false)
   const [savingUpdate, setSavingUpdate] = useState(false)
   const [savingOfficialSchedule, setSavingOfficialSchedule] = useState(false)
   const [savingTaskTreeSessions, setSavingTaskTreeSessions] = useState(false)
 
   useEffect(() => {
-    setEnabled(props.getEnabled())
+    setLocation(props.getLocation())
     if (props.getOnlineUpdateEnabled) {
       setOnlineUpdateEnabled(props.getOnlineUpdateEnabled())
     }
@@ -220,7 +252,7 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
       setTaskTreeSessionsEnabled(props.getTaskTreeSessionsEnabled())
     }
     const unsub = props.subscribe(() => {
-      setEnabled(props.getEnabled())
+      setLocation(props.getLocation())
       if (props.getOnlineUpdateEnabled) {
         setOnlineUpdateEnabled(props.getOnlineUpdateEnabled())
       }
@@ -237,13 +269,13 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
     return () => { unsub() }
   }, [props])
 
-  const onToggleSidebar = (next: boolean): void => {
-    setSavingSidebar(true)
-    setEnabled(next)
-    props.setSidebar(next).catch(() => {
-      setEnabled(props.getEnabled())
+  const onLocationChange = (next: EntryLocation): void => {
+    setSavingLocation(true)
+    setLocation(next)
+    props.setLocation(next).catch(() => {
+      setLocation(props.getLocation())
     }).finally(() => {
-      setSavingSidebar(false)
+      setSavingLocation(false)
     })
   }
 
@@ -289,9 +321,9 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
 
   return createElement(AutomationBundleConfigCard, {
     t: props.t,
-    enabled,
-    disabled: savingSidebar,
-    onToggle: onToggleSidebar,
+    location,
+    disabled: savingLocation,
+    onLocationChange,
     onlineUpdateEnabled,
     onlineUpdateDisabled: savingUpdate,
     onlineUpdateLocked,
@@ -312,9 +344,13 @@ export interface SetupSidebarEntryOptions {
   readonly injectProps?: Record<string, unknown> | (() => Record<string, unknown>)
   readonly onOnlineUpdateChange?: (enabled: boolean) => void
   readonly onTaskTreeSessionsChange?: (enabled: boolean) => void
+  readonly onLocationChange?: (location: EntryLocation) => void
 }
 
 export interface SidebarController {
+  getLocation(): EntryLocation
+  setLocation(next: EntryLocation): Promise<EntryLocation>
+  isSettingsSectionEnabled(): boolean
   isEnabled(): boolean
   isSupported(): boolean
   setEnabled(next: boolean): Promise<boolean>
@@ -331,6 +367,9 @@ export interface SidebarController {
 export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntryOptions): SidebarController {
   if (!ctx.locale) {
     return {
+      getLocation: () => 'both',
+      setLocation: async () => 'both',
+      isSettingsSectionEnabled: () => true,
       isEnabled: () => false,
       isSupported: () => false,
       setEnabled: async () => false,
@@ -346,13 +385,16 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
   }
 
   const { callApi, renderPanel, ns } = options
-  let sidebarEntryEnabled = readCachedSidebarEntry()
+  let entryLocation = readCachedEntryLocation()
   let sidebarSupported = false
   let offPanel: (() => void) | null = null
   let offRow: (() => void) | null = null
   let epoch = 0
   let layoutService: { panelInfo?: { getSnapshot(): { activePanelId?: string } }; selectPanel?(id: string | null): void } | undefined
   const listeners = new Set<() => void>()
+
+  const isSidebarEnabled = () => entryLocation === 'both' || entryLocation === 'sidebar'
+  const isSettingsSectionEnabled = () => entryLocation === 'both' || entryLocation === 'settings'
 
   const notify = (): void => {
     for (const listener of listeners) {
@@ -361,7 +403,7 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
   }
 
   const sync = (): void => {
-    if (sidebarSupported && sidebarEntryEnabled) {
+    if (sidebarSupported && isSidebarEnabled()) {
       if (!offPanel) {
         const res = ctx.slots.register({
           name: 'main',
@@ -412,28 +454,46 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     }
   }
 
-  const setEnabled = async (next: boolean): Promise<boolean> => {
+  const setLocation = async (next: EntryLocation): Promise<EntryLocation> => {
     const currentEpoch = ++epoch
-    sidebarEntryEnabled = next
-    try { localStorage.setItem(STORAGE_KEY_SIDEBAR_ENTRY, String(next)) } catch {}
+    const previous = entryLocation
+    entryLocation = next
+    try {
+      localStorage.setItem(STORAGE_KEY_ENTRY_LOCATION, next)
+      localStorage.setItem(STORAGE_KEY_SIDEBAR_ENTRY, String(isSidebarEnabled()))
+    } catch {}
     sync()
     notify()
+    if (typeof options.onLocationChange === 'function') {
+      try { options.onLocationChange(next) } catch {}
+    }
     try {
       await callApi('/sidebar-entry', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ enabled: next }),
+        body: JSON.stringify({ location: next }),
       })
       return next
     } catch (err) {
       if (currentEpoch === epoch) {
-        sidebarEntryEnabled = !next
-        try { localStorage.setItem(STORAGE_KEY_SIDEBAR_ENTRY, String(!next)) } catch {}
+        entryLocation = previous
+        try {
+          localStorage.setItem(STORAGE_KEY_ENTRY_LOCATION, previous)
+          localStorage.setItem(STORAGE_KEY_SIDEBAR_ENTRY, String(isSidebarEnabled()))
+        } catch {}
         sync()
         notify()
+        if (typeof options.onLocationChange === 'function') {
+          try { options.onLocationChange(previous) } catch {}
+        }
       }
       throw err
     }
+  }
+
+  const setEnabled = async (next: boolean): Promise<boolean> => {
+    await setLocation(next ? 'both' : 'settings')
+    return isSidebarEnabled()
   }
 
   let onlineUpdateEnabled = true
@@ -512,11 +572,25 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
   const loadEpoch = epoch
   callApi('/sidebar-entry')
     .then((res: any) => {
-      if (epoch === loadEpoch && res && typeof res.enabled === 'boolean') {
-        sidebarEntryEnabled = res.enabled
-        try { localStorage.setItem(STORAGE_KEY_SIDEBAR_ENTRY, String(res.enabled)) } catch {}
+      if (epoch === loadEpoch && res) {
+        if (res.location === 'both' || res.location === 'sidebar' || res.location === 'settings') {
+          entryLocation = res.location
+          try {
+            localStorage.setItem(STORAGE_KEY_ENTRY_LOCATION, res.location)
+            localStorage.setItem(STORAGE_KEY_SIDEBAR_ENTRY, String(isSidebarEnabled()))
+          } catch {}
+        } else if (typeof res.enabled === 'boolean') {
+          entryLocation = res.enabled ? 'both' : 'settings'
+          try {
+            localStorage.setItem(STORAGE_KEY_ENTRY_LOCATION, entryLocation)
+            localStorage.setItem(STORAGE_KEY_SIDEBAR_ENTRY, String(res.enabled))
+          } catch {}
+        }
         sync()
         notify()
+        if (typeof options.onLocationChange === 'function') {
+          try { options.onLocationChange(entryLocation) } catch {}
+        }
       }
     })
     .catch(() => {})
@@ -617,7 +691,9 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
       if (ownerProps && ownerProps.view === 'summary') return null
       return createElement(AutomationBundleConfigCardWrapper, {
         t: ctx.locale.bind(ns),
-        getEnabled: () => sidebarEntryEnabled,
+        getLocation: () => entryLocation,
+        setLocation,
+        getEnabled: () => isSidebarEnabled(),
         setSidebar: setEnabled,
         getOnlineUpdateEnabled: () => onlineUpdateEnabled,
         getOnlineUpdateLocked: () => onlineUpdateLocked,
@@ -635,7 +711,10 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
   })
 
   return {
-    isEnabled: () => sidebarEntryEnabled,
+    getLocation: () => entryLocation,
+    setLocation,
+    isSettingsSectionEnabled,
+    isEnabled: () => isSidebarEnabled(),
     isSupported: () => sidebarSupported,
     setEnabled,
     isOnlineUpdateEnabled: () => onlineUpdateEnabled,

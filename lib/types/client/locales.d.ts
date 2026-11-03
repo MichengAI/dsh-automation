@@ -15,6 +15,11 @@ export declare const en: {
     readonly "sidebar.workspaces": "Workspaces";
     readonly "sidebar.search": "Search";
     readonly "sidebar.clearSearch": "Clear search";
+    readonly "entry.location.title": "Entry placement";
+    readonly "entry.location.desc": "Choose where to show the entry (at least one is retained to avoid losing access).";
+    readonly "entry.location.both": "Both";
+    readonly "entry.location.sidebar": "Sidebar only";
+    readonly "entry.location.settings": "Settings only";
     readonly "sidebar.entry.title": "Sidebar entry";
     readonly "sidebar.entry.desc": "Show dedicated scheduled tasks entry in the primary sidebar";
     readonly "sidebar.entry.toggle": "Toggle sidebar entry";

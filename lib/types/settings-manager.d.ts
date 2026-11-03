@@ -1,6 +1,8 @@
 import type { Context } from '@deepseek-ai/cordis';
 export declare const SETTINGS_API_HEADER = "x-michengai-client";
+export type EntryLocation = 'both' | 'sidebar' | 'settings';
 export interface PersistedSettings {
+    entryLocation?: EntryLocation | undefined;
     sidebarEntry?: boolean | undefined;
     onlineUpdate?: boolean | undefined;
     hideOfficialSchedule?: boolean | undefined;
@@ -17,6 +19,8 @@ export declare class SettingsManager {
     });
     private load;
     private flush;
+    getEntryLocation(): EntryLocation;
+    setEntryLocation(location: EntryLocation): Promise<EntryLocation>;
     getSidebarEntry(): boolean;
     setSidebarEntry(enabled: boolean): Promise<boolean>;
     getHideOfficialSchedule(): boolean;
