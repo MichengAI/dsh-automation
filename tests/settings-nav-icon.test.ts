@@ -126,6 +126,29 @@ test('当按钮内已存在原生插槽容器时，不添加 marker 避免双图
   }
 })
 
+test('老宿主下包含普通 aria-hidden 容器（无 navIcon）时，仍正常添加 marker 显示时钟图标', () => {
+  const restoreDocument = installFakeDocument()
+  try {
+    const { button, attributes } = fakeButton('定时任务')
+    const oldHostSpan = {
+      tagName: 'SPAN',
+      className: '',
+      attributes: new Map([['aria-hidden', 'true']]),
+      getAttribute(name: string) { return this.attributes.get(name) ?? null },
+      setAttribute(name: string, value: string) { this.attributes.set(name, value) },
+      remove() {},
+    }
+    button.children.push(oldHostSpan as any)
+    const labels = () => ['定时任务']
+
+    // 老宿主下由于没有 navIcon，不能将其误判为原生插槽，必须成功应用 marker
+    assert.equal(applySettingsNavIcon(button as unknown as HTMLButtonElement, labels), true)
+    assert.equal(attributes.has(SETTINGS_NAV_ICON_MARKER), true)
+  } finally {
+    restoreDocument()
+  }
+})
+
 test('不匹配的导航项时不标记', () => {
   const restoreDocument = installFakeDocument()
   try {

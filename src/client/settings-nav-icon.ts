@@ -44,7 +44,7 @@ export function applySettingsNavIcon(button: HTMLButtonElement, labels: () => re
   if (isOwn) {
     const hasSlotIcon = Array.from((button as unknown as { children?: Element[] }).children ?? []).some((child: any) =>
       child.tagName === 'SPAN' &&
-      (child.className?.includes('navIcon') || child.getAttribute?.('aria-hidden') === 'true')
+      Boolean(child.className && String(child.className).includes('navIcon'))
     ) || Boolean(button.querySelector?.('[class*="navIcon"]'))
     if (hasSlotIcon) {
       if (button.hasAttribute(SETTINGS_NAV_ICON_MARKER)) {

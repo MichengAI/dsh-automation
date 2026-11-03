@@ -6,7 +6,9 @@ Upcoming changes and recent published versions are listed below. Git tags and Gi
 
 ## 1.0.16 - 2026-11-03
 
-- **Prevent dual settings nav icons**: gracefully detect host slot container and skip legacy pseudo-element marker, avoiding duplicate nav icons on newer hosts.
+- **Fix settings nav icon fallback & prevent dual icons**: 
+  - Restrict host slot container detection to `navIcon` class names, preventing older hosts with standard `aria-hidden` wrappers from misdetecting slots and dropping the clock icon fallback to a gear;
+  - Decouple `settings.section.icon` registration into an independent declarative slot injection with proper disposal on location change.
 
 ## 1.0.15 - 2026-11-03
 

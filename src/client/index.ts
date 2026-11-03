@@ -137,11 +137,6 @@ export function apply(ctx: ClientContext): void {
         })
       })
       offSettingsSection = typeof unreg === 'function' ? (unreg as () => void) : () => {}
-      ;(ctx.slots.inject as any)('settings.section.icon', () => (ctx.slots.register as any)({
-        name: 'settings.section.icon',
-        id: 'scheduled-tasks',
-        locale: NS,
-      }, AutomationNavIcon))
     } catch (reason) {
       console.warn('automation: register settings.section failed:', reason)
       offSettingsSection = null
@@ -160,6 +155,29 @@ export function apply(ctx: ClientContext): void {
       mountSettingsSection()
     } else {
       unmountSettingsSection()
+    }
+  }
+
+  let offSettingsIcon: (() => void) | null = null
+  let settingsIconSlotInjected = false
+  const syncSettingsIcon = () => {
+    if (!settingsIconSlotInjected) return
+    const shouldShow = sidebarController?.isSettingsSectionEnabled?.() ?? true
+    if (shouldShow && !offSettingsIcon) {
+      try {
+        const res = (ctx.slots.register as any)({
+          name: 'settings.section.icon',
+          id: 'scheduled-tasks',
+          locale: NS,
+        }, AutomationNavIcon)
+        offSettingsIcon = typeof res === 'function' ? (res as () => void) : () => {}
+      } catch (reason) {
+        console.warn('automation: register settings.section.icon failed:', reason)
+        offSettingsIcon = null
+      }
+    } else if (!shouldShow && offSettingsIcon) {
+      try { offSettingsIcon() } catch {}
+      offSettingsIcon = null
     }
   }
 
@@ -188,6 +206,7 @@ export function apply(ctx: ClientContext): void {
     },
     onLocationChange: () => {
       syncSettingsSection()
+      syncSettingsIcon()
     },
   })
   ctx.effect(() => () => sidebarController.destroy(), 'dsh-automation: sidebar entry')
@@ -255,6 +274,17 @@ export function apply(ctx: ClientContext): void {
       console.warn('automation: register settings.section failed:', reason)
       return () => {
         settingsSectionSupported = false
+      }
+    }
+  })
+  ;(ctx.slots.inject as any)('settings.section.icon', () => {
+    settingsIconSlotInjected = true
+    syncSettingsIcon()
+    return () => {
+      settingsIconSlotInjected = false
+      if (offSettingsIcon) {
+        try { offSettingsIcon() } catch {}
+        offSettingsIcon = null
       }
     }
   })
