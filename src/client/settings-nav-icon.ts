@@ -42,10 +42,11 @@ export function applySettingsNavIcon(button: HTMLButtonElement, labels: () => re
   const text = (button.textContent ?? '').replace(/\s+/g, ' ').trim()
   const isOwn = wantedLabels(labels).has(text)
   if (isOwn) {
-    const hasSlotIcon = Array.from((button as unknown as { children?: Element[] }).children ?? []).some((child: any) =>
-      child.tagName === 'SPAN' &&
-      Boolean(child.className && String(child.className).includes('navIcon'))
-    ) || Boolean(button.querySelector?.('[class*="navIcon"]'))
+    // 只认宿主插槽容器（span[class*=navIcon]）。老宿主把 navIcon 类挂在宿主自己的
+    // <svg> 上（菜单行 = [<svg class="…navIcon">, <span class="…navLabel">]），
+    // 用宽判据 [class*=navIcon] 会把原生图标误判成插槽容器，于是永远不写 marker，
+    // 时钟图标退回宿主默认齿轮。
+    const hasSlotIcon = Boolean(button.querySelector?.('span[class*="navIcon"]'))
     if (hasSlotIcon) {
       if (button.hasAttribute(SETTINGS_NAV_ICON_MARKER)) {
         button.removeAttribute(SETTINGS_NAV_ICON_MARKER)

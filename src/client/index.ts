@@ -20,6 +20,7 @@ import { hostIconMarkup } from './host-icon-markup.js'
 import { installStyles } from './styles.js'
 import { openSettingsSection } from './settings-navigation.js'
 import { AutomationNavIcon, installSettingsNavIcon } from './settings-nav-icon.js'
+import { createSettingsNavIconSlot } from './settings-icon-slot.js'
 import { clearAutomationTaskSettingsRequest, requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
 import { clearAutomationCreateTaskRequest, requestAutomationCreateTask } from './create-task-request.js'
 import { observePluginUpdate, PLUGIN_UPDATE_TOGGLE_EVENT, type PluginUpdateIconName } from './plugin-update-ui.js'
@@ -109,9 +110,12 @@ export function apply(ctx: ClientContext): void {
   let offSettingsSection: (() => void) | null = null
   let settingsSectionSupported = false
 
+  /** 入口位置是否仍包含设置页分区（侧栏模式下设置页不应留入口与导航图标） */
+  const isSettingsEntryEnabled = (): boolean => sidebarController?.isSettingsSectionEnabled?.() ?? true
+
   const mountSettingsSection = () => {
     if (!settingsSectionSupported || offSettingsSection) return
-    if (sidebarController && !sidebarController.isSettingsSectionEnabled()) return
+    if (!isSettingsEntryEnabled()) return
     try {
       const unreg = ctx.slots.register({
         name: 'settings.section',
@@ -151,35 +155,23 @@ export function apply(ctx: ClientContext): void {
   }
 
   const syncSettingsSection = () => {
-    if (sidebarController?.isSettingsSectionEnabled?.() ?? true) {
+    if (isSettingsEntryEnabled()) {
       mountSettingsSection()
     } else {
       unmountSettingsSection()
     }
   }
 
-  let offSettingsIcon: (() => void) | null = null
-  let settingsIconSlotInjected = false
-  const syncSettingsIcon = () => {
-    if (!settingsIconSlotInjected) return
-    const shouldShow = sidebarController?.isSettingsSectionEnabled?.() ?? true
-    if (shouldShow && !offSettingsIcon) {
-      try {
-        const res = (ctx.slots.register as any)({
-          name: 'settings.section.icon',
-          id: 'scheduled-tasks',
-          locale: NS,
-        }, AutomationNavIcon)
-        offSettingsIcon = typeof res === 'function' ? (res as () => void) : () => {}
-      } catch (reason) {
-        console.warn('automation: register settings.section.icon failed:', reason)
-        offSettingsIcon = null
-      }
-    } else if (!shouldShow && offSettingsIcon) {
-      try { offSettingsIcon() } catch {}
-      offSettingsIcon = null
-    }
-  }
+  // 原生 settings.section.icon 槽位：宿主声明后才注册，入口位置切走后注销。
+  const settingsIconSlot = createSettingsNavIconSlot({
+    isEnabled: isSettingsEntryEnabled,
+    register: () => (ctx.slots.register as any)({
+      name: 'settings.section.icon',
+      id: 'scheduled-tasks',
+      locale: NS,
+    }, AutomationNavIcon),
+    warn: (reason: unknown) => console.warn('automation: register settings.section.icon failed:', reason),
+  })
 
   const sidebarController = setupSidebarEntry(ctx, {
     callApi: api,
@@ -206,7 +198,7 @@ export function apply(ctx: ClientContext): void {
     },
     onLocationChange: () => {
       syncSettingsSection()
-      syncSettingsIcon()
+      settingsIconSlot.sync()
     },
   })
   ctx.effect(() => () => sidebarController.destroy(), 'dsh-automation: sidebar entry')
@@ -277,17 +269,7 @@ export function apply(ctx: ClientContext): void {
       }
     }
   })
-  ;(ctx.slots.inject as any)('settings.section.icon', () => {
-    settingsIconSlotInjected = true
-    syncSettingsIcon()
-    return () => {
-      settingsIconSlotInjected = false
-      if (offSettingsIcon) {
-        try { offSettingsIcon() } catch {}
-        offSettingsIcon = null
-      }
-    }
-  })
+  ;(ctx.slots.inject as any)('settings.section.icon', () => settingsIconSlot.onInjected())
   // Codex UI 通过该插槽判断「定时」TAB 是否可用；注册总览后由宿主负责呈现页签。
   ctx.slots.inject('sidebar.schedule', () => ctx.slots.register({
     name: 'sidebar.schedule',
