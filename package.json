@@ -98,7 +98,7 @@
     }
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/cordis": "4.1.0",
     "@deepseek-ai/cordis-plugin-include": "1.0.10",
     "@deepseek-ai/dsh-agent": "0.2.2-rc.1",
     "@deepseek-ai/dsh-agent-default-model": "0.2.2-rc.1",
@@ -129,7 +129,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tsx": "^4.20.0",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "@deepseek-ai/cordis-plugin-loader": "1.1.0"
   },
   "keywords": [
     "deepseek-harness",

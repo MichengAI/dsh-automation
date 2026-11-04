@@ -13,7 +13,7 @@ import { registerAutomationRpc } from '../src/rpc.ts'
 const require = createRequire(import.meta.resolve('@deepseek-ai/cordis-plugin-include'))
 const { default: Loader, EntryTree } = await import(pathToFileURL(require.resolve('@deepseek-ai/cordis-plugin-loader')).href)
 const version = process.env.DSH_TEST_VERSION ?? '0.2.1-rc.2'
-const startupService = /^0\.2\.1-/.test(version) ? 'webStartup' : 'webRuntime'
+const startupService = 'webStartup'
 
 test(`${version} 真实 Loader 保留可信地址表达式并按消费者生命周期卸载 RPC`, async (t) => {
   const ctx = new Context()
@@ -40,6 +40,7 @@ test(`${version} 真实 Loader 保留可信地址表达式并按消费者生命�
   }
   class MemoryTree extends EntryTree {
     write() {}
+    commit() {}
     import(name, stack) {
       if (name === '@deepseek-ai/dsh-client-connection') return connection
       return super.import(name, stack)
@@ -49,7 +50,7 @@ test(`${version} 真实 Loader 保留可信地址表达式并按消费者生命�
   const base = [{
     id: 'connection',
     name: '@deepseek-ai/dsh-client-connection',
-    inject: [startupService],
+    inject: [startupService, 'credentials'],
     config: { trustedHosts: { __jsExpr: `ctx.${startupService}.trustedHosts` } },
   }]
   const patches = load(await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8'))
