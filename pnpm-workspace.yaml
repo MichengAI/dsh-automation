@@ -1,3 +1,4 @@
+minimumReleaseAge: 0
 onlyBuiltDependencies:
   - esbuild
 allowBuilds:
