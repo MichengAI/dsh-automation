@@ -123,7 +123,7 @@ function desktopHostButton(): FakeEl {
 }
 
 /**
- * 全局 dsh 0.2.2-alpha.3 的设置导航行：
+ * 全局 dsh 0.2.2-rc.1 的设置导航行：
  * <span class="…navIcon" aria-hidden="true">{renderSlot("settings.section.icon")}</span>
  */
 function globalHostButton(): FakeEl {

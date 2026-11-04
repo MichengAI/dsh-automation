@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.18] - 2026-11-04
+
+### Compatibility & Dependencies
+
+- Align with official DSH `0.2.2-rc.1` release; upgrade development dependencies to `0.2.2-rc.1`.
+- Clean up obsolete alpha versions from the host compatibility matrix; support all `0.2.x` RC hosts (`0.2.0-rc.1` through `0.2.2-rc.1`).
+- Update documentation badges and verified build ranges.
+
 [简体中文](CHANGELOG.zh-CN.md)
 
 Upcoming changes and recent published versions are listed below. Git tags and GitHub Releases now mirror these entries; historical sections retain links to their original release commits.
