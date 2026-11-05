@@ -6,94 +6,94 @@
 
   # DSH Automation
 
-  **Run standalone coding tasks on a schedule in DeepSeek Harness**
+  **在独立 DSH Session 中按计划执行编码任务**
 
-  [简体中文](README.zh-CN.md) · [Changelog](CHANGELOG.md) · [Apache-2.0](LICENSE)
+  [English](README.en.md) · [更新日志](CHANGELOG.zh-CN.md) · [Apache-2.0](LICENSE)
 
-  [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+  [![许可证：Apache-2.0](https://img.shields.io/badge/许可证-Apache--2.0-blue.svg)](LICENSE)
   [![npm package](https://img.shields.io/npm/v/%40michengai%2Fdsh-automation.svg?label=npm%20package)](https://www.npmjs.com/package/@michengai/dsh-automation)
-  [![npm downloads](https://img.shields.io/npm/dt/%40michengai%2Fdsh-automation.svg?label=npm%20downloads)](https://www.npmjs.com/package/@michengai/dsh-automation)
+  [![npm 下载量](https://img.shields.io/npm/dt/%40michengai%2Fdsh-automation.svg?label=npm%20%E4%B8%8B%E8%BD%BD%E9%87%8F)](https://www.npmjs.com/package/@michengai/dsh-automation)
   [![DSH Web Plugin](https://img.shields.io/badge/DSH%20Web-Plugin-0f766e.svg)](https://github.com/MichengAI/dsh-automation)
   [![Node.js 22 or later](https://img.shields.io/badge/Node.js-22%20or%20later-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org/)
 </div>
 
-> DSH Automation is a community-maintained DeepSeek Harness (DSH) plugin, not an official DeepSeek AI product.
+> DSH Automation 是社区维护的 DeepSeek Harness（DSH）插件，并非 DeepSeek AI 官方产品。
 
-## Features
+## 功能概览
 
-Let DSH handle work on a schedule. Set up tasks in Settings or describe the timing and requirements in a conversation, then review each run.
+把需要按时重复的工作交给 DSH。你可以在设置页安排任务，也可以在对话中说明执行时间和要求，再回看每次运行的结果。
 
-- **Run once or repeat**: choose intervals, hourly, daily, weekly, monthly, or every N days.
-- **Choose the working environment**: set the directory, model, skills, and permissions.
-- **Adjust the schedule anytime**: create, pause, resume, run immediately, or delete tasks.
-- **Review results**: browse task conversations by name and run time in the **Scheduled** tab, or filter run history in Settings.
-- **Keep each run independent**: each run uses the saved task instructions and does not inherit the conversation that created it.
+- **安排一次或重复执行**：支持间隔、每小时、每天、每周、每月和自定义间隔天数。
+- **选择工作环境**：设置工作目录、模型、技能和权限。
+- **随时调整安排**：创建、暂停、恢复、立即运行或删除任务。
+- **查看执行结果**：在侧栏「定时」中按任务和执行时间回看会话，在设置页筛选运行记录。
+- **每次独立运行**：使用已保存的任务说明，不继承创建任务时的整段对话。
 
-## Interface
+## 界面预览
 
-Scheduled sessions appear in both the official **Tasks** tree and the **Scheduled** tab. Idle scheduled sessions show the official clock icon in **Tasks**. **Scheduled → Records** groups by task by default and can switch to By workspace, Workspace tree, or Flat. By workspace keeps workspaces visible and only filters sessions to scheduled runs; the header + opens New scheduled task directly. Those groups cannot be added, renamed, or deleted:
+工作区左侧「任务 / 频道 / 定时」分列。定时会话会同时出现在「任务」的官方工作区树和「定时」页签；空闲的定时会话在「任务」里带官方时钟图标。「定时 → 记录」默认按任务分组，可切换按工作区、工作区树或平铺；按工作区模式保留工作区，只把会话过滤为定时会话；头部「＋」直接打开新建定时任务。分组不可新增、重命名或删除：
 
-![Scheduled sidebar](assets/screenshots/workspace-scheduled.png)
+![工作区定时侧栏](assets/screenshots/workspace-scheduled.png)
 
-Open **Settings → Scheduled Tasks** to search, create, pause, and inspect rules:
+打开「设置 → 定时任务」可搜索、新建、暂停和查看规则：
 
-![Scheduled tasks settings](assets/screenshots/settings-tasks.png)
+![定时任务设置页](assets/screenshots/settings-tasks.png)
 
-Describe the job in chat. DSH handles approval according to the selected permission mode:
+在对话里描述任务。DSH 会按所选权限模式处理授权：
 
-![Create a scheduled task from chat](assets/screenshots/chat-create.png)
+![通过对话创建定时任务](assets/screenshots/chat-create.png)
 
-![Official approval for automation_create](assets/screenshots/chat-approval.png)
+![创建定时任务的官方授权](assets/screenshots/chat-approval.png)
 
-After approval, the rule is saved and summarized in the conversation:
+确认后规则会保存，并在对话里汇总：
 
-![Scheduled task created](assets/screenshots/chat-created.png)
+![定时任务创建成功](assets/screenshots/chat-created.png)
 
-Run history stays in Settings and can be filtered by day, week, month, task, or status:
+执行记录留在设置页，可按天、周、月、任务或状态筛选：
 
-![Run history](assets/screenshots/settings-runs.png)
+![执行记录](assets/screenshots/settings-runs.png)
 
-## DSH product ecosystem
+## DSH 产品生态
 
-For a desktop workbench, download [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop/releases). Existing [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) installations can add plugins as needed by following each project's README. Below are 11 first-party plugins; consult the corresponding desktop release notes and bundled catalog for what that version includes.
+想使用桌面工作台，可下载 [DSH Codex Desktop](https://github.com/MichengAI/dsh-codex-desktop/releases)；已有 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 环境，可按各项目 README 按需安装。以下列出 11 个自研插件；桌面端实际随附范围以对应版本的发行说明和内置清单为准。
 
-| Plugin | What you can do |
+| 插件 | 你可以用它做什么 |
 | --- | --- |
-| [Codex UI](https://github.com/MichengAI/dsh-codex-ui) | Organize projects and conversations, search tasks, and navigate chat turns |
-| [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) | Choose and summon specialists for your task |
-| [Skills Manager](https://github.com/MichengAI/dsh-skills-manager) | Find, enable, create, and import local skills |
-| [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) | Search, restore, or clean up archived conversations |
-| [IM Connect](https://github.com/MichengAI/dsh-im-connect) | Send tasks and receive replies through messaging platforms |
-| [Automation](https://github.com/MichengAI/dsh-automation) | Schedule tasks and review each run |
-| [BTW](https://github.com/MichengAI/dsh-btw) | Ask side questions without interrupting the main task |
-| [Simplify](https://github.com/MichengAI/dsh-simplify) | Use `/simplify` to improve code within your Git changes |
-| [PUA](https://github.com/MichengAI/dsh-pua) | Guide the Agent to try new approaches after failures, investigate causes, and verify results before completion |
-| [Code Review](https://github.com/MichengAI/dsh-code-review) | Use `/review` to request an independent Agent code review and receive the report in the current conversation |
-| [Codex Pet](https://github.com/MichengAI/dsh-codex-pet) | View conversation notifications and respond to tool approvals and questions through a desktop pet |
+| [Codex UI](https://github.com/MichengAI/dsh-codex-ui) | 整理项目与会话、搜索任务、跳转对话轮次 |
+| [Agency Agents](https://github.com/MichengAI/dsh-agency-agents) | 按任务选择并召唤专业角色 |
+| [Skills Manager](https://github.com/MichengAI/dsh-skills-manager) | 统一查找、启停、创建和导入本机技能 |
+| [Archive Manager](https://github.com/MichengAI/dsh-archive-manager) | 搜索、恢复或清理已归档会话 |
+| [IM Connect](https://github.com/MichengAI/dsh-im-connect) | 从消息平台下任务、收回复 |
+| [Automation](https://github.com/MichengAI/dsh-automation) | 按计划执行任务，查看每次运行的结果 |
+| [BTW](https://github.com/MichengAI/dsh-btw) | 在当前上下文中临时旁问，不打断主任务 |
+| [Simplify](https://github.com/MichengAI/dsh-simplify) | 用 `/simplify` 整理 Git 改动范围内的代码 |
+| [PUA](https://github.com/MichengAI/dsh-pua) | 引导 Agent 在失败时换方法、查原因，并在完成前验证结果 |
+| [Code Review](https://github.com/MichengAI/dsh-code-review) | 用 `/review` 发起独立 Agent 代码审查，在当前会话接收报告 |
+| [Codex Pet](https://github.com/MichengAI/dsh-codex-pet) | 通过桌面宠物查看会话提醒、处理工具审批和问题回答 |
 
-## Prerequisites
+## 前置条件
 
-- Host compatibility: Full DeepSeek Harness `0.2.x` line (`>=0.2.0-rc.1 <0.3.0-0`), verified with `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5`, and `0.2.2-rc.1`, and forwards-compatible with subsequent `0.2.x` RC releases without requiring routine plugin version bumps. Hosts still on `0.1.x` should stay on plugin `0.1.66`. Back up automation storage and sessions in the Profile before upgrading the Host. `0.2.0` writes V4 sessions, and V4 sessions cannot be read after downgrading.
-- Official DSH peerDependencies are broadened to the generation range `>=0.2.0-rc.1 <0.3.0-0`. Development dependencies are pinned to `0.2.2-rc.1`. Legacy versions and breaking changes in the `0.3.0` generation are rejected by the version gate. `@deepseek-ai/dsh-agent-presets` and `@deepseek-ai/dsh-agent-preset-registry` are not peers: scheduled tasks use the host `agentPresets` service. Use one consistent official package version within each Host.
-- Other versions are outside the declared compatibility range. Installers may warn, and strict peer validation rejects them. Extend and pass the version matrix before adding a new rc.
-- The automation bundle does not override the official Connection entry. Each Host keeps its own startup dependencies, trusted-host expressions, and custom configuration; automation registers its RPC channel in its own plugin scope.
-- A working DeepSeek Harness Web installation with `dsh` available in PowerShell.
-- Examples use the `web` profile; replace it with the target profile.
-- Source installation and development require Node.js 22.19+. npm installation does not require running `npm install` in an arbitrary directory.
+- 宿主支持范围：DeepSeek Harness `0.2.x` 全系列（`>=0.2.0-rc.1 <0.3.0-0`），已验证兼容 `0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-rc.1`～`0.2.1-rc.5`、`0.2.2-rc.1`，并自动支持后续全部 0.2.x RC 版本，同代宿主升级无需重复等待发版。仍停在 `0.1.x` 的宿主请继续使用插件 `0.1.66`。升级宿主前备份 Profile 中的自动化存储和会话目录。`0.2.0` 写入 V4 会话，V4 会话不支持降级读取。
+- 官方 DSH peerDependencies 放宽至代际范围 `>=0.2.0-rc.1 <0.3.0-0`。开发依赖统一对齐固定为 `0.2.2-rc.1`。早期版本与 `0.3.0` 代际破坏性更新由版本门拦截。同一宿主中的官方包应使用一致版本。
+- 其他版本不在声明兼容范围内；安装器可能提示 peer 警告，启用严格 peer 校验时会失败。支持新 rc 前需扩展版本矩阵并通过验证。
+- 自动化 bundle 不覆盖官方 Connection 条目，各版宿主保留自己的启动依赖、可信地址表达式和自定义配置；自动化在自身插件作用域注册 RPC 路由。
+- 已可正常运行 DeepSeek Harness Web，且可在 PowerShell 中使用 `dsh`。
+- 以下示例使用 `web` profile；请替换为实际目标 profile。
+- 从源码安装或二次开发需要 Node.js 22.19+；仅从 npm 安装无需在任意目录执行 `npm install`。
 
-## Installation
+## 安装
 
-The installation commands below use the official npm registry.
+以下安装命令使用官方 npm 源。
 
-### Ask an agent to install it (recommended)
+### 让 Agent 帮你安装（推荐）
 
-Send the prompt below to any agent that can run terminal commands on your computer. Replace `web` with your actual profile. Once installed, use the plugin in DSH.
+把下面这段话发给任意能够执行本机终端命令的 Agent。将 `web` 替换为实际使用的 profile；安装完成后，在 DSH 中使用本插件。
 
 ```text
-Install the DSH plugin @michengai/dsh-automation into my local web profile by running: dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https://registry.npmjs.org/. Then run dsh --profile web --dump-config, confirm the configuration includes dsh-automation, and explain how to reload DSH and start using the plugin.
+请将 DSH 插件 @michengai/dsh-automation 安装到本机 web profile，执行：dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https://registry.npmjs.org/。安装后执行 dsh --profile web --dump-config，确认配置包含 dsh-automation，并告诉我如何重新加载 DSH 和开始使用。
 ```
 
-### Install from npm
+### 从 npm 安装
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -102,113 +102,113 @@ dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https:/
 dsh --profile web --dump-config
 ```
 
-Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.5` instead of `@latest` when needed.
-- **Reverse Proxy Deployment**: Supports running DSH behind a reverse proxy with a path prefix (e.g. `/app/dsh/`). Plugin API and update check endpoints resolve relative to the document base URI (`document.baseURI`) to avoid 404 errors caused by stripped path prefixes.
+安装后重启 DSH Web，并在浏览器硬刷新。需要钉死某一版时，把 `@latest` 换成 `@0.1.5`。
+- **反向代理部署**：支持将 DSH 部署在带路径前缀的反向代理后面（如 `/app/dsh/`），插件 API 与更新检查端点统一自动按页面基址（`document.baseURI`）相对解析，避免丢失代理路径前缀导致 404。
 
-## Plugin Configuration & Toggles
+## 插件配置与可选开关
 
-The plugin follows standard DSH bundle configuration conventions. Options are located at:
-> **Sidebar → Plugins → Click `@michengai/dsh-automation` details** (the host's `plugins.bundle.config` slot).
+插件遵循 DSH 官方扩展配置规范，配置项位于：
+> **主界面侧边栏「插件」→ 点击 `@michengai/dsh-automation` 详情页**（对应宿主 `plugins.bundle.config` 槽位）。
 
-Four native switches are available:
+此处提供四个原生扁平行开关：
 
-### 1. Sidebar Entry (`sidebarEntry`)
-- **Default**: Enabled (`true`) / Seamless takeover on new installs
-- **Description**: Displays a dedicated **Scheduled Tasks** icon on the primary activity bar.
-- **Effect**:
-  - **960px Centered View**: When enabled, clicking the sidebar icon opens the full task center inside a **960px centered container** (matching host plugin manager conventions). This eliminates vertical scrolling constraints in narrow settings dialogs, providing ample room for multi-step prompts, schedules, and audit records;
-  - **Clean Unregister**: When toggled off, cleanly unregisters the slot and safely switches away if the panel was active;
-  - **Live Synchronization**: The standard Settings modal and the workspace rail tabs remain fully available and in sync regardless of this toggle.
+### 1. 侧边栏入口 (`sidebarEntry`)
+- **默认状态**：开启（`true`）/ 新装默认平替接管
+- **功能说明**：在宿主左侧主活动栏常驻 **「定时任务」** 图标入口。
+- **生效效果**：
+  - **960px 居中版心**：开启后，在侧边栏点击即可直达定时任务中心，并在主工作区以 **960px 居中版心**（对齐官方插件管理与市场规范）展开完整大面板，彻底告别在设置弹窗狭窄视口内滚动的局限，便于集中管理长任务指令、定时计划与执行记录；
+  - **安全平滑收退**：关闭后安全注销侧栏槽位；若当前正停留在定时任务面板，会自动安全切回默认视图，防止悬空和白屏；
+  - **双入口数据同步**：无论是否开启侧栏入口，DSH 原有的「设置 → 定时任务」弹窗以及会话侧栏内的「任务与定时」页签均始终保留，两处界面数据与状态 100% 实时同步。
 
-### 2. Online Updates (`onlineUpdate` / `updater`)
-- **Default**: Enabled (`true`)
-- **Description**: Controls whether the plugin checks for and installs updates from npm.
-- **Effect**:
-  - **Dynamic UI Sync**: Disabling the toggle hides update chips and check buttons from the settings header immediately without requiring a full page reload;
-  - **Endpoint Guard**: When disabled, the update API route returns `HTTP 403` for all check and install requests, preventing unreviewed updates;
-  - **Host / Platform Lock**: For curated plugin indexes (such as VibeDev) or restricted enterprise environments, this can be locked directly via Cordis configuration (bundle patch) without needing UI interaction:
+### 2. 在线更新 (`onlineUpdate` / `updater`)
+- **默认状态**：开启（`true`）
+- **功能说明**：控制是否允许在线检查并安装定时任务插件的新版本。
+- **生效效果**：
+  - **界面联动**：关闭开关后，定时任务设置标题旁的「检查更新」按钮与版本提示将即时隐藏，无需刷新页面；开启后自动恢复展示；
+  - **接口安全拦截**：关闭后，服务端的更新路由对任何版本检查和安装请求均返回 `HTTP 403` 禁用状态，彻底杜绝在插件内安装未审核版本；
+  - **宿主/平台级锁定**：面向精选插件索引（如 VibeDev）或企业安全合规环境，支持直接在 Cordis 配置文件（bundle patch）中声明，无需进入界面手动配置：
     ```yaml
-    updater: false # or onlineUpdate: false
+    updater: false # 或 onlineUpdate: false
     ```
-    Once configured, the built-in updater is disabled at startup and the UI toggle is disabled with a locked notice;
-  - **Update Mode**: When an update is detected, **Update automatically** runs only when the DSH CLI or Desktop update service is available; otherwise, the dialog provides a profile-specific manual command to copy and run.
+    配置生效后，更新器在启动时即被完全禁用，且更新入口默认保持隐藏，前端 Switch 显示为锁定置灰状态；
+  - **更新模式**：发现新版后，只有检测到 DSH CLI 或 Desktop 更新服务时才可使用“自动更新”；其他环境会在弹窗中提供可复制、与当前 Profile 对应的手工更新命令。
 
-### 3. Hide Official Automation Entry (`hideOfficialSchedule`)
-- **Default**: Enabled (`true`, paired with Sidebar Entry)
-- **Description**: Controls whether to hide the host's built-in "Automation tasks" (`ui-schedule`) entry to avoid conflict.
-- **Effect**:
-  - **Clean Sidebar & Seamless Takeover**: Hidden by default on fresh installs while the plugin's own sidebar entry is displayed, avoiding duplicate icons;
-  - **Smart Panel Reset**: When hiding takes effect, if the main view is currently displaying the official schedules panel, it safely resets back to the default conversation view, preventing orphan views;
-  - **Flicker-Free Persistent Caching**: Features client-side local storage caching, eliminating icon flicker even on slow or offline networks;
-  - **Zero Residual Changes**: Toggling off or uninstalling the plugin restores the built-in entry automatically;
-  - **Upgrade Safety**: If an upgrading user had previously disabled `sidebarEntry`, the official entry remains visible by default, avoiding an empty activity bar.
+### 3. 屏蔽官方自动化入口 (`hideOfficialSchedule`)
+- **默认状态**：开启（`true`，与侧栏入口协同平替）
+- **功能说明**：控制是否隐藏宿主自带的「自动化任务」（`ui-schedule`）活动栏入口，避免与本插件功能冲突。
+- **生效效果**：
+  - **默认清爽与平滑平替**：安装本插件后，宿主自带的自动化任务活动栏按钮默认隐藏，由本插件侧栏入口自动点亮接管，避免界面出现两个相似入口；
+  - **活动区智能复位**：隐藏生效时，若主工作区正处于官方自动化页面，系统自动将其安全切回默认会话，杜绝页面孤立悬空；
+  - **本地持久化防闪烁**：前端支持本地缓存优先读取，弱网或离线环境下首帧绝不出现图标闪烁跳变；
+  - **无损自愈与卸载复原**：关闭开关或通过标准命令卸载本插件后，官方自带的自动化入口将自动完好无损地复现，绝无残留修改；
+  - **老用户升级防死区保护**：若升级前曾手动关闭侧栏入口，新版本将智能继承关闭状态，不隐藏官方入口，杜绝出现活动栏两头皆空的死区。
 
-### 4. Show Automation Sessions in Task Tree (`taskTreeSessions`)
-- **Default**: Disabled (`false`, hides automation sessions in task tree by default to keep workspace clean)
-- **Description**: Controls whether to show scheduled task run sessions in the official workspace task tree.
-- **Effect**:
-  - **Noise Reduction & Isolation**: When disabled, automation sessions (either prefixed with `dsh-automation-session-` or tracked in current scheduled runs) are automatically filtered out from the primary workspace tree, preventing frequent runs from crowding routine workspaces;
-  - **Lossless Review**: The filter only targets the main task tree. All past runs remain listed under "Schedule → Records" and can be opened for review at any time;
-  - **Lightweight Inter-Plugin Protocol**: Powered by the standard `NativeTabRegistry.sessionFilters` contract without invasive host interception, applying changes instantly and coexisting smoothly with third-party plugins like IM Connect and Archive Manager. Shells lacking this protocol degrade safely with a warning.
+### 4. 在任务树显示定时会话 (`taskTreeSessions`)
+- **默认状态**：关闭（`false`，默认在任务树隐藏定时会话，保持日常工作区清爽）
+- **功能说明**：控制是否在官方工作区任务树中显示定时任务运行历史会话。
+- **生效效果**：
+  - **降噪隔离**：关闭后，定时生成的历史会话（以 `dsh-automation-session-` 开头或属于当前定时任务运行记录的会话）自动从左侧官方工作区树中过滤，避免高频任务的历史会话刷满日常开发工作区；
+  - **无损复盘**：关闭仅作用于主任务树，在「定时 → 记录」面板中依然完整保留并可随时打开复盘全部运行历史；
+  - **轻量管道协同**：基于 `NativeTabRegistry.sessionFilters` 标准协作协议实现，无需深度劫持宿主组件，切换即时生效，与 IM 插件及归档管理等第三方插件完全兼容。未支持该协议的外壳会自动安全降级并提示。
 
-### 5. Storage & Host Configuration (`cordis.patch.yml`)
-The following configuration parameters can be declared under your profile's `cordis.patch.yml`:
+### 5. 存储与宿主参数配置 (`cordis.patch.yml`)
+支持在 Profile 的 `cordis.patch.yml` 中定制以下参数：
 ```yaml
 - id: dsh-automation
   name: '@michengai/dsh-automation'
   config:
-    stateDir: D:/Data/dsh-automation   # Optional: custom path for settings.json, defaults to active profile directory
-    runTimeoutMinutes: 60              # Optional: task execution timeout in minutes (default: 60, max: 1440)
-    misfireGraceMinutes: 15            # Optional: grace window for missed runs in minutes (default: 15, max: 10080)
-    historyLimit: 200                  # Optional: max audit log entries to retain (default: 200, max: 5000)
-    updater: false                     # Optional: enterprise lockdown for updates (alias: onlineUpdate: false)
+    stateDir: D:/Data/dsh-automation   # 可选：自定义设置文件 settings.json 存储路径，默认当前 Profile 目录
+    runTimeoutMinutes: 60              # 可选：单次任务超时时间（分钟），默认 60，上限 1440
+    misfireGraceMinutes: 15            # 可选：错过执行时间的宽限期（分钟），默认 15，上限 10080
+    historyLimit: 200                  # 可选：历史运行记录保留上限，默认 200，上限 5000
+    updater: false                     # 可选：企业级锁定更新（同 onlineUpdate: false）
 ```
 
-## Updates
+## 在线更新
 
-The settings title shows the installed version and a **Check for updates** button. When a newer release is available, **Update automatically** runs only when the DSH CLI or Desktop update service is available; otherwise, the dialog provides a profile-specific manual command to copy and run.
+设置标题会显示当前版本和“检查更新”按钮。发现新版后，只有检测到 DSH CLI 或 Desktop 更新服务时才可使用“自动更新”；其他环境会在弹窗中提供可复制、与当前 Profile 对应的手工更新命令。
 
-## Usage
+## 使用
 
-Open **Settings → Scheduled Tasks**, then use the panel as follows:
+打开「设置 → 定时任务」，再按下表操作：
 
-| Goal | Action | Scope |
+| 目标 | 操作 | 范围 |
 | --- | --- | --- |
-| Create a rule | Select **New scheduled task**, then set name, schedule, prompt, workspace, model, skills, and permission. | Host-wide |
-| Create from chat | Describe the schedule in any conversation, or select **Create in chat**. | Current conversation |
-| Pause or resume | Use the switch on a task card. | One rule |
-| Run now | Open the card menu and select **Run now**. | One rule |
-| Delete | Open the card menu and select **Delete task**. Run history is kept. | Definition only |
-| Inspect runs | Open **Run history**, then filter by day, week, month, task, or status. | Host-wide |
+| 创建规则 | 点击「新建定时任务」，填写名称、计划、任务说明、工作目录、模型、技能和权限。 | 当前 Host |
+| 通过对话创建 | 在任意对话描述定时任务，或点击「通过对话创建」。 | 当前对话 |
+| 暂停或恢复 | 使用任务卡片上的开关。 | 单条规则 |
+| 立即运行 | 打开卡片菜单，选择「立即执行」。 | 单条规则 |
+| 删除 | 打开卡片菜单，选择「删除任务」。运行历史会保留。 | 仅定义 |
+| 查看记录 | 打开「执行记录」，再按天、周、月、任务或状态筛选。 | 当前 Host |
 
-Each dispatched run uses the saved prompt, workspace, model, and permission boundary. It does not reuse approvals from the source chat.
+每次派发都使用保存的任务说明、工作区、模型和权限边界，不会复用来源对话中的批准。
 
-`automation_create` and `automation_update` support the same model controls as Settings: `provider`, `model`, and `reasoning_effort`. Use provider/model IDs and a reasoning level published by that model in `reasoningEfforts`. On creation, omitted provider/model fields inherit the current session's complete pair; an incomplete session pair falls back to the whole global pair, never a mix of the two. Creation is rejected when neither source has a complete pair, instead of saving follow-global. Saved IDs are trimmed. Omitted reasoning effort uses the model default. On update, omitted fields keep their saved values. Set both `provider` and `model` to `null` to follow the global selection at each run, and set `reasoning_effort` to `null` to restore the model default. Create/update responses and `automation_list` include the saved target fields in the automation definition (`reasoningEffort` in the response).
+`automation_create` 和 `automation_update` 支持与设置页相同的模型参数：`provider`、`model`、`reasoning_effort`。提供方和模型使用 ID，推理等级使用该模型公布的 `reasoningEfforts` 值。创建时省略 provider/model 会继承当前会话的完整配对；会话配对不完整时整对回退全局，不会把两边拼在一起。两边都没有完整配对时拒绝创建，而不是写成跟随全局。保存时去掉 ID 首尾空白。省略推理等级使用模型默认。更新时省略字段保持原值。将 `provider` 和 `model` 都设为 `null`，任务就会在每次运行时跟随当时的全局选择；`reasoning_effort=null` 清除固定推理等级，恢复模型默认。创建、更新和 `automation_list` 的返回定义包含保存的目标字段（返回中的推理等级字段为 `reasoningEffort`）。
 
-When specifying or updating a model, send both `provider` and `model` as non-empty IDs or both as `null`; incomplete pairs are rejected. Query `automation_list` first: `models` includes available IDs and `reasoning.efforts`, `defaultModel` is the global selection, and `modelFailures` reports catalog loading failures. Changing the saved provider/model pair clears the previous reasoning override unless you explicitly supply `reasoning_effort`; submitting the same pair preserves it. Model IDs and reasoning levels are not validated against the catalog when saving; catalog discovery lets the Agent choose from the Host's published options.
+指定或修改模型时，必须成对传入非空的 `provider` 和 `model` ID，或两项都设为 `null`，不完整配对会被拒绝。先查询 `automation_list`：`models` 包含可选 ID 和 `reasoning.efforts`，`defaultModel` 是全局选择，`modelFailures` 提示目录加载失败。切换保存的模型配对时，若没有显式传入 `reasoning_effort`，会清除旧等级；重复提交相同配对则保留。保存时不会依据目录校验模型 ID 和推理等级；Agent 可通过目录查询选择宿主公布的选项。
 
-## Safety boundary
+## 权限与安全边界
 
-| Item | Behavior |
+| 项目 | 行为 |
 | --- | --- |
-| Permission | Options and the default come directly from the Host `permissionPresets` service, including custom presets. |
-| Tool calls | Follow Host tool availability, permission, and approval checks without an additional fixed tool allowlist or a background-shell ban. The Host manages background processes. |
-| Full access | The official `danger-full-access` option uses the same risk confirmation and orange warning as Chat. |
-| Approval | Chat create follows the session policy. Full access (`never`) proceeds; Workspace Write / Read Only (`ask`) shows the official card. Unattended runs stay fail-closed `never`. |
-| Retry | No automatic retry after a started run. |
-| Host restart | Leftover `queued` / `running` records become `failed(host_interrupted)`. |
-| Concurrency | Different automations have no plugin-level global concurrency cap, including those in the same directory. The legacy plugin-level global concurrency setting (`maxConcurrentRuns` in plugin config) no longer takes effect; it is separate from the per-task field below. |
-| Minimum interval | Since `0.1.40`, interval schedules accept whole minutes starting at `1`. Missed triggers are not replayed individually; only the latest due occurrence is considered within the recovery window. |
-| Per-task concurrency | Available since `0.1.40`. Set Concurrency in the create/edit dialog (positive integer, default `1`). Queued and running executions share this limit. When full, scheduled triggers become `skipped(overlap)` and manual runs return a limit error. Lowering the limit does not cancel existing runs. Agent create/update tools accept `max_concurrent_runs`; Web RPC accepts `maxConcurrentRuns`. Existing tasks default to `1`. |
-| Workspace scoping | Bound to the origin session workspace by default. Agent tools can specify or migrate tasks via `workspace` (name, ID, path, or directory basename); cross-workspace mutations (`update` / `run_now` / `delete`) require explicit `cross_workspace: true` to prevent unauthorized cross-project escape; `automation_list` supports `all_workspaces: true`. |
+| 权限 | 列表和默认值直接来自 Host 官方 `permissionPresets` 服务；支持 Host 注册的自定义预设。 |
+| 工具调用 | 遵循 Host 的工具可用性、权限和审批检查，不额外维护固定工具白名单或禁止后台 shell；后台进程由 Host 管理。 |
+| 完全访问 | 选择官方 `danger-full-access` 时显示与 Chat 一致的风险确认和橙色提示。 |
+| 审批 | 对话创建跟随当前会话策略。Full access（`never`）直接创建；Workspace Write / Read Only（`ask`）走官方授权卡。无人值守运行仍是 fail-closed 的 `never`。 |
+| 重试 | 已经开始的运行不会自动重试。 |
+| Host 重启 | 遗留的 `queued` / `running` 会变成 `failed(host_interrupted)`。 |
+| 并发 | 不同自动化任务不设插件级全局并发上限，同一目录下也可同时运行。旧插件级全局并发配置（插件 config 中的 `maxConcurrentRuns`）不再生效，与下方任务级字段不同。 |
+| 最短间隔 | 自 `0.1.40` 起，间隔计划支持最短 `1` 分钟，仅接受整数分钟。恢复时仅处理补跑窗口内最近的到期点，不逐次补齐漏掉的触发。 |
+| 单任务并发 | 自 `0.1.40` 起支持。在任务的新建/编辑页设置“并发数量”（正整数，默认 `1`）。同一任务的排队及运行记录共用此上限；满额时定时触发记为 `skipped(overlap)`，手动运行返回上限提示。调低上限不取消已有运行。Agent 创建/更新工具使用 `max_concurrent_runs`，Web RPC 使用 `maxConcurrentRuns`；旧任务默认 `1`。 |
+| 工作区边界 | 默认绑定来源会话工作区。支持 Agent 工具通过 `workspace` 参数指定或迁移到其他工作区（支持名称、ID、路径及末级目录名）；跨工作区操作（`update` / `run_now` / `delete`）需显式声明 `cross_workspace: true` 以防止非预期跨区越权；`automation_list` 支持通过 `all_workspaces: true` 跨区检索。 |
 
-A schedule stores future intent. It is not a cached permission grant.
+计划只表达未来意图，不是缓存下来的授权。
 
-## Development
+## 二次开发
 
-### Install from source
+### 从源码安装
 
-Use this for debugging or unpublished changes. The cloned directory becomes the plugin source path:
+适用于调试或使用未发布改动。克隆后的目录会直接作为插件安装路径：
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -223,16 +223,16 @@ dsh plugin --profile web add .
 dsh --profile web --dump-config
 ```
 
-Restart DSH Web and hard-refresh the browser. Local installation reads and applies `cordis.patch.yml`; do not copy `lib` files manually.
+完成后重启 DSH Web 并硬刷新浏览器。`dsh plugin ... add .` 会自动读取并应用 `cordis.patch.yml`；不要手工复制 `lib` 文件。
 
-Current sources live in `src` and build into `lib`:
+当前源码在 `src`，构建产物在 `lib`：
 
-- [src\index.ts](src/index.ts): Host plugin, tools, and RPC.
-- [src\service.ts](src/service.ts): Durable definitions, clock, and run admission.
-- [src\client\index.ts](src/client/index.ts): Settings page and chat prefill.
-- `tests\*.test.ts`: Domain, recurrence, service, client, and package-contract tests.
+- [src\index.ts](src/index.ts)：Host 插件、工具和 RPC。
+- [src\service.ts](src/service.ts)：持久化定义、时钟和运行准入。
+- [src\client\index.ts](src/client/index.ts)：设置页和对话预填。
+- `tests\*.test.ts`：领域、周期、服务、客户端和包契约测试。
 
-After changing files, run tests, rebuild, and reinstall from the local directory:
+修改后运行测试、重新构建，并以本地目录安装验证：
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -241,9 +241,9 @@ pnpm check
 dsh plugin --profile web add .
 ```
 
-Keep the at-most-once dispatch policy, default workspace scoping for Agent tools with explicit cross-workspace guards (cross_workspace / all_workspaces), and fail-closed unattended approval when changing execution code.
+修改执行逻辑时必须保留 at-most-once 派发、Agent 工具的默认工作区作用域与跨区显式确认（cross_workspace / all_workspaces），以及无人值守 fail-closed 审批。
 
-## Verification
+## 验证
 
 ```powershell
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -252,14 +252,14 @@ pnpm test
 pnpm build
 ```
 
-`pnpm check` runs typecheck, unit tests, real Host compatibility tests, and build. `pnpm test:host` bypasses runtime stubs and uses the official AgentLoop, Session V3, and permission service with a fixed local model adapter; it makes no external model calls. Browser interactions and real model calls require separate acceptance testing.
+`pnpm check` 会连续执行类型检查、单元测试、真实宿主兼容测试和构建。`pnpm test:host` 不加载宿主运行时桩，使用官方 AgentLoop、Session V3 和权限服务，模型响应由本地固定适配器提供，不调用外部模型。浏览器交互和真实模型调用需另行验收。
 
-Cross-plugin sidebar regressions run with `pnpm test:composition <dsh-im-connect checkout>`. Build the IM checkout first; the script reads its `lib/client.js`. It executes the composition logic and tab registries of both repositories, covering registration order, delayed notifications, and uninstall handover across the archive, IM, scheduled, and Codex UI plugins; slots and timers use a simulated environment, so it does not install any plugin or replace Desktop rendering acceptance testing. This separate check requires an external checkout and is not included in `pnpm check`; use a fixed IM revision for reproducible results.
+跨插件侧栏回归可运行 `pnpm test:composition <dsh-im-connect 检出目录>`。请先构建 IM 检出目录，脚本读取其中的 `lib/client.js`。它执行两仓库的接入逻辑和页签注册表，覆盖归档、IM、定时及 Codex UI 的注册顺序、延迟通知与卸载接管；插槽和计时器使用模拟环境，不替代 Desktop 渲染验收，也不安装插件。该检查需要外部检出目录，独立于 `pnpm check`；请固定 IM revision，以便复现结果。
 
-`pnpm test:matrix` builds the package, then creates separate temporary npm environments for every declared Host version using network access. It checks strict peer installation, every official dependency version, the packaged entry point, real AgentLoop execution, and service regressions. All declared versions pass. Persistence enumeration in service regressions uses in-memory fixtures for both cold-session formats; it does not validate on-disk migration of a real Profile. The printed evidence directory retains installation lockfiles, test logs, and `results.json`. The matrix does not modify development dependencies or connect to the user's Profile.
+`pnpm test:matrix` 先构建发布包，再联网为上述已声明版本分别建立临时 npm 环境，执行严格 peer 安装、整棵官方依赖树版本检查、发布入口加载、真实 AgentLoop 执行和服务回归。各声明版本均通过；服务回归中的持久化枚举使用内存夹具，覆盖新旧冷会话格式，不等同于真实 Profile 的磁盘迁移验收。脚本输出证据目录，保留各版安装锁文件、测试日志和 `results.json`。矩阵不修改开发依赖，也不连接用户 Profile。
 
-## License
+## 许可证
 
-Additional notices are in [NOTICE](NOTICE).
+补充说明见 [NOTICE](NOTICE)。
 
-This project uses [Apache License 2.0](LICENSE).
+本项目采用 [Apache License 2.0](LICENSE)。
