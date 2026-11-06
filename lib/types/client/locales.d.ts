@@ -150,6 +150,7 @@ export declare const en: {
     readonly "permission.fullAccess": "Full access";
     readonly "form.fieldAgentPreset": "Agent preset";
     readonly "form.agentPresetUnavailable": " (Unavailable)";
+    readonly "form.agentPresetMissing": "This Host has not declared any Agent preset, so a scheduled task cannot be created.";
     readonly "card.agentPreset": "Agent preset";
     readonly presetStandardName: "Standard mode";
     readonly presetStandardDescription: "Work with code, files, and information. Suitable for most tasks, with search, editing, terminal commands, and other tools available as needed.";

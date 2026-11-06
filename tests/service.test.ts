@@ -716,6 +716,41 @@ test("Agent 预设名册为空时拒绝显式预设，不当成读取失败", as
   await service.dispose();
 });
 
+test("宿主声明零预设且无默认值时，快照默认值为空并拒绝创建", async () => {
+  const agentPresets = {
+    defaultId: "",
+    composedPreset: () => "standard",
+    async remoteExportList() {
+      return { presets: [] };
+    },
+  };
+  const { service } = await makeService({}, {}, { agentPresets });
+  assert.equal(service.defaultAgentPreset(), "");
+  const snapshot = await service.snapshot({
+    sessionId: "session_1",
+    creatorKind: "web",
+    hostWide: true,
+  });
+  assert.equal(snapshot.defaultAgentPreset, "");
+  assert.deepEqual(snapshot.agentPresets, []);
+  await assert.rejects(
+    () =>
+      service.create(
+        { sessionId: "session_1", creatorKind: "web", hostWide: true },
+        {
+          name: "零预设宿主",
+          prompt: "检查状态",
+          schedule: { kind: "once", at: "2099-01-01T10:00:00.000Z", timeZone: "UTC" },
+          workspaceId: "ws_1",
+          cwd: "D:\\work\\demo",
+          permissionPreset: "read-only",
+        },
+      ),
+    /未声明任何 Agent 预设/,
+  );
+  await service.dispose();
+});
+
 test("Agent 预设名册可用时拒绝未知和损坏预设", async () => {
   const agentPresets = {
     defaultId: "standard",

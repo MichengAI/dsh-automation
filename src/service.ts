@@ -300,7 +300,8 @@ export class AutomationService {
       return { presets: cached.presets, status: "available" };
     }
     const service = this.ctx.agentPresets;
-    const fallback: readonly AgentPresetOption[] = [{ id: this.defaultAgentPreset() }];
+    const fallbackId = this.defaultAgentPreset();
+    const fallback: readonly AgentPresetOption[] = fallbackId === "" ? [] : [{ id: fallbackId }];
     try {
       if (typeof service?.remoteExportList === "function") {
         const roster = await service.remoteExportList();
@@ -348,11 +349,14 @@ export class AutomationService {
 
   /** Host 未显式配置时的默认 Agent 预设。 */
   defaultAgentPreset(): string {
+    const service = this.ctx.agentPresets;
+    if (service === undefined) return "standard";
     try {
-      const id = this.ctx.agentPresets?.defaultId;
-      if (typeof id === "string" && id.trim() !== "") return id.trim();
+      const id = service.defaultId;
+      // 显式空串代表宿主声明了零预设；字段缺失/非字符串按旧宿主回退。
+      if (typeof id === "string") return id.trim();
     } catch {
-      // Host 未提供该服务时回退。
+      // 读取失败时保留旧宿主回退，避免把临时异常当成「零预设」。
     }
     return "standard";
   }
@@ -459,6 +463,10 @@ export class AutomationService {
       } catch (error) {
         if (error instanceof AutomationRequestError) throw error;
         throw new AutomationRequestError(asMessage(error));
+      }
+      const roster = await this.readAgentPresetRoster();
+      if (roster.status === "empty") {
+        throw new AutomationRequestError("宿主未声明任何 Agent 预设，无法创建定时任务。");
       }
       const target = await this.resolveCreateTarget(scope, request);
       let value: AutomationDefinition;

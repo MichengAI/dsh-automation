@@ -12,6 +12,13 @@ test('新建弹窗点遮罩不能关，Esc 只关弹窗', () => {
   assert.equal(shouldCloseCreateModal('cancel'), true)
 })
 
+test('宿主未声明预设时新建弹窗说明原因并禁用保存', () => {
+  const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
+  assert.match(modal, /const presetMissing = editing !== true && agentPresets\.length === 0 && defaultAgentPreset === ''/)
+  assert.match(modal, /form\.agentPresetMissing/)
+  assert.match(modal, /disabled=\{busy \|\| addingWorkspace \|\| !workspaceReady \|\| presetMissing\}/)
+})
+
 test('任务编辑弹窗使用宿主 Modal，点遮罩不能关闭', () => {
   const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
   const styles = readFileSync(new URL('../src/client/styles.ts', import.meta.url), 'utf8')

@@ -426,6 +426,7 @@ function TaskCard({
 }): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
   const presetName = agentPresetLabel(agentPresets.find(option => option.id === item.agentPreset) ?? { id: item.agentPreset }, t, presetT)
+  const scheduleText = formatSchedule(item.schedule, t)
   const nextRunText = item.nextRunAt === undefined ? t('stats.noneScheduled') : t('history.nextApprox', { when: formatWithin(item.nextRunAt, now, t) })
   return (
     <article className="dsh-st-card" onClick={onEdit}>
@@ -471,7 +472,7 @@ function TaskCard({
       <h3>{item.name}</h3>
       <p>{item.prompt}</p>
       <div className="dsh-st-card-foot">
-        <span className="dsh-st-chip"><IconClockOutline size={14} /><span className="dsh-st-chip-text">{formatSchedule(item.schedule, t)}</span></span>
+        <span className="dsh-st-chip" title={scheduleText}><IconClockOutline size={14} /><span className="dsh-st-chip-text">{scheduleText}</span></span>
         <span className="dsh-st-chip" title={`${t('card.agentPreset')}: ${presetName}`}><IconSettingsOutline size={14} /><span className="dsh-st-chip-text">{presetName}</span></span>
         <span className="dsh-st-card-next" title={nextRunText}>{nextRunText}</span>
       </div>
