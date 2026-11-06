@@ -13,6 +13,9 @@
 - Preserve existing tasks whose preset was removed: renaming or editing other fields no longer fails with an unknown-preset error.
 - Do not cache a failed preset-roster read, so a transient Host failure no longer blocks valid presets for 30 seconds.
 - Keep the task card border visible on hover in light themes.
+- Use the locale's own parentheses for unavailable presets, so English no longer shows full-width CJK brackets.
+- Add a tooltip to the task card's next-run label and let preset chips shrink before it, so the text is never silently truncated.
+- Reject explicit presets when the Host declares an empty preset roster, instead of accepting arbitrary ids.
 
 [简体中文](CHANGELOG.zh-CN.md)
 

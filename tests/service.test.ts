@@ -687,6 +687,35 @@ test("Agent 预设名册不可用时显式预设放行", async () => {
   await service.dispose();
 });
 
+test("Agent 预设名册为空时拒绝显式预设，不当成读取失败", async () => {
+  const agentPresets = {
+    defaultId: "standard",
+    composedPreset: () => "standard",
+    async remoteExportList() {
+      return { presets: [] };
+    },
+  };
+  const { service } = await makeService({}, {}, { agentPresets });
+  assert.deepEqual(await service.agentPresetOptions(), []);
+  await assert.rejects(
+    () =>
+      service.create(
+        { sessionId: "session_1", creatorKind: "web", hostWide: true },
+        {
+          name: "空名册",
+          prompt: "检查状态",
+          schedule: { kind: "once", at: "2099-01-01T10:00:00.000Z", timeZone: "UTC" },
+          agentPreset: "whatever",
+          workspaceId: "ws_1",
+          cwd: "D:\\work\\demo",
+          permissionPreset: "read-only",
+        },
+      ),
+    /未声明任何 Agent 预设/,
+  );
+  await service.dispose();
+});
+
 test("Agent 预设名册可用时拒绝未知和损坏预设", async () => {
   const agentPresets = {
     defaultId: "standard",

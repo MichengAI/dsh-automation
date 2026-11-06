@@ -61,10 +61,10 @@ const CSS_TEXT = `
 .dsh-st-menu-select-trigger.is-open .dsh-st-menu-select-arrow{transform:rotate(180deg)}
 .dsh-st-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-tertiary);font-size:12px}
 .dsh-st-card-foot>*{min-width:0}
-.dsh-st-card-foot .dsh-st-chip{min-width:0;overflow:hidden}
+.dsh-st-card-foot .dsh-st-chip{flex:0 2 auto;min-width:0;overflow:hidden}
 .dsh-st-card-foot .dsh-st-chip svg{flex:none}
 .dsh-st-chip-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dsh-st-card-next{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsh-st-card-next{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dsh-st-preset-option{display:flex;flex-direction:column;gap:2px;max-width:280px}
 .dsh-st-preset-option-name{color:var(--dsw-alias-label-primary);font-size:13px;line-height:20px}
 .dsh-st-preset-option-desc{color:var(--dsw-alias-label-caption);font-size:12px;line-height:16px;white-space:normal}

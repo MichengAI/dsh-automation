@@ -292,12 +292,12 @@ export class AutomationService {
    */
   private async readAgentPresetRoster(): Promise<{
     readonly presets: readonly AgentPresetOption[];
-    readonly available: boolean;
+    readonly status: "available" | "empty" | "unavailable";
   }> {
     const now = Date.now();
     const cached = this.agentPresetCache;
     if (cached !== undefined && cached.expiresAt > now) {
-      return { presets: cached.presets, available: true };
+      return { presets: cached.presets, status: "available" };
     }
     const service = this.ctx.agentPresets;
     const fallback: readonly AgentPresetOption[] = [{ id: this.defaultAgentPreset() }];
@@ -305,10 +305,12 @@ export class AutomationService {
       if (typeof service?.remoteExportList === "function") {
         const roster = await service.remoteExportList();
         const listed = Array.isArray(roster?.presets) ? roster.presets : [];
-        if (listed.length > 0) {
-          this.agentPresetCache = { expiresAt: now + OPTION_CACHE_TTL_MS, presets: listed };
-          return { presets: listed, available: true };
+        if (listed.length === 0) {
+          // 宿主明确声明了零预设：不能当成「读取失败」放行任意 id。
+          return { presets: [], status: "empty" };
         }
+        this.agentPresetCache = { expiresAt: now + OPTION_CACHE_TTL_MS, presets: listed };
+        return { presets: listed, status: "available" };
       }
     } catch (error) {
       if (!this.warnedAgentPresetRoster) {
@@ -316,7 +318,7 @@ export class AutomationService {
         this.ctx.logger.warn(`agent preset roster unavailable: ${asMessage(error)}`);
       }
     }
-    return { presets: fallback, available: false };
+    return { presets: fallback, status: "unavailable" };
   }
 
   /** 读取 Host 当前声明的 Agent 预设名册；取不到时回退到默认预设。 */
@@ -328,8 +330,11 @@ export class AutomationService {
   private async requireAgentPreset(input: string): Promise<string> {
     const value = input.trim();
     if (value === "") throw new AutomationRequestError("Agent 预设不能为空。");
-    const { presets, available } = await this.readAgentPresetRoster();
-    if (!available) return value;
+    const { presets, status } = await this.readAgentPresetRoster();
+    if (status === "unavailable") return value;
+    if (status === "empty") {
+      throw new AutomationRequestError("宿主未声明任何 Agent 预设，无法保存指定预设。");
+    }
     const normalized = normalizeAgentPreset(value, presets);
     if (normalized === undefined) {
       throw new AutomationRequestError(`Agent 预设「${value}」不在当前宿主名册中。`);

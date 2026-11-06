@@ -76,7 +76,7 @@ export function buildAgentPresetOptions(
     const name = agentPresetLabel(option, t, presetT)
     const description = agentPresetDescription(option, t, presetT)
     const label = option.broken !== undefined
-      ? `${name}（${t('form.agentPresetUnavailable')}）`
+      ? `${name}${t('form.agentPresetUnavailable')}`
       : description !== undefined
         ? createElement('span', { className: 'dsh-st-preset-option' },
             createElement('span', { className: 'dsh-st-preset-option-name' }, name),

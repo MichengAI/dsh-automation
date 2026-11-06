@@ -30,7 +30,7 @@ test('宿主命名空间可用时优先使用其词条，缺失时回退本地�
 })
 
 test('预设下拉项：损坏禁用、当前值补项、说明文案来自词条', () => {
-  const local = ((key: string) => `local:${key}`) as never
+  const local = ((key: string) => key === 'form.agentPresetUnavailable' ? ' (Unavailable)' : `local:${key}`) as never
   const host = ((key: string) => key === 'presetStandardName' ? '标准模式' : key === 'presetStandardDescription' ? '标准说明' : key) as never
   const options = buildAgentPresetOptions(
     [{ id: 'standard' }, { id: 'broken', broken: '无法加载' }],
@@ -42,6 +42,7 @@ test('预设下拉项：损坏禁用、当前值补项、说明文案来自词�
   assert.notEqual(typeof options[0]?.label, 'string')
   assert.equal(options[1]?.disabled, true)
   assert.equal(options[1]?.text, 'broken')
+  assert.equal(options[1]?.label, 'broken (Unavailable)')
   assert.equal(options[2]?.value, 'deleted-preset')
   assert.equal(options[2]?.text, 'deleted-preset')
 })
