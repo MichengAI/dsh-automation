@@ -775,6 +775,19 @@ test("有预设但无默认值时，省略预设给中文错误，显式预设�
   await service.dispose();
 });
 
+test("名册读取失败且默认值为空时，回退名册不产生空 id 选项", async () => {
+  const agentPresets = {
+    defaultId: "",
+    composedPreset: () => "",
+    async remoteExportList() {
+      throw new Error("down");
+    },
+  };
+  const { service } = await makeService({}, {}, { agentPresets });
+  assert.deepEqual(await service.agentPresetOptions(), []);
+  await service.dispose();
+});
+
 test("Agent 预设名册可用时拒绝未知和损坏预设", async () => {
   const agentPresets = {
     defaultId: "standard",
