@@ -632,7 +632,7 @@ test("Agent 预设名册、默认值和校验均来自 Host 官方服务", async
         created.id,
         { agentPreset: "not-official" },
       ),
-    /unknown agent preset/,
+    /不在当前宿主名册中/,
   );
   const updated = await service.update(
     { sessionId: "session_1", creatorKind: "web", hostWide: true },
@@ -640,6 +640,106 @@ test("Agent 预设名册、默认值和校验均来自 Host 官方服务", async
     { agentPreset: "standard" },
   );
   assert.equal(updated.agentPreset, "standard");
+  await service.dispose();
+});
+
+test("Agent 预设名册读取失败不缓存，恢复后立即可用", async () => {
+  let calls = 0;
+  const agentPresets = {
+    defaultId: "standard",
+    composedPreset: () => "standard",
+    async remoteExportList() {
+      calls += 1;
+      if (calls === 1) throw new Error("registry not ready");
+      return { presets: [{ id: "standard" }, { id: "ptc" }] };
+    },
+  };
+  const { service } = await makeService({}, {}, { agentPresets });
+  const first = await service.agentPresetOptions();
+  assert.deepEqual(first.map((item) => item.id), ["standard"]);
+  const second = await service.agentPresetOptions();
+  assert.deepEqual(second.map((item) => item.id), ["standard", "ptc"]);
+  await service.dispose();
+});
+
+test("Agent 预设名册不可用时显式预设放行", async () => {
+  const agentPresets = {
+    defaultId: "standard",
+    composedPreset: () => "standard",
+    async remoteExportList() {
+      throw new Error("down");
+    },
+  };
+  const { service } = await makeService({}, {}, { agentPresets });
+  const created = await service.create(
+    { sessionId: "session_1", creatorKind: "web", hostWide: true },
+    {
+      name: "名册不可用",
+      prompt: "检查状态",
+      schedule: { kind: "once", at: "2099-01-01T10:00:00.000Z", timeZone: "UTC" },
+      agentPreset: "ptc",
+      workspaceId: "ws_1",
+      cwd: "D:\\work\\demo",
+      permissionPreset: "read-only",
+    },
+  );
+  assert.equal(created.agentPreset, "ptc");
+  await service.dispose();
+});
+
+test("Agent 预设名册可用时拒绝未知和损坏预设", async () => {
+  const agentPresets = {
+    defaultId: "standard",
+    composedPreset: () => "standard",
+    async remoteExportList() {
+      return { presets: [{ id: "standard" }, { id: "broken", broken: "无法加载" }] };
+    },
+  };
+  const { service } = await makeService({}, {}, { agentPresets });
+  const scope = { sessionId: "session_1", creatorKind: "web" as const, hostWide: true };
+  const base = {
+    name: "预设校验",
+    prompt: "检查状态",
+    schedule: { kind: "once" as const, at: "2099-01-01T10:00:00.000Z", timeZone: "UTC" },
+    workspaceId: "ws_1",
+    cwd: "D:\\work\\demo",
+    permissionPreset: "read-only",
+  };
+  await assert.rejects(
+    () => service.create(scope, { ...base, agentPreset: "unknown" }),
+    /不在当前宿主名册中/,
+  );
+  await assert.rejects(
+    () => service.create(scope, { ...base, agentPreset: "broken" }),
+    /当前不可用/,
+  );
+  await service.dispose();
+});
+
+test("存量任务预设已删除时仅改名仍可保存，改成未知值仍被拒绝", async () => {
+  const agentPresets = {
+    defaultId: "standard",
+    composedPreset: () => "standard",
+    async remoteExportList() {
+      return { presets: [{ id: "standard" }] };
+    },
+  };
+  const { service } = await makeService(
+    { definitions: [sampleDefinition({ agentPreset: "deleted-preset" })] },
+    {},
+    { agentPresets },
+  );
+  const scope = { sessionId: "session_1", creatorKind: "web" as const, hostWide: true };
+  const renamed = await service.update(scope, "automation_1", {
+    name: "改名",
+    agentPreset: "deleted-preset",
+  });
+  assert.equal(renamed.name, "改名");
+  assert.equal(renamed.agentPreset, "deleted-preset");
+  await assert.rejects(
+    () => service.update(scope, "automation_1", { agentPreset: "unknown" }),
+    /不在当前宿主名册中/,
+  );
   await service.dispose();
 });
 

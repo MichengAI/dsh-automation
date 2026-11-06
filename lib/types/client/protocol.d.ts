@@ -99,6 +99,7 @@ export interface AutomationRunViewModel {
     readonly id: string;
     readonly automationId: string;
     readonly automationName: string;
+    readonly agentPreset: string;
     readonly status: AutomationRunStatus;
     readonly trigger: 'schedule' | 'manual';
     readonly scheduledFor: string;

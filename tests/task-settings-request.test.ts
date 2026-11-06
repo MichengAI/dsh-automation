@@ -32,6 +32,7 @@ function run(automationId: string, sessionId: string): AutomationRunViewModel {
     id: `run-${sessionId}`,
     automationId,
     automationName: automationId,
+    agentPreset: 'standard',
     status: 'succeeded',
     trigger: 'schedule',
     scheduledFor: '2026-08-27T00:00:00.000Z',

@@ -174,7 +174,7 @@ Open **Settings → Scheduled Tasks**, then use the panel as follows:
 
 | Goal | Action | Scope |
 | --- | --- | --- |
-| Create a rule | Select **New scheduled task**, then set name, schedule, prompt, workspace, model, skills, and permission. | Host-wide |
+| Create a rule | Select **New scheduled task**, then set name, schedule, prompt, workspace, model, skills, permission, and Agent preset. | Host-wide |
 | Create from chat | Describe the schedule in any conversation, or select **Create in chat**. | Current conversation |
 | Pause or resume | Use the switch on a task card. | One rule |
 | Run now | Open the card menu and select **Run now**. | One rule |
@@ -183,7 +183,7 @@ Open **Settings → Scheduled Tasks**, then use the panel as follows:
 
 Each dispatched run uses the saved prompt, workspace, model, and permission boundary. It does not reuse approvals from the source chat.
 
-`automation_create` and `automation_update` support the same model controls as Settings: `provider`, `model`, and `reasoning_effort`. Use provider/model IDs and a reasoning level published by that model in `reasoningEfforts`. On creation, omitted provider/model fields inherit the current session's complete pair; an incomplete session pair falls back to the whole global pair, never a mix of the two. Creation is rejected when neither source has a complete pair, instead of saving follow-global. Saved IDs are trimmed. Omitted reasoning effort uses the model default. On update, omitted fields keep their saved values. Set both `provider` and `model` to `null` to follow the global selection at each run, and set `reasoning_effort` to `null` to restore the model default. Create/update responses and `automation_list` include the saved target fields in the automation definition (`reasoningEffort` in the response).
+`automation_create` and `automation_update` support the same model controls as Settings: `provider`, `model`, and `reasoning_effort`. Use `agent_preset` to choose an Agent preset; omitted means the Host default, and `automation_list` returns `agentPresets` and `defaultAgentPreset` for discovery. Use provider/model IDs and a reasoning level published by that model in `reasoningEfforts`. On creation, omitted provider/model fields inherit the current session's complete pair; an incomplete session pair falls back to the whole global pair, never a mix of the two. Creation is rejected when neither source has a complete pair, instead of saving follow-global. Saved IDs are trimmed. Omitted reasoning effort uses the model default. On update, omitted fields keep their saved values. Set both `provider` and `model` to `null` to follow the global selection at each run, and set `reasoning_effort` to `null` to restore the model default. Create/update responses and `automation_list` include the saved target fields in the automation definition (`reasoningEffort` in the response).
 
 When specifying or updating a model, send both `provider` and `model` as non-empty IDs or both as `null`; incomplete pairs are rejected. Query `automation_list` first: `models` includes available IDs and `reasoning.efforts`, `defaultModel` is the global selection, and `modelFailures` reports catalog loading failures. Changing the saved provider/model pair clears the previous reasoning override unless you explicitly supply `reasoning_effort`; submitting the same pair preserves it. Model IDs and reasoning levels are not validated against the catalog when saving; catalog discovery lets the Agent choose from the Host's published options.
 
@@ -192,6 +192,7 @@ When specifying or updating a model, send both `provider` and `model` as non-emp
 | Item | Behavior |
 | --- | --- |
 | Permission | Options and the default come directly from the Host `permissionPresets` service, including custom presets. |
+| Agent preset | Choose from the Host `agentPresets` roster on create/edit; task cards show the current preset and Run history shows the preset each run actually used. Broken presets are shown but disabled. |
 | Tool calls | Follow Host tool availability, permission, and approval checks without an additional fixed tool allowlist or a background-shell ban. The Host manages background processes. |
 | Full access | The official `danger-full-access` option uses the same risk confirmation and orange warning as Chat. |
 | Approval | Chat create follows the session policy. Full access (`never`) proceeds; Workspace Write / Read Only (`ask`) shows the official card. Unattended runs stay fail-closed `never`. |

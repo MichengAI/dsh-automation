@@ -213,7 +213,32 @@ test('RPC 快照与创建/编辑透传 Agent 预设', async () => {
         agentPresets: [{ id: 'standard' }, { id: 'minimal', name: '极简模式' }],
         defaultAgentPreset: 'minimal',
         definitions: [definition],
-        runs: [],
+        runs: [{
+          version: 1,
+          id: 'run_1',
+          automationId: 'a1',
+          automationName: 'n',
+          definitionRevision: 1,
+          occurrenceKey: 'k',
+          trigger: 'schedule',
+          scheduledFor: '2026-01-01T00:00:00.000Z',
+          status: 'succeeded',
+          promptSnapshot: 'p',
+          targetSnapshot: {
+            workspaceId: 'ws_1',
+            cwd: 'D:\\work\\demo',
+            agentPreset: 'minimal',
+            provider: null,
+            model: null,
+            permissionPreset: 'read-only',
+          },
+          sessionId: null,
+          startedAt: null,
+          finishedAt: null,
+          summary: null,
+          error: null,
+          unread: false,
+        }],
       }
     },
     async create(_scope: unknown, input: Record<string, unknown>) {
@@ -239,6 +264,7 @@ test('RPC 快照与创建/编辑透传 Agent 预设', async () => {
   )
   assert.equal(snapshot.value.defaultAgentPreset, 'minimal')
   assert.equal(snapshot.value.automations[0].agentPreset, 'minimal')
+  assert.equal(snapshot.value.runs[0].agentPreset, 'minimal')
 
   const input = {
     name: 'n', prompt: 'p', timeZone: 'UTC', permission: 'read-only',
@@ -249,4 +275,40 @@ test('RPC 快照与创建/编辑透传 Agent 预设', async () => {
   await handler!('create', { sessionId: 'settings', input }, signal)
   await handler!('update', { sessionId: 'settings', automationId: 'a1', input }, signal)
   assert.deepEqual(captured.map((item) => item.agentPreset), ['standard', 'standard'])
+})
+
+test('Agent 工具可以指定和更新 Agent 预设', async () => {
+  const requests: Array<Record<string, unknown>> = []
+  const definitions = new Map<string, any>()
+  const agent = {
+    id: 'session-preset',
+    ctx: {
+      tools: {
+        register(definition: { name: string }): () => void {
+          definitions.set(definition.name, definition)
+          return () => {}
+        },
+      },
+    },
+  }
+  registerAutomationTools({
+    permissionNames: () => ['read-only'],
+    async create(_scope: unknown, request: Record<string, unknown>) {
+      requests.push(request)
+      return { id: 'a1' }
+    },
+    async update(_scope: unknown, _id: string, request: Record<string, unknown>) {
+      requests.push(request)
+      return { id: 'a1' }
+    },
+  } as never, agent)
+  const create = definitions.get('automation_create')?.execute as (args: unknown, context: unknown) => Promise<unknown>
+  const update = definitions.get('automation_update')?.execute as (args: unknown, context: unknown) => Promise<unknown>
+  const context = { agent, signal: new AbortController().signal }
+
+  await create({ name: 'n', prompt: 'p', kind: 'daily', time: '09:00', time_zone: 'UTC', agent_preset: 'ptc' }, context)
+  await update({ id: 'a1', agent_preset: 'minimal' }, context)
+
+  assert.equal(requests[0]?.agentPreset, 'ptc')
+  assert.equal(requests[1]?.agentPreset, 'minimal')
 })

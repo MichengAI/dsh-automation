@@ -174,7 +174,7 @@ dsh --profile web --dump-config
 
 | 目标 | 操作 | 范围 |
 | --- | --- | --- |
-| 创建规则 | 点击「新建定时任务」，填写名称、计划、任务说明、工作目录、模型、技能和权限。 | 当前 Host |
+| 创建规则 | 点击「新建定时任务」，填写名称、计划、任务说明、工作目录、模型、技能、权限和 Agent 预设。 | 当前 Host |
 | 通过对话创建 | 在任意对话描述定时任务，或点击「通过对话创建」。 | 当前对话 |
 | 暂停或恢复 | 使用任务卡片上的开关。 | 单条规则 |
 | 立即运行 | 打开卡片菜单，选择「立即执行」。 | 单条规则 |
@@ -183,7 +183,7 @@ dsh --profile web --dump-config
 
 每次派发都使用保存的任务说明、工作区、模型和权限边界，不会复用来源对话中的批准。
 
-`automation_create` 和 `automation_update` 支持与设置页相同的模型参数：`provider`、`model`、`reasoning_effort`。提供方和模型使用 ID，推理等级使用该模型公布的 `reasoningEfforts` 值。创建时省略 provider/model 会继承当前会话的完整配对；会话配对不完整时整对回退全局，不会把两边拼在一起。两边都没有完整配对时拒绝创建，而不是写成跟随全局。保存时去掉 ID 首尾空白。省略推理等级使用模型默认。更新时省略字段保持原值。将 `provider` 和 `model` 都设为 `null`，任务就会在每次运行时跟随当时的全局选择；`reasoning_effort=null` 清除固定推理等级，恢复模型默认。创建、更新和 `automation_list` 的返回定义包含保存的目标字段（返回中的推理等级字段为 `reasoningEffort`）。
+`automation_create` 和 `automation_update` 支持与设置页相同的模型参数：`provider`、`model`、`reasoning_effort`。Agent 预设用 `agent_preset` 指定；省略时跟随 Host 默认值，可先调用 `automation_list` 查看 `agentPresets` 与 `defaultAgentPreset`。提供方和模型使用 ID，推理等级使用该模型公布的 `reasoningEfforts` 值。创建时省略 provider/model 会继承当前会话的完整配对；会话配对不完整时整对回退全局，不会把两边拼在一起。两边都没有完整配对时拒绝创建，而不是写成跟随全局。保存时去掉 ID 首尾空白。省略推理等级使用模型默认。更新时省略字段保持原值。将 `provider` 和 `model` 都设为 `null`，任务就会在每次运行时跟随当时的全局选择；`reasoning_effort=null` 清除固定推理等级，恢复模型默认。创建、更新和 `automation_list` 的返回定义包含保存的目标字段（返回中的推理等级字段为 `reasoningEffort`）。
 
 指定或修改模型时，必须成对传入非空的 `provider` 和 `model` ID，或两项都设为 `null`，不完整配对会被拒绝。先查询 `automation_list`：`models` 包含可选 ID 和 `reasoning.efforts`，`defaultModel` 是全局选择，`modelFailures` 提示目录加载失败。切换保存的模型配对时，若没有显式传入 `reasoning_effort`，会清除旧等级；重复提交相同配对则保留。保存时不会依据目录校验模型 ID 和推理等级；Agent 可通过目录查询选择宿主公布的选项。
 
@@ -192,6 +192,7 @@ dsh --profile web --dump-config
 | 项目 | 行为 |
 | --- | --- |
 | 权限 | 列表和默认值直接来自 Host 官方 `permissionPresets` 服务；支持 Host 注册的自定义预设。 |
+| Agent 预设 | 新建/编辑时从 Host 官方 `agentPresets` 名册选择；任务卡片显示当前预设，执行记录显示每次运行实际使用的预设；已损坏的预设显示但不可选。 |
 | 工具调用 | 遵循 Host 的工具可用性、权限和审批检查，不额外维护固定工具白名单或禁止后台 shell；后台进程由 Host 管理。 |
 | 完全访问 | 选择官方 `danger-full-access` 时显示与 Chat 一致的风险确认和橙色提示。 |
 | 审批 | 对话创建跟随当前会话策略。Full access（`never`）直接创建；Workspace Write / Read Only（`ask`）走官方授权卡。无人值守运行仍是 fail-closed 的 `never`。 |

@@ -224,6 +224,7 @@ export async function executeAutomationRun(
       meta: { cwd: target.cwd, agentPreset: target.agentPreset },
       agentOptions: { provider: selection.provider, model: selection.model },
       setup: async (agentCtx: Context, createdAgent?: SetupAgent) => {
+        if (ctx.agentPresets === undefined) throw new Error('Host 未提供 agentPresets 服务。')
         await ctx.agentPresets.mount(agentCtx, target.agentPreset)
         installModelSelection(agentCtx, { current: selection, assembled: undefined })
         if (createdAgent === undefined) throw new Error('automation setup has no scoped Agent')

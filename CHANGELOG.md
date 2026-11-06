@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.19] - 2026-11-06
+
+### Features
+
+- **Agent preset visibility**: choose the Agent preset when creating or editing a scheduled task, see the current preset on task cards, and see the preset each run actually used in Run history.
+- **Preset-aware tools**: `automation_create` and `automation_update` accept `agent_preset`; `automation_list` returns `agentPresets` and `defaultAgentPreset`.
+- Broken presets are shown but disabled; omitting the preset follows the Host default.
+
+### Fixes
+
+- Preserve existing tasks whose preset was removed: renaming or editing other fields no longer fails with an unknown-preset error.
+- Do not cache a failed preset-roster read, so a transient Host failure no longer blocks valid presets for 30 seconds.
+- Keep the task card border visible on hover in light themes.
+
+[简体中文](CHANGELOG.zh-CN.md)
+
 ## [1.0.18] - 2026-11-04
 
 ### Compatibility & Dependencies

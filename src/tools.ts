@@ -39,6 +39,7 @@ interface CreateArgs extends ScheduleArgs, ModelArgs {
   readonly time_zone: string
   readonly max_concurrent_runs?: number
   readonly permission?: PermissionPreset
+  readonly agent_preset?: string
   readonly workspace?: string
   readonly cross_workspace?: boolean
 }
@@ -50,6 +51,7 @@ interface UpdateArgs extends ScheduleArgs, ModelArgs {
   readonly status?: 'active' | 'paused'
   readonly max_concurrent_runs?: number
   readonly permission?: PermissionPreset
+  readonly agent_preset?: string
   readonly workspace?: string
   readonly cross_workspace?: boolean
 }
@@ -182,6 +184,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         every_days: { type: 'integer', description: '自定义计划每隔几天运行，范围 1-365。' },
         max_concurrent_runs: { type: 'integer', description: '同一自动化的并发运行上限，必须为正整数，默认 1' },
         permission: { type: 'string', enum: permissionNames },
+        agent_preset: { type: 'string', description: '目标 Agent 预设 ID。省略时使用宿主默认预设；可先调用 automation_list 查看 agentPresets。' },
         workspace: { type: 'string', description: '可选。目标工作区的名称（如 yyrenting）、ID 或目录路径。省略时默认使用当前会话所在工作区。' },
         cross_workspace: { type: 'boolean', description: '若目标工作区非当前会话所在工作区，必须显式设为 true。' },
         ...MODEL_PARAMETERS,
@@ -197,6 +200,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
             schedule: scheduleFromArgs(args, new Date().toISOString()),
             ...(args.max_concurrent_runs === undefined ? {} : { maxConcurrentRuns: args.max_concurrent_runs }),
             ...(args.permission === undefined ? {} : { permissionPreset: args.permission }),
+            ...(args.agent_preset === undefined ? {} : { agentPreset: args.agent_preset }),
             ...(args.workspace === undefined ? {} : { workspace: args.workspace }),
             ...modelFromArgs(args),
           }, exec.signal)
@@ -228,6 +232,8 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
             models: snapshot.models,
             modelFailures: snapshot.modelFailures,
             defaultModel: snapshot.defaultModel,
+            agentPresets: snapshot.agentPresets,
+            defaultAgentPreset: snapshot.defaultAgentPreset,
             automations: snapshot.definitions,
           })
         } catch (error: unknown) {
@@ -240,7 +246,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_update',
-      description: '更新一条自动化的名称、任务说明、计划、工作区、模型、推理等级、权限或暂停/恢复状态。支持通过 workspace 参数迁移工作区（支持工作区名称/ID/路径）。若操作其他工作区的自动化，需显式声明 cross_workspace: true。仅暂停或修改模型不需要其他字段。返回保存后的完整定义；provider 和 model 均为 null 表示跟随运行时全局选择。',
+      description: '更新一条自动化的名称、任务说明、计划、工作区、模型、推理等级、权限、Agent 预设或暂停/恢复状态。支持通过 workspace 参数迁移工作区（支持工作区名称/ID/路径）。若操作其他工作区的自动化，需显式声明 cross_workspace: true。仅暂停或修改模型不需要其他字段。返回保存后的完整定义；provider 和 model 均为 null 表示跟随运行时全局选择。',
       parameters: {
         id: { type: 'string', required: true },
         name: { type: 'string' },
@@ -259,6 +265,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         every_days: { type: 'integer' },
         max_concurrent_runs: { type: 'integer', description: '同一自动化的并发运行上限，必须为正整数，默认 1' },
         permission: { type: 'string', enum: permissionNames },
+        agent_preset: { type: 'string', description: '目标 Agent 预设 ID。省略时保持原值；可先调用 automation_list 查看 agentPresets。' },
         ...MODEL_PARAMETERS,
       },
       output: JSON_OUTPUT,
@@ -273,6 +280,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
           if (args.workspace !== undefined) input.workspace = String(args.workspace)
           if (args.max_concurrent_runs !== undefined) input.maxConcurrentRuns = args.max_concurrent_runs
           if (args.permission !== undefined) input.permissionPreset = args.permission
+          if (args.agent_preset !== undefined) input.agentPreset = args.agent_preset
           if (args.kind !== undefined) input.schedule = scheduleFromArgs(args, new Date().toISOString())
           if (Object.keys(input).length === 0) throw new Error('automation_update 至少需要一个变更字段')
           const opScope = args.cross_workspace ? { ...scope, crossWorkspace: true } : scope

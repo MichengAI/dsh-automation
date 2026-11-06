@@ -87,6 +87,7 @@ export function apply(ctx: ClientContext): void {
   const t = ctx.locale.bind(NS)
   const permissionT = ctx.locale.bind('permission.access')
   const modelT = ctx.locale.bind('model')
+  const presetT = ctx.locale.bind('settings.agentPreset')
   const runtime = createAutomationRuntime(ctx.connection.rpc)
   const addWorkspace = async (): Promise<string | undefined> => {
     const picked = await pickHostDirectory(ctx)
@@ -135,6 +136,7 @@ export function apply(ctx: ClientContext): void {
           t,
           permissionT,
           modelT,
+          presetT,
           runtime,
           ...(props.close === undefined ? {} : { closeSettings: props.close }),
           addWorkspace,
@@ -179,6 +181,7 @@ export function apply(ctx: ClientContext): void {
       t,
       permissionT: ownerProps.permissionT ?? permissionT,
       modelT: ownerProps.modelT ?? modelT,
+      presetT,
       runtime,
       addWorkspace,
       closeSettings: createPanelCloseSettings(ctx, ownerProps),

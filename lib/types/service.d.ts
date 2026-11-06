@@ -97,6 +97,7 @@ export declare class AutomationService {
     private stopping;
     private optionCatalogCache;
     private agentPresetCache;
+    private warnedAgentPresetRoster;
     private readonly active;
     private constructor();
     static open(ctx: Context, config: AutomationConfig): Promise<AutomationService>;
@@ -105,12 +106,17 @@ export declare class AutomationService {
     permissionNames(): readonly string[];
     permissionOptions(): readonly PermissionOption[];
     defaultPermission(): string;
+    /**
+     * 读取 Host Agent 预设名册。
+     * 读不到名册时返回回退值且不写缓存，避免一次瞬时故障把合法预设误拒 30 秒。
+     */
+    private readAgentPresetRoster;
     /** 读取 Host 当前声明的 Agent 预设名册；取不到时回退到默认预设。 */
     agentPresetOptions(): Promise<readonly AgentPresetOption[]>;
+    /** 校验显式传入的 Agent 预设；名册不可用时信任调用方，名册可用时拒绝未知和损坏项。 */
+    private requireAgentPreset;
     /** Host 未显式配置时的默认 Agent 预设。 */
     defaultAgentPreset(): string;
-    /** 显式传入的 Agent 预设必须来自当前名册。 */
-    private requireAgentPreset;
     dispose(): Promise<void>;
     snapshot(scope: AutomationScope, signal?: AbortSignal): Promise<AutomationSnapshot>;
     create(scope: AutomationScope, request: CreateRequest, signal?: AbortSignal): Promise<AutomationDefinition>;

@@ -2,6 +2,7 @@ import type { ComponentType, ReactNode } from 'react';
 import type { AutomationLocaleKey } from './locales.js';
 import type { AutomationRuntime } from './runtime.js';
 import type { PermissionTranslate } from './permissions.js';
+import type { PresetTranslate } from './agent-presets.js';
 import type { SessionListState, WorkspaceListState } from './schedule-rail-model.js';
 export type Translate = (key: AutomationLocaleKey, params?: Record<string, unknown>) => string;
 export type ModelTranslate = (key: string, params?: Record<string, unknown>) => string;
@@ -11,6 +12,7 @@ export interface AutomationViewProps {
     readonly t: Translate;
     readonly permissionT: PermissionTranslate;
     readonly modelT: ModelTranslate;
+    readonly presetT?: PresetTranslate | undefined;
     readonly runtime: AutomationRuntime;
     readonly closeSettings?: () => void;
     readonly addWorkspace?: () => Promise<string | undefined>;

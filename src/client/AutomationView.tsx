@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { AutomationViewProps, Translate } from './contracts.js'
-import { agentPresetLabel } from './agent-presets.js'
+import { agentPresetLabel, type PresetTranslate } from './agent-presets.js'
 import {
   AutomationFormError,
   buildCreateInput,
@@ -70,7 +70,7 @@ const EXAMPLES: readonly { readonly name: string; readonly scheduleKind: Schedul
   { name: '工作日早报', scheduleKind: 'weekly', time: '08:00', weekdays: [1, 2, 3, 4, 5] },
 ]
 
-export function AutomationView({ t, permissionT, modelT, runtime, closeSettings, addWorkspace }: AutomationViewProps): JSX.Element {
+export function AutomationView({ t, permissionT, modelT, runtime, closeSettings, addWorkspace, presetT }: AutomationViewProps): JSX.Element {
   const state = useSyncExternalStore(runtime.source.subscribe, runtime.source.getSnapshot, runtime.source.getSnapshot)
   const [tab, setTab] = useState<Tab>('mine')
   const [query, setQuery] = useState('')
@@ -335,6 +335,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
                   t={t}
                   now={now}
                   agentPresets={agentPresets}
+                  presetT={presetT}
                   busy={busy}
                   onEdit={() => openEdit(item)}
                   onToggle={() => { void runAction(() => runtime.mutateAutomation(item.id, automationToggleMutation(item.status))) }}
@@ -352,7 +353,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
               {groups.map(group => (
                 <section key={group.key} className="dsh-st-group">
                   <h3>{group.label}</h3>
-                  {group.items.map(run => <RunRow key={run.id} run={run} t={t} />)}
+                  {group.items.map(run => <RunRow key={run.id} run={run} t={t} agentPresets={agentPresets} presetT={presetT} />)}
                 </section>
               ))}
             </div>
@@ -374,6 +375,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
           defaultPermission={defaultPermission}
           agentPresets={agentPresets}
           defaultAgentPreset={defaultAgentPreset}
+          presetT={presetT}
           editing={editingId !== undefined}
           {...(draft === undefined ? {} : { draft })}
           onClose={closeModal}
@@ -409,12 +411,13 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
 }
 
 function TaskCard({
-  item, t, now, agentPresets, busy, onEdit, onToggle, onRun, onDelete,
+  item, t, now, agentPresets, presetT, busy, onEdit, onToggle, onRun, onDelete,
 }: {
   readonly item: AutomationViewModel
   readonly t: Translate
   readonly now: Date
   readonly agentPresets: readonly AgentPresetOption[]
+  readonly presetT?: PresetTranslate | undefined
   readonly busy: boolean
   readonly onEdit: () => void
   readonly onToggle: () => void
@@ -422,6 +425,7 @@ function TaskCard({
   readonly onDelete: () => void
 }): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false)
+  const presetName = agentPresetLabel(agentPresets.find(option => option.id === item.agentPreset) ?? { id: item.agentPreset }, t, presetT)
   return (
     <article className="dsh-st-card" onClick={onEdit}>
       <div className="dsh-st-card-head">
@@ -466,16 +470,22 @@ function TaskCard({
       <h3>{item.name}</h3>
       <p>{item.prompt}</p>
       <div className="dsh-st-card-foot">
-        <span className="dsh-st-chip"><IconClockOutline size={14} />{formatSchedule(item.schedule, t)}</span>
-        <span className="dsh-st-chip" title={t('card.agentPreset')}><IconSettingsOutline size={14} />{agentPresetLabel(agentPresets.find(option => option.id === item.agentPreset) ?? { id: item.agentPreset }, t)}</span>
-        <span>{item.nextRunAt === undefined ? t('stats.noneScheduled') : t('history.nextApprox', { when: formatWithin(item.nextRunAt, now, t) })}</span>
+        <span className="dsh-st-chip"><IconClockOutline size={14} /><span className="dsh-st-chip-text">{formatSchedule(item.schedule, t)}</span></span>
+        <span className="dsh-st-chip" title={`${t('card.agentPreset')}: ${presetName}`}><IconSettingsOutline size={14} /><span className="dsh-st-chip-text">{presetName}</span></span>
+        <span className="dsh-st-card-next">{item.nextRunAt === undefined ? t('stats.noneScheduled') : t('history.nextApprox', { when: formatWithin(item.nextRunAt, now, t) })}</span>
       </div>
     </article>
   )
 }
 
-function RunRow({ run, t }: { readonly run: AutomationRunViewModel; readonly t: Translate }): JSX.Element {
+function RunRow({ run, t, agentPresets, presetT }: {
+  readonly run: AutomationRunViewModel
+  readonly t: Translate
+  readonly agentPresets: readonly AgentPresetOption[]
+  readonly presetT?: PresetTranslate | undefined
+}): JSX.Element {
   const duration = formatDuration(run.startedAt, run.finishedAt)
+  const presetName = agentPresetLabel(agentPresets.find(option => option.id === run.agentPreset) ?? { id: run.agentPreset }, t, presetT)
   return (
     <article className={`dsh-st-run is-${run.status}`}>
       <strong>{run.automationName}</strong>
@@ -483,6 +493,7 @@ function RunRow({ run, t }: { readonly run: AutomationRunViewModel; readonly t: 
         <span>{clockTime(run.startedAt ?? run.scheduledFor)}</span>
         {duration !== undefined && <span>{duration}</span>}
         <span>{formatRunTrigger(run.trigger, t)}</span>
+        <span className="dsh-st-run-preset" title={`${t('card.agentPreset')}: ${presetName}`}>{presetName}</span>
       </p>
     </article>
   )

@@ -215,6 +215,7 @@ export class AutomationService {
         readonly presets: readonly AgentPresetOption[];
       }
     | undefined;
+  private warnedAgentPresetRoster = false;
   private readonly active = new Map<
     string,
     { readonly abort: AbortController; readonly promise: Promise<void> }
@@ -285,27 +286,59 @@ export class AutomationService {
     return value;
   }
 
-  /** 读取 Host 当前声明的 Agent 预设名册；取不到时回退到默认预设。 */
-  async agentPresetOptions(): Promise<readonly AgentPresetOption[]> {
+  /**
+   * 读取 Host Agent 预设名册。
+   * 读不到名册时返回回退值且不写缓存，避免一次瞬时故障把合法预设误拒 30 秒。
+   */
+  private async readAgentPresetRoster(): Promise<{
+    readonly presets: readonly AgentPresetOption[];
+    readonly available: boolean;
+  }> {
     const now = Date.now();
     const cached = this.agentPresetCache;
-    if (cached !== undefined && cached.expiresAt > now) return cached.presets;
+    if (cached !== undefined && cached.expiresAt > now) {
+      return { presets: cached.presets, available: true };
+    }
     const service = this.ctx.agentPresets;
     const fallback: readonly AgentPresetOption[] = [{ id: this.defaultAgentPreset() }];
-    let presets: readonly AgentPresetOption[];
     try {
-      if (typeof service?.remoteExportList !== "function") {
-        presets = fallback;
-      } else {
+      if (typeof service?.remoteExportList === "function") {
         const roster = await service.remoteExportList();
         const listed = Array.isArray(roster?.presets) ? roster.presets : [];
-        presets = listed.length === 0 ? fallback : listed;
+        if (listed.length > 0) {
+          this.agentPresetCache = { expiresAt: now + OPTION_CACHE_TTL_MS, presets: listed };
+          return { presets: listed, available: true };
+        }
       }
-    } catch {
-      presets = fallback;
+    } catch (error) {
+      if (!this.warnedAgentPresetRoster) {
+        this.warnedAgentPresetRoster = true;
+        this.ctx.logger.warn(`agent preset roster unavailable: ${asMessage(error)}`);
+      }
     }
-    this.agentPresetCache = { expiresAt: now + OPTION_CACHE_TTL_MS, presets };
-    return presets;
+    return { presets: fallback, available: false };
+  }
+
+  /** 读取 Host 当前声明的 Agent 预设名册；取不到时回退到默认预设。 */
+  async agentPresetOptions(): Promise<readonly AgentPresetOption[]> {
+    return (await this.readAgentPresetRoster()).presets;
+  }
+
+  /** 校验显式传入的 Agent 预设；名册不可用时信任调用方，名册可用时拒绝未知和损坏项。 */
+  private async requireAgentPreset(input: string): Promise<string> {
+    const value = input.trim();
+    if (value === "") throw new AutomationRequestError("Agent 预设不能为空。");
+    const { presets, available } = await this.readAgentPresetRoster();
+    if (!available) return value;
+    const normalized = normalizeAgentPreset(value, presets);
+    if (normalized === undefined) {
+      throw new AutomationRequestError(`Agent 预设「${value}」不在当前宿主名册中。`);
+    }
+    const option = presets.find((item) => item.id === normalized);
+    if (option?.broken !== undefined) {
+      throw new AutomationRequestError(`Agent 预设「${value}」当前不可用。`);
+    }
+    return normalized;
   }
 
   /** Host 未显式配置时的默认 Agent 预设。 */
@@ -317,14 +350,6 @@ export class AutomationService {
       // Host 未提供该服务时回退。
     }
     return "standard";
-  }
-
-  /** 显式传入的 Agent 预设必须来自当前名册。 */
-  private async requireAgentPreset(input: string): Promise<string> {
-    const value = normalizeAgentPreset(input, await this.agentPresetOptions());
-    if (value === undefined)
-      throw new AutomationRequestError(`unknown agent preset '${input}'`);
-    return value;
   }
 
   async dispose(): Promise<void> {
@@ -487,7 +512,10 @@ export class AutomationService {
       if (fields.agentPreset !== undefined) {
         normalizedFields = {
           ...normalizedFields,
-          agentPreset: await this.requireAgentPreset(fields.agentPreset),
+          agentPreset:
+            fields.agentPreset === current.agentPreset
+              ? current.agentPreset
+              : await this.requireAgentPreset(fields.agentPreset),
         };
       }
       if (
@@ -989,7 +1017,7 @@ export class AutomationService {
       workspaceId = resolved.workspace.id;
       cwd = resolved.workspace.path;
       agentPreset =
-        this.ctx.agentPresets.composedPreset(resolved.agent.ctx) ??
+        this.ctx.agentPresets?.composedPreset(resolved.agent.ctx) ??
         resolved.agent.session.header.agentPreset ??
         agentPreset;
       consultedSession = true;

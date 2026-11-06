@@ -4,6 +4,8 @@ export interface MenuSelectOption {
     label: React.ReactNode;
     /** 当 label 是复杂 ReactNode 时作为 aria-label 和纯文本回退 */
     text?: string;
+    /** 触发器里显示的精简文本；省略时回退到 label */
+    displayText?: string;
     disabled?: boolean;
     danger?: boolean;
 }
