@@ -11,6 +11,8 @@ test('不可用预设的括号跟随当前语言', () => {
 test('零预设说明有中英文案', () => {
   assert.match(en['form.agentPresetMissing'], /has not declared any Agent preset/)
   assert.match(zh['form.agentPresetMissing'], /未声明任何 Agent 预设/)
+  assert.match(en['form.agentPresetRequired'], /Choose an Agent preset/)
+  assert.match(zh['form.agentPresetRequired'], /请选择一个 Agent 预设/)
 })
 
 test('卡片脚三项都带 title，窄卡片截断不会是静默的', () => {

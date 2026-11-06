@@ -18,6 +18,7 @@
 - Reject explicit presets when the Host declares an empty preset roster, instead of accepting arbitrary ids.
 - When the Host declares no presets at all, explain the missing capability in the create dialog and disable saving instead of submitting a preset the server will reject.
 - Add a tooltip to the schedule chip so narrow-card truncation is not silent.
+- Require an explicit preset when the Host exposes presets but no default id.
 
 [简体中文](CHANGELOG.zh-CN.md)
 

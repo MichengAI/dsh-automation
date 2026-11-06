@@ -78,6 +78,8 @@ export function CreateModal({
   const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel, defaultPermission, defaultAgentPreset), ...draft }))
   // 宿主声明零预设时，新建任务不可能成功；在表单内说明并禁用保存。
   const presetMissing = editing !== true && agentPresets.length === 0 && defaultAgentPreset === ''
+  // 宿主有预设但没有默认值时，必须让用户显式选择一个，否则服务端会拒绝空值。
+  const presetRequired = editing !== true && agentPresets.length > 0 && form.agentPreset === ''
   const [validationError, setValidationError] = useState<string>()
   const [confirmingPermission, setConfirmingPermission] = useState<string>()
   const [fullAccessAcknowledged, setFullAccessAcknowledged] = useState(false)
@@ -195,13 +197,17 @@ export function CreateModal({
         footer={(
           <>
             <Button variant="outline" className="dsh-st-modal-action" disabled={busy} onClick={onClose}>{t('form.cancel')}</Button>
-            <Button variant="primary" className="dsh-st-modal-action" type="submit" form="dsh-st-create-form" disabled={busy || addingWorkspace || !workspaceReady || presetMissing}>{t('modal.save')}</Button>
+            <Button variant="primary" className="dsh-st-modal-action" type="submit" form="dsh-st-create-form" disabled={busy || addingWorkspace || !workspaceReady || presetMissing || presetRequired}>{t('modal.save')}</Button>
           </>
         )}
       >
         <form id="dsh-st-create-form" className="dsh-st-form" onSubmit={(event) => { void handleSubmit(event) }}>
           <p>{t('form.subtitle')}</p>
-          {presetMissing && <p className="dsh-st-error" role="alert">{t('form.agentPresetMissing')}</p>}
+          {(presetMissing || presetRequired) && (
+            <p className="dsh-st-error" role="alert">
+              {presetMissing ? t('form.agentPresetMissing') : t('form.agentPresetRequired')}
+            </p>
+          )}
           <label className="dsh-st-field">
             {t('form.name')}
             <Input value={form.name} placeholder={t('form.namePlaceholder')} onChange={event => update({ name: event.target.value })} />

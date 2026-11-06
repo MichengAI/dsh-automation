@@ -15,8 +15,10 @@ test('新建弹窗点遮罩不能关，Esc 只关弹窗', () => {
 test('宿主未声明预设时新建弹窗说明原因并禁用保存', () => {
   const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
   assert.match(modal, /const presetMissing = editing !== true && agentPresets\.length === 0 && defaultAgentPreset === ''/)
+  assert.match(modal, /const presetRequired = editing !== true && agentPresets\.length > 0 && form\.agentPreset === ''/)
   assert.match(modal, /form\.agentPresetMissing/)
-  assert.match(modal, /disabled=\{busy \|\| addingWorkspace \|\| !workspaceReady \|\| presetMissing\}/)
+  assert.match(modal, /form\.agentPresetRequired/)
+  assert.match(modal, /disabled=\{busy \|\| addingWorkspace \|\| !workspaceReady \|\| presetMissing \|\| presetRequired\}/)
 })
 
 test('任务编辑弹窗使用宿主 Modal，点遮罩不能关闭', () => {
