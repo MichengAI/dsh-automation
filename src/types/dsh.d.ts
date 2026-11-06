@@ -4,7 +4,7 @@ declare module '@deepseek-ai/cordis' {
   export interface Context {
     readonly agents: any
     readonly agentDefaultModel: any
-    readonly agentPresets: any
+    readonly agentPresets: import('../agent-presets.ts').AgentPresetService
     readonly permissionPresets: import('../permission-presets.ts').PermissionPresetService
     readonly sessions: any
     readonly sessionTitle?: { rename(session: unknown, title: string): unknown }

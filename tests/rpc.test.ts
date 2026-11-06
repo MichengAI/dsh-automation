@@ -185,3 +185,68 @@ test('Agent 创建与更新工具透传并发数量，省略参数时不覆盖�
     dispose()
   }
 })
+
+test('RPC 快照与创建/编辑透传 Agent 预设', async () => {
+  let handler: ((endpoint: string, payload: unknown, signal: AbortSignal) => Promise<any>) | undefined
+  const captured: Array<Record<string, unknown>> = []
+  const definition = {
+    id: 'a1', revision: 1, name: 'n', prompt: 'p', status: 'active',
+    schedule: { kind: 'daily', time: '09:00', timeZone: 'UTC' }, rrule: 'daily', timeZone: 'UTC',
+    workspaceId: 'ws_1', cwd: 'D:\\work\\demo', agentPreset: 'minimal',
+    provider: null, model: null, permissionPreset: 'read-only',
+    createdBy: { kind: 'web', sessionId: 'settings' },
+    createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+    nextRunAt: null, lastRun: null,
+  }
+  const service = {
+    async snapshot() {
+      return {
+        generatedAt: '2026-01-01T00:00:00.000Z',
+        workspace: null,
+        workspaces: [],
+        models: [],
+        modelFailures: [],
+        defaultModel: null,
+        skills: [],
+        permissions: [],
+        defaultPermission: 'read-only',
+        agentPresets: [{ id: 'standard' }, { id: 'minimal', name: '极简模式' }],
+        defaultAgentPreset: 'minimal',
+        definitions: [definition],
+        runs: [],
+      }
+    },
+    async create(_scope: unknown, input: Record<string, unknown>) {
+      captured.push(input)
+      return { id: 'a1' }
+    },
+    async update(_scope: unknown, _id: string, input: Record<string, unknown>) {
+      captured.push(input)
+      return { id: 'a1', revision: 2 }
+    },
+  }
+  registerAutomationRpc({
+    logger: { warn() {} },
+    connection: { rpc: { handle(_channel: string, next: typeof handler) { handler = next; return async () => {} } } },
+  } as never, service as never)
+  const signal = new AbortController().signal
+
+  const snapshot = await handler!('snapshot', { sessionId: 'settings' }, signal)
+  assert.equal(snapshot.ok, true)
+  assert.deepEqual(
+    snapshot.value.agentPresets.map((item: { id: string }) => item.id),
+    ['standard', 'minimal'],
+  )
+  assert.equal(snapshot.value.defaultAgentPreset, 'minimal')
+  assert.equal(snapshot.value.automations[0].agentPreset, 'minimal')
+
+  const input = {
+    name: 'n', prompt: 'p', timeZone: 'UTC', permission: 'read-only',
+    schedule: { kind: 'daily', time: '09:00' },
+    agentPreset: 'standard',
+    workspaceId: 'ws_1', cwd: 'D:\\work\\demo',
+  }
+  await handler!('create', { sessionId: 'settings', input }, signal)
+  await handler!('update', { sessionId: 'settings', automationId: 'a1', input }, signal)
+  assert.deepEqual(captured.map((item) => item.agentPreset), ['standard', 'standard'])
+})

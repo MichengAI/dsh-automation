@@ -148,6 +148,17 @@ export declare const en: {
     readonly "permission.readOnly": "Read Only";
     readonly "permission.workspaceWrite": "Workspace Write";
     readonly "permission.fullAccess": "Full access";
+    readonly "form.fieldAgentPreset": "Agent preset";
+    readonly "form.agentPresetUnavailable": "Unavailable";
+    readonly "card.agentPreset": "Agent preset";
+    readonly presetStandardName: "Standard mode";
+    readonly presetStandardDescription: "Work with code, files, and information. Suitable for most tasks, with search, editing, terminal commands, and other tools available as needed.";
+    readonly presetPtcName: "PTC mode";
+    readonly presetPtcDescription: "Includes all Standard mode capabilities. Better suited to tasks that call tools in batches and then filter, organize, deduplicate, count, or summarize the results.";
+    readonly presetMinimalName: "Minimal mode";
+    readonly presetMinimalDescription: "The agent uses a terminal and image reading, with context compaction. Useful for testing and comparing its basic performance.";
+    readonly presetCordisName: "Creator mode";
+    readonly presetCordisDescription: "Customize DSH through conversation. Let the agent write plugins that add features or UI, or combine tools and prompts to create your own mode.";
     readonly "form.cancel": "Cancel";
     readonly "form.submit": "Create automation";
     readonly "form.submitting": "Creating…";

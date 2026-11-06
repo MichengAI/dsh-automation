@@ -18,6 +18,7 @@ export interface AutomationFormState {
     readonly customDays: string;
     readonly timeZone: string;
     readonly permission: CreateAutomationInput['permission'];
+    readonly agentPreset: string;
     readonly workspaceId: string;
     readonly modelKey: string;
     readonly reasoningEffort: string;
@@ -62,7 +63,7 @@ export declare function splitSkillTokens(text: string, skills: readonly {
     readonly text: string;
 }>;
 export declare function localDateTimeValue(date?: Date): string;
-export declare function defaultFormState(now?: Date, workspaces?: readonly WorkspaceOption[], defaultModel?: ModelOption | null, defaultPermission?: string): AutomationFormState;
+export declare function defaultFormState(now?: Date, workspaces?: readonly WorkspaceOption[], defaultModel?: ModelOption | null, defaultPermission?: string, defaultAgentPreset?: string): AutomationFormState;
 export declare function buildCreateInput(form: AutomationFormState, workspaces: readonly WorkspaceOption[], models: readonly ModelOption[], now?: Date, options?: {
     readonly allowPastOnce?: boolean;
 }): CreateAutomationInput;
@@ -99,4 +100,4 @@ export declare function readSortDefault(storage: SortPreferenceStorage | undefin
 } | undefined;
 export declare function writeSortDefault(storage: SortPreferenceStorage, storageKey: string, key: AutomationSortKey, direction: AutomationSortDirection): void;
 export declare function groupHistory(runs: readonly import('./protocol.js').AutomationRunViewModel[], range: HistoryRange, now: Date, t: Translate): HistoryGroup[];
-export declare function formFromAutomation(item: import('./protocol.js').AutomationViewModel, workspaces?: readonly WorkspaceOption[], defaultModel?: ModelOption | null, defaultPermission?: string): AutomationFormState;
+export declare function formFromAutomation(item: import('./protocol.js').AutomationViewModel, workspaces?: readonly WorkspaceOption[], defaultModel?: ModelOption | null, defaultPermission?: string, defaultAgentPreset?: string): AutomationFormState;

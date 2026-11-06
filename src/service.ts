@@ -29,6 +29,10 @@ import {
   type PermissionOption,
   type PermissionPresetService,
 } from "./permission-presets.ts";
+import {
+  normalizeAgentPreset,
+  type AgentPresetOption,
+} from "./agent-presets.ts";
 import type {
   AutomationDefinition,
   AutomationRun,
@@ -108,6 +112,8 @@ export interface AutomationSnapshot {
   readonly skills: readonly { readonly id: string; readonly name: string }[];
   readonly permissions: readonly PermissionOption[];
   readonly defaultPermission: string;
+  readonly agentPresets: readonly AgentPresetOption[];
+  readonly defaultAgentPreset: string;
   readonly definitions: readonly AutomationDefinitionView[];
   readonly runs: readonly AutomationRun[];
 }
@@ -203,6 +209,12 @@ export class AutomationService {
         readonly skills: { readonly id: string; readonly name: string }[];
       }
     | undefined;
+  private agentPresetCache:
+    | {
+        readonly expiresAt: number;
+        readonly presets: readonly AgentPresetOption[];
+      }
+    | undefined;
   private readonly active = new Map<
     string,
     { readonly abort: AbortController; readonly promise: Promise<void> }
@@ -270,6 +282,48 @@ export class AutomationService {
     );
     if (value === undefined)
       throw new Error("Host 的默认权限预设不在官方权限列表中。");
+    return value;
+  }
+
+  /** 读取 Host 当前声明的 Agent 预设名册；取不到时回退到默认预设。 */
+  async agentPresetOptions(): Promise<readonly AgentPresetOption[]> {
+    const now = Date.now();
+    const cached = this.agentPresetCache;
+    if (cached !== undefined && cached.expiresAt > now) return cached.presets;
+    const service = this.ctx.agentPresets;
+    const fallback: readonly AgentPresetOption[] = [{ id: this.defaultAgentPreset() }];
+    let presets: readonly AgentPresetOption[];
+    try {
+      if (typeof service?.remoteExportList !== "function") {
+        presets = fallback;
+      } else {
+        const roster = await service.remoteExportList();
+        const listed = Array.isArray(roster?.presets) ? roster.presets : [];
+        presets = listed.length === 0 ? fallback : listed;
+      }
+    } catch {
+      presets = fallback;
+    }
+    this.agentPresetCache = { expiresAt: now + OPTION_CACHE_TTL_MS, presets };
+    return presets;
+  }
+
+  /** Host 未显式配置时的默认 Agent 预设。 */
+  defaultAgentPreset(): string {
+    try {
+      const id = this.ctx.agentPresets?.defaultId;
+      if (typeof id === "string" && id.trim() !== "") return id.trim();
+    } catch {
+      // Host 未提供该服务时回退。
+    }
+    return "standard";
+  }
+
+  /** 显式传入的 Agent 预设必须来自当前名册。 */
+  private async requireAgentPreset(input: string): Promise<string> {
+    const value = normalizeAgentPreset(input, await this.agentPresetOptions());
+    if (value === undefined)
+      throw new AutomationRequestError(`unknown agent preset '${input}'`);
     return value;
   }
 
@@ -341,6 +395,8 @@ export class AutomationService {
         skills: options.skills,
         permissions: this.permissionOptions(),
         defaultPermission: this.defaultPermission(),
+        agentPresets: await this.agentPresetOptions(),
+        defaultAgentPreset: this.defaultAgentPreset(),
         definitions: definitions.map((definition) => ({
           ...definition,
           workspaceTitle: workspaceMap.get(definition.workspaceId),
@@ -421,13 +477,19 @@ export class AutomationService {
       const { status, workspace: workspaceSelector, ...rawFields } = input;
       const fields = normalizeModelFields(rawFields);
       validateModelPair(fields);
-      let normalizedFields =
-        fields.permissionPreset === undefined
-          ? fields
-          : {
-              ...fields,
-              permissionPreset: this.requirePermission(fields.permissionPreset),
-            };
+      let normalizedFields = fields;
+      if (fields.permissionPreset !== undefined) {
+        normalizedFields = {
+          ...normalizedFields,
+          permissionPreset: this.requirePermission(fields.permissionPreset),
+        };
+      }
+      if (fields.agentPreset !== undefined) {
+        normalizedFields = {
+          ...normalizedFields,
+          agentPreset: await this.requireAgentPreset(fields.agentPreset),
+        };
+      }
       if (
         (fields.provider !== undefined || fields.model !== undefined) &&
         (fields.provider !== current.provider || fields.model !== current.model) &&
@@ -879,7 +941,10 @@ export class AutomationService {
     const fallbackPair = completeSelection(this.ctx.agentDefaultModel?.currentSelection?.());
     let workspaceId = request.workspaceId?.trim() ?? "";
     let cwd = request.cwd?.trim() ?? "";
-    let agentPreset = request.agentPreset?.trim() || "standard";
+    let agentPreset =
+      request.agentPreset === undefined
+        ? this.defaultAgentPreset()
+        : await this.requireAgentPreset(request.agentPreset);
     let provider: string | null = explicit.provider === undefined ? fallbackPair?.provider ?? null : explicit.provider;
     let model: string | null = explicit.model === undefined ? fallbackPair?.model ?? null : explicit.model;
     let consultedSession = false;

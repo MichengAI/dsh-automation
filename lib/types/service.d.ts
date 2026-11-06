@@ -2,6 +2,7 @@
 import type { Context } from "@deepseek-ai/cordis";
 import { type SessionOwnershipHint } from "./executor.ts";
 import { type PermissionOption } from "./permission-presets.ts";
+import { type AgentPresetOption } from "./agent-presets.ts";
 import type { AutomationDefinition, AutomationRun, AutomationSchedule, PermissionPreset, UpdateAutomationInput } from "./types.ts";
 export declare const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
 export interface AutomationConfig {
@@ -68,6 +69,8 @@ export interface AutomationSnapshot {
     }[];
     readonly permissions: readonly PermissionOption[];
     readonly defaultPermission: string;
+    readonly agentPresets: readonly AgentPresetOption[];
+    readonly defaultAgentPreset: string;
     readonly definitions: readonly AutomationDefinitionView[];
     readonly runs: readonly AutomationRun[];
 }
@@ -93,6 +96,7 @@ export declare class AutomationService {
     private started;
     private stopping;
     private optionCatalogCache;
+    private agentPresetCache;
     private readonly active;
     private constructor();
     static open(ctx: Context, config: AutomationConfig): Promise<AutomationService>;
@@ -101,6 +105,12 @@ export declare class AutomationService {
     permissionNames(): readonly string[];
     permissionOptions(): readonly PermissionOption[];
     defaultPermission(): string;
+    /** 读取 Host 当前声明的 Agent 预设名册；取不到时回退到默认预设。 */
+    agentPresetOptions(): Promise<readonly AgentPresetOption[]>;
+    /** Host 未显式配置时的默认 Agent 预设。 */
+    defaultAgentPreset(): string;
+    /** 显式传入的 Agent 预设必须来自当前名册。 */
+    private requireAgentPreset;
     dispose(): Promise<void>;
     snapshot(scope: AutomationScope, signal?: AbortSignal): Promise<AutomationSnapshot>;
     create(scope: AutomationScope, request: CreateRequest, signal?: AbortSignal): Promise<AutomationDefinition>;

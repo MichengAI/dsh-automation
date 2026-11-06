@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import type { AutomationViewProps, Translate } from './contracts.js'
+import { agentPresetLabel } from './agent-presets.js'
 import {
   AutomationFormError,
   buildCreateInput,
@@ -32,6 +33,7 @@ import {
   IconNewChatOutline,
   IconPlusOutline,
   IconRefreshOutline,
+  IconSettingsOutline,
 } from './host-icons.js'
 import { Button, Input, Menu, SegmentedTabs, Switch, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { rowIconStyle } from './plugin-ui.js'
@@ -41,7 +43,7 @@ import { DeleteConfirmation } from './delete-confirmation.js'
 import { triggerChatCreation } from './prefill.js'
 import { isTransportError } from './runtime.js'
 import { SortMenu } from './sort-menu.js'
-import type { AutomationRunStatus, AutomationRunViewModel, AutomationViewModel } from './protocol.js'
+import type { AgentPresetOption, AutomationRunStatus, AutomationRunViewModel, AutomationViewModel } from './protocol.js'
 import {
   AUTOMATION_TASK_SETTINGS_EVENT,
   clearAutomationTaskSettingsRequest,
@@ -92,6 +94,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
   const models = snapshot?.models ?? []
   const permissions = snapshot?.permissions ?? []
   const defaultPermission = snapshot?.defaultPermission ?? ''
+  const agentPresets = snapshot?.agentPresets ?? []
+  const defaultAgentPreset = snapshot?.defaultAgentPreset ?? ''
   const automations = sortAutomations(
     (snapshot?.automations ?? []).filter(item => query.trim() === '' || `${item.name} ${item.prompt}`.toLowerCase().includes(query.trim().toLowerCase())),
     sortKey,
@@ -330,6 +334,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
                   item={item}
                   t={t}
                   now={now}
+                  agentPresets={agentPresets}
                   busy={busy}
                   onEdit={() => openEdit(item)}
                   onToggle={() => { void runAction(() => runtime.mutateAutomation(item.id, automationToggleMutation(item.status))) }}
@@ -367,6 +372,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
           skills={snapshot?.skills ?? []}
           permissions={permissions}
           defaultPermission={defaultPermission}
+          agentPresets={agentPresets}
+          defaultAgentPreset={defaultAgentPreset}
           editing={editingId !== undefined}
           {...(draft === undefined ? {} : { draft })}
           onClose={closeModal}
@@ -402,11 +409,12 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
 }
 
 function TaskCard({
-  item, t, now, busy, onEdit, onToggle, onRun, onDelete,
+  item, t, now, agentPresets, busy, onEdit, onToggle, onRun, onDelete,
 }: {
   readonly item: AutomationViewModel
   readonly t: Translate
   readonly now: Date
+  readonly agentPresets: readonly AgentPresetOption[]
   readonly busy: boolean
   readonly onEdit: () => void
   readonly onToggle: () => void
@@ -459,6 +467,7 @@ function TaskCard({
       <p>{item.prompt}</p>
       <div className="dsh-st-card-foot">
         <span className="dsh-st-chip"><IconClockOutline size={14} />{formatSchedule(item.schedule, t)}</span>
+        <span className="dsh-st-chip" title={t('card.agentPreset')}><IconSettingsOutline size={14} />{agentPresetLabel(agentPresets.find(option => option.id === item.agentPreset) ?? { id: item.agentPreset }, t)}</span>
         <span>{item.nextRunAt === undefined ? t('stats.noneScheduled') : t('history.nextApprox', { when: formatWithin(item.nextRunAt, now, t) })}</span>
       </div>
     </article>

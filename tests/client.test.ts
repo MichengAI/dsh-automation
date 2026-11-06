@@ -86,6 +86,7 @@ function automationView(
     scheduleSummary: "daily",
     timeZone: "Asia/Shanghai",
     permission: "read-only",
+    agentPreset: "standard",
     updatedAt: createdAt,
   };
 }
@@ -224,6 +225,7 @@ test("RPC 结果必须失败关闭，运行时会在变更后刷新快照", asyn
     schedule: { kind: "daily", time: "09:00" },
     timeZone: "Asia/Shanghai",
     permission: "read-only",
+    agentPreset: "standard",
     workspaceId: "ws_1",
     cwd: "D:\\work\\demo",
   });
@@ -235,6 +237,7 @@ test("RPC 结果必须失败关闭，运行时会在变更后刷新快照", asyn
     schedule: { kind: "daily", time: "10:00" },
     timeZone: "Asia/Shanghai",
     permission: "workspace-write",
+    agentPreset: "standard",
     workspaceId: "ws_1",
     cwd: "D:\\work\\demo",
   });
@@ -750,6 +753,7 @@ test("编辑表单会从已有任务还原名称、计划和模型", () => {
       scheduleSummary: "",
       timeZone: "Asia/Shanghai",
       permission: "workspace-write",
+      agentPreset: "standard",
       workspaceId: "ws_1",
       provider: "deepseek",
       model: "v4",
@@ -788,6 +792,7 @@ test("编辑间隔任务会保留原始时区和 anchor", () => {
       scheduleSummary: "",
       timeZone: "America/New_York",
       permission: "read-only",
+      agentPreset: "standard",
       workspaceId: "ws_1",
       createdAt: "2026-08-16T00:00:00.000Z",
       updatedAt: "2026-08-16T00:00:00.000Z",
@@ -966,4 +971,18 @@ test("间隔表单接受一分钟并拒绝零值和小数", () => {
   for (const everyMinutes of ["0", "-1", "0.5"]) {
     assert.throws(() => buildCreateInput({ ...form, everyMinutes }, workspaces, []), /form.error.interval/);
   }
+});
+
+test("新建输入带上所选 Agent 预设，空值交给 Host 默认", () => {
+  const form = { ...defaultFormState(new Date(), workspaces), name: "预设任务", prompt: "检查" };
+  assert.equal(buildCreateInput({ ...form, agentPreset: "minimal" }, workspaces, []).agentPreset, "minimal");
+  assert.equal("agentPreset" in buildCreateInput({ ...form, agentPreset: "" }, workspaces, []), false);
+});
+
+test("编辑表单会还原任务当前的 Agent 预设", () => {
+  const form = formFromAutomation(
+    { ...automationView("a1", "预设任务", "2026-08-16T00:00:00.000Z"), agentPreset: "ptc" },
+    workspaces,
+  );
+  assert.equal(form.agentPreset, "ptc");
 });

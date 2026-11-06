@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { ModelTranslate, Translate } from './contracts.js'
-import type { ModelCatalogFailure, ModelOption, PermissionOption } from './protocol.js'
+import type { AgentPresetOption, ModelCatalogFailure, ModelOption, PermissionOption } from './protocol.js'
 import { permissionLabel, type PermissionTranslate } from './permissions.js'
+import { agentPresetLabel } from './agent-presets.js'
 import {
   AutomationFormError,
   activeSlashQuery,
@@ -51,8 +52,29 @@ const KINDS: readonly ScheduleKind[] = ['once', 'interval', 'hourly', 'daily', '
 const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'))
 const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
 
+/** 构造预设下拉项；损坏预设保留但禁用，当前值不在名册时也保留可见。 */
+function presetOptions(
+  presets: readonly AgentPresetOption[],
+  current: string,
+  t: Translate,
+): MenuSelectOption[] {
+  const options: MenuSelectOption[] = presets.map(option => {
+    const name = agentPresetLabel(option, t)
+    return {
+      value: option.id,
+      label: option.broken === undefined ? name : `${name}（${t('form.agentPresetUnavailable')}）`,
+      text: name,
+      disabled: option.broken !== undefined,
+    }
+  })
+  if (current !== '' && !options.some(option => option.value === current)) {
+    options.push({ value: current, label: current, text: current })
+  }
+  return options
+}
+
 export function CreateModal({
-  t, permissionT, modelT, busy, workspaces, models, modelFailures, defaultModel, skills, permissions, defaultPermission, draft, editing, onClose, onSubmit, onAddWorkspace,
+  t, permissionT, modelT, busy, workspaces, models, modelFailures, defaultModel, skills, permissions, defaultPermission, agentPresets, defaultAgentPreset, draft, editing, onClose, onSubmit, onAddWorkspace,
 }: {
   readonly t: Translate
   readonly permissionT: PermissionTranslate
@@ -65,13 +87,15 @@ export function CreateModal({
   readonly skills: readonly { id: string; name: string }[]
   readonly permissions: readonly PermissionOption[]
   readonly defaultPermission: string
+  readonly agentPresets: readonly AgentPresetOption[]
+  readonly defaultAgentPreset: string
   readonly draft?: Partial<AutomationFormState>
   readonly editing?: boolean
   readonly onClose: () => void
   readonly onSubmit: (form: AutomationFormState) => Promise<void>
   readonly onAddWorkspace?: () => Promise<string | undefined>
 }): JSX.Element {
-  const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel, defaultPermission), ...draft }))
+  const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel, defaultPermission, defaultAgentPreset), ...draft }))
   const [validationError, setValidationError] = useState<string>()
   const [confirmingPermission, setConfirmingPermission] = useState<string>()
   const [fullAccessAcknowledged, setFullAccessAcknowledged] = useState(false)
@@ -340,6 +364,16 @@ export function CreateModal({
                 value={form.permission}
                 options={permissions.map(option => ({ value: option.value, label: permissionLabel(option, t) }))}
                 onChange={value => choosePermission(value)}
+              />
+            </label>
+            <label className="dsh-st-picker-field">
+              <span>{t('form.fieldAgentPreset')}</span>
+              <MenuSelect
+                value={form.agentPreset}
+                label={t('form.fieldAgentPreset')}
+                placeholder={t('form.fieldAgentPreset')}
+                options={presetOptions(agentPresets, form.agentPreset, t)}
+                onChange={value => update({ agentPreset: value })}
               />
             </label>
           </div>

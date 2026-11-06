@@ -31,6 +31,7 @@ export interface AutomationFormState {
   readonly customDays: string
   readonly timeZone: string
   readonly permission: CreateAutomationInput['permission']
+  readonly agentPreset: string
   readonly workspaceId: string
   readonly modelKey: string
   readonly reasoningEffort: string
@@ -144,6 +145,7 @@ export function defaultFormState(
   workspaces: readonly WorkspaceOption[] = [],
   defaultModel?: ModelOption | null,
   defaultPermission = '',
+  defaultAgentPreset = '',
 ): AutomationFormState {
   return {
     name: '',
@@ -160,6 +162,7 @@ export function defaultFormState(
     customDays: '2',
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai',
     permission: defaultPermission,
+    agentPreset: defaultAgentPreset,
     workspaceId: workspaces[0]?.id ?? '',
     modelKey: defaultModel === undefined || defaultModel === null
       ? 'default'
@@ -242,6 +245,7 @@ export function buildCreateInput(
     schedule,
     timeZone: form.timeZone,
     permission: form.permission,
+    ...(form.agentPreset === '' ? {} : { agentPreset: form.agentPreset }),
     maxConcurrentRuns,
     workspaceId: workspace.id,
     cwd: workspace.path,
@@ -456,8 +460,9 @@ export function formFromAutomation(
   workspaces: readonly WorkspaceOption[] = [],
   defaultModel?: ModelOption | null,
   defaultPermission = item.permission,
+  defaultAgentPreset = item.agentPreset,
 ): AutomationFormState {
-  const base = defaultFormState(new Date(), workspaces, defaultModel, defaultPermission)
+  const base = defaultFormState(new Date(), workspaces, defaultModel, defaultPermission, defaultAgentPreset)
   const schedule = item.schedule
   const modelKey = item.provider && item.model ? `${item.provider}::${item.model}` : 'default'
   const common = {
@@ -465,6 +470,7 @@ export function formFromAutomation(
     name: item.name,
     prompt: item.prompt,
     permission: item.permission,
+    agentPreset: item.agentPreset,
     maxConcurrentRuns: String(item.maxConcurrentRuns ?? 1),
     workspaceId: item.workspaceId ?? base.workspaceId,
     modelKey,

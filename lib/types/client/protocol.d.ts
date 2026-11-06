@@ -7,6 +7,13 @@ export interface PermissionOption {
     readonly name: string;
     readonly description?: string;
 }
+export interface AgentPresetOption {
+    readonly id: string;
+    readonly name?: string;
+    readonly description?: string;
+    /** 激活失败时为一行诊断；可用预设不带该字段。 */
+    readonly broken?: string;
+}
 export type AutomationSchedule = {
     readonly kind: 'once';
     readonly at: string;
@@ -76,6 +83,7 @@ export interface AutomationViewModel {
     readonly timeZone: string;
     readonly maxConcurrentRuns?: number;
     readonly permission: AutomationPermission;
+    readonly agentPreset: string;
     readonly workspaceId?: string;
     readonly cwd?: string;
     readonly provider?: string | null;
@@ -117,6 +125,8 @@ export interface AutomationSnapshot {
     }[];
     readonly permissions: readonly PermissionOption[];
     readonly defaultPermission: string;
+    readonly agentPresets: readonly AgentPresetOption[];
+    readonly defaultAgentPreset: string;
     readonly automations: readonly AutomationViewModel[];
     readonly runs: readonly AutomationRunViewModel[];
     readonly serverNow: string;
@@ -128,6 +138,7 @@ export interface CreateAutomationInput {
     readonly timeZone: string;
     readonly maxConcurrentRuns?: number;
     readonly permission: AutomationPermission;
+    readonly agentPreset?: string;
     readonly workspaceId: string;
     readonly cwd: string;
     readonly provider?: string | null;

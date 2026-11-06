@@ -21,6 +21,7 @@ function automation(id: string, name: string): AutomationViewModel {
     scheduleSummary: '09:00',
     timeZone: 'Asia/Shanghai',
     permission: 'read-only',
+    agentPreset: 'standard',
     createdAt: '2026-08-27T00:00:00.000Z',
     updatedAt: '2026-08-27T00:00:00.000Z',
   }

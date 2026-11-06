@@ -572,6 +572,77 @@ test("权限列表、默认值和校验均来自 Host 官方服务", async () =>
   );
 });
 
+test("Agent 预设名册、默认值和校验均来自 Host 官方服务", async () => {
+  const agentPresets = {
+    defaultId: "minimal",
+    composedPreset: () => "standard",
+    async remoteExportList() {
+      return {
+        presets: [
+          { id: "standard" },
+          { id: "minimal", name: "极简模式" },
+          { id: "broken", broken: "无法加载" },
+        ],
+      };
+    },
+  };
+  const { service } = await makeService({}, {}, { agentPresets });
+  const snapshot = await service.snapshot({
+    sessionId: "session_1",
+    creatorKind: "web",
+    hostWide: true,
+  });
+  assert.equal(snapshot.defaultAgentPreset, "minimal");
+  assert.deepEqual(
+    snapshot.agentPresets.map((item) => item.id),
+    ["standard", "minimal", "broken"],
+  );
+
+  const created = await service.create(
+    { sessionId: "session_1", creatorKind: "web", hostWide: true },
+    {
+      name: "指定预设",
+      prompt: "检查状态",
+      schedule: { kind: "once", at: "2099-01-01T10:00:00.000Z", timeZone: "UTC" },
+      agentPreset: "minimal",
+      workspaceId: "ws_1",
+      cwd: "D:\\work\\demo",
+      permissionPreset: "read-only",
+    },
+  );
+  assert.equal(created.agentPreset, "minimal");
+
+  const inherited = await service.create(
+    { sessionId: "session_1", creatorKind: "web", hostWide: true },
+    {
+      name: "默认预设",
+      prompt: "检查状态",
+      schedule: { kind: "once", at: "2099-01-02T10:00:00.000Z", timeZone: "UTC" },
+      workspaceId: "ws_1",
+      cwd: "D:\\work\\demo",
+      permissionPreset: "read-only",
+    },
+  );
+  assert.equal(inherited.agentPreset, "minimal");
+
+  await assert.rejects(
+    () =>
+      service.update(
+        { sessionId: "session_1", creatorKind: "web", hostWide: true },
+        created.id,
+        { agentPreset: "not-official" },
+      ),
+    /unknown agent preset/,
+  );
+  const updated = await service.update(
+    { sessionId: "session_1", creatorKind: "web", hostWide: true },
+    created.id,
+    { agentPreset: "standard" },
+  );
+  assert.equal(updated.agentPreset, "standard");
+  await service.dispose();
+});
+
 test("启动时把旧 full-access 迁移成官方 danger-full-access", async () => {
   const legacy = sampleDefinition({ permissionPreset: "full-access" });
   const { definitions } = await makeService({ definitions: [legacy] });
