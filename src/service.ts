@@ -469,6 +469,9 @@ export class AutomationService {
         throw new AutomationRequestError("宿主未声明任何 Agent 预设，无法创建定时任务。");
       }
       const target = await this.resolveCreateTarget(scope, request);
+      if (request.agentPreset === undefined && target.agentPreset === "") {
+        throw new AutomationRequestError("宿主未设置默认 Agent 预设，请显式指定 agent_preset。");
+      }
       let value: AutomationDefinition;
       try {
         value = createDefinition({

@@ -21,7 +21,7 @@ export const AUTOMATION_CREATE_DESCRIPTION = [
   '工作日早上 8 点示例：kind=weekly, weekdays=["MO","TU","WE","TH","FR"], time="08:00", time_zone="Asia/Shanghai"。',
   '同时支持 hourly(minute)、monthly(month_day + time) 和 custom(every_days + time)。',
   '可用 provider、model、reasoning_effort 固定模型和推理等级。省略模型继承当前会话或全局选择；provider/model 都设为 null 跟随每次运行时的全局选择；省略或清空 reasoning_effort 使用模型默认。返回保存后的完整定义。',
-  '可用 agent_preset 指定 Agent 预设；省略时使用宿主默认预设。先调用 automation_list 查看 agentPresets 与 defaultAgentPreset。',
+  '可用 agent_preset 指定 Agent 预设；省略时使用宿主默认预设，宿主未设置默认值时必须显式指定。先调用 automation_list 查看 agentPresets 与 defaultAgentPreset。',
   '必须使用显式 IANA 时区。最短间隔 1 分钟。默认权限来自 Host；不需要写入时应显式选择 read-only，只有需要改文件时才选 workspace-write。',
 ].join('')
 

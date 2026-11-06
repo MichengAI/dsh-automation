@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import {
+  resolvePresetGuard,
   shouldConfirmFullAccess,
   shouldCloseCreateModal,
 } from '../src/client/create-modal-logic.ts'
@@ -12,12 +13,23 @@ test('新建弹窗点遮罩不能关，Esc 只关弹窗', () => {
   assert.equal(shouldCloseCreateModal('cancel'), true)
 })
 
+test('预设门禁区分零预设、未选预设、旧快照和编辑态', () => {
+  assert.deepEqual(resolvePresetGuard({ loaded: true, presets: 0, defaultPreset: '', selected: '' }), { missing: true, required: false })
+  assert.deepEqual(resolvePresetGuard({ loaded: true, presets: 2, defaultPreset: '', selected: '' }), { missing: false, required: true })
+  assert.deepEqual(resolvePresetGuard({ loaded: true, presets: 2, defaultPreset: 'standard', selected: 'standard' }), { missing: false, required: false })
+  assert.deepEqual(resolvePresetGuard({ loaded: false, presets: 0, defaultPreset: '', selected: '' }), { missing: false, required: false })
+  assert.deepEqual(resolvePresetGuard({ editing: true, loaded: true, presets: 0, defaultPreset: '', selected: '' }), { missing: false, required: false })
+  assert.deepEqual(resolvePresetGuard({ loaded: true, presets: 2, defaultPreset: '', selected: 'ptc' }), { missing: false, required: false })
+})
+
 test('宿主未声明预设时新建弹窗说明原因并禁用保存', () => {
   const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
-  assert.match(modal, /const presetMissing = editing !== true && agentPresets\.length === 0 && defaultAgentPreset === ''/)
-  assert.match(modal, /const presetRequired = editing !== true && agentPresets\.length > 0 && form\.agentPreset === ''/)
+  assert.match(modal, /resolvePresetGuard\(\{/)
+  assert.match(modal, /presetMissing && <p className="dsh-st-error" role="alert">/)
+  assert.match(modal, /presetRequired && <p className="dsh-st-muted">/)
   assert.match(modal, /form\.agentPresetMissing/)
   assert.match(modal, /form\.agentPresetRequired/)
+  assert.match(modal, /agentPresetsLoaded !== false/)
   assert.match(modal, /disabled=\{busy \|\| addingWorkspace \|\| !workspaceReady \|\| presetMissing \|\| presetRequired\}/)
 })
 

@@ -184,7 +184,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         every_days: { type: 'integer', description: '自定义计划每隔几天运行，范围 1-365。' },
         max_concurrent_runs: { type: 'integer', description: '同一自动化的并发运行上限，必须为正整数，默认 1' },
         permission: { type: 'string', enum: permissionNames },
-        agent_preset: { type: 'string', description: '目标 Agent 预设 ID。省略时使用宿主默认预设；可先调用 automation_list 查看 agentPresets。' },
+        agent_preset: { type: 'string', description: '目标 Agent 预设 ID。省略时使用宿主默认预设；宿主未设置默认值时必须显式指定。可先调用 automation_list 查看 agentPresets。' },
         workspace: { type: 'string', description: '可选。目标工作区的名称（如 yyrenting）、ID 或目录路径。省略时默认使用当前会话所在工作区。' },
         cross_workspace: { type: 'boolean', description: '若目标工作区非当前会话所在工作区，必须显式设为 true。' },
         ...MODEL_PARAMETERS,

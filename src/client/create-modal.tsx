@@ -14,7 +14,7 @@ import {
   type AutomationFormState,
   type ScheduleKind,
 } from './helpers.js'
-import { shouldConfirmFullAccess } from './create-modal-logic.js'
+import { resolvePresetGuard, shouldConfirmFullAccess } from './create-modal-logic.js'
 import { WorkspacePickerUnavailableError } from './workspace-create.js'
 import { IconPlusOutline } from './host-icons.js'
 import { Button, Checkbox, Modal, RiskConfirmation, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -53,7 +53,7 @@ const HOURS = Array.from({ length: 24 }, (_, index) => String(index).padStart(2,
 const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
 
 export function CreateModal({
-  t, permissionT, modelT, busy, workspaces, models, modelFailures, defaultModel, skills, permissions, defaultPermission, agentPresets, defaultAgentPreset, presetT, draft, editing, onClose, onSubmit, onAddWorkspace,
+  t, permissionT, modelT, busy, workspaces, models, modelFailures, defaultModel, skills, permissions, defaultPermission, agentPresets, defaultAgentPreset, agentPresetsLoaded, presetT, draft, editing, onClose, onSubmit, onAddWorkspace,
 }: {
   readonly t: Translate
   readonly permissionT: PermissionTranslate
@@ -68,6 +68,7 @@ export function CreateModal({
   readonly defaultPermission: string
   readonly agentPresets: readonly AgentPresetOption[]
   readonly defaultAgentPreset: string
+  readonly agentPresetsLoaded?: boolean
   readonly presetT?: PresetTranslate | undefined
   readonly draft?: Partial<AutomationFormState>
   readonly editing?: boolean
@@ -76,10 +77,14 @@ export function CreateModal({
   readonly onAddWorkspace?: () => Promise<string | undefined>
 }): JSX.Element {
   const [form, setForm] = useState<AutomationFormState>(() => ({ ...defaultFormState(new Date(), workspaces, defaultModel, defaultPermission, defaultAgentPreset), ...draft }))
-  // 宿主声明零预设时，新建任务不可能成功；在表单内说明并禁用保存。
-  const presetMissing = editing !== true && agentPresets.length === 0 && defaultAgentPreset === ''
-  // 宿主有预设但没有默认值时，必须让用户显式选择一个，否则服务端会拒绝空值。
-  const presetRequired = editing !== true && agentPresets.length > 0 && form.agentPreset === ''
+  // 零预设时禁用创建；有预设但没默认值时要求显式选择；旧快照缺字段时不拦。
+  const { missing: presetMissing, required: presetRequired } = resolvePresetGuard({
+    editing,
+    loaded: agentPresetsLoaded !== false,
+    presets: agentPresets.length,
+    defaultPreset: defaultAgentPreset,
+    selected: form.agentPreset,
+  })
   const [validationError, setValidationError] = useState<string>()
   const [confirmingPermission, setConfirmingPermission] = useState<string>()
   const [fullAccessAcknowledged, setFullAccessAcknowledged] = useState(false)
@@ -203,11 +208,8 @@ export function CreateModal({
       >
         <form id="dsh-st-create-form" className="dsh-st-form" onSubmit={(event) => { void handleSubmit(event) }}>
           <p>{t('form.subtitle')}</p>
-          {(presetMissing || presetRequired) && (
-            <p className="dsh-st-error" role="alert">
-              {presetMissing ? t('form.agentPresetMissing') : t('form.agentPresetRequired')}
-            </p>
-          )}
+          {presetMissing && <p className="dsh-st-error" role="alert">{t('form.agentPresetMissing')}</p>}
+          {presetRequired && <p className="dsh-st-muted">{t('form.agentPresetRequired')}</p>}
           <label className="dsh-st-field">
             {t('form.name')}
             <Input value={form.name} placeholder={t('form.namePlaceholder')} onChange={event => update({ name: event.target.value })} />

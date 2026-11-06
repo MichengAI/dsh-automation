@@ -751,6 +751,30 @@ test("宿主声明零预设且无默认值时，快照默认值为空并拒绝�
   await service.dispose();
 });
 
+test("有预设但无默认值时，省略预设给中文错误，显式预设可创建", async () => {
+  const agentPresets = {
+    defaultId: "",
+    composedPreset: () => "",
+    async remoteExportList() {
+      return { presets: [{ id: "standard" }, { id: "ptc" }] };
+    },
+  };
+  const { service } = await makeService({}, {}, { agentPresets });
+  const scope = { sessionId: "session_1", creatorKind: "web" as const, hostWide: true };
+  const base = {
+    name: "无默认预设",
+    prompt: "检查状态",
+    schedule: { kind: "once" as const, at: "2099-01-01T10:00:00.000Z", timeZone: "UTC" },
+    workspaceId: "ws_1",
+    cwd: "D:\\work\\demo",
+    permissionPreset: "read-only",
+  };
+  await assert.rejects(() => service.create(scope, base), /请显式指定 agent_preset/);
+  const created = await service.create(scope, { ...base, agentPreset: "ptc" });
+  assert.equal(created.agentPreset, "ptc");
+  await service.dispose();
+});
+
 test("Agent 预设名册可用时拒绝未知和损坏预设", async () => {
   const agentPresets = {
     defaultId: "standard",

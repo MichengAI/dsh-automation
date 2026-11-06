@@ -96,6 +96,8 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
   const defaultPermission = snapshot?.defaultPermission ?? ''
   const agentPresets = snapshot?.agentPresets ?? []
   const defaultAgentPreset = snapshot?.defaultAgentPreset ?? ''
+  // 旧服务端快照没有预设字段；只有真的带回字段时才启用零预设守卫。
+  const agentPresetsLoaded = snapshot !== undefined && Array.isArray(snapshot.agentPresets) && typeof snapshot.defaultAgentPreset === 'string'
   const automations = sortAutomations(
     (snapshot?.automations ?? []).filter(item => query.trim() === '' || `${item.name} ${item.prompt}`.toLowerCase().includes(query.trim().toLowerCase())),
     sortKey,
@@ -375,6 +377,7 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
           defaultPermission={defaultPermission}
           agentPresets={agentPresets}
           defaultAgentPreset={defaultAgentPreset}
+          agentPresetsLoaded={agentPresetsLoaded}
           presetT={presetT}
           editing={editingId !== undefined}
           {...(draft === undefined ? {} : { draft })}

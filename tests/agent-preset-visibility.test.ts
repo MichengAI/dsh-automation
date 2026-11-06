@@ -15,6 +15,13 @@ test('零预设说明有中英文案', () => {
   assert.match(zh['form.agentPresetRequired'], /请选择一个 Agent 预设/)
 })
 
+test('旧快照缺预设字段时不启用零预设守卫', () => {
+  const view = readFileSync(new URL('../src/client/AutomationView.tsx', import.meta.url), 'utf8')
+  assert.match(view, /Array\.isArray\(snapshot\.agentPresets\)/)
+  assert.match(view, /typeof snapshot\.defaultAgentPreset === 'string'/)
+  assert.match(view, /agentPresetsLoaded=\{agentPresetsLoaded\}/)
+})
+
 test('卡片脚三项都带 title，窄卡片截断不会是静默的', () => {
   const view = readFileSync(new URL('../src/client/AutomationView.tsx', import.meta.url), 'utf8')
   assert.match(view, /className="dsh-st-chip" title=\{scheduleText\}/)

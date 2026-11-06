@@ -19,6 +19,9 @@
 - When the Host declares no presets at all, explain the missing capability in the create dialog and disable saving instead of submitting a preset the server will reject.
 - Add a tooltip to the schedule chip so narrow-card truncation is not silent.
 - Require an explicit preset when the Host exposes presets but no default id.
+- Return an actionable Chinese error when the preset is omitted in that case, instead of the internal `agentPreset must not be blank`; the tool description now says an explicit preset is required.
+- Show the required-preset hint as neutral guidance instead of a danger alert.
+- Do not disable creation when a new client receives an old snapshot that lacks preset fields.
 
 [简体中文](CHANGELOG.zh-CN.md)
 
