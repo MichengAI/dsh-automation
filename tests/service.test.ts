@@ -169,6 +169,16 @@ test("Agent 工具可固定、修复和清空模型目标，省略字段保留�
     const listing = await tools.get("automation_list").execute({}, context);
     assert.deepEqual(target(listing.automations.find((item: any) => item.id === id)), [null, null, null]);
 
+    // 列表默认不回显 prompt 全文，只给字数；需要原文时显式 include_prompt
+    const briefed = listing.automations.find((item: any) => item.id === id);
+    assert.equal(briefed.prompt, undefined);
+    assert.equal(briefed.promptChars, base.prompt.length);
+    const listingWithPrompt = await tools.get("automation_list").execute({ include_prompt: true }, context);
+    assert.equal(
+      listingWithPrompt.automations.find((item: any) => item.id === id).prompt,
+      base.prompt,
+    );
+
     const inherited = await tools.get("automation_create").execute(base, context);
     assert.deepEqual(target(inherited.automation), ["deepseek", "v4", undefined]);
     const global = await tools.get("automation_create").execute({ ...base, provider: null, model: null }, context);

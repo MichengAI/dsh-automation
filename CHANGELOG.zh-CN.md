@@ -1,5 +1,11 @@
 # 更新日志
 
+## [未发布]
+
+### 性能
+
+- `automation_list` 不再回显 `prompt` 全文与 `lastRun.promptSnapshot` / `lastRun.targetSnapshot`：每条任务返回元数据、`promptChars` 和不超过 240 字符的运行摘要；需要逐字原文时传 `include_prompt: true`。5 条任务的列表输出从约 37 KB 降到约 10 KB。
+
 ## [1.0.19] - 2026-11-07
 
 ### 新功能

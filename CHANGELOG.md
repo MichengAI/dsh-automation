@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Performance
+
+- `automation_list` no longer echoes full `prompt` bodies or `lastRun.promptSnapshot` / `lastRun.targetSnapshot`. Each automation now returns metadata, `promptChars`, and a run summary capped at 240 characters; pass `include_prompt: true` when the verbatim text is needed. A five-task listing drops from ~37 KB to ~10 KB of tool output.
+
 ## [1.0.19] - 2026-11-07
 
 ### Features

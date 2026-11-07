@@ -1,7 +1,7 @@
 /** 绑定到单个 root Agent 工作区的管理工具。 */
 
 import { defineTool, type JsonValue, type ToolRunContext } from '@deepseek-ai/dsh-tools'
-import type { AutomationService } from './service.ts'
+import type { AutomationDefinitionView, AutomationService } from './service.ts'
 import { AUTOMATION_CREATE_DESCRIPTION } from './prompt.ts'
 import type { AutomationSchedule, PermissionPreset, UpdateAutomationInput, Weekday } from './types.ts'
 
@@ -58,6 +58,56 @@ interface UpdateArgs extends ScheduleArgs, ModelArgs {
 
 interface ListArgs {
   readonly all_workspaces?: boolean
+  readonly include_prompt?: boolean
+}
+
+const LAST_RUN_SUMMARY_LIMIT = 240
+
+/**
+ * 列表用的精简视图：条目元数据 + 最近一次运行的结论行。
+ * prompt 与 lastRun.promptSnapshot 只在 include_prompt 时返回，避免一次列表把整条任务说明塞进上下文。
+ */
+function briefDefinition(view: AutomationDefinitionView, includePrompt: boolean): JsonValue {
+  const run = view.lastRun
+  const summary = run?.summary ?? null
+  return {
+    id: view.id,
+    name: view.name,
+    status: view.status,
+    workspaceId: view.workspaceId,
+    workspaceTitle: view.workspaceTitle ?? null,
+    kind: view.schedule.kind,
+    schedule: view.schedule as unknown as JsonValue,
+    timeZone: view.timeZone,
+    rrule: view.rrule,
+    nextRunAt: view.nextRunAt,
+    agentPreset: view.agentPreset,
+    provider: view.provider,
+    model: view.model,
+    reasoningEffort: view.reasoningEffort ?? null,
+    permission: view.permissionPreset,
+    revision: view.revision,
+    updatedAt: view.updatedAt,
+    promptChars: view.prompt.length,
+    ...(includePrompt ? { prompt: view.prompt } : {}),
+    lastRun:
+      run === null
+        ? null
+        : {
+            status: run.status,
+            trigger: run.trigger,
+            scheduledFor: run.scheduledFor,
+            startedAt: run.startedAt,
+            finishedAt: run.finishedAt,
+            sessionId: run.sessionId,
+            summary:
+              summary === null || summary.length <= LAST_RUN_SUMMARY_LIMIT
+                ? summary
+                : `${summary.slice(0, LAST_RUN_SUMMARY_LIMIT)}…`,
+            error: run.error as unknown as JsonValue,
+            unread: run.unread,
+          },
+  }
 }
 
 interface IdArgs {
@@ -215,9 +265,10 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_list',
-      description: '列出自动化规则、下次运行时间和最近一次结果，以及可选模型目录 models、各模型 reasoning.efforts、全局 defaultModel 和目录加载失败 modelFailures。默认列出当前工作区，可通过 all_workspaces: true 列出所有工作区。指定或修复模型前先查询目录，使用其中的 provider/model ID 和推理等级。',
+      description: '列出自动化规则、计划、下次运行时间和最近一次结果的摘要（不再默认回显 prompt 全文，只给 promptChars），并附带模型目录 models、各模型 reasoning.efforts、全局 defaultModel 和目录加载失败 modelFailures。默认列出当前工作区，可通过 all_workspaces: true 列出所有工作区。指定或修复模型前先查询目录，使用其中的 provider/model ID 和推理等级；需要逐字复述某条任务说明时再传 include_prompt: true 或用 automation_update 取回完整定义。',
       parameters: {
         all_workspaces: { type: 'boolean', description: '是否列出所有已注册工作区的自动化任务。默认 false（仅当前工作区）。跨工作区管理时请设为 true。' },
+        include_prompt: { type: 'boolean', description: '是否随每条自动化返回 prompt 全文（默认 false，只给 promptChars）。仅在需要逐字核对或复述任务说明时开启。' },
       },
       output: JSON_OUTPUT,
       async execute(args: ListArgs, exec: ToolRunContext) {
@@ -234,7 +285,9 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
             defaultModel: snapshot.defaultModel,
             agentPresets: snapshot.agentPresets,
             defaultAgentPreset: snapshot.defaultAgentPreset,
-            automations: snapshot.definitions,
+            automations: snapshot.definitions.map((definition) =>
+              briefDefinition(definition, args.include_prompt === true),
+            ),
           })
         } catch (error: unknown) {
           if (exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
