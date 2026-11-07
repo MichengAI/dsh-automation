@@ -3,7 +3,7 @@
 import { defineTool, type JsonValue, type ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type { AutomationDefinitionView, AutomationService } from './service.ts'
 import { AUTOMATION_CREATE_DESCRIPTION } from './prompt.ts'
-import type { AutomationSchedule, PermissionPreset, UpdateAutomationInput, Weekday } from './types.ts'
+import type { AutomationSchedule, AutomationRun, PermissionPreset, UpdateAutomationInput, Weekday } from './types.ts'
 
 interface ToolAgent {
   readonly id: string
@@ -61,7 +61,38 @@ interface ListArgs {
   readonly include_prompt?: boolean
 }
 
+interface RunsArgs {
+  readonly automation_id?: string
+  readonly limit?: number
+}
+
 const LAST_RUN_SUMMARY_LIMIT = 240
+const RUN_LIST_LIMIT_DEFAULT = 20
+const RUN_LIST_LIMIT_MAX = 100
+
+function truncated(text: string | null): string | null {
+  return text === null || text.length <= LAST_RUN_SUMMARY_LIMIT
+    ? text
+    : `${text.slice(0, LAST_RUN_SUMMARY_LIMIT)}…`
+}
+
+/** 运行历史的精简视图：状态、时间、摘要与结果 Session；promptSnapshot/targetSnapshot 不回传。 */
+function briefRun(run: AutomationRun): JsonValue {
+  return {
+    id: run.id,
+    automationId: run.automationId,
+    automationName: run.automationName ?? null,
+    status: run.status,
+    trigger: run.trigger,
+    scheduledFor: run.scheduledFor,
+    startedAt: run.startedAt,
+    finishedAt: run.finishedAt,
+    sessionId: run.sessionId,
+    summary: truncated(run.summary),
+    error: run.error as unknown as JsonValue,
+    unread: run.unread,
+  }
+}
 
 /**
  * 列表用的精简视图：条目元数据 + 最近一次运行的结论行。
@@ -100,10 +131,7 @@ function briefDefinition(view: AutomationDefinitionView, includePrompt: boolean)
             startedAt: run.startedAt,
             finishedAt: run.finishedAt,
             sessionId: run.sessionId,
-            summary:
-              summary === null || summary.length <= LAST_RUN_SUMMARY_LIMIT
-                ? summary
-                : `${summary.slice(0, LAST_RUN_SUMMARY_LIMIT)}…`,
+            summary: truncated(summary),
             error: run.error as unknown as JsonValue,
             unread: run.unread,
           },
@@ -349,14 +377,32 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_runs',
-      description: '读取当前工作区有界的自动化运行历史，包括失败、跳过、摘要和结果 Session。',
-      parameters: {},
+      description: '读取当前工作区的自动化运行历史（按计划时间倒序，默认最近 20 条、最多 100 条），只回状态、时间、摘要（≤240 字）、错误和结果 Session，不回 promptSnapshot/targetSnapshot。可用 automation_id 只看某条任务；需要更早的记录就加大 limit。',
+      parameters: {
+        automation_id: { type: 'string', description: '只看该自动化的运行记录（automation id）。省略则返回整个工作区。' },
+        limit: { type: 'integer', description: '最多返回多少条，默认 20，上限 100。' },
+      },
       output: JSON_OUTPUT,
-      async execute(_args: Record<string, never>, exec: ToolRunContext) {
+      async execute(args: RunsArgs, exec: ToolRunContext) {
         if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
         try {
           const snapshot = await service.snapshot(scope, exec.signal)
-          return json({ ok: true, generatedAt: snapshot.generatedAt, runs: snapshot.runs })
+          const limit = Math.min(
+            RUN_LIST_LIMIT_MAX,
+            Math.max(1, Math.trunc(args.limit ?? RUN_LIST_LIMIT_DEFAULT)),
+          )
+          const filtered =
+            args.automation_id === undefined
+              ? snapshot.runs
+              : snapshot.runs.filter((run) => run.automationId === args.automation_id)
+          return json({
+            ok: true,
+            generatedAt: snapshot.generatedAt,
+            total: filtered.length,
+            limit,
+            truncated: filtered.length > limit,
+            runs: filtered.slice(0, limit).map(briefRun),
+          })
         } catch (error: unknown) {
           if (exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
           return json({ ok: false, code: 'automation_error', message: error instanceof Error ? error.message : String(error) })

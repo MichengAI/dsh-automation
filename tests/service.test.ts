@@ -317,6 +317,47 @@ test("Agent 列表提供模型 ID、推理等级、全局选择和目录故障",
   } finally { dispose(); await service.dispose(); }
 });
 
+test("运行历史只回最近 20 条精简记录，不带 promptSnapshot", async () => {
+  const definition = sampleDefinition({ name: "批量检查" });
+  const { service, runs } = await makeService({ definitions: [definition] });
+  const tools = new Map<string, any>();
+  const agent = {
+    id: "session_1",
+    ctx: { tools: { register(tool: any) { tools.set(tool.name, tool); return () => {}; } } },
+  };
+  const dispose = registerAutomationTools(service, agent);
+  try {
+    for (let index = 0; index < 25; index++) {
+      const run = createManualRun(definition, `2026-08-${String(index + 1).padStart(2, "0")}T00:00:00.000Z`);
+      await runs.put(run.id, {
+        ...run,
+        status: "succeeded",
+        summary: "s".repeat(400),
+        sessionId: "sess_1",
+        unread: true,
+      });
+    }
+
+    const listed = await tools.get("automation_runs").execute({}, { agent, signal: new AbortController().signal });
+    assert.equal(listed.ok, true);
+    assert.equal(listed.total, 25);
+    assert.equal(listed.runs.length, 20);
+    assert.equal(listed.truncated, true);
+    assert.equal(listed.runs[0].scheduledFor, "2026-08-25T00:00:00.000Z");
+    assert.equal(listed.runs[0].promptSnapshot, undefined);
+    assert.equal(listed.runs[0].targetSnapshot, undefined);
+    assert.equal(listed.runs[0].summary.length, 241);
+
+    const filtered = await tools.get("automation_runs").execute(
+      { automation_id: "automation_missing", limit: 5 },
+      { agent, signal: new AbortController().signal },
+    );
+    assert.equal(filtered.total, 0);
+    assert.equal(filtered.runs.length, 0);
+    assert.equal(filtered.truncated, false);
+  } finally { dispose(); await service.dispose(); }
+});
+
 test("重启后只把遗留 running 标记为 host_interrupted，并保留尚未启动的 queued", async () => {
   const definition = sampleDefinition();
   const { runs } = await makeService({
