@@ -1,11 +1,11 @@
 # 更新日志
 
-## [未发布]
+## [1.0.20] - 2026-11-07
 
 ### 性能
 
-- `automation_runs` 最多返回最近 20 条运行记录（`limit` 可到 100，可用 `automation_id` 过滤），只带状态、时间、≤240 字摘要、错误和结果 Session，不再回传 `promptSnapshot` / `targetSnapshot`；被截断时返回 `total`。46 条历史的输出从约 137 KB 降到约 13 KB。
-- `automation_list` 不再回显 `prompt` 全文与 `lastRun.promptSnapshot` / `lastRun.targetSnapshot`：每条任务返回元数据、`promptChars` 和不超过 240 字符的运行摘要；需要逐字原文时传 `include_prompt: true`。5 条任务的列表输出从约 37 KB 降到约 10 KB。
+- `automation_runs` 最多返回最近 20 条运行记录（`limit` 可到 100，可用 `automation_id` 过滤），只带状态、时间、≤240 字摘要、错误和结果 Session，不再回传 `promptSnapshot` / `targetSnapshot`；被截断时返回 `total` 和 `truncated`。46 条历史的输出从约 137 KB 降到约 13 KB。
+- `automation_list` 不再回显 `prompt` 全文与 `lastRun.promptSnapshot` / `lastRun.targetSnapshot`：每条任务仍返回元数据（含并发上限、工作目录和权限预设）、`promptChars` 和不超过 240 字符的运行摘要；需要逐字原文时传 `include_prompt: true`。5 条任务的列表输出从约 37 KB 降到约 10 KB。
 
 ## [1.0.19] - 2026-11-07
 
