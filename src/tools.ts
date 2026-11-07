@@ -1,9 +1,9 @@
 /** 绑定到单个 root Agent 工作区的管理工具。 */
 
 import { defineTool, type JsonValue, type ToolRunContext } from '@deepseek-ai/dsh-tools'
-import type { AutomationService } from './service.ts'
+import type { AutomationDefinitionView, AutomationService } from './service.ts'
 import { AUTOMATION_CREATE_DESCRIPTION } from './prompt.ts'
-import type { AutomationSchedule, PermissionPreset, UpdateAutomationInput, Weekday } from './types.ts'
+import type { AutomationSchedule, AutomationRun, PermissionPreset, UpdateAutomationInput, Weekday } from './types.ts'
 
 interface ToolAgent {
   readonly id: string
@@ -58,6 +58,86 @@ interface UpdateArgs extends ScheduleArgs, ModelArgs {
 
 interface ListArgs {
   readonly all_workspaces?: boolean
+  readonly include_prompt?: boolean
+}
+
+interface RunsArgs {
+  readonly automation_id?: string
+  readonly limit?: number
+}
+
+const LAST_RUN_SUMMARY_LIMIT = 240
+const RUN_LIST_LIMIT_DEFAULT = 20
+const RUN_LIST_LIMIT_MAX = 100
+
+function truncated(text: string | null): string | null {
+  return text === null || text.length <= LAST_RUN_SUMMARY_LIMIT
+    ? text
+    : `${text.slice(0, LAST_RUN_SUMMARY_LIMIT)}…`
+}
+
+/** 运行历史的精简视图：状态、时间、摘要与结果 Session；promptSnapshot/targetSnapshot 不回传。 */
+function briefRun(run: AutomationRun): JsonValue {
+  return {
+    id: run.id,
+    automationId: run.automationId,
+    automationName: run.automationName ?? null,
+    status: run.status,
+    trigger: run.trigger,
+    scheduledFor: run.scheduledFor,
+    startedAt: run.startedAt,
+    finishedAt: run.finishedAt,
+    sessionId: run.sessionId,
+    summary: truncated(run.summary),
+    error: run.error as unknown as JsonValue,
+    unread: run.unread,
+  }
+}
+
+/**
+ * 列表用的精简视图：条目元数据 + 最近一次运行的结论行。
+ * prompt 仅在 include_prompt 时返回；运行快照始终省略，避免大段正文占用上下文。
+ */
+function briefDefinition(view: AutomationDefinitionView, includePrompt: boolean): JsonValue {
+  const run = view.lastRun
+  const summary = run?.summary ?? null
+  return {
+    id: view.id,
+    name: view.name,
+    status: view.status,
+    workspaceId: view.workspaceId,
+    workspaceTitle: view.workspaceTitle ?? null,
+    cwd: view.cwd,
+    maxConcurrentRuns: view.maxConcurrentRuns ?? 1,
+    kind: view.schedule.kind,
+    schedule: view.schedule as unknown as JsonValue,
+    timeZone: view.timeZone,
+    rrule: view.rrule,
+    nextRunAt: view.nextRunAt,
+    agentPreset: view.agentPreset,
+    provider: view.provider,
+    model: view.model,
+    reasoningEffort: view.reasoningEffort ?? null,
+    permissionPreset: view.permissionPreset,
+    revision: view.revision,
+    updatedAt: view.updatedAt,
+    promptChars: view.prompt.length,
+    ...(includePrompt ? { prompt: view.prompt } : {}),
+    lastRun:
+      run === null
+        ? null
+        : {
+            status: run.status,
+            trigger: run.trigger,
+            scheduledFor: run.scheduledFor,
+            startedAt: run.startedAt,
+            finishedAt: run.finishedAt,
+            sessionId: run.sessionId,
+            summary: truncated(summary),
+            error: run.error as unknown as JsonValue,
+            unread: run.unread,
+          },
+  }
 }
 
 interface IdArgs {
@@ -215,9 +295,10 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_list',
-      description: '列出自动化规则、下次运行时间和最近一次结果，以及可选模型目录 models、各模型 reasoning.efforts、全局 defaultModel 和目录加载失败 modelFailures。默认列出当前工作区，可通过 all_workspaces: true 列出所有工作区。指定或修复模型前先查询目录，使用其中的 provider/model ID 和推理等级。',
+      description: '列出自动化规则、计划、下次运行时间和最近一次结果的摘要（不再默认回显 prompt 全文，只给 promptChars），并附带模型目录 models、各模型 reasoning.efforts、全局 defaultModel 和目录加载失败 modelFailures。默认列出当前工作区，可通过 all_workspaces: true 列出所有工作区。指定或修复模型前先查询目录，使用其中的 provider/model ID 和推理等级；需要逐字复述某条任务说明时再传 include_prompt: true。',
       parameters: {
         all_workspaces: { type: 'boolean', description: '是否列出所有已注册工作区的自动化任务。默认 false（仅当前工作区）。跨工作区管理时请设为 true。' },
+        include_prompt: { type: 'boolean', description: '是否随每条自动化返回 prompt 全文（默认 false，只给 promptChars）。仅在需要逐字核对或复述任务说明时开启。' },
       },
       output: JSON_OUTPUT,
       async execute(args: ListArgs, exec: ToolRunContext) {
@@ -234,7 +315,9 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
             defaultModel: snapshot.defaultModel,
             agentPresets: snapshot.agentPresets,
             defaultAgentPreset: snapshot.defaultAgentPreset,
-            automations: snapshot.definitions,
+            automations: snapshot.definitions.map((definition) =>
+              briefDefinition(definition, args.include_prompt === true),
+            ),
           })
         } catch (error: unknown) {
           if (exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
@@ -296,14 +379,32 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
 
     register(defineTool({
       name: 'automation_runs',
-      description: '读取当前工作区有界的自动化运行历史，包括失败、跳过、摘要和结果 Session。',
-      parameters: {},
+      description: '读取当前工作区的自动化运行历史（按计划时间倒序，默认最近 20 条、最多 100 条），只回状态、时间、摘要（≤240 字）、错误和结果 Session，不回 promptSnapshot/targetSnapshot。可用 automation_id 只看某条任务；需要更早的记录就加大 limit。',
+      parameters: {
+        automation_id: { type: 'string', description: '只看该自动化的运行记录（automation id）。省略则返回整个工作区。' },
+        limit: { type: 'integer', description: '最多返回多少条，默认 20，上限 100。' },
+      },
       output: JSON_OUTPUT,
-      async execute(_args: Record<string, never>, exec: ToolRunContext) {
+      async execute(args: RunsArgs, exec: ToolRunContext) {
         if (exec.agent !== agent || exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
         try {
           const snapshot = await service.snapshot(scope, exec.signal)
-          return json({ ok: true, generatedAt: snapshot.generatedAt, runs: snapshot.runs })
+          const limit = Math.min(
+            RUN_LIST_LIMIT_MAX,
+            Math.max(1, Math.trunc(args.limit ?? RUN_LIST_LIMIT_DEFAULT)),
+          )
+          const filtered =
+            args.automation_id === undefined
+              ? snapshot.runs
+              : snapshot.runs.filter((run) => run.automationId === args.automation_id)
+          return json({
+            ok: true,
+            generatedAt: snapshot.generatedAt,
+            total: filtered.length,
+            limit,
+            truncated: filtered.length > limit,
+            runs: filtered.slice(0, limit).map(briefRun),
+          })
         } catch (error: unknown) {
           if (exec.signal.aborted) return json({ ok: false, code: 'cancelled' })
           return json({ ok: false, code: 'automation_error', message: error instanceof Error ? error.message : String(error) })

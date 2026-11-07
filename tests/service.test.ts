@@ -169,10 +169,47 @@ test("Agent 工具可固定、修复和清空模型目标，省略字段保留�
     const listing = await tools.get("automation_list").execute({}, context);
     assert.deepEqual(target(listing.automations.find((item: any) => item.id === id)), [null, null, null]);
 
+    // 列表默认不回显 prompt 全文，只给字数；需要原文时显式 include_prompt
+    const briefed = listing.automations.find((item: any) => item.id === id);
+    assert.equal(briefed.prompt, undefined);
+    assert.equal(briefed.promptChars, base.prompt.length);
+    const listingWithPrompt = await tools.get("automation_list").execute({ include_prompt: true }, context);
+    assert.equal(
+      listingWithPrompt.automations.find((item: any) => item.id === id).prompt,
+      base.prompt,
+    );
+
     const inherited = await tools.get("automation_create").execute(base, context);
     assert.deepEqual(target(inherited.automation), ["deepseek", "v4", undefined]);
     const global = await tools.get("automation_create").execute({ ...base, provider: null, model: null }, context);
     assert.deepEqual(target(global.automation), [null, null, undefined]);
+  } finally {
+    dispose();
+    await service.dispose();
+  }
+});
+
+test("Agent 精简列表在两种正文模式下保留任务配置", async () => {
+  const definition = sampleDefinition({ maxConcurrentRuns: 3, permissionPreset: "read-only" });
+  const { service } = await makeService({ definitions: [definition] });
+  const tools = new Map<string, any>();
+  const agent = {
+    id: "session_1",
+    ctx: { tools: { register(tool: any) { tools.set(tool.name, tool); return () => {}; } } },
+  };
+  const dispose = registerAutomationTools(service, agent);
+  try {
+    const context = { agent, signal: new AbortController().signal };
+    for (const includePrompt of [false, true]) {
+      const result = await tools.get("automation_list").execute({ include_prompt: includePrompt }, context);
+      assert.equal(result.ok, true);
+      const item = result.automations.find((entry: any) => entry.id === definition.id);
+      assert.deepEqual(
+        [item.maxConcurrentRuns, item.cwd, item.permissionPreset],
+        [3, definition.cwd, "read-only"],
+      );
+      assert.equal(item.prompt, includePrompt ? definition.prompt : undefined);
+    }
   } finally {
     dispose();
     await service.dispose();
@@ -304,6 +341,47 @@ test("Agent 列表提供模型 ID、推理等级、全局选择和目录故障",
     assert.deepEqual(result.models[0].reasoning.efforts, [{ id: "low", name: "Low" }]);
     assert.equal(result.defaultModel.model, "v4");
     assert.equal(result.modelFailures[0].provider, "offline");
+  } finally { dispose(); await service.dispose(); }
+});
+
+test("运行历史只回最近 20 条精简记录，不带 promptSnapshot", async () => {
+  const definition = sampleDefinition({ name: "批量检查" });
+  const { service, runs } = await makeService({ definitions: [definition] });
+  const tools = new Map<string, any>();
+  const agent = {
+    id: "session_1",
+    ctx: { tools: { register(tool: any) { tools.set(tool.name, tool); return () => {}; } } },
+  };
+  const dispose = registerAutomationTools(service, agent);
+  try {
+    for (let index = 0; index < 25; index++) {
+      const run = createManualRun(definition, `2026-08-${String(index + 1).padStart(2, "0")}T00:00:00.000Z`);
+      await runs.put(run.id, {
+        ...run,
+        status: "succeeded",
+        summary: "s".repeat(400),
+        sessionId: "sess_1",
+        unread: true,
+      });
+    }
+
+    const listed = await tools.get("automation_runs").execute({}, { agent, signal: new AbortController().signal });
+    assert.equal(listed.ok, true);
+    assert.equal(listed.total, 25);
+    assert.equal(listed.runs.length, 20);
+    assert.equal(listed.truncated, true);
+    assert.equal(listed.runs[0].scheduledFor, "2026-08-25T00:00:00.000Z");
+    assert.equal(listed.runs[0].promptSnapshot, undefined);
+    assert.equal(listed.runs[0].targetSnapshot, undefined);
+    assert.equal(listed.runs[0].summary.length, 241);
+
+    const filtered = await tools.get("automation_runs").execute(
+      { automation_id: "automation_missing", limit: 5 },
+      { agent, signal: new AbortController().signal },
+    );
+    assert.equal(filtered.total, 0);
+    assert.equal(filtered.runs.length, 0);
+    assert.equal(filtered.truncated, false);
   } finally { dispose(); await service.dispose(); }
 });
 
