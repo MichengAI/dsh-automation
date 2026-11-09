@@ -178,17 +178,17 @@ Chaque exécution utilise le prompt, le dossier, le modèle et les permissions e
 
 | Élément | Comportement |
 | --- | --- |
-| Permissions | Les options et les valeurs par défaut sont issues directement du service `permissionPresets` de l'hôte. |
-| Préréglages d'agent | Sélection parmi les profils déclarés dans `agentPresets` de l'hôte ; les cartes et l'historique affichent le préréglage exact. |
-| Appels d'outils | Soumis aux contrôles de disponibilité, d'autorisations et d'approbations de l'hôte sans listes blanches rigides. |
-| Accès total | L'option `danger-full-access` requiert une confirmation avec avertissement orange identique au Chat. |
-| Approbation | Les créations via chat suivent la politique de la session. Les exécutions autonomes restent en fail-closed (`never`). |
-| Nouvelle tentative | Aucun nouvel essai automatique après le déclenchement d'une exécution. |
-| Redémarrage de l'hôte | Les exécutions en attente (`queued`) ou en cours (`running`) basculent vers `failed(host_interrupted)`. |
-| Limite globale de concurrence | Aucune restriction globale artificielle ; la gestion de concurrence s'effectue par tâche. |
-| Intervalle minimum | Depuis `0.1.40`, les intervalles acceptent des minutes entières à partir de 1. Seule la plus récente échéance est rattrapée. |
-| Concurrence par tâche | Entier positif configurable (défaut : 1). En cas de saturation, les déclenchements sont marqués `skipped(overlap)`. |
-| Confinement de l'espace | Lié par défaut à l'espace de la session source. Toute modification entre espaces requiert `cross_workspace: true`. |
+| Permissions | Les options et les valeurs par défaut proviennent directement du service officiel `permissionPresets` de l'hôte, y compris les préréglages personnalisés. |
+| Préréglage d'Agent | Sélectionné depuis le registre `agentPresets` de l'hôte lors de la création/modification ; les cartes affichent le préréglage actuel et l'historique consigne celui réellement utilisé. Les préréglages corrompus sont désactivés. |
+| Appels d'outils | Respectent les vérifications de disponibilité, de permissions et d'approbations de l'hôte sans liste blanche fixe ni interdiction de shell en arrière-plan. Les processus d'arrière-plan sont gérés par l'hôte. |
+| Accès complet | L'option officielle `danger-full-access` affiche la même confirmation de risque et le même avertissement orange que le Chat. |
+| Approbations | La création via le chat suit la politique de la session. L'accès complet (`never`) s'exécute directement ; Workspace Write / Read Only (`ask`) affiche la carte officielle. Les exécutions sans surveillance restent en `never` (fail-closed). |
+| Nouvelles tentatives | Aucune nouvelle tentative automatique après le démarrage d'une exécution. |
+| Redémarrage de l'hôte | Les exécutions en attente dans `queued` ou `running` basculent vers `failed(host_interrupted)`. |
+| Concurrence globale | Aucune limite de concurrence globale au niveau du plugin entre différentes tâches, même dans le même dossier. L'ancien paramètre global du plugin (`maxConcurrentRuns` dans la configuration) n'a plus d'effet et est distinct du champ par tâche ci-dessous. |
+| Intervalle minimum | Depuis `0.1.40`, les planifications par intervalle acceptent des minutes entières à partir de `1`. Les déclenchements manqués ne sont pas rejoués individuellement ; seule la dernière échéance dans la fenêtre de récupération est traitée. |
+| Concurrence par tâche | Disponible depuis `0.1.40`. Définit les exécutions simultanées dans le dialogue (entier positif, valeur par défaut `1`). Les exécutions en file d'attente et en cours partagent cette limite. À saturation, les déclenchements programmés passent en `skipped(overlap)` et les lancements manuels retournent une erreur de limite. Réduire la limite n'annule pas les exécutions en cours. Les outils d'Agent acceptent `max_concurrent_runs`, le RPC Web accepte `maxConcurrentRuns` ; les tâches existantes utilisent `1` par défaut. |
+| Confinement de l'espace de travail | Lié par défaut au dossier de la session source. Les outils d'Agent peuvent spécifier ou migrer des tâches via `workspace` (nom, ID, chemin ou nom du dossier) ; les modifications entre espaces (`update` / `run_now` / `delete`) nécessitent explicitement `cross_workspace: true` pour empêcher les fuites non autorisées ; `automation_list` prend en charge `all_workspaces: true`. |
 
 Une planification consigne une intention future, et ne constitue pas une concession d'autorisation mise en cache.
 

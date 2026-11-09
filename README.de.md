@@ -178,17 +178,17 @@ Jeder Lauf verwendet die gespeicherten Instruktionen, das Arbeitsverzeichnis, Mo
 
 | Element | Verhalten |
 | --- | --- |
-| Berechtigung | Optionen und Standardwerte stammen direkt aus dem `permissionPresets`-Dienst des Hosts. |
-| Agent-Voreinstellungen | Auswahl aus dem Host-Verzeichnis `agentPresets`; Karten zeigen die aktuelle Voreinstellung. |
-| Werkzeugaufrufe | Folgen den Verfügbarkeits-, Berechtigungs- und Genehmigungsprüfungen des Hosts ohne starre Positivlisten. |
-| Vollzugriff | Die offizielle Option `danger-full-access` erfordert dieselbe Risikobestätigung wie der Chat. |
-| Genehmigung | Die Erstellung im Chat folgt der Sitzungsrichtlinie. Unbeaufsichtigte Hintergrundläufe bleiben fail-closed (`never`). |
+| Berechtigung | Optionen und Standardwerte stammen direkt aus dem `permissionPresets`-Dienst des Hosts, einschließlich benutzerdefinierter Voreinstellungen. |
+| Agent-Voreinstellungen | Auswahl aus dem Host-Verzeichnis `agentPresets` beim Erstellen/Bearbeiten; Aufgabenkarten zeigen die aktuelle Voreinstellung, und der Ausführungsverlauf zeigt die tatsächlich verwendete Voreinstellung. Beschädigte Voreinstellungen werden deaktiviert angezeigt. |
+| Werkzeugaufrufe | Folgen den Verfügbarkeits-, Berechtigungs- und Genehmigungsprüfungen des Hosts ohne zusätzliche feste Positivlisten oder Verbote von Hintergrund-Shells. Hintergrundprozesse werden vom Host verwaltet. |
+| Vollzugriff | Die offizielle Option `danger-full-access` erfordert dieselbe Risikobestätigung und orangefarbene Warnung wie der Chat. |
+| Genehmigung | Die Erstellung im Chat folgt der Sitzungsrichtlinie. Vollzugriff (`never`) wird direkt ausgeführt; Workspace Write / Read Only (`ask`) zeigt die Autorisierungskarte des Hosts. Unbeaufsichtigte Läufe bleiben fail-closed (`never`). |
 | Wiederholung | Keine automatische Wiederholung nach Start eines Laufs. |
 | Host-Neustart | Verbleibende `queued`- oder `running`-Einträge wechseln auf `failed(host_interrupted)`. |
-| Gesamtkapazität | Kein globales Parallelitätslimit auf Plugin-Ebene; separate Steuerung pro Aufgabe. |
-| Mindestintervall | Ab `0.1.40` werden Minutenintervalle ab 1 Minute akzeptiert. Bei verpassten Terminen wird nur der jüngste fällige Lauf berücksichtigt. |
-| Einzelaufgaben-Parallelität | Einstellbare gleichzeitige Läufe pro Aufgabe (positive Ganzzahl, Standard: 1). Bei voller Auslastung werden Termine übersprungen (`skipped(overlap)`). |
-| Arbeitsbereichsbegrenzung | Standardmäßig an den Ursprungsarbeitsbereich gebunden. Bereichsübergreifende Aktionen erfordern explizit `cross_workspace: true`. |
+| Gesamtkapazität | Verschiedene Automatisierungsaufgaben unterliegen keinem globalen Parallelitätslimit auf Plugin-Ebene, selbst im selben Verzeichnis. Die veraltete globale Konfiguration (`maxConcurrentRuns` in der Plugin-Konfiguration) ist wirkungslos und unterscheidet sich vom aufgabenbezogenen Feld unten. |
+| Mindestintervall | Ab `0.1.40` werden Minutenintervalle ab `1` Minute akzeptiert (nur ganze Minuten). Bei verpassten Terminen wird nur das jüngste fällige Ereignis innerhalb des Wiederherstellungsfensters berücksichtigt. |
+| Einzelaufgaben-Parallelität | Verfügbar seit `0.1.40`. Einstellbare gleichzeitige Läufe im Dialog (positive Ganzzahl, Standard: `1`). Wartende und laufende Instanzen teilen sich dieses Limit. Bei voller Auslastung werden geplante Ausführungen übersprungen (`skipped(overlap)`), und manuelle Starts geben einen Grenzwertfehler zurück. Eine Senkung des Limits bricht laufende Instanzen nicht ab. Agent-Werkzeuge akzeptieren `max_concurrent_runs`, Web-RPC `maxConcurrentRuns`; bestehende Aufgaben nutzen standardmäßig `1`. |
+| Arbeitsbereichsbegrenzung | Standardmäßig an den Ursprungsarbeitsbereich gebunden. Agent-Werkzeuge können Aufgaben über `workspace` (Name, ID, Pfad oder Basisverzeichnis) angeben oder migrieren; bereichsübergreifende Mutationen (`update` / `run_now` / `delete`) erfordern explizit `cross_workspace: true`, um unbefugte Ausbrüche zu verhindern; `automation_list` unterstützt `all_workspaces: true`. |
 
 Ein Zeitplan speichert künftige Ausführungsabsichten, keine dauerhaft gecachte Berechtigungserteilung.
 

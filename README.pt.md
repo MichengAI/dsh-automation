@@ -176,19 +176,19 @@ Cada execução utiliza o prompt, diretório, modelo e permissões salvos, sem r
 
 ## Limites de segurança
 
-| Elemento | Comportamento |
+| Item | Comportamento |
 | --- | --- |
-| Permissões | Opções e valores padrão derivam diretamente do serviço `permissionPresets` do host. |
-| Predefinições de agente | Seleção direta da lista `agentPresets` do host; cartões e histórico indicam o perfil exato. |
-| Chamadas de ferramentas | Sujeitas às verificações de disponibilidade, permissões e aprovação do host sem listas estáticas. |
-| Acesso total | A opção `danger-full-access` exige confirmação de risco com aviso laranja idêntico ao Chat. |
-| Aprovação | Criações via chat seguem a política da sessão. Execuções autônomas permanecem em `never` (fail-closed). |
-| Novas tentativas | Sem novas tentativas automáticas após o início da execução. |
-| Reinício do host | Execuções interrompidas em `queued` ou `running` assumem o status `failed(host_interrupted)`. |
-| Limite global de concorrência | Sem limite artificial global no plugin; o controle é exercido por tarefa individual. |
-| Intervalo mínimo | A partir de `0.1.40`, intervalos aceitam minutos inteiros a partir de 1. Apenas o vencimento mais recente é compensado. |
-| Concorrência por tarefa | Configurável na interface (inteiro positivo, padrão: 1). Se o limite for atingido, os disparos recebem `skipped(overlap)`. |
-| Isolamento de espaço | Vinculado por padrão ao espaço da sessão de origem. Ações entre espaços requerem `cross_workspace: true`. |
+| Permissões | As opções e o padrão vêm diretamente do serviço oficial `permissionPresets` do Host, incluindo predefinições personalizadas. |
+| Predefinição de Agent | Selecionada a partir do catálogo oficial `agentPresets` do Host ao criar/editar; os cartões exibem a predefinição atual e o histórico registra a predefinição utilizada em cada execução. Predefinições corrompidas aparecem desativadas. |
+| Chamadas de ferramentas | Seguem estritamente as verificações de disponibilidade, permissões e aprovação do Host, sem lista de permissões fixa ou proibição de shell em segundo plano. Processos em segundo plano são gerenciados pelo Host. |
+| Acesso total | A opção oficial `danger-full-access` exige a mesma confirmação de risco e aviso laranja do Chat. |
+| Aprovação | A criação no chat segue a política da sessão. Acesso total (`never`) prossegue diretamente; Workspace Write / Read Only (`ask`) exibe o cartão oficial. Execuções autônomas permanecem em `never` (fail-closed). |
+| Repetições | Sem repetições automáticas após o início de uma execução. |
+| Reinício do Host | Registros remanescentes em `queued` ou `running` tornam-se `failed(host_interrupted)`. |
+| Concorrência global | Diferentes tarefas de automação não possuem limite global de concorrência no nível do plugin, mesmo dentro do mesmo diretório. A configuração obsoleta do plugin (`maxConcurrentRuns` na configuração) não tem mais efeito e difere do campo por tarefa abaixo. |
+| Intervalo mínimo | Desde `0.1.40`, agendamentos por intervalo aceitam minutos inteiros a partir de `1`. Execuções perdidas não são reproduzidas individualmente; apenas a ocorrência devida mais recente na janela de recuperação é considerada. |
+| Concorrência por tarefa | Disponível desde `0.1.40`. Define execuções simultâneas no diálogo (número inteiro positivo, padrão `1`). Execuções na fila e ativas compartilham esse limite. Quando cheio, agendamentos são marcados como `skipped(overlap)` e execuções manuais retornam erro de limite. Reduzir o limite não cancela execuções existentes. Ferramentas de Agent aceitam `max_concurrent_runs`, Web RPC aceita `maxConcurrentRuns`; tarefas existentes usam por padrão `1`. |
+| Isolamento de espaço de trabalho | Vinculado por padrão ao diretório da sessão de origem. Ferramentas de Agent podem especificar ou migrar tarefas via `workspace` (nome, ID, caminho ou nome da pasta); mutações entre diretórios (`update` / `run_now` / `delete`) exigem explicitamente `cross_workspace: true` para evitar acessos não autorizados; `automation_list` oferece suporte a `all_workspaces: true`. |
 
 Um agendamento registra uma intenção futura de execução, não uma concessão contínua de permissões em cache.
 

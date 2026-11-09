@@ -15,7 +15,7 @@ export declare function hideOfficialScheduleCss(labels?: readonly string[]): str
  * 屏蔽规则的候选标签：优先用宿主 `schedule.manager` 命名空间当前语言的 `panel` 词条，
  * 拿不到时（未装官方面板插件、宿主改命名空间、词条缺失返回键名）回落到 8 语兜底清单。
  */
-export declare function resolveOfficialScheduleLabels(ctx?: unknown): readonly string[];
+export declare function resolveOfficialScheduleLabels(ctx?: Pick<ClientContext, 'locale'> | unknown): readonly string[];
 export declare function readCachedEntryLocation(): EntryLocation;
 export declare function readCachedSidebarEntry(): boolean;
 export declare function readCachedHideOfficial(): boolean;

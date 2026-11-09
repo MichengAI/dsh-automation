@@ -178,17 +178,17 @@ Cada ejecución utiliza el prompt, espacio de trabajo, modelo y límites de perm
 
 | Elemento | Comportamiento |
 | --- | --- |
-| Permisos | Las opciones y el valor por defecto provienen directamente del servicio `permissionPresets` del host. |
-| Preajuste de agente | Selección directa de la lista `agentPresets` del host; las tarjetas y registros muestran el preajuste real usado. |
-| Llamadas a herramientas | Siguen estrictamente las comprobaciones de disponibilidad, permisos y aprobaciones del host sin listas fijas. |
-| Acceso total | La opción oficial `danger-full-access` requiere confirmación de riesgo con advertencia naranja idéntica a Chat. |
-| Aprobación | La creación mediante chat sigue la política de sesión. Las ejecuciones desatendidas se mantienen en `never` (cierre por fallo). |
-| Reintentos | Sin reintentos automáticos tras haber iniciado una ejecución. |
-| Reinicio de host | Los registros pendientes en `queued` o `running` pasan al estado `failed(host_interrupted)`. |
-| Concurrencia global | Sin límite de concurrencia global en el complemento; se gestiona individualmente por tarea. |
-| Intervalo mínimo | A partir de `0.1.40`, los horarios por intervalo admiten minutos enteros a partir de 1. Solo se procesa el vencimiento más reciente. |
-| Concurrencia por tarea | Configurable en el diálogo (entero positivo, por defecto 1). Si el límite se completa, los disparos se marcan como `skipped(overlap)`. |
-| Aislamiento de espacio | Vinculado por defecto al espacio de la sesión de origen. Las mutaciones entre espacios requieren explícitamente `cross_workspace: true`. |
+| Permisos | Las opciones y los valores predeterminados provienen directamente del servicio oficial `permissionPresets` del Host, incluidos los ajustes personalizados. |
+| Ajuste predeterminado de Agent | Selección en el catálogo oficial `agentPresets` del Host al crear o editar; las tarjetas muestran el ajuste actual y el historial registra el utilizado en cada ejecución. Los ajustes dañados se muestran deshabilitados. |
+| Llamadas a herramientas | Siguen estrictamente las comprobaciones de disponibilidad, permisos y aprobaciones del Host, sin listas blancas fijas ni prohibiciones de shells en segundo plano. Los procesos en segundo plano son administrados por el Host. |
+| Acceso total | La opción oficial `danger-full-access` requiere la misma confirmación de riesgo y advertencia naranja que el Chat. |
+| Aprobaciones | La creación mediante chat sigue la política de la sesión. Acceso total (`never`) procede directamente; Workspace Write / Read Only (`ask`) muestra la tarjeta oficial. Las ejecuciones desatendidas se mantienen en `never` (fail-closed). |
+| Reintentos | Sin reintentos automáticos una vez iniciada la ejecución. |
+| Reinicio del Host | Las ejecuciones pendientes en `queued` o `running` pasan a `failed(host_interrupted)`. |
+| Concurrencia | Diferentes automatizaciones no tienen un límite de concurrencia global a nivel de complemento, incluso dentro del mismo directorio. La configuración obsoleta a nivel de plugin (`maxConcurrentRuns` en la configuración) ya no tiene efecto y es independiente del campo por tarea. |
+| Intervalo mínimo | A partir de `0.1.40`, los horarios por intervalo admiten minutos enteros a partir de `1`. No se repiten eventos perdidos individualmente; solo se evalúa la ejecución vencida más reciente dentro de la ventana de recuperación. |
+| Concurrencia por tarea | Disponible desde `0.1.40`. Permite configurar ejecuciones concurrentes en el diálogo (entero positivo, predeterminado `1`). Las ejecuciones en cola y activas comparten este límite. Al alcanzarse, los eventos programados se marcan como `skipped(overlap)` y las ejecuciones manuales devuelven un error de límite. Reducir el límite no cancela ejecuciones activas. Las herramientas de Agent aceptan `max_concurrent_runs`, Web RPC acepta `maxConcurrentRuns`; tareas previas usan por defecto `1`. |
+| Aislamiento de espacio de trabajo | Vinculado por defecto al espacio de trabajo de la sesión de origen. Las herramientas de Agent pueden especificar o migrar tareas mediante `workspace` (nombre, ID, ruta o nombre del directorio); las operaciones entre espacios (`update` / `run_now` / `delete`) requieren explícitamente `cross_workspace: true` para evitar escapes no autorizados; `automation_list` admite `all_workspaces: true`. |
 
 Una programación representa una intención futura, no una concesión de permisos almacenada en caché.
 

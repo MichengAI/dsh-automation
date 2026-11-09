@@ -23,24 +23,27 @@ const HOST_PANEL_LABELS = [
   'Tarefas de automação',
 ]
 
-test('屏蔽官方入口的规则覆盖宿主 8 语面板标签，且只作用于 nav 侧栏容器', () => {
+test('屏蔽官方入口的规则覆盖宿主 8 语面板标签，且同时作用于 nav 侧栏容器与取消固定后的更多菜单', () => {
   const css = hideOfficialScheduleCss()
   for (const label of HOST_PANEL_LABELS) {
-    assert.ok(css.includes(`nav button[aria-label="${label}"]`), `缺少语言标签: ${label}`)
+    assert.ok(css.includes(`nav button[aria-label="${label}"]`), `缺少 nav 语言标签: ${label}`)
+    assert.ok(css.includes(`[role="menuitem"][aria-label="${label}"]`), `缺少 menuitem 语言标签: ${label}`)
   }
   assert.equal(css.match(/nav button\[aria-label=/g)?.length, HOST_PANEL_LABELS.length)
+  assert.equal(css.match(/\[role="menuitem"\]\[aria-label=/g)?.length, HOST_PANEL_LABELS.length)
   assert.match(css, /display: none !important/)
 })
 
 test('传入的标签清单去空白、去重并转义属性值', () => {
   const css = hideOfficialScheduleCss(['自動化タスク', '  ', 'Quote"Label', 'Back\\slash', 'Line\nBreak', '自動化タスク'])
-  assert.equal(css.match(/aria-label="Quote\\"Label"/g)?.length, 1)
-  assert.equal(css.match(/aria-label="Back\\\\slash"/g)?.length, 1)
+  assert.equal(css.match(/aria-label="Quote\\"Label"/g)?.length, 2)
+  assert.equal(css.match(/aria-label="Back\\\\slash"/g)?.length, 2)
   // 换行符被安全替换为空格
-  assert.equal(css.match(/aria-label="Line Break"/g)?.length, 1)
+  assert.equal(css.match(/aria-label="Line Break"/g)?.length, 2)
   // 重复标签只出现一次，空白项被丢弃
-  assert.equal(css.match(/aria-label="自動化タスク"/g)?.length, 1)
+  assert.equal(css.match(/aria-label="自動化タスク"/g)?.length, 2)
   assert.equal(css.match(/nav button\[aria-label=/g)?.length, 4)
+  assert.equal(css.match(/\[role="menuitem"\]\[aria-label=/g)?.length, 4)
 })
 
 test('标签列表为空或全为空白时返回空字符串', () => {
@@ -102,18 +105,26 @@ test('语言切换后原地更新同一张样式表，关闭与销毁时移除',
   }
 })
 
-test('词条缺失回退裸键名 panel 时，生产守卫阻断其写入选择器', () => {
-  // 直接向生产函数传入模拟的宿主上下文
-  const mockBind = (ns: string) => (key: string) => {
-    if (ns === 'schedule.manager' && key === 'panel') return 'panel' // 词条缺失回退键名
+test('词条缺失回退裸键名 panel 或带命名空间键名时，生产守卫阻断其写入选择器', () => {
+  // 模拟宿主词条缺失回退裸 panel
+  const mockBindRaw = (ns: string) => (key: string) => {
+    if (ns === 'schedule.manager' && key === 'panel') return 'panel'
     return ''
   }
-  const labels = resolveOfficialScheduleLabels({ locale: { bind: mockBind } })
+  const labels1 = resolveOfficialScheduleLabels({ locale: { bind: mockBindRaw } })
+  assert.equal(labels1.includes('panel'), false, '裸 panel 键名必须被阻断，不得写入')
+  const css1 = hideOfficialScheduleCss(labels1)
+  assert.equal(css1.includes('aria-label="panel"'), false)
 
-  // 兜底清单包含 8 语，但裸 panel 绝对不得混入
-  assert.equal(labels.includes('panel'), false, '裸 panel 键名必须被阻断，不得写入')
-  const css = hideOfficialScheduleCss(labels)
-  assert.equal(css.includes('aria-label="panel"'), false)
+  // 模拟宿主词条缺失回退 schedule.manager:panel
+  const mockBindNs = (ns: string) => (key: string) => {
+    if (ns === 'schedule.manager' && key === 'panel') return 'schedule.manager:panel'
+    return ''
+  }
+  const labels2 = resolveOfficialScheduleLabels({ locale: { bind: mockBindNs } })
+  assert.equal(labels2.includes('schedule.manager:panel'), false, '带命名空间的键名必须被阻断')
+  const css2 = hideOfficialScheduleCss(labels2)
+  assert.equal(css2.includes('aria-label="schedule.manager:panel"'), false)
 })
 
 test('宿主 bind 为类方法且依赖 this 时，必须正确保留上下文并取得标签', () => {

@@ -44,7 +44,13 @@ function cssAttributeValue(value: string): string {
 export function hideOfficialScheduleCss(labels: readonly string[] = OFFICIAL_SCHEDULE_LABELS): string {
   const unique = [...new Set(labels.map(label => label.trim()).filter(label => label !== ''))]
   if (unique.length === 0) return ''
-  const selectors = unique.map(label => `nav button[aria-label="${cssAttributeValue(label)}"]`)
+  const selectors = unique.flatMap(label => {
+    const val = cssAttributeValue(label)
+    return [
+      `nav button[aria-label="${val}"]`,
+      `[role="menuitem"][aria-label="${val}"]`,
+    ]
+  })
   return `\n${selectors.join(',\n')} {\n  display: none !important;\n}\n`
 }
 
@@ -52,14 +58,23 @@ export function hideOfficialScheduleCss(labels: readonly string[] = OFFICIAL_SCH
  * 屏蔽规则的候选标签：优先用宿主 `schedule.manager` 命名空间当前语言的 `panel` 词条，
  * 拿不到时（未装官方面板插件、宿主改命名空间、词条缺失返回键名）回落到 8 语兜底清单。
  */
-export function resolveOfficialScheduleLabels(ctx?: unknown): readonly string[] {
+export function resolveOfficialScheduleLabels(ctx?: Pick<ClientContext, 'locale'> | unknown): readonly string[] {
   const labels: string[] = []
   try {
     const locale = (ctx as { locale?: { bind?: (ns: string) => (key: string) => unknown } } | undefined)?.locale
     if (typeof locale?.bind === 'function') {
-      const label = locale.bind('schedule.manager')('panel')
-      // 词条缺失时宿主 bind 会原样返回键名，不能当成标签写进选择器。
-      if (typeof label === 'string' && label.trim() !== '' && label !== 'panel') labels.push(label)
+      const raw = locale.bind('schedule.manager')('panel')
+      const label = typeof raw === 'string' ? raw.trim() : ''
+      // 词条缺失时宿主 bind 会原样返回键名（如 'panel' 或 'schedule.manager:panel'），不能当成标签写进选择器。
+      if (
+        label !== '' &&
+        label !== 'panel' &&
+        label !== 'schedule.manager:panel' &&
+        !label.endsWith(':panel') &&
+        !label.includes('schedule.manager')
+      ) {
+        labels.push(label)
+      }
     }
   } catch {}
   return [...labels, ...OFFICIAL_SCHEDULE_LABELS]
@@ -106,7 +121,7 @@ export function applyHideOfficialScheduleStyle(hidden: boolean, labels?: readonl
   if (hidden) {
     const css = hideOfficialScheduleCss(labels)
     if (existing) {
-      // 语言切换后标签不同：同一张表里更新内容，避免留下旧语言的规则。
+      // 样式内容变化时在同一张表里原地更新内容，避免重复插入 style 元素。
       if (existing.textContent !== css) existing.textContent = css
       return
     }
