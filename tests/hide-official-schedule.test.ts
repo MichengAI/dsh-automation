@@ -5,6 +5,7 @@ import {
   BUNDLE_KEY,
   HIDE_OFFICIAL_SCHEDULE_STYLE_TAG,
   hideOfficialScheduleCss,
+  resolveOfficialScheduleLabels,
 } from '../src/client/bundle-config.tsx'
 
 /**
@@ -101,19 +102,16 @@ test('语言切换后原地更新同一张样式表，关闭与销毁时移除',
   }
 })
 
-test('词条缺失回退裸键名 panel 时，守卫阻断其写入选择器', () => {
-  // 模拟 officialScheduleLabels 内的守卫逻辑
+test('词条缺失回退裸键名 panel 时，生产守卫阻断其写入选择器', () => {
+  // 直接向生产函数传入模拟的宿主上下文
   const mockBind = (ns: string) => (key: string) => {
     if (ns === 'schedule.manager' && key === 'panel') return 'panel' // 词条缺失回退键名
     return ''
   }
-  const label = mockBind('schedule.manager')('panel')
-  const labels: string[] = []
-  if (typeof label === 'string' && label.trim() !== '' && label !== 'panel') {
-    labels.push(label)
-  }
+  const labels = resolveOfficialScheduleLabels({ locale: { bind: mockBind } })
 
-  assert.equal(labels.length, 0, '裸 panel 键名必须被阻断，不得写入')
+  // 兜底清单包含 8 语，但裸 panel 绝对不得混入
+  assert.equal(labels.includes('panel'), false, '裸 panel 键名必须被阻断，不得写入')
   const css = hideOfficialScheduleCss(labels)
-  assert.equal(css, '')
+  assert.equal(css.includes('aria-label="panel"'), false)
 })

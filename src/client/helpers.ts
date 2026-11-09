@@ -277,7 +277,8 @@ export function formatSchedule(schedule: AutomationSchedule, t: Translate): stri
     case 'daily':
       return t('schedule.dailyAt', { time: schedule.time })
     case 'weekly': {
-      const separator = t('schedule.weekdaySeparator') || ', '
+      const rawSeparator = t('schedule.weekdaySeparator')
+      const separator = rawSeparator && rawSeparator !== 'schedule.weekdaySeparator' ? rawSeparator : ', '
       const days = schedule.weekdays.map(day => t(`day.${day}` as 'day.1' | 'day.2' | 'day.3' | 'day.4' | 'day.5' | 'day.6' | 'day.7')).join(separator)
       return t('schedule.weeklyAt', { days, time: schedule.time })
     }

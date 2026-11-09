@@ -288,8 +288,16 @@ test('设置卡片仅渲染 2 个 Switch 与 1 个 SegmentedControl，共 3 行'
   })
 
   // card 为 React.Fragment，包含 rows 数组
-  const rows = card.props.children as Array<{ props?: { children?: unknown } }>
+  const rows = card.props.children as Array<{ props?: { children?: any[] } }>
   assert.equal(rows.length, 3, '卡片必须严格包含 3 行配置')
+
+  const controlRow0 = rows[0]?.props?.children?.[1]
+  const switchRow1 = rows[1]?.props?.children?.[1]
+  const switchRow2 = rows[2]?.props?.children?.[1]
+
+  assert.equal(controlRow0?.type?.name, 'SegmentedControl', '首行必须是 SegmentedControl 位置选择器')
+  assert.equal(switchRow1?.type?.name, 'Switch', '第 2 行必须是 Switch 原生开关')
+  assert.equal(switchRow2?.type?.name, 'Switch', '第 3 行必须是 Switch 原生开关')
 })
 
 test('周几排程在不同语言下的分隔符测试（西文逗号空格 vs 中日文顿号）', () => {

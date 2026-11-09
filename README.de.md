@@ -34,7 +34,7 @@
 
 ## Benutzeroberfläche
 
-Geplante Sitzungen erscheinen sowohl im offiziellen **Aufgaben**-Baum als auch im Reiter **Geplant**. Inaktive geplante Sitzungen zeigen das offizielle Uhrensymbol. Die Ansicht **Geplant → Verlauf** gruppiert standardmäßig nach Aufgaben und kann auf Arbeitsbereich, Arbeitsbereichsbaum oder flache Liste umgeschaltet werden:
+Geplante Sitzungen erscheinen sowohl im offiziellen **Aufgaben**-Baum als auch im Reiter **Geplant**. Inaktive geplante Sitzungen zeigen das offizielle Uhrensymbol. Die Ansicht **Geplant → Verlauf** gruppiert standardmäßig nach Aufgaben und kann auf Nach Arbeitsbereich, Arbeitsbereichsbaum oder flache Liste umgeschaltet werden. Die Arbeitsbereichsansicht behält Arbeitsbereiche sichtbar und filtert Sitzungen auf geplante Läufe; das Kopfzeilen-Pluszeichen öffnet direkt den Dialog für neue Aufgaben:
 
 ![Geplante Seitenleiste](assets/screenshots/workspace-scheduled.png)
 
@@ -76,9 +76,13 @@ Für eine Desktop-Umgebung laden Sie [DSH Codex Desktop](https://github.com/Mich
 
 ## Voraussetzungen
 
-- Host-Kompatibilität: DeepSeek Harness `0.2.x`-Reihe (`>=0.2.0-rc.1 <0.3.0-0`), verifiziert mit `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5` und `0.2.2-rc.1`.
-- Node.js 22.19+ für Entwicklung oder Quellcode-Builds.
+- Host-Kompatibilität: Volle DeepSeek Harness `0.2.x`-Reihe (`>=0.2.0-rc.1 <0.3.0-0`), verifiziert mit `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5` und `0.2.2-rc.1`, und vorwärtskompatibel mit nachfolgenden 0.2.x RC-Releases. Hosts auf `0.1.x` sollten bei Plugin `0.1.66` verbleiben. Sichern Sie Speicher und Sitzungen im Profil vor dem Host-Upgrade; `0.2.0` schreibt V4-Sitzungen, die nach einem Downgrade nicht mehr lesbar sind.
+- Offizielle DSH-peerDependencies decken den Generationsbereich `>=0.2.0-rc.1 <0.3.0-0` ab. Entwicklungsabhängigkeiten sind auf `0.2.2-rc.1` festgelegt. Ältere Versionen und inkompatible `0.3.0`-Änderungen werden durch das Versionsgate abgewiesen. `@deepseek-ai/dsh-agent-presets` und `@deepseek-ai/dsh-agent-preset-registry` sind keine Peers, sondern nutzen den Host-Dienst `agentPresets`.
+- Andere Versionen liegen außerhalb des deklarierten Bereichs. Strengere Peer-Prüfungen lehnen sie ab.
+- Das Bundle überschreibt nicht den offiziellen Connection-Eintrag. Jeder Host behält seine Abhängigkeiten und Konfiguration; Automation registriert seinen RPC-Kanal im eigenen Plugin-Scope.
 - Eine lauffähige DeepSeek Harness Web-Installation mit `dsh` in PowerShell.
+- Beispiele verwenden das Profil `web`; ersetzen Sie es durch das Zielprofil.
+- Node.js 22.19+ für Entwicklung oder Quellcode-Builds. Für npm-Installationen ist kein lokales `npm install` nötig.
 
 ## Installation
 
@@ -101,7 +105,8 @@ dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https:/
 dsh --profile web --dump-config
 ```
 
-Starten Sie DSH Web neu und aktualisieren Sie den Browser (Strg+F5).
+Starten Sie DSH Web neu und aktualisieren Sie den Browser (Strg+F5). Fixieren Sie bei Bedarf eine Version mit `@0.1.5` statt `@latest`.
+- **Reverse-Proxy-Betrieb**: Unterstützt Pfad-Präfixe hinter Proxies (z.B. `/app/dsh/`). API-Aufrufe lösen relativ zu `document.baseURI` auf.
 
 ## Plugin-Konfiguration & Schalter
 
@@ -111,17 +116,30 @@ Starten Sie DSH Web neu und aktualisieren Sie den Browser (Strg+F5).
 Es stehen zwei native Schalter und eine Anzeigeort-Auswahl zur Verfügung:
 
 ### 1. Seitenleisteneintrag (`sidebarEntry`)
-- **Standard**: Aktiviert (`true`)
+- **Standard**: Aktiviert (`true`) / Nahtlose Übernahme bei Neuinstallation
 - **Beschreibung**: Zeigt ein **Geplante Aufgaben**-Symbol in der primären Aktivitätsleiste.
-- **Wirkung**: Öffnet das Aufgabenzentrum in einem 960px breiten zentrierten Bereich.
+- **Wirkung**:
+  - **960px zentrierte Ansicht**: Öffnet das Aufgabenzentrum in einem 960px breiten zentrierten Bereich (analog zum Plugin-Manager).
+  - **Saubere Deaktivierung**: Beim Ausschalten wird der Slot sauber abgemeldet und aktive Ansichten sicher zurückgesetzt.
+  - **Live-Synchronisation**: Der Standard-Einstellungsdialog und die Arbeitsbereichsreiter bleiben synchron verfügbar.
 
 ### 2. Offiziellen Automatisierungseintrag ausblenden (`hideOfficialSchedule`)
-- **Standard**: Aktiviert (`true`)
+- **Standard**: Aktiviert (`true`, abgestimmt auf den Seitenleisteneintrag)
 - **Beschreibung**: Blendet den integrierten Host-Eintrag «Automatisierungsaufgaben» (`ui-schedule`) aus, um doppelte Symbole zu verhindern.
+- **Wirkung**:
+  - **Nahtlose Ablösung**: Das integrierte Symbol wird standardmäßig verborgen und durch das Plugin-Symbol ersetzt.
+  - **Sichere Bereichsrücksetzung**: Befindet sich der Hauptbereich in der offiziellen Zeitplanansicht, wird er sicher auf die Standardunterhaltung zurückgesetzt.
+  - **Flackerfreie Zwischenspeicherung**: Lokale Speicherung verhindert Icon-Flackern bei langsamen Verbindungen.
+  - **Rückstandsfreie Wiederherstellung**: Beim Deaktivieren oder Deinstallieren wird der offizielle Eintrag sofort wieder sichtbar.
+  - **Upgradesicherheit**: Hatten Benutzer den Seitenleisteneintrag zuvor deaktiviert, bleibt der offizielle Eintrag standardmäßig sichtbar.
 
 ### 3. Geplante Sitzungen im Aufgabenbaum anzeigen (`taskTreeSessions`)
-- **Standard**: Deaktiviert (`false`)
-- **Beschreibung**: Bestimmt, ob geplante Läufe im primären Aufgabenbaum aufgeführt werden. Hält Arbeitsbereiche sauber.
+- **Standard**: Deaktiviert (`false`, blendet geplante Sitzungen im Aufgabenbaum aus)
+- **Beschreibung**: Bestimmt, ob geplante Läufe im primären Aufgabenbaum aufgeführt werden.
+- **Wirkung**:
+  - **Reduzierung von Unruhe**: Verhindert, dass häufige Automatisierungsläufe den regulären Arbeitsbereich überfüllen.
+  - **Verlustfreie Prüfung**: Alle vergangenen Läufe bleiben unter «Geplant → Verlauf» vollständig einsehbar.
+  - **Leichtes Protokoll**: Nutzt den `NativeTabRegistry.sessionFilters`-Vertrag ohne invasive Eingriffe und koexistiert sauber mit IM Connect und Archive Manager.
 
 ### 4. Konfiguration in `cordis.patch.yml`
 ```yaml
@@ -129,15 +147,15 @@ Es stehen zwei native Schalter und eine Anzeigeort-Auswahl zur Verfügung:
   name: '@michengai/dsh-automation'
   config:
     stateDir: D:/Data/dsh-automation   # Optional: Verzeichnis für Konfigurationsdateien
-    runTimeoutMinutes: 60              # Optional: Zeitlimit pro Aufgabe in Minuten (Standard: 60)
-    misfireGraceMinutes: 15            # Optional: Toleranzfenster für verpasste Ausführungen (Minuten)
-    historyLimit: 200                  # Optional: Maximale Anzahl an Verlaufseinträgen
-    updater: false                     # Optional: Update-Sperre für Unternehmensumgebungen
+    runTimeoutMinutes: 60              # Optional: Zeitlimit pro Aufgabe in Minuten (Standard: 60, Max: 1440)
+    misfireGraceMinutes: 15            # Optional: Toleranzfenster für verpasste Ausführungen (Minuten, Standard: 15)
+    historyLimit: 200                  # Optional: Maximale Anzahl an Verlaufseinträgen (Standard: 200)
+    updater: false                     # Optional: Update-Sperre für Unternehmensumgebungen (alias: onlineUpdate: false)
 ```
 
 ## Updates
 
-Die Aktualisierungsschaltfläche in den Plugin-Einstellungen wurde entfernt. Zur Aktualisierung installieren Sie einfach die neueste Version im selben Profil via `dsh plugin … add @latest`, starten DSH neu und aktualisieren den Browser. In gesperrten Unternehmensumgebungen kann `updater: false` in Cordis konfiguriert werden, um Update-Anfragen abzuweisen (HTTP 403).
+Die Aktualisierungsschaltfläche in den Plugin-Einstellungen wurde entfernt. Zur Aktualisierung installieren Sie einfach die neueste Version im selben Profil via `dsh plugin … add @latest`, starten DSH neu und aktualisieren den Browser. In gesperrten Unternehmensumgebungen kann `updater: false` oder `onlineUpdate: false` in Cordis konfiguriert werden, um Update-Anfragen abzuweisen (HTTP 403).
 
 ## Bedienung
 
@@ -145,19 +163,64 @@ Die Aktualisierungsschaltfläche in den Plugin-Einstellungen wurde entfernt. Zur
 
 | Ziel | Aktion | Geltungsbereich |
 | --- | --- | --- |
-| Regel erstellen | **Neue geplante Aufgabe** wählen, Name, Zeitplan, Prompt und Berechtigungen festlegen | Gesamter Host |
+| Regel erstellen | **Neue geplante Aufgabe** wählen, Name, Zeitplan, Prompt, Arbeitsbereich, Modell und Berechtigungen festlegen | Gesamter Host |
 | Über Chat erstellen | Zeitplan in einer Unterhaltung beschreiben oder **Im Chat erstellen** wählen | Aktueller Chat |
 | Pausieren / Fortsetzen | Schalter auf der Aufgabenkarte umschalten | Einzelne Regel |
 | Jetzt ausführen | Im Menü der Karte **Jetzt ausführen** wählen | Einzelne Regel |
 | Löschen | Im Menü der Karte **Aufgabe löschen** wählen (Verlauf bleibt erhalten) | Nur Definition |
 | Verlauf einsehen | **Ausführungsverlauf** öffnen und nach Datum oder Status filtern | Gesamter Host |
 
+Jeder Lauf verwendet die gespeicherten Instruktionen, das Arbeitsverzeichnis, Modell und Berechtigungsgrenzen. Er übernimmt keine Bestätigungen aus dem Quell-Chat.
+
+`automation_create` und `automation_update` unterstützen dieselben Modelloptionen wie die Benutzeroberfläche (`provider`, `model`, `reasoning_effort`). Wird ein Modell angegeben, müssen `provider` und `model` als Paar nicht-leerer IDs oder beide als `null` (folgt globaler Auswahl) übergeben werden; unvollständige Paare werden abgelehnt.
+
 ## Sicherheitsgrenzen
 
-- **Berechtigungen**: Vollständige Einhaltung des `permissionPresets`-Dienstes des Hosts.
-- **Agent-Voreinstellungen**: Direkte Auswahl aus den im Host registrierten Agent-Presets.
-- **Vollzugriff**: Erfordert Risikobestätigung mit orangefarbenem Warnhinweis analog zum regulären Chat.
-- **Unbeaufsichtigte Ausführungen**: Sichere Ausführung ohne hängende interaktive Abfragen.
+| Element | Verhalten |
+| --- | --- |
+| Berechtigung | Optionen und Standardwerte stammen direkt aus dem `permissionPresets`-Dienst des Hosts. |
+| Agent-Voreinstellungen | Auswahl aus dem Host-Verzeichnis `agentPresets`; Karten zeigen die aktuelle Voreinstellung. |
+| Werkzeugaufrufe | Folgen den Verfügbarkeits-, Berechtigungs- und Genehmigungsprüfungen des Hosts ohne starre Positivlisten. |
+| Vollzugriff | Die offizielle Option `danger-full-access` erfordert dieselbe Risikobestätigung wie der Chat. |
+| Genehmigung | Die Erstellung im Chat folgt der Sitzungsrichtlinie. Unbeaufsichtigte Hintergrundläufe bleiben fail-closed (`never`). |
+| Wiederholung | Keine automatische Wiederholung nach Start eines Laufs. |
+| Host-Neustart | Verbleibende `queued`- oder `running`-Einträge wechseln auf `failed(host_interrupted)`. |
+| Gesamtkapazität | Kein globales Parallelitätslimit auf Plugin-Ebene; separate Steuerung pro Aufgabe. |
+| Mindestintervall | Ab `0.1.40` werden Minutenintervalle ab 1 Minute akzeptiert. Bei verpassten Terminen wird nur der jüngste fällige Lauf berücksichtigt. |
+| Einzelaufgaben-Parallelität | Einstellbare gleichzeitige Läufe pro Aufgabe (positive Ganzzahl, Standard: 1). Bei voller Auslastung werden Termine übersprungen (`skipped(overlap)`). |
+| Arbeitsbereichsbegrenzung | Standardmäßig an den Ursprungsarbeitsbereich gebunden. Bereichsübergreifende Aktionen erfordern explizit `cross_workspace: true`. |
+
+Ein Zeitplan speichert künftige Ausführungsabsichten, keine dauerhaft gecachte Berechtigungserteilung.
+
+## Entwicklung
+
+### Installation aus dem Quellcode
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+Set-Location D:\Repository\deepseek-harness-plugin
+git clone https://github.com/MichengAI/dsh-automation.git
+Set-Location .\dsh-automation
+pnpm install
+pnpm test
+pnpm build
+dsh plugin --profile web add .
+dsh --profile web --dump-config
+```
+
+Starten Sie DSH Web neu und aktualisieren Sie den Browser.
+
+## Verifikation
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+pnpm test
+pnpm build
+```
+
+`pnpm check` führt Typecheck, Tests, Host-Kompatibilitätsprüfungen und Build aus.
 
 ## Lizenz
 

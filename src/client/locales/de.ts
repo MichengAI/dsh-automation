@@ -100,7 +100,7 @@ export const de: Record<AutomationLocaleKey, string> = {
   "modal.edit": "Geplante Aufgabe bearbeiten",
   "modal.save": "Speichern",
   "stats.next": "Nächster Lauf",
-  "stats.noneScheduled": "Keine geplanten",
+  "stats.noneScheduled": "Keine geplanten Läufe",
   "section.refresh": "Aktualisieren",
   "empty.title": "Wiederkehrende Programmierarbeit automatisch ausführen",
   "empty.body": "Speichern Sie eine eigenständige Aufgabe, einen Zeitplan und Berechtigungsgrenzen. Jeder Lauf beginnt in einer neuen Sitzung.",

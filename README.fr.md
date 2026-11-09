@@ -34,7 +34,7 @@ Confiez à DSH les tâches répétitives récurrentes. Configurez des tâches da
 
 ## Aperçu de l'interface
 
-Les sessions planifiées apparaissent à la fois dans l'arborescence officielle des **Tâches** et dans l'onglet **Planifié**. Les sessions inactives affichent l'icône d'horloge officielle. L'affichage **Planifié → Historique** regroupe par défaut les éléments par tâche, avec bascule possible par espace de travail, arborescence ou liste plate :
+Les sessions planifiées apparaissent à la fois dans l'arborescence officielle des **Tâches** et dans l'onglet **Planifié**. Les sessions inactives affichent l'icône d'horloge officielle. L'affichage **Planifié → Historique** regroupe par défaut les éléments par tâche, avec bascule possible par espace de travail, arborescence ou liste plate. Le mode par espace de travail conserve les espaces visibles et filtre les sessions planifiées ; l'icône « + » de l'en-tête permet de créer directement une tâche :
 
 ![Barre latérale planifiée](assets/screenshots/workspace-scheduled.png)
 
@@ -76,9 +76,13 @@ Pour un environnement de bureau complet, téléchargez [DSH Codex Desktop](https
 
 ## Prérequis
 
-- Compatibilité hôte : gamme complète DeepSeek Harness `0.2.x` (`>=0.2.0-rc.1 <0.3.0-0`), validée sur `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5` et `0.2.2-rc.1`.
-- Node.js 22.19+ pour le développement et la compilation locale.
+- Compatibilité hôte : gamme complète DeepSeek Harness `0.2.x` (`>=0.2.0-rc.1 <0.3.0-0`), validée sur `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5` et `0.2.2-rc.1`, compatible avec les versions RC futures. Les hôtes sous `0.1.x` doivent conserver le plugin `0.1.66`. Sauvegardez le stockage et les sessions de l'automatisation avant toute mise à niveau ; `0.2.0` enregistre les sessions en V4, qui ne peuvent plus être lues après un retour en arrière.
+- Les peerDependencies officielles acceptent la plage génrationnelle `>=0.2.0-rc.1 <0.3.0-0`. Les dépendances de développement sont figées sur `0.2.2-rc.1`. Les versions antérieures et ruptures en `0.3.0` sont rejetées par le filtre de version. `@deepseek-ai/dsh-agent-presets` et `@deepseek-ai/dsh-agent-preset-registry` ne sont pas des pairs, mais exploitent le service hôte `agentPresets`.
+- Les autres versions sortent du cadre de compatibilité garanti.
+- Le bundle ne modifie pas l'entrée officielle Connection. Chaque hôte conserve ses dépendances et sa configuration ; l'automatisation déclare son canal RPC dans sa propre portée.
 - Une installation fonctionnelle de DeepSeek Harness Web avec la commande `dsh` accessible dans PowerShell.
+- Les exemples utilisent le profil `web` ; adaptez-le selon votre configuration.
+- Node.js 22.19+ pour le développement et la compilation locale.
 
 ## Installation
 
@@ -101,7 +105,8 @@ dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https:/
 dsh --profile web --dump-config
 ```
 
-Redémarrez DSH Web et actualisez la page du navigateur (Ctrl+F5).
+Redémarrez DSH Web et actualisez la page du navigateur (Ctrl+F5). Spécifiez une version fixe telle que `@0.1.5` au lieu de `@latest` si nécessaire.
+- **Déploiement derrière proxy inverse** : Prise en charge des préfixes de chemin (ex. `/app/dsh/`). Les API sont résolues relativement à `document.baseURI`.
 
 ## Configuration et commutateurs du plugin
 
@@ -111,17 +116,30 @@ Accédez à :
 Deux commutateurs natifs et un sélecteur d'emplacement sont mis à disposition :
 
 ### 1. Entrée dans la barre latérale (`sidebarEntry`)
-- **Par défaut** : Activé (`true`)
+- **Par défaut** : Activé (`true`) / Prise en charge fluide dès l'installation
 - **Description** : Affiche une icône dédiée **Tâches planifiées** dans la barre d'activité principale.
-- **Effet** : Ouvre le panneau central dans une vue aérée de 960px.
+- **Effet** :
+  - **Vue centrée de 960px** : Ouvre le centre de gestion dans un conteneur large de 960px, évitant le défilement étroit dans les fenêtres modales.
+  - **Désenregistrement propre** : Désactiver le commutateur libère l'emplacement proprement et repositionne l'affichage si le panneau était ouvert.
+  - **Synchronisation en direct** : Le dialogue standard des paramètres et les onglets du rail restent pleinement synchronisés.
 
 ### 2. Masquer l'entrée d'automatisation officielle (`hideOfficialSchedule`)
-- **Par défaut** : Activé (`true`)
+- **Par défaut** : Activé (`true`, coordonné avec l'entrée de la barre latérale)
 - **Description** : Masque l'entrée « Tâches d'automatisation » (`ui-schedule`) intégrée de l'hôte pour éviter les doublons.
+- **Effet** :
+  - **Remplacement transparent** : L'entrée officielle est masquée par défaut pour ne laisser place qu'à celle du plugin.
+  - **Réinitialisation intelligente du panneau** : Si le volet principal affichait l'ancien panneau d'automatisation, il revient automatiquement au chat par défaut.
+  - **Cache persistant sans scintillement** : La mémoire locale du client empêche tout clignotement d'icône, même sur réseau lent.
+  - **Restauration immédiate** : La désactivation ou la désinstallation restaure l'entrée native sans délai.
+  - **Sécurité des mises à niveau** : Pour un utilisateur ayant désactivé `sidebarEntry`, l'entrée officielle reste visible pour éviter toute barre vide.
 
 ### 3. Afficher les sessions planifiées dans l'arborescence des tâches (`taskTreeSessions`)
-- **Par défaut** : Désactivé (`false`)
+- **Par défaut** : Désactivé (`false`, masque les sessions planifiées dans l'arborescence)
 - **Description** : Détermine si les sessions planifiées apparaissent dans l'arborescence principale des espaces de travail.
+- **Effet** :
+  - **Réduction du bruit** : Les sessions planifiées sont filtrées hors de l'arbre principal, préservant la clarté du travail quotidien.
+  - **Consultation sans perte** : Toutes les exécutions passées demeurent accessibles dans « Planifié → Historique ».
+  - **Protocole inter-plugins léger** : Respecte le contrat `NativeTabRegistry.sessionFilters` sans interception invasive du système hôte.
 
 ### 4. Configuration `cordis.patch.yml`
 ```yaml
@@ -129,15 +147,15 @@ Deux commutateurs natifs et un sélecteur d'emplacement sont mis à disposition 
   name: '@michengai/dsh-automation'
   config:
     stateDir: D:/Data/dsh-automation   # Facultatif : dossier de stockage des configurations
-    runTimeoutMinutes: 60              # Facultatif : délai d'expiration en minutes (défaut : 60)
-    misfireGraceMinutes: 15            # Facultatif : tolérance pour les lancements manqués (minutes)
-    historyLimit: 200                  # Facultatif : nombre d'enregistrements d'historique conservés
-    updater: false                     # Facultatif : verrouillage des mises à jour en entreprise
+    runTimeoutMinutes: 60              # Facultatif : délai d'expiration en minutes (défaut : 60, max : 1440)
+    misfireGraceMinutes: 15            # Facultatif : tolérance pour les lancements manqués en minutes (défaut : 15)
+    historyLimit: 200                  # Facultatif : nombre d'enregistrements d'historique conservés (défaut : 200)
+    updater: false                     # Facultatif : verrouillage des mises à jour en entreprise (alias : onlineUpdate: false)
 ```
 
 ## Mise à jour
 
-Le bouton de mise à jour dans les paramètres du plugin a été supprimé. Pour mettre à jour, réinstallez la dernière version dans le même profil avec la commande `dsh plugin … add @latest`, redémarrez DSH et actualisez le navigateur. En entreprise, `updater: false` permet de bloquer les requêtes de mise à jour avec une réponse HTTP 403.
+Le bouton de mise à jour dans les paramètres du plugin a été supprimé. Pour mettre à jour, réinstallez la dernière version dans le même profil avec la commande `dsh plugin … add @latest`, redémarrez DSH et actualisez le navigateur. En entreprise, `updater: false` ou `onlineUpdate: false` dans Cordis permet de bloquer les requêtes de mise à jour (HTTP 403).
 
 ## Utilisation
 
@@ -145,19 +163,64 @@ Ouvrez **Paramètres → Tâches planifiées** :
 
 | Objectif | Action | Portée |
 | --- | --- | --- |
-| Créer une règle | Cliquez sur **Nouvelle tâche**, puis réglez le nom, le calendrier, le prompt et les autorisations | Tout l'hôte |
+| Créer une règle | Cliquez sur **Nouvelle tâche**, puis réglez le nom, le calendrier, le prompt, l'espace, le modèle et les permissions | Tout l'hôte |
 | Créer depuis le chat | Décrivez le calendrier dans une conversation ou cliquez sur **Créer dans le chat** | Conversation en cours |
 | Suspendre / reprendre | Utilisez le commutateur sur la carte de la tâche | Une seule règle |
 | Exécuter maintenant | Ouvrez le menu de la carte et choisissez **Exécuter maintenant** | Une seule règle |
 | Supprimer | Ouvrez le menu de la carte et choisissez **Supprimer la tâche** (historique conservé) | Définition uniquement |
 | Consulter l'historique | Ouvrez **Historique des exécutions** et filtrez par date ou statut | Tout l'hôte |
 
+Chaque exécution utilise le prompt, le dossier, le modèle et les permissions enregistrés, sans réutiliser les validations de la conversation d'origine.
+
+`automation_create` et `automation_update` gèrent les mêmes paramètres de modèle que l'interface (`provider`, `model`, `reasoning_effort`). Lors de la spécification ou de la mise à jour d'un modèle, transmettez `provider` et `model` comme une paire d'identifiants non vides ou tous deux à `null` pour suivre la configuration globale ; les paires incomplètes sont rejetées.
+
 ## Limites de sécurité
 
-- **Autorisations** : Respect scrupuleux du service `permissionPresets` de l'hôte.
-- **Préréglages d'agent** : Sélection parmi les préréglages déclarés par l'hôte.
-- **Accès total** : La sélection de `danger-full-access` requiert une confirmation avec avertissement orange identique au Chat.
-- **Exécutions sans surveillance** : Fonctionnement sécurisé sans blocage d'approbation interactive.
+| Élément | Comportement |
+| --- | --- |
+| Permissions | Les options et les valeurs par défaut sont issues directement du service `permissionPresets` de l'hôte. |
+| Préréglages d'agent | Sélection parmi les profils déclarés dans `agentPresets` de l'hôte ; les cartes et l'historique affichent le préréglage exact. |
+| Appels d'outils | Soumis aux contrôles de disponibilité, d'autorisations et d'approbations de l'hôte sans listes blanches rigides. |
+| Accès total | L'option `danger-full-access` requiert une confirmation avec avertissement orange identique au Chat. |
+| Approbation | Les créations via chat suivent la politique de la session. Les exécutions autonomes restent en fail-closed (`never`). |
+| Nouvelle tentative | Aucun nouvel essai automatique après le déclenchement d'une exécution. |
+| Redémarrage de l'hôte | Les exécutions en attente (`queued`) ou en cours (`running`) basculent vers `failed(host_interrupted)`. |
+| Limite globale de concurrence | Aucune restriction globale artificielle ; la gestion de concurrence s'effectue par tâche. |
+| Intervalle minimum | Depuis `0.1.40`, les intervalles acceptent des minutes entières à partir de 1. Seule la plus récente échéance est rattrapée. |
+| Concurrence par tâche | Entier positif configurable (défaut : 1). En cas de saturation, les déclenchements sont marqués `skipped(overlap)`. |
+| Confinement de l'espace | Lié par défaut à l'espace de la session source. Toute modification entre espaces requiert `cross_workspace: true`. |
+
+Une planification consigne une intention future, et ne constitue pas une concession d'autorisation mise en cache.
+
+## Développement
+
+### Installation depuis les sources
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+Set-Location D:\Repository\deepseek-harness-plugin
+git clone https://github.com/MichengAI/dsh-automation.git
+Set-Location .\dsh-automation
+pnpm install
+pnpm test
+pnpm build
+dsh plugin --profile web add .
+dsh --profile web --dump-config
+```
+
+Redémarrez DSH Web et actualisez le navigateur.
+
+## Vérification
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+pnpm test
+pnpm build
+```
+
+`pnpm check` regroupe la validation de types, les tests unitaires, la compatibilité hôte et la compilation.
 
 ## Licence
 

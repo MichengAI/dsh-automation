@@ -48,6 +48,23 @@ export function hideOfficialScheduleCss(labels: readonly string[] = OFFICIAL_SCH
   return `\n${selectors.join(',\n')} {\n  display: none !important;\n}\n`
 }
 
+/**
+ * 屏蔽规则的候选标签：优先用宿主 `schedule.manager` 命名空间当前语言的 `panel` 词条，
+ * 拿不到时（未装官方面板插件、宿主改命名空间、词条缺失返回键名）回落到 8 语兜底清单。
+ */
+export function resolveOfficialScheduleLabels(ctx?: unknown): readonly string[] {
+  const labels: string[] = []
+  try {
+    const bind = (ctx as { locale?: { bind?: unknown } } | undefined)?.locale?.bind
+    if (typeof bind === 'function') {
+      const label = (bind as (ns: string) => (key: string) => unknown)('schedule.manager')('panel')
+      // 词条缺失时宿主 bind 会原样返回键名，不能当成标签写进选择器。
+      if (typeof label === 'string' && label.trim() !== '' && label !== 'panel') labels.push(label)
+    }
+  } catch {}
+  return [...labels, ...OFFICIAL_SCHEDULE_LABELS]
+}
+
 export function readCachedEntryLocation(): EntryLocation {
   if (typeof localStorage === 'undefined') return 'both'
   try {
@@ -457,22 +474,7 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     return isSidebarEnabled()
   }
 
-  /**
-   * 屏蔽规则的候选标签：优先用宿主 `schedule.manager` 命名空间当前语言的 `panel` 词条，
-   * 拿不到时（未装官方面板插件、宿主改命名空间、词条缺失返回键名）回落到 8 语兜底清单。
-   */
-  const officialScheduleLabels = (): readonly string[] => {
-    const labels: string[] = []
-    try {
-      const bind = ctx.locale?.bind
-      if (typeof bind === 'function') {
-        const label = bind.call(ctx.locale, 'schedule.manager')('panel')
-        // 词条缺失时宿主 bind 会原样返回键名，不能当成标签写进选择器。
-        if (typeof label === 'string' && label.trim() !== '' && label !== 'panel') labels.push(label)
-      }
-    } catch {}
-    return [...labels, ...OFFICIAL_SCHEDULE_LABELS]
-  }
+  const officialScheduleLabels = (): readonly string[] => resolveOfficialScheduleLabels(ctx)
 
   let hideOfficialScheduleEnabled = readCachedHideOfficial()
   let officialEpoch = 0

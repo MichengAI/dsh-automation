@@ -34,7 +34,7 @@ Deje que DSH se encargue de las tareas repetitivas de forma programada. Configur
 
 ## Vista previa de la interfaz
 
-Las sesiones programadas aparecen tanto en el árbol oficial de **Tareas** como en la pestaña **Programado**. Las sesiones inactivas muestran el icono de reloj oficial en **Tareas**. **Programado → Registros** se agrupa por tarea de forma predeterminada y permite alternar a Por espacio de trabajo, Árbol o Plano:
+Las sesiones programadas aparecen tanto en el árbol oficial de **Tareas** como en la pestaña **Programado**. Las sesiones inactivas muestran el icono de reloj oficial en **Tareas**. **Programado → Registros** se agrupa por tarea de forma predeterminada y permite alternar a Por espacio de trabajo, Árbol o Plano. El modo Por espacio de trabajo mantiene visibles los espacios y solo filtra las sesiones programadas; el botón «+» de la cabecera abre directamente la creación de tareas:
 
 ![Barra lateral de tareas programadas](assets/screenshots/workspace-scheduled.png)
 
@@ -76,9 +76,13 @@ Para un entorno de escritorio, descargue [DSH Codex Desktop](https://github.com/
 
 ## Requisitos previos
 
-- Compatibilidad de host: serie completa DeepSeek Harness `0.2.x` (`>=0.2.0-rc.1 <0.3.0-0`), verificado en `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5` y `0.2.2-rc.1`.
-- Versión de Node.js: 22.19+ para desarrollo o compilación de código fuente.
+- Compatibilidad de host: serie completa DeepSeek Harness `0.2.x` (`>=0.2.0-rc.1 <0.3.0-0`), verificado en `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5` y `0.2.2-rc.1`, compatible hacia adelante con versiones RC posteriores. Los hosts en `0.1.x` deben permanecer en el complemento `0.1.66`. Realice una copia de seguridad del almacenamiento de automatización y de las sesiones en el perfil antes de actualizar; `0.2.0` escribe sesiones V4, que no se pueden leer tras una degradación.
+- Las dependencias peerDependencies oficiales cubren el rango generacional `>=0.2.0-rc.1 <0.3.0-0`. Las dependencias de desarrollo están fijadas en `0.2.2-rc.1`. Las versiones anteriores y cambios incompatibles en `0.3.0` son rechazados por la puerta de versión. `@deepseek-ai/dsh-agent-presets` y `@deepseek-ai/dsh-agent-preset-registry` no son peers, sino que utilizan el servicio `agentPresets` del host.
+- Otras versiones quedan fuera del rango declarado; la validación estricta de peers las rechazará.
+- El paquete no anula la entrada oficial Connection. Cada host conserva sus dependencias y configuración; la automatización registra su canal RPC en su propio ámbito de complemento.
 - Instalación operativa de DeepSeek Harness Web con comando `dsh` en PowerShell.
+- Los ejemplos utilizan el perfil `web`; cámbielo según corresponda.
+- Node.js 22.19+ para desarrollo o compilación de código fuente. No se requiere ejecutar `npm install` localmente para instalaciones desde npm.
 
 ## Instalación
 
@@ -101,7 +105,8 @@ dsh plugin --profile web add @michengai/dsh-automation@latest --registry=https:/
 dsh --profile web --dump-config
 ```
 
-Reinicie DSH Web y fuerce la recarga del navegador (Ctrl+F5).
+Reinicie DSH Web y fuerce la recarga del navegador (Ctrl+F5). Fije una versión con `@0.1.5` en lugar de `@latest` si lo requiere.
+- **Despliegue tras proxy inverso**: Admite prefijos de ruta detrás de proxies (ej. `/app/dsh/`). Las llamadas API se resuelven de forma relativa a `document.baseURI`.
 
 ## Configuración y opciones del complemento
 
@@ -111,33 +116,46 @@ Acceda a:
 Aquí se proporcionan dos interruptores nativos y un selector de ubicación:
 
 ### 1. Entrada en barra lateral (`sidebarEntry`)
-- **Predeterminado**: Activado (`true`)
+- **Predeterminado**: Activado (`true`) / Traspaso fluido en nuevas instalaciones
 - **Descripción**: Muestra un icono de **Tareas programadas** en la barra de actividad izquierda.
-- **Efecto**: Abre el centro de tareas en un contenedor centrado de 960px.
+- **Efecto**:
+  - **Vista centrada de 960px**: Abre el centro de tareas en un contenedor centrado y amplio de 960px, superando las limitaciones de espacio de los diálogos modales.
+  - **Desregistro limpio**: Al desactivar, anula el registro de la ranura de forma segura y devuelve la vista a un estado neutro si estaba activa.
+  - **Sincronización en vivo**: El modal de ajustes estándar y las pestañas del espacio de trabajo permanecen completamente disponibles y sincronizados.
 
 ### 2. Ocultar entrada oficial de automatización (`hideOfficialSchedule`)
-- **Predeterminado**: Activado (`true`)
+- **Predeterminado**: Activado (`true`, coordinado con la entrada de la barra lateral)
 - **Descripción**: Oculta la entrada incorporada «Tareas de automatización» (`ui-schedule`) del host para evitar duplicados.
+- **Efecto**:
+  - **Sustitución fluida**: Oculto por defecto mientras se muestra la entrada del complemento, evitando iconos duplicados.
+  - **Reinicio inteligente del panel**: Si la vista principal mostraba los horarios oficiales, se restablece de forma segura a la conversación por defecto.
+  - **Caché local sin parpadeos**: Dispone de almacenamiento local en el cliente que previene parpadeos de iconos incluso sin conexión.
+  - **Restauración sin residuos**: Desactivar o desinstalar restaura la entrada oficial de inmediato.
+  - **Seguridad en actualizaciones**: Si el usuario había desactivado `sidebarEntry` previamente, la entrada oficial permanece visible para evitar una barra vacía.
 
 ### 3. Mostrar sesiones programadas en el árbol de tareas (`taskTreeSessions`)
-- **Predeterminado**: Desactivado (`false`)
-- **Descripción**: Controla si las ejecuciones programadas aparecen en el árbol de trabajo principal, manteniendo el área de trabajo limpia.
+- **Predeterminado**: Desactivado (`false`, oculta sesiones programadas en el árbol para mantener el área limpia)
+- **Descripción**: Controla si las ejecuciones programadas aparecen en el árbol de trabajo principal.
+- **Efecto**:
+  - **Aislamiento de ruido**: Las sesiones programadas se filtran del árbol principal, evitando que ejecuciones frecuentes abarroten los espacios habituales.
+  - **Revisión sin pérdidas**: Todas las ejecuciones pasadas continúan listadas en «Programado → Registros» y se pueden consultar en cualquier momento.
+  - **Protocolo ligero entre complementos**: Basado en el estándar `NativeTabRegistry.sessionFilters`, conviviendo armónicamente con IM Connect y Archive Manager.
 
 ### 4. Configuración en `cordis.patch.yml`
 ```yaml
 - id: dsh-automation
   name: '@michengai/dsh-automation'
   config:
-    stateDir: D:/Data/dsh-automation   # Opcional: directorio para almacenar configuración
-    runTimeoutMinutes: 60              # Opcional: tiempo de espera en minutos (predeterminado: 60)
-    misfireGraceMinutes: 15            # Opcional: ventana de tolerancia tras omisión (minutos)
-    historyLimit: 200                  # Opcional: registros de historial a conservar
-    updater: false                     # Opcional: bloqueo de actualizaciones para entornos empresariales
+    stateDir: D:/Data/dsh-automation   # Opcional: directorio para almacenar configuración (por defecto en perfil activo)
+    runTimeoutMinutes: 60              # Opcional: tiempo de espera en minutos (predeterminado: 60, máx: 1440)
+    misfireGraceMinutes: 15            # Opcional: ventana de tolerancia tras omisión en minutos (predeterminado: 15)
+    historyLimit: 200                  # Opcional: registros de historial a conservar (predeterminado: 200)
+    updater: false                     # Opcional: bloqueo de actualizaciones para entornos empresariales (alias: onlineUpdate: false)
 ```
 
 ## Actualizaciones
 
-El botón de comprobación de actualizaciones dentro del complemento ha sido eliminado. Para actualizar, reinstale la última versión en el mismo perfil con el comando `dsh plugin … add @latest`, reinicie DSH y recargue el navegador. En entornos empresariales restringidos, puede configurar `updater: false` en Cordis para bloquear las solicitudes de actualización (HTTP 403).
+El botón de comprobación de actualizaciones dentro del complemento ha sido eliminado. Para actualizar, reinstale la última versión en el mismo perfil con el comando `dsh plugin … add @latest`, reinicie DSH y recargue el navegador. En entornos empresariales restringidos, puede configurar `updater: false` o `onlineUpdate: false` en Cordis para bloquear las solicitudes de actualización (HTTP 403).
 
 ## Uso
 
@@ -145,19 +163,64 @@ Abra **Ajustes → Tareas programadas**:
 
 | Objetivo | Acción | Ámbito |
 | --- | --- | --- |
-| Crear regla | Seleccione **Nueva tarea**, configure nombre, horario, prompt, espacio y permisos | Todo el host |
+| Crear regla | Seleccione **Nueva tarea**, configure nombre, horario, prompt, espacio, modelo, habilidades y permisos | Todo el host |
 | Crear desde chat | Describa el horario en una conversación o elija **Crear en chat** | Conversación actual |
 | Pausar / reanudar | Cambie el interruptor en la tarjeta de la tarea | Una regla |
 | Ejecutar ahora | En el menú de la tarjeta, seleccione **Ejecutar ahora** | Una regla |
 | Eliminar | En el menú de la tarjeta, seleccione **Eliminar tarea** (se conserva historial) | Solo definición |
-| Ver historial | Abra **Historial de ejecuciones** y filtre por fecha o estado | Todo el host |
+| Ver historial | Abra **Historial de ejecuciones** y filtre por día, semana, mes, tarea o estado | Todo el host |
+
+Cada ejecución utiliza el prompt, espacio de trabajo, modelo y límites de permisos guardados. No reutiliza aprobaciones del chat original.
+
+`automation_create` y `automation_update` admiten los mismos controles de modelo que los Ajustes (`provider`, `model`, `reasoning_effort`). Al especificar o modificar un modelo, envíe `provider` y `model` como identificadores no vacíos emparejados o ambos como `null` para seguir la selección global; los pares incompletos serán rechazados.
 
 ## Límites de seguridad
 
-- **Permisos**: Cumplimiento riguroso del servicio `permissionPresets` del host.
-- **Preajustes de agente**: Selección directa de los preajustes declarados en el host.
-- **Acceso total**: Requiere confirmación de riesgo con advertencia naranja idéntica a Chat.
-- **Ejecuciones desatendidas**: Se ejecutan de forma segura sin aprobación interactiva pendiente.
+| Elemento | Comportamiento |
+| --- | --- |
+| Permisos | Las opciones y el valor por defecto provienen directamente del servicio `permissionPresets` del host. |
+| Preajuste de agente | Selección directa de la lista `agentPresets` del host; las tarjetas y registros muestran el preajuste real usado. |
+| Llamadas a herramientas | Siguen estrictamente las comprobaciones de disponibilidad, permisos y aprobaciones del host sin listas fijas. |
+| Acceso total | La opción oficial `danger-full-access` requiere confirmación de riesgo con advertencia naranja idéntica a Chat. |
+| Aprobación | La creación mediante chat sigue la política de sesión. Las ejecuciones desatendidas se mantienen en `never` (cierre por fallo). |
+| Reintentos | Sin reintentos automáticos tras haber iniciado una ejecución. |
+| Reinicio de host | Los registros pendientes en `queued` o `running` pasan al estado `failed(host_interrupted)`. |
+| Concurrencia global | Sin límite de concurrencia global en el complemento; se gestiona individualmente por tarea. |
+| Intervalo mínimo | A partir de `0.1.40`, los horarios por intervalo admiten minutos enteros a partir de 1. Solo se procesa el vencimiento más reciente. |
+| Concurrencia por tarea | Configurable en el diálogo (entero positivo, por defecto 1). Si el límite se completa, los disparos se marcan como `skipped(overlap)`. |
+| Aislamiento de espacio | Vinculado por defecto al espacio de la sesión de origen. Las mutaciones entre espacios requieren explícitamente `cross_workspace: true`. |
+
+Una programación representa una intención futura, no una concesión de permisos almacenada en caché.
+
+## Desarrollo
+
+### Instalación desde código fuente
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+Set-Location D:\Repository\deepseek-harness-plugin
+git clone https://github.com/MichengAI/dsh-automation.git
+Set-Location .\dsh-automation
+pnpm install
+pnpm test
+pnpm build
+dsh plugin --profile web add .
+dsh --profile web --dump-config
+```
+
+Reinicie DSH Web y recargue el navegador.
+
+## Verificación
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+pnpm test
+pnpm build
+```
+
+`pnpm check` ejecuta comprobación de tipos, pruebas unitarias, compatibilidad con host y compilación.
 
 ## Licencia
 
