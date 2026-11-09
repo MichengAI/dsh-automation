@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.22] - 2026-11-09
+
+### Fixes
+
+- **Reasoning effort propagation**: passed configured `reasoningEffort` through `AgentOptions` during execution agent creation, resolving an issue on DSH `0.2.2-rc.1` and newer where scheduled runs silently fell back to the model default effort. Backwards compatibility across all DSH `0.2.x` versions is fully preserved.
+
 ## [1.0.21] - 2026-11-09
 
 ### Features
