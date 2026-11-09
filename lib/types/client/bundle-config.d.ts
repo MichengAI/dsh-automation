@@ -9,11 +9,13 @@ export declare const STORAGE_KEY_HIDE_OFFICIAL = "dsh-automation.hide-official-s
 export declare const STORAGE_KEY_SIDEBAR_ENTRY = "dsh-automation.sidebar-entry";
 export declare const STORAGE_KEY_ENTRY_LOCATION = "dsh-automation.entry-location";
 export declare const STORAGE_KEY_TASK_TREE_SESSIONS = "dsh-automation.task-tree-sessions";
+/** 生成屏蔽规则：按传入的标签清单一律去重、去空白并转义，调用方负责合并运行时标签与兜底清单。 */
+export declare function hideOfficialScheduleCss(labels?: readonly string[]): string;
 export declare function readCachedEntryLocation(): EntryLocation;
 export declare function readCachedSidebarEntry(): boolean;
 export declare function readCachedHideOfficial(): boolean;
 export declare function readCachedTaskTreeSessions(): boolean;
-export declare function applyHideOfficialScheduleStyle(hidden: boolean): void;
+export declare function applyHideOfficialScheduleStyle(hidden: boolean, labels?: readonly string[]): void;
 export declare function AutomationSidebarIcon(props: {
     readonly size?: number;
 }): ReactElement;

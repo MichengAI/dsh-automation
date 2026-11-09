@@ -28,6 +28,7 @@ Let DSH handle work on a schedule. Set up tasks in Settings or describe the timi
 - **Adjust the schedule anytime**: create, pause, resume, run immediately, or delete tasks.
 - **Review results**: browse task conversations by name and run time in the **Scheduled** tab, or filter run history in Settings.
 - **Keep each run independent**: each run uses the saved task instructions and does not inherit the conversation that created it.
+- **Eight built-in languages**: Chinese, English, Japanese, Spanish, French, German, Russian, and Portuguese, following the global DSH language setting. The six non-Chinese/English options require the matching host language packs (DSH `0.2.2-rc.1` or later).
 
 ## Interface
 
@@ -103,14 +104,14 @@ dsh --profile web --dump-config
 ```
 
 Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.5` instead of `@latest` when needed.
-- **Reverse Proxy Deployment**: Supports running DSH behind a reverse proxy with a path prefix (e.g. `/app/dsh/`). Plugin API and update check endpoints resolve relative to the document base URI (`document.baseURI`) to avoid 404 errors caused by stripped path prefixes.
+- **Reverse Proxy Deployment**: Supports running DSH behind a reverse proxy with a path prefix (e.g. `/app/dsh/`). Plugin API endpoints resolve relative to the document base URI (`document.baseURI`) to avoid 404 errors caused by stripped path prefixes.
 
 ## Plugin Configuration & Toggles
 
 The plugin follows standard DSH bundle configuration conventions. Options are located at:
 > **Sidebar → Plugins → Click `@michengai/dsh-automation` details** (the host's `plugins.bundle.config` slot).
 
-Four native switches are available:
+Three native switches plus a location selector are available:
 
 ### 1. Sidebar Entry (`sidebarEntry`)
 - **Default**: Enabled (`true`) / Seamless takeover on new installs
@@ -120,20 +121,7 @@ Four native switches are available:
   - **Clean Unregister**: When toggled off, cleanly unregisters the slot and safely switches away if the panel was active;
   - **Live Synchronization**: The standard Settings modal and the workspace rail tabs remain fully available and in sync regardless of this toggle.
 
-### 2. Online Updates (`onlineUpdate` / `updater`)
-- **Default**: Enabled (`true`)
-- **Description**: Controls whether the plugin checks for and installs updates from npm.
-- **Effect**:
-  - **Dynamic UI Sync**: Disabling the toggle hides update chips and check buttons from the settings header immediately without requiring a full page reload;
-  - **Endpoint Guard**: When disabled, the update API route returns `HTTP 403` for all check and install requests, preventing unreviewed updates;
-  - **Host / Platform Lock**: For curated plugin indexes (such as VibeDev) or restricted enterprise environments, this can be locked directly via Cordis configuration (bundle patch) without needing UI interaction:
-    ```yaml
-    updater: false # or onlineUpdate: false
-    ```
-    Once configured, the built-in updater is disabled at startup and the UI toggle is disabled with a locked notice;
-  - **Update Mode**: When an update is detected, **Update automatically** runs only when the DSH CLI or Desktop update service is available; otherwise, the dialog provides a profile-specific manual command to copy and run.
-
-### 3. Hide Official Automation Entry (`hideOfficialSchedule`)
+### 2. Hide Official Automation Entry (`hideOfficialSchedule`)
 - **Default**: Enabled (`true`, paired with Sidebar Entry)
 - **Description**: Controls whether to hide the host's built-in "Automation tasks" (`ui-schedule`) entry to avoid conflict.
 - **Effect**:
@@ -143,7 +131,7 @@ Four native switches are available:
   - **Zero Residual Changes**: Toggling off or uninstalling the plugin restores the built-in entry automatically;
   - **Upgrade Safety**: If an upgrading user had previously disabled `sidebarEntry`, the official entry remains visible by default, avoiding an empty activity bar.
 
-### 4. Show Automation Sessions in Task Tree (`taskTreeSessions`)
+### 3. Show Automation Sessions in Task Tree (`taskTreeSessions`)
 - **Default**: Disabled (`false`, hides automation sessions in task tree by default to keep workspace clean)
 - **Description**: Controls whether to show scheduled task run sessions in the official workspace task tree.
 - **Effect**:
@@ -151,7 +139,7 @@ Four native switches are available:
   - **Lossless Review**: The filter only targets the main task tree. All past runs remain listed under "Schedule → Records" and can be opened for review at any time;
   - **Lightweight Inter-Plugin Protocol**: Powered by the standard `NativeTabRegistry.sessionFilters` contract without invasive host interception, applying changes instantly and coexisting smoothly with third-party plugins like IM Connect and Archive Manager. Shells lacking this protocol degrade safely with a warning.
 
-### 5. Storage & Host Configuration (`cordis.patch.yml`)
+### 4. Storage & Host Configuration (`cordis.patch.yml`)
 The following configuration parameters can be declared under your profile's `cordis.patch.yml`:
 ```yaml
 - id: dsh-automation
@@ -164,9 +152,11 @@ The following configuration parameters can be declared under your profile's `cor
     updater: false                     # Optional: enterprise lockdown for updates (alias: onlineUpdate: false)
 ```
 
-## Updates
+## Updating
 
-The settings title shows the installed version and a **Check for updates** button. When a newer release is available, **Update automatically** runs only when the DSH CLI or Desktop update service is available; otherwise, the dialog provides a profile-specific manual command to copy and run.
+The in-plugin update entry (the version chip and **Check for updates** button in the settings header) has been removed. Upgrade by reinstalling into the same profile with the `dsh plugin … add @latest` command from the installation section above, then restart DSH and hard-refresh the browser.
+
+Curated plugin indexes (such as VibeDev) and restricted enterprise environments can still declare `updater: false` or `onlineUpdate: false` in the Cordis configuration: the server-side update API then returns `HTTP 403` for every check and install request.
 
 ## Usage
 

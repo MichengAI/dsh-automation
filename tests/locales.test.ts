@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readdir, readFile } from 'node:fs/promises'
 import test from 'node:test'
-import { de, en, es, fr, ja, pt, ru, zh } from '../src/client/locales.ts'
+import { de, en, es, fr, ja, LOCALE_DICTIONARIES, pt, ru, zh } from '../src/client/locales.ts'
 
 const ALL_LOCALES = {
   zh,
@@ -68,6 +68,13 @@ test('非中日语言严格禁止 CJK 残留', () => {
         `[${code}][${key}] 包含非预期的 CJK 字符: "${val}"`,
       )
     }
+  }
+})
+
+test('客户端注册用的语言映射与 8 门具名词典一一对应', () => {
+  assert.deepEqual(Object.keys(LOCALE_DICTIONARIES).sort(), [...LANG_CODES].sort())
+  for (const code of LANG_CODES) {
+    assert.equal(LOCALE_DICTIONARIES[code], ALL_LOCALES[code], `[${code}] 注册映射必须引用同一份词典`)
   }
 })
 

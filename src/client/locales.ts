@@ -13,6 +13,14 @@ export const NS = 'dsh-automation'
 
 export { zh, en, ja, es, fr, de, ru, pt }
 
+/**
+ * 客户端一次注册的全部内置语言词典。
+ *
+ * 宿主自带 zh / en / ja / es / fr / de / ru / pt 八份语言包，新增或删减语言只改这一处，
+ * 避免注册点漏掉某个词典（漏掉时该语言会静默回落到 en）。
+ */
+export const LOCALE_DICTIONARIES = { zh, en, ja, es, fr, de, ru, pt } as const
+
 export type AutomationLocaleKey =
   | 'tab'
   | 'sidebar.tab'

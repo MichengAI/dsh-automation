@@ -203,6 +203,22 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
   assert.equal(officialController.isHideOfficialScheduleEnabled(), true, '默认开启屏蔽官方自动化入口')
   assert.equal(styleCreated, true, '默认挂载隐藏样式标签')
   assert.ok(styleContent.includes('nav button[aria-label='), 'CSS 选择器精准限定在 nav 侧栏容器内')
+  for (const label of [
+    '自动化任务',
+    'Automation tasks',
+    '自動化タスク',
+    'Tareas de automatización',
+    "Tâches d'automatisation",
+    'Automatisierungsaufgaben',
+    'Задачи автоматизации',
+    'Tarefas de automação',
+  ]) {
+    assert.ok(styleContent.includes(`nav button[aria-label="${label}"]`), `默认规则缺少宿主语言标签: ${label}`)
+  }
+  assert.ok(
+    styleContent.includes('nav button[aria-label="schedule.manager:panel"]'),
+    '运行时标签必须通过宿主 schedule.manager 命名空间的 panel 词条读取',
+  )
   assert.equal(currentActivePanel, null, '隐藏官方入口时自动将官方 schedules 面板重置切回默认会话')
 
   await officialController.setHideOfficialSchedule(false)

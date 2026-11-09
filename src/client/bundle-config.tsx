@@ -13,12 +13,36 @@ export const STORAGE_KEY_SIDEBAR_ENTRY = 'dsh-automation.sidebar-entry'
 export const STORAGE_KEY_ENTRY_LOCATION = 'dsh-automation.entry-location'
 export const STORAGE_KEY_TASK_TREE_SESSIONS = 'dsh-automation.task-tree-sessions'
 
-const HIDE_OFFICIAL_SCHEDULE_CSS = `
-nav button[aria-label="自动化任务"],
-nav button[aria-label="Automation tasks"] {
-  display: none !important;
+/**
+ * 宿主「自动化任务」侧栏面板标签的 8 语兜底清单。
+ *
+ * 宿主 `@deepseek-ai/dsh-client-ui-schedule` 用 `schedule.manager` 命名空间的 `panel` 词条渲染
+ * 侧栏行的 aria-label，该词条随语言变化。以前只匹配中文与英文标签，其他语言下屏蔽规则整条不命中，
+ * 「屏蔽官方自动化入口」开关看起来失效（无报错、无日志）。清单取自宿主自带的 8 份语言包，
+ * 用于在拿不到运行时标签（官方面板插件未装、命名空间被改名）时兜底。
+ */
+const OFFICIAL_SCHEDULE_LABELS: readonly string[] = [
+  '自动化任务',
+  'Automation tasks',
+  '自動化タスク',
+  'Tareas de automatización',
+  "Tâches d'automatisation",
+  'Automatisierungsaufgaben',
+  'Задачи автоматизации',
+  'Tarefas de automação',
+]
+
+/** 属性选择器里的双引号与反斜杠必须转义，否则标签里的特殊字符会让整条规则失效。 */
+function cssAttributeValue(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
-`
+
+/** 生成屏蔽规则：按传入的标签清单一律去重、去空白并转义，调用方负责合并运行时标签与兜底清单。 */
+export function hideOfficialScheduleCss(labels: readonly string[] = OFFICIAL_SCHEDULE_LABELS): string {
+  const unique = [...new Set(labels.map(label => label.trim()).filter(label => label !== ''))]
+  const selectors = unique.map(label => `nav button[aria-label="${cssAttributeValue(label)}"]`)
+  return `\n${selectors.join(',\n')} {\n  display: none !important;\n}\n`
+}
 
 export function readCachedEntryLocation(): EntryLocation {
   if (typeof localStorage === 'undefined') return 'both'
@@ -54,20 +78,24 @@ export function readCachedTaskTreeSessions(): boolean {
   return false
 }
 
-export function applyHideOfficialScheduleStyle(hidden: boolean): void {
+export function applyHideOfficialScheduleStyle(hidden: boolean, labels?: readonly string[]): void {
   if (typeof document === 'undefined') return
   const selector = `style[data-plugin="${BUNDLE_KEY}"][data-plugin-css="${HIDE_OFFICIAL_SCHEDULE_STYLE_TAG}"]`
   const existing = document.querySelector(selector)
   if (hidden) {
-    if (!existing) {
-      const style = document.createElement('style')
-      style.dataset.plugin = BUNDLE_KEY
-      style.dataset.pluginCss = HIDE_OFFICIAL_SCHEDULE_STYLE_TAG
-      style.textContent = HIDE_OFFICIAL_SCHEDULE_CSS
-      const container = document.head ?? document.documentElement
-      if (container) {
-        container.appendChild(style)
-      }
+    const css = hideOfficialScheduleCss(labels)
+    if (existing) {
+      // 语言切换后标签不同：同一张表里更新内容，避免留下旧语言的规则。
+      if (existing.textContent !== css) existing.textContent = css
+      return
+    }
+    const style = document.createElement('style')
+    style.dataset.plugin = BUNDLE_KEY
+    style.dataset.pluginCss = HIDE_OFFICIAL_SCHEDULE_STYLE_TAG
+    style.textContent = css
+    const container = document.head ?? document.documentElement
+    if (container) {
+      container.appendChild(style)
     }
   } else {
     if (existing) {
@@ -425,9 +453,26 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     return isSidebarEnabled()
   }
 
+  /**
+   * 屏蔽规则的候选标签：优先用宿主 `schedule.manager` 命名空间当前语言的 `panel` 词条，
+   * 拿不到时（未装官方面板插件、宿主改命名空间、词条缺失返回键名）回落到 8 语兜底清单。
+   */
+  const officialScheduleLabels = (): readonly string[] => {
+    const labels: string[] = []
+    try {
+      const bind = ctx.locale?.bind
+      if (typeof bind === 'function') {
+        const label = bind.call(ctx.locale, 'schedule.manager')('panel')
+        // 词条缺失时宿主 bind 会原样返回键名，不能当成标签写进选择器。
+        if (typeof label === 'string' && label.trim() !== '' && label !== 'panel') labels.push(label)
+      }
+    } catch {}
+    return [...labels, ...OFFICIAL_SCHEDULE_LABELS]
+  }
+
   let hideOfficialScheduleEnabled = readCachedHideOfficial()
   let officialEpoch = 0
-  applyHideOfficialScheduleStyle(hideOfficialScheduleEnabled)
+  applyHideOfficialScheduleStyle(hideOfficialScheduleEnabled, officialScheduleLabels())
 
   const syncOfficialPanelReset = (hidden: boolean): void => {
     if (hidden && layoutService?.panelInfo && typeof layoutService.selectPanel === 'function') {
@@ -443,7 +488,7 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     const currentEpoch = ++officialEpoch
     hideOfficialScheduleEnabled = next
     try { localStorage.setItem(STORAGE_KEY_HIDE_OFFICIAL, String(next)) } catch {}
-    applyHideOfficialScheduleStyle(next)
+    applyHideOfficialScheduleStyle(next, officialScheduleLabels())
     syncOfficialPanelReset(next)
     notify()
     try {
@@ -457,7 +502,7 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
       if (currentEpoch === officialEpoch) {
         hideOfficialScheduleEnabled = !next
         try { localStorage.setItem(STORAGE_KEY_HIDE_OFFICIAL, String(!next)) } catch {}
-        applyHideOfficialScheduleStyle(!next)
+        applyHideOfficialScheduleStyle(!next, officialScheduleLabels())
         notify()
       }
       throw err
@@ -496,7 +541,7 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
       if (officialEpoch === loadOfficialEpoch && res && typeof res.enabled === 'boolean') {
         hideOfficialScheduleEnabled = res.enabled
         try { localStorage.setItem(STORAGE_KEY_HIDE_OFFICIAL, String(res.enabled)) } catch {}
-        applyHideOfficialScheduleStyle(hideOfficialScheduleEnabled)
+        applyHideOfficialScheduleStyle(hideOfficialScheduleEnabled, officialScheduleLabels())
         syncOfficialPanelReset(hideOfficialScheduleEnabled)
         notify()
       }

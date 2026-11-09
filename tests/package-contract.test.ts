@@ -139,6 +139,13 @@ test("包保持可安装的 DSH bundle 与 Web client 契约", async () => {
   assert.match(clientBundle, /@michengai\/dsh-automation/);
 });
 
+test("客户端入口一次注册全部内置语言词典", async () => {
+  const source = await readFile(new URL("src/client/index.ts", root), "utf8");
+  // 注册动作必须走 LOCALE_DICTIONARIES 这张表：改成写死 { zh, en } 会让其余 6 种语言静默回落 en，
+  // 而词典用例只校验词典本身，发现不了注册点漏语言。
+  assert.match(source, /ctx\.locale\.register\(NS, LOCALE_DICTIONARIES\)/);
+});
+
 test("客户端入口在插件生命周期内安装常驻会话同步桥", async () => {
   const source = await readFile(new URL("src/client/index.ts", root), "utf8");
   // 只校验接线事实，不锁定导入顺序、局部变量名或行的拆分方式。

@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useSyncExternalStore, type ComponentType } from 'react'
 import { AutomationView } from './AutomationView.js'
 import type { ClientContext, NativeSwitcherProps, SessionSelector, WorkspaceSelector } from './contracts.js'
-import { de, en, es, fr, ja, NS, pt, ru, zh } from './locales.js'
+import { LOCALE_DICTIONARIES, NS } from './locales.js'
 import {
   attachNativeTabRegistry,
   createNativeTabRegistry,
@@ -54,7 +54,7 @@ type HostComponent = ComponentType<any> & {
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => installStyles(), 'dsh-automation: styles')
-  ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'dsh-automation: locale')
+  ctx.effect(() => ctx.locale.register(NS, LOCALE_DICTIONARIES), 'dsh-automation: locale')
   const t = ctx.locale.bind(NS)
   const permissionT = ctx.locale.bind('permission.access')
   const modelT = ctx.locale.bind('model')
