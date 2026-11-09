@@ -251,4 +251,4 @@ pnpm build
 
 ## ライセンス
 
-本プロジェクトは [Apache License 2.0](LICENSE) の下で公開されています。詳細な告知事項は [NOTICE](NOTICE) をご覧ください。
+本プロジェクトは [Apache License 2.0](LICENSE) の下で公開されています。

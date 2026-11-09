@@ -248,4 +248,4 @@ Plugin-übergreifende Seitenleisten-Regressionen werden mit `pnpm test:compositi
 
 ## Lizenz
 
-Dieses Projekt steht unter der [Apache-Lizenz 2.0](LICENSE). Weitere Hinweise finden Sie in [NOTICE](NOTICE).
+Dieses Projekt steht unter der [Apache-Lizenz 2.0](LICENSE).

@@ -248,4 +248,4 @@ Las regresiones de la barra lateral entre complementos se verifican con `pnpm te
 
 ## Licencia
 
-Distribuido bajo la [Licencia Apache 2.0](LICENSE). Consulte [NOTICE](NOTICE) para más detalles.
+Distribuido bajo la [Licencia Apache 2.0](LICENSE).

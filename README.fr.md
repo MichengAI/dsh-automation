@@ -248,4 +248,4 @@ Les régressions de barre latérale entre plugins sont testées avec `pnpm test:
 
 ## Licence
 
-Distribué sous [Licence Apache 2.0](LICENSE). Consultez [NOTICE](NOTICE) pour de plus amples détails.
+Distribué sous [Licence Apache 2.0](LICENSE).

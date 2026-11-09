@@ -253,6 +253,4 @@ Cross-plugin sidebar regressions run with `pnpm test:composition <dsh-im-connect
 
 ## License
 
-Additional notices are in [NOTICE](NOTICE).
-
 This project uses [Apache License 2.0](LICENSE).

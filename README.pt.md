@@ -248,4 +248,4 @@ Regressões da barra lateral entre plugins são validadas com `pnpm test:composi
 
 ## Licença
 
-Distribuído sob a [Licença Apache 2.0](LICENSE). Consulte [NOTICE](NOTICE) para mais detalhes.
+Distribuído sob a [Licença Apache 2.0](LICENSE).
