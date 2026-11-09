@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.21] - 2026-11-09
+
+### Features
+
+- **Full 8-language localization**: added complete translations and plugin metadata (`locale/*.json`) for Japanese, Spanish, French, German, Russian, and Portuguese alongside English and Simplified Chinese.
+- **Dedicated multi-language documentation**: provided full standalone README guides for all 8 supported languages, including safety boundary specifications, data cautions, and validation matrix instructions.
+
+### Fixes & Improvements
+
+- **Multi-language official schedule entry hiding**: resolved official schedule entry suppression across all 8 languages, preventing the duplicate entry from reappearing in non-English/non-Chinese locales.
+- **Eliminated duplicate approximation copy**: refined "next run" time formatters to prevent duplicate approx words (e.g., "about about").
+- **Localized weekday delimiters**: weekdays are now formatted with locale-aware delimiters (commas for Western languages, enumeration marks for CJK) with fallback guards against raw key leakage.
+- **Streamlined settings view**: removed obsolete online update controls from the settings panel, keeping the configuration card focused on task scheduling and sidebar preferences.
+
 ## [1.0.20] - 2026-11-07
 
 ### Performance
