@@ -44,24 +44,24 @@ function cssAttributeValue(value: string): string {
 export function hideOfficialScheduleCss(labels: readonly string[] = OFFICIAL_SCHEDULE_LABELS): string {
   const unique = [...new Set(labels.map(label => label.trim()).filter(label => label !== ''))]
   if (unique.length === 0) return ''
-  const selectors = unique.flatMap(label => {
-    const val = cssAttributeValue(label)
-    return [
-      `nav button[aria-label="${val}"]`,
-      `[role="menuitem"][aria-label="${val}"]`,
-    ]
-  })
+  const selectors = unique.map(label => `nav button[aria-label="${cssAttributeValue(label)}"]`)
   return `\n${selectors.join(',\n')} {\n  display: none !important;\n}\n`
+}
+
+export type OfficialScheduleLabelsContext = {
+  readonly locale?: {
+    bind?: (namespace: string) => (key: string, params?: Record<string, unknown>) => unknown
+  }
 }
 
 /**
  * 屏蔽规则的候选标签：优先用宿主 `schedule.manager` 命名空间当前语言的 `panel` 词条，
  * 拿不到时（未装官方面板插件、宿主改命名空间、词条缺失返回键名）回落到 8 语兜底清单。
  */
-export function resolveOfficialScheduleLabels(ctx?: Pick<ClientContext, 'locale'> | unknown): readonly string[] {
+export function resolveOfficialScheduleLabels(ctx?: OfficialScheduleLabelsContext): readonly string[] {
   const labels: string[] = []
   try {
-    const locale = (ctx as { locale?: { bind?: (ns: string) => (key: string) => unknown } } | undefined)?.locale
+    const locale = ctx?.locale
     if (typeof locale?.bind === 'function') {
       const raw = locale.bind('schedule.manager')('panel')
       const label = typeof raw === 'string' ? raw.trim() : ''

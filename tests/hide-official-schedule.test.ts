@@ -23,27 +23,24 @@ const HOST_PANEL_LABELS = [
   'Tarefas de automação',
 ]
 
-test('屏蔽官方入口的规则覆盖宿主 8 语面板标签，且同时作用于 nav 侧栏容器与取消固定后的更多菜单', () => {
+test('屏蔽官方入口的规则覆盖宿主 8 语面板标签，且只作用于 nav 侧栏容器', () => {
   const css = hideOfficialScheduleCss()
   for (const label of HOST_PANEL_LABELS) {
-    assert.ok(css.includes(`nav button[aria-label="${label}"]`), `缺少 nav 语言标签: ${label}`)
-    assert.ok(css.includes(`[role="menuitem"][aria-label="${label}"]`), `缺少 menuitem 语言标签: ${label}`)
+    assert.ok(css.includes(`nav button[aria-label="${label}"]`), `缺少语言标签: ${label}`)
   }
   assert.equal(css.match(/nav button\[aria-label=/g)?.length, HOST_PANEL_LABELS.length)
-  assert.equal(css.match(/\[role="menuitem"\]\[aria-label=/g)?.length, HOST_PANEL_LABELS.length)
   assert.match(css, /display: none !important/)
 })
 
 test('传入的标签清单去空白、去重并转义属性值', () => {
   const css = hideOfficialScheduleCss(['自動化タスク', '  ', 'Quote"Label', 'Back\\slash', 'Line\nBreak', '自動化タスク'])
-  assert.equal(css.match(/aria-label="Quote\\"Label"/g)?.length, 2)
-  assert.equal(css.match(/aria-label="Back\\\\slash"/g)?.length, 2)
+  assert.equal(css.match(/aria-label="Quote\\"Label"/g)?.length, 1)
+  assert.equal(css.match(/aria-label="Back\\\\slash"/g)?.length, 1)
   // 换行符被安全替换为空格
-  assert.equal(css.match(/aria-label="Line Break"/g)?.length, 2)
+  assert.equal(css.match(/aria-label="Line Break"/g)?.length, 1)
   // 重复标签只出现一次，空白项被丢弃
-  assert.equal(css.match(/aria-label="自動化タスク"/g)?.length, 2)
+  assert.equal(css.match(/aria-label="自動化タスク"/g)?.length, 1)
   assert.equal(css.match(/nav button\[aria-label=/g)?.length, 4)
-  assert.equal(css.match(/\[role="menuitem"\]\[aria-label=/g)?.length, 4)
 })
 
 test('标签列表为空或全为空白时返回空字符串', () => {
