@@ -173,6 +173,7 @@ Ouvrez **Paramètres → Tâches planifiées** :
 Chaque exécution utilise le prompt, le dossier, le modèle et les permissions enregistrés, sans réutiliser les validations de la conversation d'origine.
 
 `automation_create` et `automation_update` gèrent les mêmes paramètres de modèle que l'interface (`provider`, `model`, `reasoning_effort`). Lors de la spécification ou de la mise à jour d'un modèle, transmettez `provider` et `model` comme une paire d'identifiants non vides ou tous deux à `null` pour suivre la configuration globale ; les paires incomplètes sont rejetées.
+ Lorsque le texte complet de l'instruction est requis, utilisez `include_prompt: true` dans `automation_list` ou `automation_get` pour retourner `promptSnapshot`.
 
 ## Limites de sécurité
 

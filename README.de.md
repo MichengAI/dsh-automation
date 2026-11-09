@@ -173,6 +173,7 @@ Die Aktualisierungsschaltfläche in den Plugin-Einstellungen wurde entfernt. Zur
 Jeder Lauf verwendet die gespeicherten Instruktionen, das Arbeitsverzeichnis, Modell und Berechtigungsgrenzen. Er übernimmt keine Bestätigungen aus dem Quell-Chat.
 
 `automation_create` und `automation_update` unterstützen dieselben Modelloptionen wie die Benutzeroberfläche (`provider`, `model`, `reasoning_effort`). Wird ein Modell angegeben, müssen `provider` und `model` als Paar nicht-leerer IDs oder beide als `null` (folgt globaler Auswahl) übergeben werden; unvollständige Paare werden abgelehnt.
+ Wenn der vollständige Prompt-Text benötigt wird, verwenden Sie `include_prompt: true` in `automation_list` oder `automation_get`, um `promptSnapshot` abzurufen.
 
 ## Sicherheitsgrenzen
 

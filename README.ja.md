@@ -176,6 +176,7 @@ DSH Web を再起動し、ブラウザを強制再読み込み（Ctrl+F5）し�
 各実行は保存されたプロンプト、ワークスペース、モデル、権限境界を使用し、作成元のチャットで付与された承認は再利用されません。
 
 `automation_create` と `automation_update` は設定画面と同じモデル制御（`provider`、`model`、`reasoning_effort`）をサポートします。`agent_preset` でプリセットを選択し、省略時は宿主デフォルトが適用されます。モデル指定時は `provider` と `model` を空でない ID としてペアで指定するか、両方を `null` としてグローバル追従を指定してください（不完全なペアは拒否されます）。保存された ID はトリミングされ、モデル変更時は明示的な指定がない限り前回の推論レベル上書きが解除されます。
+ 完全なプロンプト本文が必要な場合は、`automation_list` または `automation_get` で `include_prompt: true` を指定して `promptSnapshot` を取得します。
 
 ## セキュリティ境界
 

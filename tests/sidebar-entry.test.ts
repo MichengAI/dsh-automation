@@ -22,7 +22,7 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
 
   const mockCtx = {
     locale: {
-      bind: (ns: string) => (key: string) => `${ns}:${key}`,
+      bind: (ns: string) => (key: string) => (ns === 'schedule.manager' && key === 'panel' ? 'Runtime Schedule Label' : key),
     },
     slots: {
       register: (meta: any, component: any) => {
@@ -219,7 +219,7 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
     assert.ok(styleContent.includes(`nav button[aria-label="${label}"]`), `默认规则缺少宿主语言标签: ${label}`)
   }
   assert.ok(
-    styleContent.includes('nav button[aria-label="schedule.manager:panel"]'),
+    styleContent.includes('nav button[aria-label="Runtime Schedule Label"]'),
     '运行时标签必须通过宿主 schedule.manager 命名空间的 panel 词条读取',
   )
   assert.equal(currentActivePanel, null, '隐藏官方入口时自动将官方 schedules 面板重置切回默认会话')
@@ -328,4 +328,12 @@ test('周几排程在不同语言下的分隔符测试（西文逗号空格 vs �
   // 德文：Mo, Mi, Fr · 09:00
   const deText = formatSchedule(schedule, createT(de as any) as any)
   assert.equal(deText, 'Mo, Mi, Fr · 09:00')
+
+  // 当宿主缺失词条回退裸键名时，必须安全回退为逗号空格，不得泄漏键名
+  const fallbackText = formatSchedule(schedule, ((k: string, p?: any) => {
+    if (k === 'schedule.weeklyAt') return `{days} · {time}`.replace('{days}', p?.days).replace('{time}', p?.time)
+    if (k.startsWith('day.')) return `D${k.slice(4)}`
+    return k // 裸键名回退
+  }) as any)
+  assert.equal(fallbackText, 'D1, D3, D5 · 09:00', '裸键名必须被过滤，回退为逗号空格')
 })

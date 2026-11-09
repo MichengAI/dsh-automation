@@ -237,14 +237,3 @@ export type AutomationLocaleKey =
   | 'time.inHour'
   | 'time.inDay'
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
-  interface LocaleNamespaceMap {
-    'dsh-automation': AutomationLocaleKey
-  }
-}
-
-declare module '@deepseek-ai/dsh-client-locale' {
-  interface LocaleNamespaceMap {
-    'dsh-automation': AutomationLocaleKey
-  }
-}

@@ -55,9 +55,9 @@ export function hideOfficialScheduleCss(labels: readonly string[] = OFFICIAL_SCH
 export function resolveOfficialScheduleLabels(ctx?: unknown): readonly string[] {
   const labels: string[] = []
   try {
-    const bind = (ctx as { locale?: { bind?: unknown } } | undefined)?.locale?.bind
-    if (typeof bind === 'function') {
-      const label = (bind as (ns: string) => (key: string) => unknown)('schedule.manager')('panel')
+    const locale = (ctx as { locale?: { bind?: (ns: string) => (key: string) => unknown } } | undefined)?.locale
+    if (typeof locale?.bind === 'function') {
+      const label = locale.bind('schedule.manager')('panel')
       // 词条缺失时宿主 bind 会原样返回键名，不能当成标签写进选择器。
       if (typeof label === 'string' && label.trim() !== '' && label !== 'panel') labels.push(label)
     }

@@ -38,10 +38,6 @@ declare module '@deepseek-ai/dsh-agent' {
   }): () => void
 }
 
-declare module '@deepseek-ai/dsh-client-ui-slots' {
-  export interface LocaleNamespaceMap {}
-}
-
 declare module '@deepseek-ai/dsh-agent-default-model' {}
 declare module '@deepseek-ai/dsh-agent-presets' {}
 declare module '@deepseek-ai/dsh-permission-presets' {}

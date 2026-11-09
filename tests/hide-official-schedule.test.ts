@@ -115,3 +115,19 @@ test('词条缺失回退裸键名 panel 时，生产守卫阻断其写入选择�
   const css = hideOfficialScheduleCss(labels)
   assert.equal(css.includes('aria-label="panel"'), false)
 })
+
+test('宿主 bind 为类方法且依赖 this 时，必须正确保留上下文并取得标签', () => {
+  class HostLocaleClass {
+    private readonly boundMap = new Map<string, (key: string) => string>()
+    bind(ns: string) {
+      if (!this.boundMap.has(ns)) {
+        this.boundMap.set(ns, (key: string) => (key === 'panel' ? 'Geplante Aufgaben' : key))
+      }
+      return this.boundMap.get(ns)!
+    }
+  }
+
+  const ctx = { locale: new HostLocaleClass() }
+  const labels = resolveOfficialScheduleLabels(ctx)
+  assert.ok(labels.includes('Geplante Aufgaben'), '必须正确调用类方法并取得运行时标签')
+})

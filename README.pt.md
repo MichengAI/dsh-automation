@@ -173,6 +173,7 @@ Abra **Ajustes → Tarefas agendadas**:
 Cada execução utiliza o prompt, diretório, modelo e permissões salvos, sem reaproveitar aprovações da conversa de origem.
 
 `automation_create` e `automation_update` aceitam os mesmos controles de modelo que as configurações (`provider`, `model`, `reasoning_effort`). Ao especificar um modelo, passe `provider` e `model` como um par de identificadores válidos ou ambos como `null` para herdar o padrão global; pares incompletos são rejeitados.
+ Quando o texto completo do prompt for necessário, use `include_prompt: true` em `automation_list` ou `automation_get` para retornar `promptSnapshot`.
 
 ## Limites de segurança
 
