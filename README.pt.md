@@ -241,11 +241,11 @@ pnpm test
 pnpm build
 ```
 
-`pnpm check` executa verificação de tipos, testes unitários, testes de compatibilidade e compilação. `pnpm test:host` ignora stubs e usa o AgentLoop oficial, Session V3 e o serviço de permissões com um adaptador de modelo local fixo sem chamadas externas.
+`pnpm check` executa verificação de tipos, testes unitários, testes de compatibilidade e compilação. `pnpm test:host` ignora stubs e usa o AgentLoop oficial, Session V3 e o serviço de permissões com um adaptador de modelo local fixo sem chamadas externas. Interações no navegador e chamadas reais a modelos exigem testes de aceitação separados.
 
-Regressões da barra lateral entre plugins são validadas com `pnpm test:composition <dsh-im-connect checkout>`, garantindo a coesão com Archive, IM, Scheduled e Codex UI.
+Regressões da barra lateral entre plugins são validadas com `pnpm test:composition <diretório dsh-im-connect>`. Compile o repositório de IM primeiro; o script lê o arquivo `lib/client.js`. Ele executa a lógica de composição e os registros de abas de ambos os repositórios, cobrindo a ordem de registro, notificações adiadas e transferência após a desinstalação entre os plugins de arquivo, IM, agendamento e Codex UI. Slots e temporizadores usam um ambiente simulado, portanto o teste não instala nenhum plugin nem substitui o teste de renderização no Desktop. Essa verificação requer um repositório externo e não está incluída no `pnpm check`; use uma revisão fixa de IM para obter resultados reproduzíveis.
 
-`pnpm test:matrix` cria ambientes npm temporários para cada versão de host declarada para validar instalação estrita de peers, dependências oficiais e execução real do AgentLoop.
+`pnpm test:matrix` compila o pacote e cria ambientes npm temporários separados para cada versão declarada do host usando acesso à rede. Valida a instalação estrita de peers, todas as versões oficiais de dependências, o ponto de entrada empacotado, a execução real de AgentLoop e as regressões de serviço. Todas as versões declaradas passam. A enumeração de persistência nas regressões de serviço usa fixtures em memória para ambos os formatos de sessão fria; ela não valida a migração em disco de um perfil real. O diretório de evidências retém lockfiles de instalação, logs de teste e `results.json`. A matriz não modifica dependências de desenvolvimento nem se conecta ao perfil do usuário.
 
 ## Licença
 

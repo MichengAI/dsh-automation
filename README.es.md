@@ -241,11 +241,11 @@ pnpm test
 pnpm build
 ```
 
-`pnpm check` ejecuta comprobación de tipos, pruebas unitarias, compatibilidad con host y compilación. `pnpm test:host` utiliza el AgentLoop oficial, Session V3 y el servicio de permisos con un adaptador de modelo local sin realizar llamadas externas.
+`pnpm check` ejecuta comprobación de tipos, pruebas unitarias, compatibilidad con host y compilación. `pnpm test:host` utiliza el AgentLoop oficial, Session V3 y el servicio de permisos con un adaptador de modelo local sin realizar llamadas externas. Las interacciones con el navegador y las llamadas a modelos reales requieren pruebas de aceptación independientes.
 
-Las regresiones de la barra lateral entre complementos se verifican con `pnpm test:composition <dsh-im-connect checkout>`, evaluando la coexistencia y orden de registro con Archive, IM, Scheduled y Codex UI.
+Las regresiones de la barra lateral entre complementos se verifican con `pnpm test:composition <directorio dsh-im-connect>`. Compile primero el repositorio de IM; el script lee su `lib/client.js`. Ejecuta la lógica de composición y los registros de pestañas de ambos repositorios, cubriendo el orden de registro, las notificaciones diferidas y la transferencia tras la desinstalación en los complementos de archivo, IM, programados y Codex UI. Las ranuras y temporizadores utilizan un entorno simulado, por lo que no instala ningún complemento ni sustituye las pruebas de aceptación de renderizado en escritorio. Esta comprobación requiere un repositorio externo y no está incluida en `pnpm check`; utilice una revisión fija de IM para obtener resultados reproducibles.
 
-`pnpm test:matrix` crea entornos npm temporales para cada versión declarada del host para validar la instalación estricta de peers, dependencias oficiales y la ejecución real de AgentLoop.
+`pnpm test:matrix` compila el paquete y crea entornos npm temporales independientes para cada versión declarada del host mediante acceso a la red. Valida la instalación estricta de peers, todas las versiones de dependencias oficiales, el punto de entrada empaquetado, la ejecución real de AgentLoop y las regresiones de servicio. Todas las versiones declaradas pasan con éxito. La enumeración de persistencia en regresiones de servicio utiliza accesorios en memoria para ambos formatos de sesión en frío; no valida la migración en disco de un perfil real. El directorio de evidencias conserva archivos de bloqueo de instalación, registros de prueba y `results.json`. La matriz no modifica las dependencias de desarrollo ni se conecta al perfil del usuario.
 
 ## Licencia
 

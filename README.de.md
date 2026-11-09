@@ -241,11 +241,11 @@ pnpm test
 pnpm build
 ```
 
-`pnpm check` führt Typecheck, Tests, Host-Kompatibilitätsprüfungen und Build aus. `pnpm test:host` umgeht Test-Doubles und nutzt den offiziellen AgentLoop, Session V3 und den Berechtigungsdienst mit einem lokalen Modelladapter ohne externe Modellaufrufe.
+`pnpm check` führt Typecheck, Tests, Host-Kompatibilitätsprüfungen und Build aus. `pnpm test:host` umgeht Test-Doubles und nutzt den offiziellen AgentLoop, Session V3 und den Berechtigungsdienst mit einem lokalen Modelladapter ohne externe Modellaufrufe. Browser-Interaktionen und echte Modellaufrufe erfordern separate Abnahmetests.
 
-Plugin-übergreifende Seitenleisten-Regressionen werden mit `pnpm test:composition <dsh-im-connect checkout>` geprüft. Das Skript liest die kompilierte `lib/client.js` von IM ein und prüft Registrierungsreihenfolge, verzögerte Benachrichtigungen und Deinstallationsübergaben über Archive, IM, Scheduled und Codex UI.
+Plugin-übergreifende Seitenleisten-Regressionen werden mit `pnpm test:composition <dsh-im-connect Checkout-Pfad>` geprüft. Kompilieren Sie das IM-Checkout zuerst; das Skript liest dessen `lib/client.js` ein. Es führt die Kompositionslogik und die Tab-Registrierungen beider Repositories aus und deckt Registrierungsreihenfolge, verzögerte Benachrichtigungen und Deinstallationsübergaben über Archive, IM, Scheduled und Codex UI ab. Slots und Timer verwenden eine simulierte Umgebung; dieser Test installiert keine Plugins und ersetzt nicht die Abnahmeprüfung des Desktop-Renderings. Diese separate Prüfung erfordert ein externes Checkout und ist nicht in `pnpm check` enthalten; verwenden Sie eine feste IM-Revision für reproduzierbare Ergebnisse.
 
-`pnpm test:matrix` erstellt isolierte temporäre npm-Umgebungen für jede deklarierte Host-Version, um strikte Peer-Installationen, offizielle Abhängigkeiten und echte AgentLoop-Ausführungen zu verifizieren.
+`pnpm test:matrix` erstellt das Paket und baut über Netzwerkzugriff separate temporäre npm-Umgebungen für jede deklarierte Host-Version auf. Es prüft strikte Peer-Installationen, alle offiziellen Abhängigkeitsversionen, den paketierten Einstiegspunkt, echte AgentLoop-Ausführungen und Serviceregressionen. Alle deklarierten Versionen bestehen. Die Persistenzaufzählung in Serviceregressionen nutzt In-Memory-Fixtures für beide Kalt-Sitzungsformate und validiert keine On-Disk-Migration eines echten Profils. Das ausgegebene Evidenzverzeichnis behält Installations-Lockfiles, Testprotokolle und `results.json`. Die Matrix modifiziert keine Entwicklungsabhängigkeiten und verbindet sich nicht mit dem Profil des Benutzers.
 
 ## Lizenz
 

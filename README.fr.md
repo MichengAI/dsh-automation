@@ -241,11 +241,11 @@ pnpm test
 pnpm build
 ```
 
-`pnpm check` regroupe la validation de types, les tests unitaires, la compatibilité hôte et la compilation. `pnpm test:host` contourne les doublures et exploite l'AgentLoop officiel, Session V3 et le service d'autorisations avec un adaptateur de modèle local sans appel réseau externe.
+`pnpm check` regroupe la validation de types, les tests unitaires, la compatibilité hôte et la compilation. `pnpm test:host` contourne les doublures et exploite l'AgentLoop officiel, Session V3 et le service d'autorisations avec un adaptateur de modèle local sans appel réseau externe. Les interactions dans le navigateur et les appels aux modèles réels nécessitent des tests d'acceptation distincts.
 
-Les régressions de barre latérale entre plugins sont testées avec `pnpm test:composition <dsh-im-connect checkout>`, validant la synchronisation des onglets avec Archive, IM, Scheduled et Codex UI.
+Les régressions de barre latérale entre plugins sont testées avec `pnpm test:composition <dossier dsh-im-connect>`. Compilez d'abord le checkout IM ; le script lit son `lib/client.js`. Il exécute la logique de composition et les registres d'onglets des deux dépôts, couvrant l'ordre d'enregistrement, les notifications différées et la reprise lors de la désinstallation à travers les plugins d'archives, IM, programmés et Codex UI. Les emplacements et minuteurs utilisent un environnement simulé ; ce test n'installe aucun plugin et ne remplace pas les tests d'acceptation de rendu sur Desktop. Cette vérification distincte nécessite un dossier externe et n'est pas incluse dans `pnpm check` ; utilisez une révision fixe d'IM pour des résultats reproductibles.
 
-`pnpm test:matrix` crée des environnements npm temporaires pour chaque version d'hôte déclarée afin de vérifier l'installation stricte des pairs, les dépendances officielles et l'exécution réelle d'AgentLoop.
+`pnpm test:matrix` compile le package puis crée des environnements npm temporaires distincts pour chaque version d'hôte déclarée en utilisant l'accès réseau. Il vérifie l'installation stricte des pairs, chaque version de dépendance officielle, le point d'entrée packagé, l'exécution réelle d'AgentLoop et les régressions de service. Toutes les versions déclarées réussissent. L'énumération de persistance dans les régressions de service utilise des fixtures en mémoire pour les deux formats de session à froid ; elle ne valide pas la migration sur disque d'un profil réel. Le dossier de preuves conserve les fichiers de verrouillage d'installation, les journaux de test et `results.json`. La matrice ne modifie pas les dépendances de développement et ne se connecte pas au profil de l'utilisateur.
 
 ## Licence
 
