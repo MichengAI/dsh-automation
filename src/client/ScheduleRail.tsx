@@ -423,7 +423,6 @@ export function NativeScheduleShell({
     if (matched !== undefined && matched.id !== 'schedule' && matched.id !== 'channels') setTab(matched.id)
   }, [currentId, extraTabs, scheduledIds])
 
-  const rawOfficialProps = { ...(hostProps ?? {}), ...(wide === undefined ? {} : { wide }) }
   const rawOpen = hostFunction<(sessionId: string) => void>(hostProps, 'open')
   const rawUseWorkspaceShortcuts = hostFunction<HostWorkspaceShortcutSelector>(hostProps, 'useWorkspaceShortcuts')
   const useIsolatedWorkspaceShortcuts = useCallback<HostWorkspaceShortcutSelector>((select, equals) => {

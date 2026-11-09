@@ -73,7 +73,6 @@ test('侧栏收起时(wide: false)阻断官方任务树因历史搜索请求而�
 })
 
 test('定时记录视图(ScheduledRecordsView)下收起或有搜索请求时，也绝不调用 expandSidebar 弹开侧栏', () => {
-  const registry = createNativeTabRegistry(null)
   const shell = createShellHarness()
 
   let expandSidebarCalls = 0
