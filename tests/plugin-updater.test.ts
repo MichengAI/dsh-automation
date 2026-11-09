@@ -3,7 +3,6 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import test from 'node:test'
-import { handlePluginUpdateEscape, manualPluginUpdateCommand } from '../src/client/plugin-update-model.ts'
 import { isDshCliEntry, isNewerVersion, isTrustedUpdateRequest, mergeMinimumReleaseAgeExclude, PLUGIN_UPDATE_HEADER, recordReleaseAgeExclude, resolveUpdateRuntime, shouldNotifyParent } from '../src/plugin-updater.ts'
 
 test('定时任务独立更新只接受同源专用请求', () => {
@@ -16,49 +15,18 @@ test('定时任务独立更新只接受同源专用请求', () => {
   assert.equal(isTrustedUpdateRequest({ headers: { [PLUGIN_UPDATE_HEADER]: '1', host: '127.0.0.1:19387' }, socket: { remoteAddress: '127.0.0.1' } }), true)
   assert.equal(isTrustedUpdateRequest({ headers: { [PLUGIN_UPDATE_HEADER]: '1', host: 'example.com' }, socket: { remoteAddress: '127.0.0.1' } }), false)
   assert.equal(isTrustedUpdateRequest({ headers: { [PLUGIN_UPDATE_HEADER]: '1', origin: 'http://localhost:3000', host: 'localhost:3000' }, socket: { remoteAddress: '172.16.0.5' } }), false)
-  assert.equal(manualPluginUpdateCommand('web', '@michengai/dsh-automation', '0.1.33'), 'dsh plugin --profile web add @michengai/dsh-automation@0.1.33 --registry=https://registry.npmjs.org/')
   assert.equal(isDshCliEntry('C:/tools/dsh/lib/bin.js', { name: '@deepseek-ai/dsh', bin: { dsh: 'lib/bin.js' } }, 'C:/tools/dsh'), true)
   assert.equal(isDshCliEntry('C:/tools/dsh/lib/bin.js', { name: '@deepseek-ai/dsh', bin: { dsh: 'lib/other.js' } }, 'C:/tools/dsh'), false)
   assert.equal(isDshCliEntry('C:/tools/dsh/lib/bin.js', { name: 'other-cli', bin: { dsh: 'lib/bin.js' } }, 'C:/tools/dsh'), false)
 })
 
-test('定时更新弹窗消费 ESC，避免继续关闭底层设置页', () => {
-  const calls: string[] = []
-  assert.equal(handlePluginUpdateEscape({
-    key: 'Escape',
-    preventDefault: () => { calls.push('prevent') },
-    stopPropagation: () => { calls.push('stop') },
-    stopImmediatePropagation: () => { calls.push('stopImmediate') },
-  }, () => { calls.push('close') }), true)
-  assert.deepEqual(calls, ['prevent', 'stop', 'stopImmediate', 'close'])
-})
-
-test('定时任务客户端与 Host 绑定自身更新入口', async () => {
+test('定时任务客户端不暴露在线更新入口，Host 保留更新服务', async () => {
   const client = await readFile(new URL('../src/client/index.ts', import.meta.url), 'utf8')
-  const updateUi = await readFile(new URL('../src/client/plugin-update-ui.ts', import.meta.url), 'utf8')
   const host = await readFile(new URL('../src/index.ts', import.meta.url), 'utf8')
-  const manifest = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')) as {
-    dsh?: { client?: { inject?: string[] } }
-  }
-  assert.match(client, /packageName: '@michengai\/dsh-automation'/)
-  assert.match(client, /titleRowSelector: '\.dsh-st-heading-row'/)
-  assert.match(client, /createIcon: createPluginUpdateIcon/)
-  assert.match(client, /UPDATE_ICON_PATHS/)
-  assert.match(client, /document\.createElementNS\('http:\/\/www\.w3\.org\/2000\/svg', 'svg'\)/)
+  assert.doesNotMatch(client, /observePluginUpdate/)
+  assert.doesNotMatch(client, /createPluginUpdateIcon/)
+  assert.doesNotMatch(client, /UPDATE_ICON_PATHS/)
   assert.doesNotMatch(client, /react-dom\/client/)
-  assert.ok(manifest.dsh?.client?.inject?.includes('@deepseek-ai/dsh-client-ui-primitives'))
-  assert.match(updateUi, /data-mpi-label/)
-  assert.match(updateUi, /variant: 'outline', size: 'sm'/)
-  assert.match(updateUi, /className: 'dsh-st-update-dialog'/)
-  assert.doesNotMatch(updateUi, /width:min\(680px/)
-  assert.match(updateUi, /document\.addEventListener\('keydown', onKey, true\)/)
-  assert.match(updateUi, /if \(version\.textContent !== versionLabel\)/)
-  assert.match(updateUi, /else if \(payload\.latestCheckFailed\)/)
-  assert.match(updateUi, /color: '#e8b15a'/)
-  assert.match(updateUi, /manualHintDesktop/)
-  assert.match(updateUi, /if \(options\.isEnabled && !options\.isEnabled\(\)\)/)
-  assert.match(updateUi, /version\.remove\(\)/)
-  assert.match(updateUi, /resolveApiUrl\(endpoint\)/)
   assert.match(host, /endpoint: '\/api\/michengai\/dsh-automation\/update'/)
   assert.match(host, /isEnabled: async \(\) => !hostUpdateDisabled && settingsManager\.isUpdateEnabled\(\)/)
   assert.match(await readFile(new URL('../src/plugin-updater.ts', import.meta.url), 'utf8'), /const notifyParent = shouldNotifyParent\(target\)/)
@@ -112,103 +80,5 @@ test('白名单先写临时文件再替换，不留下临时文件', async () =>
     assert.deepEqual(await readdir(dir), ['pnpm-workspace.yaml'])
   } finally {
     await rm(dir, { recursive: true, force: true })
-  }
-})
-
-test('observePluginUpdate: 响应 PLUGIN_UPDATE_TOGGLE_EVENT 并即时同步控件与版本徽章', async () => {
-  const { observePluginUpdate, PLUGIN_UPDATE_TOGGLE_EVENT } = await import('../src/client/plugin-update-ui.ts')
-  const listeners = new Map<string, Set<EventListener>>()
-
-  const originalWindow = globalThis.window
-  const originalDoc = globalThis.document
-
-  try {
-    const fakeWindow = {
-      addEventListener(event: string, fn: EventListener) {
-        if (!listeners.has(event)) listeners.set(event, new Set())
-        listeners.get(event)!.add(fn)
-      },
-      removeEventListener(event: string, fn: EventListener) {
-        listeners.get(event)?.delete(fn)
-      },
-      dispatchEvent(event: { type: string }) {
-        for (const fn of listeners.get(event.type) ?? []) fn(event as any)
-      },
-      requestAnimationFrame: (cb: () => void) => { cb(); return 1 },
-      cancelAnimationFrame: () => {},
-    }
-
-    const titleRow = {
-      querySelector(selector: string) {
-        if (selector === 'h1,h2') return heading
-        if (selector === '.dsh-st-heading-links') return links
-        return null
-      },
-    }
-    const heading = {
-      querySelector: () => null,
-      append: () => {},
-    }
-    let removedCheck = false
-    const existingCheck = {
-      remove() { removedCheck = true },
-    }
-    const links = {
-      querySelector(selector: string) {
-        if (selector.includes('data-mpi-check')) return existingCheck
-        return null
-      },
-      append: () => {},
-    }
-
-    const fakeDoc = {
-      body: {},
-      head: { append: () => {} },
-      documentElement: {
-        lang: 'zh-CN',
-      },
-      getElementById: () => null,
-      querySelector(selector: string) {
-        if (selector === '.dsh-st-heading-row') return titleRow
-        return null
-      },
-      querySelectorAll: () => [],
-      createElement: () => ({ dataset: {}, append: () => {}, remove: () => {}, setAttribute: () => {} }),
-    }
-
-    globalThis.window = fakeWindow as any
-    globalThis.document = fakeDoc as any
-    globalThis.HTMLStyleElement = class HTMLStyleElement {} as any
-    globalThis.MutationObserver = class MutationObserver {
-      observe() {}
-      disconnect() {}
-    } as any
-
-    let enabled = false
-    const cleanup = observePluginUpdate({
-      endpoint: '/api/michengai/dsh-automation/update',
-      packageName: '@michengai/dsh-automation',
-      titleRowSelector: '.dsh-st-heading-row',
-      linksSelector: '.dsh-st-heading-links',
-      zhName: '定时任务',
-      enName: 'Scheduled tasks',
-      createIcon: () => ({}) as any,
-      isEnabled: () => enabled,
-    })
-
-    assert.ok(listeners.get(PLUGIN_UPDATE_TOGGLE_EVENT)?.size! > 0, '注册了 update-toggle 事件监听')
-    assert.equal(removedCheck, true, '初始禁用状态下移除了检查按钮')
-
-    // 触发事件通知
-    removedCheck = false
-    fakeWindow.dispatchEvent({ type: PLUGIN_UPDATE_TOGGLE_EVENT })
-
-    cleanup()
-    assert.equal(listeners.get(PLUGIN_UPDATE_TOGGLE_EVENT)?.size, 0, '卸载后清除了 update-toggle 事件监听')
-  } finally {
-    delete (globalThis as any).HTMLStyleElement
-    delete (globalThis as any).MutationObserver
-    globalThis.window = originalWindow
-    globalThis.document = originalDoc
   }
 })

@@ -16,6 +16,7 @@
       "default": "./lib/client.js"
     },
     "./package.json": "./package.json",
+    "./icon": "./assets/icon.svg",
     "./locale/*.json": "./locale/*.json"
   },
   "files": [
@@ -41,11 +42,16 @@
     "url": "https://github.com/MichengAI/dsh-automation/issues"
   },
   "homepage": "https://github.com/MichengAI/dsh-automation#readme",
+  "author": {
+    "name": "MichengAI",
+    "url": "https://github.com/MichengAI"
+  },
   "engines": {
     "node": "^22.19.0 || >=24.0.0",
     "dsh": ">=0.2.0-rc.1 <0.3.0-0"
   },
   "dsh": {
+    "manifestVersion": 1,
     "bundle": {
       "patch": "./cordis.patch.yml"
     },
@@ -145,5 +151,5 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "icon": "assets/icon.svg"
+  "icon": "./assets/icon.svg"
 }

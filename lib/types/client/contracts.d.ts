@@ -60,6 +60,12 @@ export interface ClientContext {
         register(namespace: string, dictionaries: {
             readonly zh: Record<string, string>;
             readonly en: Record<string, string>;
+            readonly ja?: Record<string, string>;
+            readonly es?: Record<string, string>;
+            readonly fr?: Record<string, string>;
+            readonly de?: Record<string, string>;
+            readonly ru?: Record<string, string>;
+            readonly pt?: Record<string, string>;
         }): () => void;
         bind(namespace: string): (key: string, params?: Record<string, unknown>) => string;
     };

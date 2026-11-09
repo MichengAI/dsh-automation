@@ -88,10 +88,6 @@ export interface BundleConfigCardProps {
   readonly enabled?: boolean
   readonly disabled?: boolean
   readonly onToggle?: (next: boolean) => void
-  readonly onlineUpdateEnabled?: boolean
-  readonly onlineUpdateDisabled?: boolean
-  readonly onlineUpdateLocked?: boolean
-  readonly onToggleOnlineUpdate?: (next: boolean) => void
   readonly hideOfficialScheduleEnabled?: boolean
   readonly hideOfficialScheduleDisabled?: boolean
   readonly onToggleHideOfficialSchedule?: (next: boolean) => void
@@ -108,10 +104,6 @@ export function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactE
     enabled = true,
     disabled = false,
     onToggle,
-    onlineUpdateEnabled = true,
-    onlineUpdateDisabled = false,
-    onlineUpdateLocked = false,
-    onToggleOnlineUpdate,
     hideOfficialScheduleEnabled = true,
     hideOfficialScheduleDisabled = false,
     onToggleHideOfficialSchedule,
@@ -152,26 +144,6 @@ export function AutomationBundleConfigCard(props: BundleConfigCardProps): ReactE
       }),
     ),
   ]
-
-  if (typeof onToggleOnlineUpdate === 'function') {
-    const updateDesc = onlineUpdateLocked
-      ? `${t('update.entry.desc')} (${t('error.update.disabled')})`
-      : t('update.entry.desc')
-    rows.push(
-      createElement('div', { key: 'online-update', className: 'dsh-st-bundle-row' },
-        createElement('div', { className: 'dsh-st-bundle-label-box' },
-          createElement('span', { className: 'dsh-st-bundle-title' }, t('update.entry.title')),
-          createElement('span', { className: 'dsh-st-bundle-desc' }, updateDesc),
-        ),
-        createElement(Switch, {
-          checked: onlineUpdateEnabled,
-          onChange: onToggleOnlineUpdate,
-          label: t('update.entry.toggle'),
-          disabled: onlineUpdateDisabled || onlineUpdateLocked,
-        }),
-      ),
-    )
-  }
 
   if (typeof onToggleHideOfficialSchedule === 'function') {
     rows.push(
@@ -216,9 +188,6 @@ export interface BundleConfigWrapperProps {
   readonly setLocation: (next: EntryLocation) => Promise<EntryLocation>
   readonly getEnabled?: () => boolean
   readonly setSidebar?: (next: boolean) => Promise<boolean>
-  readonly getOnlineUpdateEnabled?: () => boolean
-  readonly getOnlineUpdateLocked?: () => boolean
-  readonly setOnlineUpdate?: (next: boolean) => Promise<boolean>
   readonly getHideOfficialScheduleEnabled?: () => boolean
   readonly setHideOfficialSchedule?: (next: boolean) => Promise<boolean>
   readonly getTaskTreeSessionsEnabled?: () => boolean
@@ -228,23 +197,14 @@ export interface BundleConfigWrapperProps {
 
 export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProps): ReactElement {
   const [location, setLocation] = useState<EntryLocation>(props.getLocation)
-  const [onlineUpdateEnabled, setOnlineUpdateEnabled] = useState(props.getOnlineUpdateEnabled ? props.getOnlineUpdateEnabled : () => true)
-  const [onlineUpdateLocked, setOnlineUpdateLocked] = useState(props.getOnlineUpdateLocked ? props.getOnlineUpdateLocked : () => false)
   const [hideOfficialScheduleEnabled, setHideOfficialScheduleEnabled] = useState(props.getHideOfficialScheduleEnabled ? props.getHideOfficialScheduleEnabled : () => true)
   const [taskTreeSessionsEnabled, setTaskTreeSessionsEnabled] = useState(props.getTaskTreeSessionsEnabled ? props.getTaskTreeSessionsEnabled : () => false)
   const [savingLocation, setSavingLocation] = useState(false)
-  const [savingUpdate, setSavingUpdate] = useState(false)
   const [savingOfficialSchedule, setSavingOfficialSchedule] = useState(false)
   const [savingTaskTreeSessions, setSavingTaskTreeSessions] = useState(false)
 
   useEffect(() => {
     setLocation(props.getLocation())
-    if (props.getOnlineUpdateEnabled) {
-      setOnlineUpdateEnabled(props.getOnlineUpdateEnabled())
-    }
-    if (props.getOnlineUpdateLocked) {
-      setOnlineUpdateLocked(props.getOnlineUpdateLocked())
-    }
     if (props.getHideOfficialScheduleEnabled) {
       setHideOfficialScheduleEnabled(props.getHideOfficialScheduleEnabled())
     }
@@ -253,12 +213,6 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
     }
     const unsub = props.subscribe(() => {
       setLocation(props.getLocation())
-      if (props.getOnlineUpdateEnabled) {
-        setOnlineUpdateEnabled(props.getOnlineUpdateEnabled())
-      }
-      if (props.getOnlineUpdateLocked) {
-        setOnlineUpdateLocked(props.getOnlineUpdateLocked())
-      }
       if (props.getHideOfficialScheduleEnabled) {
         setHideOfficialScheduleEnabled(props.getHideOfficialScheduleEnabled())
       }
@@ -278,20 +232,6 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
       setSavingLocation(false)
     })
   }
-
-  const setOnlineUpdateFn = props.setOnlineUpdate
-  const onToggleOnlineUpdate = setOnlineUpdateFn ? (next: boolean): void => {
-    if (onlineUpdateLocked) return
-    setSavingUpdate(true)
-    setOnlineUpdateEnabled(next)
-    setOnlineUpdateFn(next).catch(() => {
-      if (props.getOnlineUpdateEnabled) {
-        setOnlineUpdateEnabled(props.getOnlineUpdateEnabled())
-      }
-    }).finally(() => {
-      setSavingUpdate(false)
-    })
-  } : undefined
 
   const setHideOfficialScheduleFn = props.setHideOfficialSchedule
   const onToggleHideOfficialSchedule = setHideOfficialScheduleFn ? (next: boolean): void => {
@@ -324,10 +264,6 @@ export function AutomationBundleConfigCardWrapper(props: BundleConfigWrapperProp
     location,
     disabled: savingLocation,
     onLocationChange,
-    onlineUpdateEnabled,
-    onlineUpdateDisabled: savingUpdate,
-    onlineUpdateLocked,
-    ...(onToggleOnlineUpdate !== undefined ? { onToggleOnlineUpdate } : {}),
     hideOfficialScheduleEnabled,
     hideOfficialScheduleDisabled: savingOfficialSchedule,
     ...(onToggleHideOfficialSchedule !== undefined ? { onToggleHideOfficialSchedule } : {}),
@@ -342,7 +278,6 @@ export interface SetupSidebarEntryOptions {
   readonly renderPanel: (ownerProps: any) => ReactElement
   readonly ns: string
   readonly injectProps?: Record<string, unknown> | (() => Record<string, unknown>)
-  readonly onOnlineUpdateChange?: (enabled: boolean) => void
   readonly onTaskTreeSessionsChange?: (enabled: boolean) => void
   readonly onLocationChange?: (location: EntryLocation) => void
 }
@@ -354,9 +289,6 @@ export interface SidebarController {
   isEnabled(): boolean
   isSupported(): boolean
   setEnabled(next: boolean): Promise<boolean>
-  isOnlineUpdateEnabled(): boolean
-  isOnlineUpdateLocked(): boolean
-  setOnlineUpdate(next: boolean): Promise<boolean>
   isHideOfficialScheduleEnabled(): boolean
   setHideOfficialSchedule(next: boolean): Promise<boolean>
   isTaskTreeSessionsEnabled(): boolean
@@ -373,9 +305,6 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
       isEnabled: () => false,
       isSupported: () => false,
       setEnabled: async () => false,
-      isOnlineUpdateEnabled: () => true,
-      isOnlineUpdateLocked: () => false,
-      setOnlineUpdate: async () => false,
       isHideOfficialScheduleEnabled: () => true,
       setHideOfficialSchedule: async () => false,
       isTaskTreeSessionsEnabled: () => false,
@@ -496,10 +425,6 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     return isSidebarEnabled()
   }
 
-  let onlineUpdateEnabled = true
-  let onlineUpdateLocked = false
-  let updateEpoch = 0
-
   let hideOfficialScheduleEnabled = readCachedHideOfficial()
   let officialEpoch = 0
   applyHideOfficialScheduleStyle(hideOfficialScheduleEnabled)
@@ -539,36 +464,6 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     }
   }
 
-  const setOnlineUpdate = async (next: boolean): Promise<boolean> => {
-    if (onlineUpdateLocked) return onlineUpdateEnabled
-    const currentEpoch = ++updateEpoch
-    onlineUpdateEnabled = next
-    notify()
-    if (typeof options.onOnlineUpdateChange === 'function') {
-      try { options.onOnlineUpdateChange(next) } catch {}
-    }
-    try {
-      await callApi('/online-update', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ enabled: next }),
-      })
-      if (typeof options.onOnlineUpdateChange === 'function') {
-        try { options.onOnlineUpdateChange(next) } catch {}
-      }
-      return next
-    } catch (err) {
-      if (currentEpoch === updateEpoch) {
-        onlineUpdateEnabled = !next
-        notify()
-        if (typeof options.onOnlineUpdateChange === 'function') {
-          try { options.onOnlineUpdateChange(!next) } catch {}
-        }
-      }
-      throw err
-    }
-  }
-
   const loadEpoch = epoch
   callApi('/sidebar-entry')
     .then((res: any) => {
@@ -590,20 +485,6 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
         notify()
         if (typeof options.onLocationChange === 'function') {
           try { options.onLocationChange(entryLocation) } catch {}
-        }
-      }
-    })
-    .catch(() => {})
-
-  const loadUpdateEpoch = updateEpoch
-  callApi('/online-update')
-    .then((res: any) => {
-      if (updateEpoch === loadUpdateEpoch && res) {
-        if (typeof res.enabled === 'boolean') onlineUpdateEnabled = res.enabled
-        if (typeof res.locked === 'boolean') onlineUpdateLocked = res.locked
-        notify()
-        if (typeof options.onOnlineUpdateChange === 'function') {
-          try { options.onOnlineUpdateChange(onlineUpdateEnabled) } catch {}
         }
       }
     })
@@ -695,9 +576,6 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
         setLocation,
         getEnabled: () => isSidebarEnabled(),
         setSidebar: setEnabled,
-        getOnlineUpdateEnabled: () => onlineUpdateEnabled,
-        getOnlineUpdateLocked: () => onlineUpdateLocked,
-        setOnlineUpdate: setOnlineUpdate,
         getHideOfficialScheduleEnabled: () => hideOfficialScheduleEnabled,
         setHideOfficialSchedule: setHideOfficialSchedule,
         getTaskTreeSessionsEnabled: () => taskTreeSessionsEnabled,
@@ -717,9 +595,6 @@ export function setupSidebarEntry(ctx: ClientContext, options: SetupSidebarEntry
     isEnabled: () => isSidebarEnabled(),
     isSupported: () => sidebarSupported,
     setEnabled,
-    isOnlineUpdateEnabled: () => onlineUpdateEnabled,
-    isOnlineUpdateLocked: () => onlineUpdateLocked,
-    setOnlineUpdate,
     isHideOfficialScheduleEnabled: () => hideOfficialScheduleEnabled,
     setHideOfficialSchedule,
     isTaskTreeSessionsEnabled: () => taskTreeSessionsEnabled,

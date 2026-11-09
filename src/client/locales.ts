@@ -1,465 +1,235 @@
-export const NS = "dsh-automation";
+import type {} from '@deepseek-ai/dsh-client-locale'
+import { zh } from './locales/zh.js'
+import { en } from './locales/en.js'
+import { ja } from './locales/ja.js'
+import { es } from './locales/es.js'
+import { fr } from './locales/fr.js'
+import { de } from './locales/de.js'
+import { ru } from './locales/ru.js'
+import { pt } from './locales/pt.js'
 
-export const en = {
-  tab: "Scheduled tasks",
-  "sidebar.tab": "Scheduled",
-  "sidebar.tabs": "Workspace views",
-  "sidebar.tasksTab": "Tasks",
-  "sidebar.views": "Scheduled views",
-  "sidebar.viewOverview": "Task overview",
-  "sidebar.runsTab": "Records",
-  "sidebar.overviewTab": "Tasks",
+/** 本插件独占的界面文案命名空间。 */
+export const NS = 'dsh-automation'
 
-  "records.groupReadOnly": "Scheduled task groups cannot be renamed or deleted here.",
-  "records.groupByTask": "By task",
-  "records.sectionTasks": "Tasks",
+export { zh, en, ja, es, fr, de, ru, pt }
 
-  "sidebar.treeUnavailable": "The official task tree is unavailable in this Host.",
+export type AutomationLocaleKey =
+  | 'tab'
+  | 'sidebar.tab'
+  | 'sidebar.tabs'
+  | 'sidebar.tasksTab'
+  | 'sidebar.views'
+  | 'sidebar.viewOverview'
+  | 'sidebar.runsTab'
+  | 'sidebar.overviewTab'
+  | 'records.groupReadOnly'
+  | 'records.groupByTask'
+  | 'records.sectionTasks'
+  | 'sidebar.treeUnavailable'
+  | 'sidebar.workspaces'
+  | 'sidebar.search'
+  | 'sidebar.clearSearch'
+  | 'entry.location.title'
+  | 'entry.location.desc'
+  | 'entry.location.both'
+  | 'entry.location.sidebar'
+  | 'entry.location.settings'
+  | 'sidebar.entry.title'
+  | 'sidebar.entry.desc'
+  | 'sidebar.entry.toggle'
+  | 'officialSchedule.entry.title'
+  | 'officialSchedule.entry.desc'
+  | 'officialSchedule.entry.toggle'
+  | 'taskTreeSessions.entry.title'
+  | 'taskTreeSessions.entry.desc'
+  | 'taskTreeSessions.entry.toggle'
+  | 'header.lead'
+  | 'header.githubProject'
+  | 'header.githubFeedback'
+  | 'examples.title'
+  | 'examples.1.title'
+  | 'examples.1.body'
+  | 'examples.1.chip'
+  | 'examples.2.title'
+  | 'examples.2.body'
+  | 'examples.2.chip'
+  | 'examples.3.title'
+  | 'examples.3.body'
+  | 'examples.3.chip'
+  | 'chat.prompt'
+  | 'menu.run'
+  | 'menu.edit'
+  | 'menu.delete'
+  | 'session.taskSettings'
+  | 'history.range.day'
+  | 'history.range.week'
+  | 'history.range.month'
+  | 'history.allTasks'
+  | 'history.allStatus'
+  | 'history.today'
+  | 'history.yesterday'
+  | 'history.date'
+  | 'history.week'
+  | 'history.month'
+  | 'history.nextApprox'
+  | 'time.withinMinute'
+  | 'time.withinHour'
+  | 'time.withinDay'
+  | 'search.placeholder'
+  | 'action.chatCreate'
+  | 'action.create'
+  | 'banner.wake'
+  | 'tabs.mine'
+  | 'tabs.runs'
+  | 'sort.created.asc'
+  | 'sort.created.desc'
+  | 'sort.planned.asc'
+  | 'sort.planned.desc'
+  | 'sort.default.save'
+  | 'sort.default.saved'
+  | 'form.workspace'
+  | 'form.fieldWorkspace'
+  | 'form.fieldModel'
+  | 'form.providerAccount'
+  | 'form.fieldEffort'
+  | 'form.fieldPermission'
+  | 'form.slashHint'
+  | 'form.slashEmpty'
+  | 'form.addWorkspace'
+  | 'form.workspaceRequired'
+  | 'form.workspaceUnavailable'
+  | 'form.addWorkspaceFailed'
+  | 'form.workspacePath'
+  | 'form.workspacePathPlaceholder'
+  | 'form.model'
+  | 'form.modelSelect'
+  | 'form.effort'
+  | 'form.effort.none'
+  | 'form.effort.low'
+  | 'form.effort.medium'
+  | 'form.effort.high'
+  | 'form.error.workspace'
+  | 'modal.title'
+  | 'modal.edit'
+  | 'modal.save'
+  | 'stats.next'
+  | 'stats.noneScheduled'
+  | 'section.refresh'
+  | 'empty.title'
+  | 'empty.body'
+  | 'runs.empty'
+  | 'overview.empty'
+  | 'form.title'
+  | 'form.subtitle'
+  | 'form.name'
+  | 'form.namePlaceholder'
+  | 'form.prompt'
+  | 'form.promptPlaceholder'
+  | 'form.schedule'
+  | 'form.planTime'
+  | 'form.hourly'
+  | 'form.monthly'
+  | 'form.custom'
+  | 'form.intervalHint'
+  | 'form.customHint'
+  | 'form.atTime'
+  | 'form.minutesShort'
+  | 'form.daysShort'
+  | 'form.monthDay'
+  | 'form.skills'
+  | 'form.skillsEmpty'
+  | 'schedule.hourlyAt'
+  | 'schedule.monthlyAt'
+  | 'schedule.customAt'
+  | 'form.once'
+  | 'form.interval'
+  | 'form.daily'
+  | 'form.weekly'
+  | 'form.runAt'
+  | 'form.every'
+  | 'form.minutes'
+  | 'form.time'
+  | 'form.days'
+  | 'form.timeZone'
+  | 'form.maxConcurrentRuns'
+  | 'form.maxConcurrentRunsHint'
+  | 'form.error.maxConcurrentRuns'
+  | 'form.permission'
+  | 'permission.readOnly'
+  | 'permission.workspaceWrite'
+  | 'permission.fullAccess'
+  | 'form.fieldAgentPreset'
+  | 'form.agentPresetUnavailable'
+  | 'form.agentPresetMissing'
+  | 'form.agentPresetRequired'
+  | 'card.agentPreset'
+  | 'presetStandardName'
+  | 'presetStandardDescription'
+  | 'presetPtcName'
+  | 'presetPtcDescription'
+  | 'presetMinimalName'
+  | 'presetMinimalDescription'
+  | 'presetCordisName'
+  | 'presetCordisDescription'
+  | 'form.cancel'
+  | 'form.submit'
+  | 'form.submitting'
+  | 'form.error.name'
+  | 'form.error.prompt'
+  | 'form.error.once'
+  | 'form.error.interval'
+  | 'form.error.weekdays'
+  | 'day.1'
+  | 'day.2'
+  | 'day.3'
+  | 'day.4'
+  | 'day.5'
+  | 'day.6'
+  | 'day.7'
+  | 'status.active'
+  | 'status.paused'
+  | 'status.queued'
+  | 'status.running'
+  | 'status.succeeded'
+  | 'status.failed'
+  | 'status.skipped'
+  | 'status.cancelled'
+  | 'status.interrupted'
+  | 'schedule.onceAt'
+  | 'schedule.everyMinutes'
+  | 'schedule.dailyAt'
+  | 'schedule.weeklyAt'
+  | 'card.pause'
+  | 'card.resume'
+  | 'card.more'
+  | 'card.confirmDelete'
+  | 'card.confirmDeleteHint'
+  | 'card.confirm'
+  | 'card.cancel'
+  | 'run.trigger.schedule'
+  | 'run.trigger.manual'
+  | 'loading'
+  | 'error.title'
+  | 'error.retry'
+  | 'error.action'
+  | 'error.taskMissing'
+  | 'error.offline'
+  | 'time.minutes'
+  | 'time.hours'
+  | 'time.days'
+  | 'time.months'
+  | 'time.years'
+  | 'time.ago'
+  | 'time.now'
+  | 'time.minuteAgo'
+  | 'time.hourAgo'
+  | 'time.dayAgo'
+  | 'time.inMinute'
+  | 'time.inHour'
+  | 'time.inDay'
 
-  "sidebar.workspaces": "Workspaces",
-  "sidebar.search": "Search",
-  "sidebar.clearSearch": "Clear search",
-  "entry.location.title": "Entry placement",
-  "entry.location.desc": "Choose where to show the entry (at least one is retained to avoid losing access).",
-  "entry.location.both": "Both",
-  "entry.location.sidebar": "Sidebar only",
-  "entry.location.settings": "Settings only",
-  "sidebar.entry.title": "Sidebar entry",
-  "sidebar.entry.desc": "Show dedicated scheduled tasks entry in the primary sidebar",
-  "sidebar.entry.toggle": "Toggle sidebar entry",
-  "update.entry.title": "Online update",
-  "update.entry.desc": "Check for updates and notify when new versions are available",
-  "update.entry.toggle": "Toggle online update",
-  "officialSchedule.entry.title": "Hide official automation entry",
-  "officialSchedule.entry.desc": "Hide built-in 'Automation tasks' sidebar entry to avoid conflict. Restores automatically when disabled or uninstalled.",
-  "officialSchedule.entry.toggle": "Toggle hide official automation entry",
-  "taskTreeSessions.entry.title": "Show automation sessions in task tree",
-  "taskTreeSessions.entry.desc": "Show scheduled task run history in the official workspace task tree. When disabled, sessions are shown only under 'Schedule → Records'.",
-  "taskTreeSessions.entry.toggle": "Toggle show automation sessions in task tree",
-  "error.update.disabled": "locked by host configuration",
-  "header.lead":
-    "Plan automatic tasks, or trigger them by hand. Describe the recurring work in any chat to create it quickly.",
-  "header.githubProject": "GitHub",
-  "header.githubFeedback": "Issues",
-  "examples.title": "Recommended examples",
-  "examples.1.title": "Daily regression check",
-  "examples.1.body":
-    "Create a scheduled task that runs every day and inspects new test failures.",
-  "examples.1.chip": "Every day 09:00",
-  "examples.2.title": "Weekly dependency review",
-  "examples.2.body":
-    "Create a scheduled task that runs every Monday and reports outdated or risky dependencies.",
-  "examples.2.chip": "Monday 10:00",
-  "examples.3.title": "Weekday morning briefing",
-  "examples.3.body":
-    "Create a scheduled task that runs on weekdays and summarizes overnight changes.",
-  "examples.3.chip": "Weekdays 08:00",
-  "chat.prompt":
-    "I want to create a scheduled task that runs every [interval] and does [the actual task]",
-  "menu.run": "Run task",
-  "menu.edit": "Edit task",
-  "menu.delete": "Delete task",
-  "session.taskSettings": "Task settings",
-  "history.range.day": "By day",
-  "history.range.week": "By week",
-  "history.range.month": "By month",
-  "history.allTasks": "All tasks",
-  "history.allStatus": "All statuses",
-  "history.today": "Today",
-  "history.yesterday": "Yesterday",
-  "history.date": "{date}",
-  "history.week": "Week of {date}",
-  "history.month": "{month}",
-  "history.nextApprox": "Next run in about {when}",
-  "time.withinMinute": "about {count} minutes",
-  "time.withinHour": "about {count} hours",
-  "time.withinDay": "about {count} days",
-  "search.placeholder": "Search scheduled tasks...",
-  "action.chatCreate": "Create in chat",
-  "action.create": "New scheduled task",
-  "banner.wake": "Scheduled tasks run only while this computer stays awake.",
-  "tabs.mine": "Tasks",
-  "tabs.runs": "Run history",
-  "sort.created.asc": "Created time ascending",
-  "sort.created.desc": "Created time descending",
-  "sort.planned.asc": "Planned time ascending",
-  "sort.planned.desc": "Planned time descending",
-  "sort.default.save": "Set as default",
-  "sort.default.saved": "Default",
-  "form.workspace": "Workspace",
-  "form.fieldWorkspace": "Workspace",
-  "form.fieldModel": "Model",
-  "form.providerAccount": "DeepSeek account",
-  "form.fieldEffort": "Reasoning",
-  "form.fieldPermission": "Permission",
-  "form.slashHint": "Type / to insert a skill",
-  "form.slashEmpty": "No matching skills",
-  "form.addWorkspace": "Add workspace",
-  "form.workspaceRequired": "Add a registered workspace before saving.",
-  "form.workspaceUnavailable": "This Host cannot create workspaces.",
-  "form.addWorkspaceFailed": "Could not add the workspace.",
-  "form.workspacePath": "Folder path",
-  "form.workspacePathPlaceholder": "D:\\work\\project",
-  "form.model": "Model",
-  "form.modelSelect": "Select model",
-  "form.effort": "Reasoning",
-  "form.effort.none": "Default",
-  "form.effort.low": "Low",
-  "form.effort.medium": "Medium",
-  "form.effort.high": "High",
-  "form.error.workspace": "Select a workspace.",
-  "modal.title": "New scheduled task",
-  "modal.edit": "Edit scheduled task",
-  "modal.save": "Save",
-  "stats.next": "Next run",
-  "stats.noneScheduled": "None scheduled",
-  "section.refresh": "Refresh",
-  "empty.title": "Let recurring coding work run itself",
-  "empty.body":
-    "Save a self-contained task, a schedule, and a permission boundary. Every run starts in a new Session.",
-  "runs.empty":
-    "No runs yet. Run one now, or wait for the next scheduled occurrence.",
-  "overview.empty": "No scheduled tasks yet. Create one in Settings.",
-  "form.title": "Create automation",
-  "form.subtitle":
-    "Write a complete, standalone task. Scheduled runs do not inherit this conversation.",
-  "form.name": "Name",
-  "form.namePlaceholder": "Daily regression triage",
-  "form.prompt": "Task prompt",
-  "form.promptPlaceholder":
-    "Inspect new test failures, locate the regression, and propose a verified minimal fix…",
-  "form.schedule": "Schedule",
-  "form.planTime": "Schedule",
-  "form.hourly": "Hourly",
-  "form.monthly": "Monthly",
-  "form.custom": "Every few days",
-  "form.intervalHint": "Runs every this many minutes, starting now.",
-  "form.customHint": "Runs every this many days at the selected time.",
-  "form.atTime": "at",
-  "form.minutesShort": "min",
-  "form.daysShort": "days",
-  "form.monthDay": "Day {day} of month",
-  "form.skills": "Skills",
-  "form.skillsEmpty": "No skills available",
-  "schedule.hourlyAt": "Every hour at :{minute}",
-  "schedule.monthlyAt": "Monthly on day {day} · {time}",
-  "schedule.customAt": "Every {count} days · {time}",
-  "form.once": "Does not repeat",
-  "form.interval": "Interval",
-  "form.daily": "Daily",
-  "form.weekly": "Weekly",
-  "form.runAt": "Run at",
-  "form.every": "Every",
-  "form.minutes": "minutes",
-  "form.time": "Time",
-  "form.days": "Weekdays",
-  "form.timeZone": "Time zone",
-  "form.maxConcurrentRuns": "Concurrency",
-  "form.maxConcurrentRunsHint": "Queued and running executions share this limit. Defaults to 1; when full, scheduled triggers are skipped and manual runs are rejected.",
-  "form.error.maxConcurrentRuns": "Enter a positive whole number for concurrent runs.",
-  "form.permission": "Permission boundary",
-  "permission.readOnly": "Read Only",
-  "permission.workspaceWrite": "Workspace Write",
-  "permission.fullAccess": "Full access",
-  "form.fieldAgentPreset": "Agent preset",
-  "form.agentPresetUnavailable": " (Unavailable)",
-  "form.agentPresetMissing": "This Host has not declared any Agent preset, so a scheduled task cannot be created.",
-  "form.agentPresetRequired": "Choose an Agent preset before saving.",
-  "card.agentPreset": "Agent preset",
-  "presetStandardName": "Standard mode",
-  "presetStandardDescription": "Work with code, files, and information. Suitable for most tasks, with search, editing, terminal commands, and other tools available as needed.",
-  "presetPtcName": "PTC mode",
-  "presetPtcDescription": "Includes all Standard mode capabilities. Better suited to tasks that call tools in batches and then filter, organize, deduplicate, count, or summarize the results.",
-  "presetMinimalName": "Minimal mode",
-  "presetMinimalDescription": "The agent uses a terminal and image reading, with context compaction. Useful for testing and comparing its basic performance.",
-  "presetCordisName": "Creator mode",
-  "presetCordisDescription": "Customize DSH through conversation. Let the agent write plugins that add features or UI, or combine tools and prompts to create your own mode.",
-  "form.cancel": "Cancel",
-  "form.submit": "Create automation",
-  "form.submitting": "Creating…",
-  "form.error.name": "Enter a name.",
-  "form.error.prompt": "Enter a complete, standalone task prompt.",
-  "form.error.once": "Choose a valid future date and time.",
-  "form.error.interval": "The interval must be between 1 and 43,200 minutes.",
-  "form.error.weekdays": "Select at least one weekday.",
-  "day.1": "Mon",
-  "day.2": "Tue",
-  "day.3": "Wed",
-  "day.4": "Thu",
-  "day.5": "Fri",
-  "day.6": "Sat",
-  "day.7": "Sun",
-  "status.active": "Active",
-  "status.paused": "Paused",
-  "status.queued": "Queued",
-  "status.running": "Running",
-  "status.succeeded": "Succeeded",
-  "status.failed": "Failed",
-  "status.skipped": "Skipped",
-  "status.cancelled": "Cancelled",
-  "status.interrupted": "Interrupted",
-  "schedule.onceAt": "Once · {time}",
-  "schedule.everyMinutes": "Every {count} minutes",
-  "schedule.dailyAt": "Daily · {time}",
-  "schedule.weeklyAt": "{days} · {time}",
-  "card.pause": "Pause",
-  "card.resume": "Resume",
-  "card.more": "More actions",
-  "card.confirmDelete": "Delete this automation?",
-  "card.confirmDeleteHint": "Run history is kept for audit.",
-  "card.confirm": "Delete",
-  "card.cancel": "Cancel",
-  "run.trigger.schedule": "Scheduled",
-  "run.trigger.manual": "Manual",
-  loading: "Loading automations…",
-  "error.title": "Automations could not be loaded",
-  "error.retry": "Try again",
-  "error.action": "The action failed. Please try again.",
-  "error.taskMissing": "This scheduled task no longer exists.",
-  "error.offline":
-    "Could not reach the local automation service. Check that DSH is still running and try again.",
-  "time.minutes": "{count}m",
-  "time.hours": "{count}h",
-  "time.days": "{count}d",
-  "time.months": "{count}mo",
-  "time.years": "{count}y",
-  "time.ago": "{text} ago",
-  "time.now": "now",
-  "time.minuteAgo": "{count}m ago",
-  "time.hourAgo": "{count}h ago",
-  "time.dayAgo": "{count}d ago",
-  "time.inMinute": "in {count}m",
-  "time.inHour": "in {count}h",
-  "time.inDay": "in {count}d",
-} as const;
-
-export type AutomationLocaleKey = keyof typeof en;
-
-export const zh: Record<AutomationLocaleKey, string> = {
-  tab: "定时任务",
-  "sidebar.tab": "定时",
-  "sidebar.tabs": "工作区分类",
-  "sidebar.tasksTab": "任务",
-  "sidebar.views": "定时页视图",
-  "sidebar.viewOverview": "任务总览",
-  "sidebar.runsTab": "记录",
-  "sidebar.overviewTab": "任务",
-
-  "records.groupReadOnly": "定时任务分组不能在这里重命名或删除。",
-  "records.groupByTask": "按任务",
-  "records.sectionTasks": "任务",
-
-  "sidebar.treeUnavailable": "当前宿主未提供官方任务树。",
-
-  "sidebar.workspaces": "工作区",
-  "sidebar.search": "搜索",
-  "sidebar.clearSearch": "清空搜索",
-  "entry.location.title": "入口展示位置",
-  "entry.location.desc": "选择定时任务入口的展示位置（至少保留一处，防止无法打开面板）。",
-  "entry.location.both": "两边显示",
-  "entry.location.sidebar": "仅侧边栏",
-  "entry.location.settings": "仅设置",
-  "sidebar.entry.title": "侧边栏入口",
-  "sidebar.entry.desc": "在左侧主活动栏常驻定时任务快捷入口",
-  "sidebar.entry.toggle": "切换侧边栏入口",
-  "update.entry.title": "在线更新",
-  "update.entry.desc": "定期检查新版本并在有更新时提示",
-  "update.entry.toggle": "切换在线更新",
-  "officialSchedule.entry.title": "屏蔽官方自动化入口",
-  "officialSchedule.entry.desc": "隐藏宿主自带的「自动化任务」侧栏入口，避免与本插件冲突。卸载本插件或关闭此项后自动恢复。",
-  "officialSchedule.entry.toggle": "切换屏蔽官方自动化入口",
-  "taskTreeSessions.entry.title": "在任务树显示定时会话",
-  "taskTreeSessions.entry.desc": "在官方工作区任务树中显示定时任务运行历史。关闭后历史会话仅在「定时 → 记录」中显示",
-  "taskTreeSessions.entry.toggle": "切换在任务树显示定时会话",
-  "error.update.disabled": "已被宿主配置锁定禁用",
-  "header.lead":
-    "按计划自动执行任务，也可随时手动触发。在任意对话中描述你想定期做的事，即可快速创建",
-  "header.githubProject": "GitHub",
-  "header.githubFeedback": "问题反馈",
-  "examples.title": "推荐案例",
-  "examples.1.title": "每日回归检查",
-  "examples.1.body":
-    "我要创建一个定时任务，每【天】执行【检查新增测试失败并给出最小修复】。",
-  "examples.1.chip": "每天 09:00",
-  "examples.2.title": "每周依赖巡检",
-  "examples.2.body":
-    "我要创建一个定时任务，每【周一】执行【检查过期或有风险的依赖并给出处理建议】。",
-  "examples.2.chip": "每周一 10:00",
-  "examples.3.title": "工作日早报",
-  "examples.3.body":
-    "我要创建一个定时任务，每【工作日】执行【汇总昨夜仓库变更并给出今日关注点】。",
-  "examples.3.chip": "工作日 08:00",
-  "chat.prompt": "我要创建一个定时任务，每【时间间隔】执行【具体任务】",
-  "menu.run": "执行任务",
-  "menu.edit": "编辑任务",
-  "menu.delete": "删除任务",
-  "session.taskSettings": "任务设置",
-  "history.range.day": "按天",
-  "history.range.week": "按周",
-  "history.range.month": "按月",
-  "history.allTasks": "全部任务",
-  "history.allStatus": "全部状态",
-  "history.today": "今天",
-  "history.yesterday": "昨天",
-  "history.date": "{date}",
-  "history.week": "{date} 当周",
-  "history.month": "{month}",
-  "history.nextApprox": "下次执行 大约 {when}",
-  "time.withinMinute": "{count} 分钟内",
-  "time.withinHour": "{count} 小时内",
-  "time.withinDay": "{count} 天内",
-  "search.placeholder": "搜索定时任务...",
-  "action.chatCreate": "通过对话创建",
-  "action.create": "新建定时任务",
-  "banner.wake": "定时任务仅在电脑保持唤醒时运行",
-  "tabs.mine": "定时任务",
-  "tabs.runs": "执行记录",
-  "sort.created.asc": "按创建时间升序",
-  "sort.created.desc": "按创建时间倒序",
-  "sort.planned.asc": "按计划时间升序",
-  "sort.planned.desc": "按计划时间倒序",
-  "sort.default.save": "设为默认",
-  "sort.default.saved": "默认",
-  "form.workspace": "工作目录",
-  "form.fieldWorkspace": "工作区",
-  "form.fieldModel": "模型",
-  "form.providerAccount": "DeepSeek 账号",
-  "form.fieldEffort": "推理等级",
-  "form.fieldPermission": "权限",
-  "form.slashHint": "输入 / 召回技能",
-  "form.slashEmpty": "没有匹配的技能",
-  "form.addWorkspace": "添加工作区",
-  "form.workspaceRequired": "请先添加已登记的工作区，否则无法保存。",
-  "form.workspaceUnavailable": "当前宿主不能新建工作区。",
-  "form.addWorkspaceFailed": "添加工作区失败。",
-  "form.workspacePath": "目录路径",
-  "form.workspacePathPlaceholder": "D:\\work\\project",
-  "form.model": "模型",
-  "form.modelSelect": "选择模型",
-  "form.effort": "推理等级",
-  "form.effort.none": "默认",
-  "form.effort.low": "Low",
-  "form.effort.medium": "Medium",
-  "form.effort.high": "High",
-  "form.error.workspace": "请选择工作区。",
-  "modal.title": "新建定时任务",
-  "modal.edit": "编辑定时任务",
-  "modal.save": "保存",
-  "stats.next": "下次运行",
-  "stats.noneScheduled": "暂无计划",
-  "section.refresh": "刷新",
-  "empty.title": "让重复的编码工作自动运行",
-  "empty.body":
-    "设置一个目标明确的任务、运行时间和权限边界。每次运行都从全新 Session 开始。",
-  "runs.empty": "还没有运行记录。你可以立即运行一次，或等待计划触发。",
-  "overview.empty": "暂无定时任务，可到设置页创建。",
-  "form.title": "创建自动化",
-  "form.subtitle": "请写完整、独立的任务说明：定时运行不会继承当前对话。",
-  "form.name": "名称",
-  "form.namePlaceholder": "每日回归测试分诊",
-  "form.prompt": "任务指令",
-  "form.promptPlaceholder":
-    "检查新增测试失败，定位回归原因，并给出经过验证的最小修复方案……",
-  "form.schedule": "运行计划",
-  "form.planTime": "计划时间",
-  "form.hourly": "每小时",
-  "form.monthly": "每月",
-  "form.custom": "每隔几天",
-  "form.intervalHint": "从现在起，每隔这么多分钟运行一次。",
-  "form.customHint": "每隔这么多天，在所选时间运行一次。",
-  "form.atTime": "于",
-  "form.minutesShort": "分",
-  "form.daysShort": "天",
-  "form.monthDay": "每月第 {day} 天",
-  "form.skills": "技能",
-  "form.skillsEmpty": "暂无可用技能",
-  "schedule.hourlyAt": "每小时 :{minute}",
-  "schedule.monthlyAt": "每月 {day} 日 · {time}",
-  "schedule.customAt": "每 {count} 天 · {time}",
-  "form.once": "不重复",
-  "form.interval": "间隔",
-  "form.daily": "每天",
-  "form.weekly": "每周",
-  "form.runAt": "运行时间",
-  "form.every": "每隔",
-  "form.minutes": "分钟",
-  "form.time": "时间",
-  "form.days": "星期",
-  "form.timeZone": "时区",
-  "form.maxConcurrentRuns": "并发数量",
-  "form.maxConcurrentRunsHint": "同一任务的排队及运行次数共用此上限，默认 1；满额时跳过当次定时触发，手动运行将被拒绝。",
-  "form.error.maxConcurrentRuns": "并发数量必须为大于等于 1 的整数。",
-  "form.permission": "权限边界",
-  "permission.readOnly": "只读",
-  "permission.workspaceWrite": "工作区写入",
-  "permission.fullAccess": "完全访问",
-  "form.fieldAgentPreset": "Agent 预设",
-  "form.agentPresetUnavailable": "（不可用）",
-  "form.agentPresetMissing": "当前 Host 未声明任何 Agent 预设，无法创建定时任务。",
-  "form.agentPresetRequired": "保存前请选择一个 Agent 预设。",
-  "card.agentPreset": "Agent 预设",
-  "presetStandardName": "标准模式",
-  "presetStandardDescription": "处理代码、文件和资料，适合大多数任务。Agent 会按需使用检索、编辑和终端等工具。",
-  "presetPtcName": "PTC 模式",
-  "presetPtcDescription": "包含标准模式的所有能力，更适合批量调用工具，并对结果进行筛选、整理、去重、统计或汇总的任务。",
-  "presetMinimalName": "极简模式",
-  "presetMinimalDescription": "Agent 使用终端和图片读取工具，并支持上下文压缩，适合测试和对比其基础表现。",
-  "presetCordisName": "创造模式",
-  "presetCordisDescription": "用对话定制 DSH：让 Agent 编写插件，添加新功能或界面；也能组合工具和提示词，创建自己的模式。",
-  "form.cancel": "取消",
-  "form.submit": "创建自动化",
-  "form.submitting": "创建中…",
-  "form.error.name": "请输入名称。",
-  "form.error.prompt": "请输入完整、独立的任务指令。",
-  "form.error.once": "请选择有效的未来日期和时间。",
-  "form.error.interval": "运行间隔必须在 1 到 43,200 分钟之间。",
-  "form.error.weekdays": "请至少选择一天。",
-  "day.1": "周一",
-  "day.2": "周二",
-  "day.3": "周三",
-  "day.4": "周四",
-  "day.5": "周五",
-  "day.6": "周六",
-  "day.7": "周日",
-  "status.active": "已启用",
-  "status.paused": "已暂停",
-  "status.queued": "排队中",
-  "status.running": "运行中",
-  "status.succeeded": "已完成",
-  "status.failed": "失败",
-  "status.skipped": "已跳过",
-  "status.cancelled": "已取消",
-  "status.interrupted": "已中断",
-  "schedule.onceAt": "单次 · {time}",
-  "schedule.everyMinutes": "每 {count} 分钟",
-  "schedule.dailyAt": "每天 · {time}",
-  "schedule.weeklyAt": "{days} · {time}",
-  "card.pause": "暂停",
-  "card.resume": "恢复",
-  "card.more": "更多操作",
-  "card.confirmDelete": "确认删除这个自动化？",
-  "card.confirmDeleteHint": "运行历史会保留用于审计。",
-  "card.confirm": "确认删除",
-  "card.cancel": "取消",
-  "run.trigger.schedule": "定时触发",
-  "run.trigger.manual": "手动触发",
-  loading: "正在加载自动化…",
-  "error.title": "无法加载自动化",
-  "error.retry": "重试",
-  "error.action": "操作失败，请重试。",
-  "error.taskMissing": "该定时任务已不存在。",
-  "error.offline": "无法连接本机自动化服务，请确认 DSH 仍在运行后重试。",
-  "time.minutes": "{count}分钟",
-  "time.hours": "{count}小时",
-  "time.days": "{count}天",
-  "time.months": "{count}个月",
-  "time.years": "{count}年",
-  "time.ago": "{text}前",
-  "time.now": "刚刚",
-  "time.minuteAgo": "{count} 分钟前",
-  "time.hourAgo": "{count} 小时前",
-  "time.dayAgo": "{count} 天前",
-  "time.inMinute": "{count} 分钟后",
-  "time.inHour": "{count} 小时后",
-  "time.inDay": "{count} 天后",
-};
+declare module '@deepseek-ai/dsh-client-locale' {
+  interface LocaleNamespaceMap {
+    'dsh-automation': AutomationLocaleKey
+  }
+}

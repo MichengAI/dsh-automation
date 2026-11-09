@@ -143,46 +143,7 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
   const summaryRender = configEntry.component({ view: 'summary' })
   assert.equal(summaryRender, null, 'view 为 summary 时返回 null')
 
-  // 5. 在线更新控制与 Bug 3 修复验证
-  assert.equal(controller.isOnlineUpdateEnabled(), true)
-  assert.equal(controller.isOnlineUpdateLocked(), false)
-  let changeCount = 0
-  const toggleController = setupSidebarEntry(mockCtx, {
-    callApi: async (path: string, options?: RequestInit) => {
-      if (path === '/online-update') {
-        if (options?.method === 'POST') {
-          return { ok: true, enabled: false }
-        }
-        return { ok: true, enabled: true, locked: false }
-      }
-      return { ok: true, enabled: false }
-    },
-    renderPanel: () => createElement('div'),
-    ns: 'dsh-automation',
-    onOnlineUpdateChange: () => { changeCount += 1 },
-  })
-  await toggleController.setOnlineUpdate(false)
-  assert.equal(toggleController.isOnlineUpdateEnabled(), false)
-  assert.ok(changeCount >= 2, '乐观更新与保存成功后均派发变更通知')
-  toggleController.destroy()
-
   controller.destroy()
-
-  // 6. 验证宿主锁定场景（locked: true）
-  const lockedController = setupSidebarEntry(mockCtx, {
-    callApi: async (path: string) => {
-      if (path === '/sidebar-entry') return { ok: true, enabled: true }
-      if (path === '/online-update') return { ok: true, enabled: false, locked: true }
-      return {}
-    },
-    renderPanel: () => createElement('div'),
-    ns: 'dsh-automation',
-  })
-  await new Promise((r) => setTimeout(r, 10))
-  assert.equal(lockedController.isOnlineUpdateLocked(), true, '感知宿主锁定状态')
-  await lockedController.setOnlineUpdate(true)
-  assert.equal(lockedController.isOnlineUpdateEnabled(), false, '宿主锁定状态下拒绝开启在线更新')
-  lockedController.destroy()
 
   // 7. 验证屏蔽官方自动化入口的生命周期与样式标签清理及激活态重置
   let styleCreated = false

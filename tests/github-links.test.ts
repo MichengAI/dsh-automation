@@ -13,7 +13,6 @@ test('设置标题旁提供仓库和反馈 GitHub 链接', async () => {
   assert.match(source, /IconEditOutline/)
   assert.match(source, /variant="outline" size="sm"/)
   assert.match(styles, /\.dsh-st-heading-links\{display:flex;align-items:center;gap:8px/)
-  assert.match(styles, /\.dsh-st-heading-links>span\[data-mpi-check\]\{display:inline-flex;align-items:center\}/)
   assert.equal(en['header.githubProject'], 'GitHub')
   assert.equal(en['header.githubFeedback'], 'Issues')
   assert.equal(zh['header.githubFeedback'], '问题反馈')

@@ -1,6 +1,7 @@
 {
   "meta": {
     "title": "Automation",
-    "description": "在独立会话中按计划执行和管理编码任务。"
+    "description": "在独立会话中按计划执行和管理编码任务。",
+    "detail": "README.zh-CN.md"
   }
 }

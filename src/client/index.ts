@@ -1,7 +1,7 @@
 import { createElement, useEffect, useMemo, useSyncExternalStore, type ComponentType } from 'react'
 import { AutomationView } from './AutomationView.js'
 import type { ClientContext, NativeSwitcherProps, SessionSelector, WorkspaceSelector } from './contracts.js'
-import { en, NS, zh } from './locales.js'
+import { de, en, es, fr, ja, NS, pt, ru, zh } from './locales.js'
 import {
   attachNativeTabRegistry,
   createNativeTabRegistry,
@@ -23,40 +23,11 @@ import { AutomationNavIcon, installSettingsNavIcon } from './settings-nav-icon.j
 import { createSettingsNavIconSlot } from './settings-icon-slot.js'
 import { clearAutomationTaskSettingsRequest, requestAutomationTaskSettings, type AutomationTaskSettingsRequest } from './task-settings-request.js'
 import { clearAutomationCreateTaskRequest, requestAutomationCreateTask } from './create-task-request.js'
-import { observePluginUpdate, PLUGIN_UPDATE_TOGGLE_EVENT, type PluginUpdateIconName } from './plugin-update-ui.js'
 import { resolveApiUrl } from './api-base.js'
 import { setupSidebarEntry } from './bundle-config.js'
 
 export const name = 'dsh-automation-client'
 export const inject = ['slots', 'locale', 'connection', 'sessions']
-
-const UPDATE_ICON_PATHS: Record<PluginUpdateIconName, readonly string[]> = {
-  refresh: ['M13.5 5.5V2.5m0 0h-3m3 0-2.1 2.1A5.5 5.5 0 1 0 13.2 12'],
-  download: ['M8 2v8m0 0 3-3m-3 3-3-3M3 13v2h10v-2'],
-  copy: ['M5 5h8v8H5z', 'M3 3h8'],
-  close: ['m4 4 8 8M12 4 4 12'],
-}
-
-function createPluginUpdateIcon(name: PluginUpdateIconName): HTMLElement {
-  const element = document.createElement('span')
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  svg.setAttribute('viewBox', '0 0 16 16')
-  svg.setAttribute('width', '16')
-  svg.setAttribute('height', '16')
-  svg.setAttribute('fill', 'none')
-  svg.setAttribute('stroke', 'currentColor')
-  svg.setAttribute('stroke-width', '1.5')
-  svg.setAttribute('stroke-linecap', 'round')
-  svg.setAttribute('stroke-linejoin', 'round')
-  svg.setAttribute('aria-hidden', 'true')
-  for (const d of UPDATE_ICON_PATHS[name]) {
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    path.setAttribute('d', d)
-    svg.append(path)
-  }
-  element.append(svg)
-  return element
-}
 
 type MutableSlotEntry = {
   component?: ComponentType<any>
@@ -83,7 +54,7 @@ type HostComponent = ComponentType<any> & {
 
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => installStyles(), 'dsh-automation: styles')
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-automation: locale')
+  ctx.effect(() => ctx.locale.register(NS, { zh, en, ja, es, fr, de, ru, pt }), 'dsh-automation: locale')
   const t = ctx.locale.bind(NS)
   const permissionT = ctx.locale.bind('permission.access')
   const modelT = ctx.locale.bind('model')
@@ -193,9 +164,6 @@ export function apply(ctx: ClientContext): void {
       permissionT,
       modelT,
     }),
-    onOnlineUpdateChange: () => {
-      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(PLUGIN_UPDATE_TOGGLE_EVENT))
-    },
     onTaskTreeSessionsChange: () => {
       syncActiveTaskTreeFilter()
     },
@@ -205,16 +173,6 @@ export function apply(ctx: ClientContext): void {
     },
   })
   ctx.effect(() => () => sidebarController.destroy(), 'dsh-automation: sidebar entry')
-  ctx.effect(() => observePluginUpdate({
-    endpoint: '/api/michengai/dsh-automation/update',
-    packageName: '@michengai/dsh-automation',
-    titleRowSelector: '.dsh-st-heading-row',
-    linksSelector: '.dsh-st-heading-links',
-    zhName: '定时任务',
-    enName: 'Scheduled tasks',
-    createIcon: createPluginUpdateIcon,
-    isEnabled: () => sidebarController.isOnlineUpdateEnabled(),
-  }), 'dsh-automation: plugin update ui')
   const openTaskSettings = (request: AutomationTaskSettingsRequest): void => {
     requestAutomationTaskSettings(request)
     openSettingsSection(

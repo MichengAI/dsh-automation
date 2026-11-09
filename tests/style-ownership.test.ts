@@ -63,7 +63,7 @@ const documentValue = {
 Object.defineProperty(globalThis, 'HTMLStyleElement', { configurable: true, writable: true, value: StyleElement })
 Object.defineProperty(globalThis, 'document', { configurable: true, writable: true, value: documentValue })
 
-const { installPluginUpdateStyle, installStyles } = await import('../src/client/styles.ts')
+const { installStyles } = await import('../src/client/styles.ts')
 
 test('侧栏样式表归属本插件，不会被其它插件重载整批删除', () => {
   const dispose = installStyles()
@@ -93,35 +93,4 @@ test('已被其它插件认领的侧栏样式表会改回本插件', () => {
   removeOwned('dsh-chat-import')
   assert.equal(documentValue.getElementById('dsh-automation-styles'), style)
   style.remove()
-})
-
-test('更新提示样式表归属本插件，且不抢走其它插件已经声明的同一张表', () => {
-  installPluginUpdateStyle('.mpi-version{color:inherit}')
-  const style = documentValue.getElementById('michengai-plugin-update-ui')
-  assert.ok(style instanceof StyleElement)
-  assert.equal(style.getAttribute('data-plugin'), OWNER)
-  claimUntagged('dsh-im-connect')
-  removeOwned('dsh-im-connect')
-  assert.equal(documentValue.getElementById('michengai-plugin-update-ui'), style)
-  style.remove()
-
-  const untagged = documentValue.createElement('style')
-  untagged.id = 'michengai-plugin-update-ui'
-  head.append(untagged)
-  installPluginUpdateStyle('.mpi-version{color:inherit}')
-  assert.equal(untagged.getAttribute('data-plugin'), OWNER)
-  untagged.remove()
-
-  const shared = documentValue.createElement('style')
-  shared.id = 'michengai-plugin-update-ui'
-  shared.setAttribute('data-plugin', '@michengai/dsh-im-connect')
-  head.append(shared)
-  installPluginUpdateStyle('.mpi-version{color:inherit}')
-  assert.equal(shared.getAttribute('data-plugin'), '@michengai/dsh-im-connect')
-  shared.remove()
-})
-
-test('更新提示入口实际安装带归属的样式表', async () => {
-  const source = await readFile(new URL('../src/client/plugin-update-ui.ts', import.meta.url), 'utf8')
-  assert.match(source, /installPluginUpdateStyle\(CSS\)/)
 })

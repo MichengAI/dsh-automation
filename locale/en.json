@@ -1,6 +1,7 @@
 {
   "meta": {
     "title": "Automation",
-    "description": "Schedule and manage coding tasks in isolated sessions."
+    "description": "Schedule and manage coding tasks in isolated sessions.",
+    "detail": "README.en.md"
   }
 }

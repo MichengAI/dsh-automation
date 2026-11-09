@@ -24,10 +24,6 @@ export interface BundleConfigCardProps {
     readonly enabled?: boolean;
     readonly disabled?: boolean;
     readonly onToggle?: (next: boolean) => void;
-    readonly onlineUpdateEnabled?: boolean;
-    readonly onlineUpdateDisabled?: boolean;
-    readonly onlineUpdateLocked?: boolean;
-    readonly onToggleOnlineUpdate?: (next: boolean) => void;
     readonly hideOfficialScheduleEnabled?: boolean;
     readonly hideOfficialScheduleDisabled?: boolean;
     readonly onToggleHideOfficialSchedule?: (next: boolean) => void;
@@ -42,9 +38,6 @@ export interface BundleConfigWrapperProps {
     readonly setLocation: (next: EntryLocation) => Promise<EntryLocation>;
     readonly getEnabled?: () => boolean;
     readonly setSidebar?: (next: boolean) => Promise<boolean>;
-    readonly getOnlineUpdateEnabled?: () => boolean;
-    readonly getOnlineUpdateLocked?: () => boolean;
-    readonly setOnlineUpdate?: (next: boolean) => Promise<boolean>;
     readonly getHideOfficialScheduleEnabled?: () => boolean;
     readonly setHideOfficialSchedule?: (next: boolean) => Promise<boolean>;
     readonly getTaskTreeSessionsEnabled?: () => boolean;
@@ -57,7 +50,6 @@ export interface SetupSidebarEntryOptions {
     readonly renderPanel: (ownerProps: any) => ReactElement;
     readonly ns: string;
     readonly injectProps?: Record<string, unknown> | (() => Record<string, unknown>);
-    readonly onOnlineUpdateChange?: (enabled: boolean) => void;
     readonly onTaskTreeSessionsChange?: (enabled: boolean) => void;
     readonly onLocationChange?: (location: EntryLocation) => void;
 }
@@ -68,9 +60,6 @@ export interface SidebarController {
     isEnabled(): boolean;
     isSupported(): boolean;
     setEnabled(next: boolean): Promise<boolean>;
-    isOnlineUpdateEnabled(): boolean;
-    isOnlineUpdateLocked(): boolean;
-    setOnlineUpdate(next: boolean): Promise<boolean>;
     isHideOfficialScheduleEnabled(): boolean;
     setHideOfficialSchedule(next: boolean): Promise<boolean>;
     isTaskTreeSessionsEnabled(): boolean;
