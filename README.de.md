@@ -173,7 +173,7 @@ Die Aktualisierungsschaltfläche in den Plugin-Einstellungen wurde entfernt. Zur
 Jeder Lauf verwendet die gespeicherten Instruktionen, das Arbeitsverzeichnis, Modell und Berechtigungsgrenzen. Er übernimmt keine Bestätigungen aus dem Quell-Chat.
 
 `automation_create` und `automation_update` unterstützen dieselben Modelloptionen wie die Benutzeroberfläche (`provider`, `model`, `reasoning_effort`). Wird ein Modell angegeben, müssen `provider` und `model` als Paar nicht-leerer IDs oder beide als `null` (folgt globaler Auswahl) übergeben werden; unvollständige Paare werden abgelehnt.
- Wenn der vollständige Prompt-Text benötigt wird, verwenden Sie `include_prompt: true` in `automation_list` oder `automation_get`, um `promptSnapshot` abzurufen.
+ `automation_list` gibt standardmäßig nur Metadaten und die `lastRun`-Zusammenfassung (Status, Zeit, `summary` ≤240 Zeichen, Fehler) zurück, ohne den vollständigen `prompt`-Text auszugeben (meldet stattdessen `promptChars`); übergeben Sie `include_prompt: true`, wenn der vollständige Prompt-Wortlaut benötigt wird.
 
 ## Sicherheitsgrenzen
 
@@ -212,6 +212,26 @@ dsh --profile web --dump-config
 
 Starten Sie DSH Web neu und aktualisieren Sie den Browser.
 
+Der aktuelle Quellcode befindet sich in `src` und wird in `lib` kompiliert:
+
+- [src\index.ts](src/index.ts): Host-Plugin, Werkzeuge und RPC.
+- [src\service.ts](src/service.ts): Persistente Definitionen, Taktung und Laufsteuerung.
+- [src\client\index.ts](src/client/index.ts): Einstellungsseite und Chat-Vorbelegung.
+- `tests\*.test.ts`: Domänen-, Wiederholungs-, Service-, Client- und Vertragstests.
+
+Die lokale Installation liest und wendet `cordis.patch.yml` an; kopieren Sie `lib`-Dateien nicht manuell.
+
+Nach Dateiänderungen Tests ausführen, neu kompilieren und aus dem lokalen Verzeichnis neu installieren:
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+pnpm check
+dsh plugin --profile web add .
+```
+
+Behalten Sie bei Änderungen am Ausführungscode die At-Most-Once-Dispatch-Richtlinie, die standardmäßige Arbeitsbereichsbegrenzung für Agenten-Tools mit expliziten Schutzmechanismen (cross_workspace / all_workspaces) und die Fail-Closed-Genehmigung bei unbeaufsichtigten Läufen bei.
+
 ## Verifikation
 
 ```powershell
@@ -221,7 +241,11 @@ pnpm test
 pnpm build
 ```
 
-`pnpm check` führt Typecheck, Tests, Host-Kompatibilitätsprüfungen und Build aus.
+`pnpm check` führt Typecheck, Tests, Host-Kompatibilitätsprüfungen und Build aus. `pnpm test:host` umgeht Test-Doubles und nutzt den offiziellen AgentLoop, Session V3 und den Berechtigungsdienst mit einem lokalen Modelladapter ohne externe Modellaufrufe.
+
+Plugin-übergreifende Seitenleisten-Regressionen werden mit `pnpm test:composition <dsh-im-connect checkout>` geprüft. Das Skript liest die kompilierte `lib/client.js` von IM ein und prüft Registrierungsreihenfolge, verzögerte Benachrichtigungen und Deinstallationsübergaben über Archive, IM, Scheduled und Codex UI.
+
+`pnpm test:matrix` erstellt isolierte temporäre npm-Umgebungen für jede deklarierte Host-Version, um strikte Peer-Installationen, offizielle Abhängigkeiten und echte AgentLoop-Ausführungen zu verifizieren.
 
 ## Lizenz
 

@@ -173,7 +173,7 @@ Abra **Ajustes → Tareas programadas**:
 Cada ejecución utiliza el prompt, espacio de trabajo, modelo y límites de permisos guardados. No reutiliza aprobaciones del chat original.
 
 `automation_create` y `automation_update` admiten los mismos controles de modelo que los Ajustes (`provider`, `model`, `reasoning_effort`). Al especificar o modificar un modelo, envíe `provider` y `model` como identificadores no vacíos emparejados o ambos como `null` para seguir la selección global; los pares incompletos serán rechazados.
- Cuando se requiera el texto completo del prompt, utilice `include_prompt: true` en `automation_list` o `automation_get` para devolver `promptSnapshot`.
+ `automation_list` devuelve de forma predeterminada los metadatos y el resumen de `lastRun` (estado, hora, `summary` ≤240 caracteres, error), sin devolver el texto completo de `prompt` (informa `promptChars` en su lugar); pase `include_prompt: true` cuando se requiera el texto completo del prompt.
 
 ## Límites de seguridad
 
@@ -212,6 +212,26 @@ dsh --profile web --dump-config
 
 Reinicie DSH Web y recargue el navegador.
 
+El código fuente reside en `src` y se compila en `lib`:
+
+- [src\index.ts](src/index.ts): Complemento de host, herramientas y RPC.
+- [src\service.ts](src/service.ts): Definiciones persistentes, reloj y admisión de ejecuciones.
+- [src\client\index.ts](src/client/index.ts): Página de ajustes y autocompletado en chat.
+- `tests\*.test.ts`: Pruebas de dominio, recurrencia, servicio, cliente y contratos.
+
+La instalación local lee y aplica `cordis.patch.yml`; no copie los archivos de `lib` manualmente.
+
+Tras modificar archivos, ejecute pruebas, recompile y reinstale desde el directorio local:
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+pnpm check
+dsh plugin --profile web add .
+```
+
+Mantenga la política de despacho como máximo una vez, el aislamiento predeterminado de espacio de trabajo con protecciones explícitas (cross_workspace / all_workspaces) y el cierre por fallo en ejecuciones desatendidas.
+
 ## Verificación
 
 ```powershell
@@ -221,7 +241,11 @@ pnpm test
 pnpm build
 ```
 
-`pnpm check` ejecuta comprobación de tipos, pruebas unitarias, compatibilidad con host y compilación.
+`pnpm check` ejecuta comprobación de tipos, pruebas unitarias, compatibilidad con host y compilación. `pnpm test:host` utiliza el AgentLoop oficial, Session V3 y el servicio de permisos con un adaptador de modelo local sin realizar llamadas externas.
+
+Las regresiones de la barra lateral entre complementos se verifican con `pnpm test:composition <dsh-im-connect checkout>`, evaluando la coexistencia y orden de registro con Archive, IM, Scheduled y Codex UI.
+
+`pnpm test:matrix` crea entornos npm temporales para cada versión declarada del host para validar la instalación estricta de peers, dependencias oficiales y la ejecución real de AgentLoop.
 
 ## Licencia
 

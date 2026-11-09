@@ -176,7 +176,7 @@ DSH Web を再起動し、ブラウザを強制再読み込み（Ctrl+F5）し�
 各実行は保存されたプロンプト、ワークスペース、モデル、権限境界を使用し、作成元のチャットで付与された承認は再利用されません。
 
 `automation_create` と `automation_update` は設定画面と同じモデル制御（`provider`、`model`、`reasoning_effort`）をサポートします。`agent_preset` でプリセットを選択し、省略時は宿主デフォルトが適用されます。モデル指定時は `provider` と `model` を空でない ID としてペアで指定するか、両方を `null` としてグローバル追従を指定してください（不完全なペアは拒否されます）。保存された ID はトリミングされ、モデル変更時は明示的な指定がない限り前回の推論レベル上書きが解除されます。
- 完全なプロンプト本文が必要な場合は、`automation_list` または `automation_get` で `include_prompt: true` を指定して `promptSnapshot` を取得します。
+ `automation_list` はデフォルトでメタデータと `lastRun` の要約（ステータス、時刻、240文字以内の `summary`、エラー）のみを返し、`prompt` 全文は返出しません（代わりに `promptChars` を返します）。プロンプトの完全な原文が必要な場合は `include_prompt: true` を指定してください。
 
 ## セキュリティ境界
 
@@ -215,6 +215,26 @@ dsh --profile web --dump-config
 
 DSH Web を再起動し、ブラウザを強制再読み込みしてください。
 
+現在のソースコードは `src` にあり、`lib` にビルドされます：
+
+- [src\index.ts](src/index.ts): 宿主プラグイン、ツール、RPC。
+- [src\service.ts](src/service.ts): 永続化定義、クロック、実行管理。
+- [src\client\index.ts](src/client/index.ts): 設定ページと対話入力補完。
+- `tests\*.test.ts`: ドメイン、反復、サービス、クライアント、パッケージ契約テスト。
+
+ローカルインストールは `cordis.patch.yml` を読み込んで適用します。`lib` ファイルを手動でコピーしないでください。
+
+ファイルを変更した後は、テストを実行し、再ビルドしてローカルディレクトリから再インストールしてください：
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+pnpm check
+dsh plugin --profile web add .
+```
+
+実行コードを変更する際は、最大 1 回のディスパッチポリシー、エージェントツールの明示的なクロスワークスペースガード（cross_workspace / all_workspaces）によるデフォルトのワークスペース拘束、および無人実行時のフェイルクローズ承認を維持してください。
+
 ## 検証
 
 ```powershell
@@ -224,7 +244,11 @@ pnpm test
 pnpm build
 ```
 
-`pnpm check` は型チェック、ユニットテスト、実機宿主互換テスト、ビルドを一括実行します。
+`pnpm check` は型チェック、ユニットテスト、実機宿主互換テスト、ビルドを一括実行します。`pnpm test:host` はランタイムスタブを迂回し、公式の AgentLoop、Session V3、および固定ローカルモデルアダプター付きパーミッションサービスを使用します（外部モデル呼び出しは行いません）。
+
+プラグイン間のサイドバー回帰テストは `pnpm test:composition <dsh-im-connect checkout>` で実行します。IM のビルド成果物（`lib/client.js`）を読み込み、アーカイブ、IM、定期タスク、Codex UI プラグインにわたる合成ロジックとタブ登録順序、遅延通知、アンインストール時の引き継ぎをシミュレーション環境で検証します。
+
+`pnpm test:matrix` はパッケージをビルドし、宣言された各宿主バージョンごとに独立した一時 npm 環境を作成して、厳格な peer インストール、公式依存関係、パッケージ化されたエントリポイント、および実際の AgentLoop 実行を検証します。
 
 ## ライセンス
 
