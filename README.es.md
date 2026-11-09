@@ -172,8 +172,7 @@ Abra **Ajustes → Tareas programadas**:
 
 Cada ejecución utiliza el prompt, espacio de trabajo, modelo y límites de permisos guardados. No reutiliza aprobaciones del chat original.
 
-`automation_create` y `automation_update` admiten los mismos controles de modelo que los Ajustes (`provider`, `model`, `reasoning_effort`). Al especificar o modificar un modelo, envíe `provider` y `model` como identificadores no vacíos emparejados o ambos como `null` para seguir la selección global; los pares incompletos serán rechazados.
- `automation_list` devuelve de forma predeterminada los metadatos y el resumen de `lastRun` (estado, hora, `summary` ≤240 caracteres, error), sin devolver el texto completo de `prompt` (informa `promptChars` en su lugar); pase `include_prompt: true` cuando se requiera el texto completo del prompt.
+`automation_create` y `automation_update` admiten los mismos controles de modelo que los Ajustes (`provider`, `model`, `reasoning_effort`). Al especificar o modificar un modelo, envíe `provider` y `model` como identificadores no vacíos emparejados o ambos como `null` para seguir la selección global; los pares incompletos serán rechazados. `automation_list` devuelve de forma predeterminada los metadatos y el resumen de `lastRun` (estado, hora, `summary` ≤240 caracteres, error), sin devolver el texto completo de `prompt` (informa `promptChars` en su lugar); pase `include_prompt: true` cuando se requiera el texto completo del prompt.
 
 ## Límites de seguridad
 

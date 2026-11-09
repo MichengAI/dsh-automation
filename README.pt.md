@@ -172,8 +172,7 @@ Abra **Ajustes → Tarefas agendadas**:
 
 Cada execução utiliza o prompt, diretório, modelo e permissões salvos, sem reaproveitar aprovações da conversa de origem.
 
-`automation_create` e `automation_update` aceitam os mesmos controles de modelo que as configurações (`provider`, `model`, `reasoning_effort`). Ao especificar um modelo, passe `provider` e `model` como um par de identificadores válidos ou ambos como `null` para herdar o padrão global; pares incompletos são rejeitados.
- `automation_list` retorna por padrão os metadados e o resumo de `lastRun` (status, horário, `summary` ≤240 caracteres, erro), sem retornar o texto completo de `prompt` (informa `promptChars` no lugar); passe `include_prompt: true` quando o texto completo do prompt for necessário.
+`automation_create` e `automation_update` aceitam os mesmos controles de modelo que as configurações (`provider`, `model`, `reasoning_effort`). Ao especificar um modelo, passe `provider` e `model` como um par de identificadores válidos ou ambos como `null` para herdar o padrão global; pares incompletos são rejeitados. `automation_list` retorna por padrão os metadados e o resumo de `lastRun` (status, horário, `summary` ≤240 caracteres, erro), sem retornar o texto completo de `prompt` (informa `promptChars` no lugar); passe `include_prompt: true` quando o texto completo do prompt for necessário.
 
 ## Limites de segurança
 
