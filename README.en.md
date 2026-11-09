@@ -111,7 +111,7 @@ Restart DSH Web and hard-refresh the browser. Pin a version with `@0.1.5` instea
 The plugin follows standard DSH bundle configuration conventions. Options are located at:
 > **Sidebar → Plugins → Click `@michengai/dsh-automation` details** (the host's `plugins.bundle.config` slot).
 
-Three native switches plus a location selector are available:
+Two native switches plus a location selector are available:
 
 ### 1. Sidebar Entry (`sidebarEntry`)
 - **Default**: Enabled (`true`) / Seamless takeover on new installs

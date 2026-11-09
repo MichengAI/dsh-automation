@@ -111,7 +111,7 @@ dsh --profile web --dump-config
 插件遵循 DSH 官方扩展配置规范，配置项位于：
 > **主界面侧边栏「插件」→ 点击 `@michengai/dsh-automation` 详情页**（对应宿主 `plugins.bundle.config` 槽位）。
 
-此处提供三个原生扁平行开关与一个显示位置选择：
+此处提供两个原生扁平行开关与一个显示位置选择：
 
 ### 1. 侧边栏入口 (`sidebarEntry`)
 - **默认状态**：开启（`true`）/ 新装默认平替接管

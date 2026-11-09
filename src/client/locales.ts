@@ -207,6 +207,7 @@ export type AutomationLocaleKey =
   | 'schedule.everyMinutes'
   | 'schedule.dailyAt'
   | 'schedule.weeklyAt'
+  | 'schedule.weekdaySeparator'
   | 'card.pause'
   | 'card.resume'
   | 'card.more'
@@ -235,6 +236,12 @@ export type AutomationLocaleKey =
   | 'time.inMinute'
   | 'time.inHour'
   | 'time.inDay'
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface LocaleNamespaceMap {
+    'dsh-automation': AutomationLocaleKey
+  }
+}
 
 declare module '@deepseek-ai/dsh-client-locale' {
   interface LocaleNamespaceMap {

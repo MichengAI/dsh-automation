@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readdir, readFile } from 'node:fs/promises'
+import { access, readdir, readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { de, en, es, fr, ja, LOCALE_DICTIONARIES, pt, ru, zh } from '../src/client/locales.ts'
 
@@ -71,6 +71,30 @@ test('非中日语言严格禁止 CJK 残留', () => {
   }
 })
 
+test('周几分隔符与相对时间双重近似校验', () => {
+  // CJK 用顿号，西文用逗号+空格
+  for (const code of ['zh', 'ja'] as const) {
+    assert.equal(ALL_LOCALES[code]['schedule.weekdaySeparator'], '、', `[${code}] 需使用顿号`)
+  }
+  for (const code of ['en', 'de', 'es', 'fr', 'pt', 'ru'] as const) {
+    assert.equal(ALL_LOCALES[code]['schedule.weekdaySeparator'], ', ', `[${code}] 需使用逗号+空格`)
+  }
+
+  // history.nextApprox 与 time.withinDay 组合不能出现双重近似词（如 about about / 约 约 / environ environ 等）
+  for (const code of LANG_CODES) {
+    const nextApprox = ALL_LOCALES[code]['history.nextApprox']
+    const within = ALL_LOCALES[code]['time.withinDay'].replace('{count}', '3')
+    const combined = nextApprox.replace('{when}', within)
+
+    assert.doesNotMatch(combined, /about\s+about/i, `[${code}] 出现 about about 重复`)
+    assert.doesNotMatch(combined, /约\s*约/, `[${code}] 出现 约 约 重复`)
+    assert.doesNotMatch(combined, /etwa\s+etwa/i, `[${code}] 出现 etwa etwa 重复`)
+    assert.doesNotMatch(combined, /environ\s+environ/i, `[${code}] 出现 environ environ 重复`)
+    assert.doesNotMatch(combined, /cerca\s+de\s+em\s+cerca/i, `[${code}] 出现 cerca de cerca 重复`)
+    assert.doesNotMatch(combined, /примерно.*примерно/i, `[${code}] 出现 примерно примерно 重复`)
+  }
+})
+
 test('客户端注册用的语言映射与 8 门具名词典一一对应', () => {
   assert.deepEqual(Object.keys(LOCALE_DICTIONARIES).sort(), [...LANG_CODES].sort())
   for (const code of LANG_CODES) {
@@ -78,7 +102,7 @@ test('客户端注册用的语言映射与 8 门具名词典一一对应', () =>
   }
 })
 
-test('locale/*.json 8 语元数据齐备且格式合法', async () => {
+test('locale/*.json 8 语元数据齐备且格式合法，指向的文件真实存在', async () => {
   const localeFiles = await readdir(new URL('../locale', import.meta.url))
   for (const code of LANG_CODES) {
     const fileName = `${code}.json`
@@ -89,5 +113,29 @@ test('locale/*.json 8 语元数据齐备且格式合法', async () => {
     assert.equal(parsed.meta.title, 'Automation')
     assert.ok(typeof parsed.meta.description === 'string' && parsed.meta.description.length > 0)
     assert.ok(typeof parsed.meta.detail === 'string' && parsed.meta.detail.endsWith('.md'))
+
+    // 验证 detail 指向的文件必须真实存在于根目录
+    const detailUrl = new URL(`../${parsed.meta.detail}`, import.meta.url)
+    await assert.doesNotReject(access(detailUrl), `[${fileName}] meta.detail 指向的文件不存在: ${parsed.meta.detail}`)
   }
+})
+
+test('package.json 清单资源契约与文件列表', async () => {
+  const pkgRaw = await readFile(new URL('../package.json', import.meta.url), 'utf8')
+  const pkg = JSON.parse(pkgRaw) as {
+    icon?: string
+    exports?: Record<string, string>
+    files?: string[]
+  }
+
+  // 1. icon 存在性
+  assert.ok(pkg.icon, 'package.json 必须声明 icon')
+  await assert.doesNotReject(access(new URL(`../${pkg.icon}`, import.meta.url)), `icon 文件不存在: ${pkg.icon}`)
+
+  // 2. exports["./icon"] 存在性
+  assert.ok(pkg.exports?.['./icon'], 'package.json exports 缺少 ./icon')
+  await assert.doesNotReject(access(new URL(`../${pkg.exports['./icon']}`, import.meta.url)), `exports["./icon"] 文件不存在`)
+
+  // 3. files 不得包含不存在的 docs
+  assert.ok(!pkg.files?.includes('docs'), 'files 包含不存在的 docs 目录')
 })

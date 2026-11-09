@@ -32,14 +32,18 @@ const OFFICIAL_SCHEDULE_LABELS: readonly string[] = [
   'Tarefas de automação',
 ]
 
-/** 属性选择器里的双引号与反斜杠必须转义，否则标签里的特殊字符会让整条规则失效。 */
+/** 属性选择器里的双引号与反斜杠必须转义，控制字符与换行折叠为空格，避免破坏选择器语法。 */
 function cssAttributeValue(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/[\r\n\f]/g, ' ')
 }
 
-/** 生成屏蔽规则：按传入的标签清单一律去重、去空白并转义，调用方负责合并运行时标签与兜底清单。 */
+/** 生成屏蔽规则：按传入的标签清单一律去重、去空白并转义，调用方负责合并运行时标签与兜底清单。无标签时返回空串。 */
 export function hideOfficialScheduleCss(labels: readonly string[] = OFFICIAL_SCHEDULE_LABELS): string {
   const unique = [...new Set(labels.map(label => label.trim()).filter(label => label !== ''))]
+  if (unique.length === 0) return ''
   const selectors = unique.map(label => `nav button[aria-label="${cssAttributeValue(label)}"]`)
   return `\n${selectors.join(',\n')} {\n  display: none !important;\n}\n`
 }

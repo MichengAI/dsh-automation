@@ -3,6 +3,7 @@ import test from 'node:test'
 import { createElement } from 'react'
 import {
   setupSidebarEntry,
+  AutomationBundleConfigCard,
   BUNDLE_KEY,
   SIDEBAR_PANEL_ID,
   SIDEBAR_PANEL_ORDER,
@@ -11,6 +12,8 @@ import {
   STORAGE_KEY_SIDEBAR_ENTRY,
   STORAGE_KEY_HIDE_OFFICIAL,
 } from '../src/client/bundle-config.tsx'
+import { formatSchedule } from '../src/client/helpers.ts'
+import { de, en, zh } from '../src/client/locales.ts'
 
 test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async () => {
   const slotRegistrations = new Map<string, { meta: any; component: any }>()
@@ -274,4 +277,47 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
   assert.equal(taskTreeCallbackValue, true, 'onTaskTreeSessionsChange 回调收到通知')
 
   ;(globalThis as any).localStorage = origLocal
+})
+
+test('设置卡片仅渲染 2 个 Switch 与 1 个 SegmentedControl，共 3 行', () => {
+  const card = AutomationBundleConfigCard({
+    t: (k: string) => k,
+    onLocationChange: () => {},
+    onToggleHideOfficialSchedule: () => {},
+    onToggleTaskTreeSessions: () => {},
+  })
+
+  // card 为 React.Fragment，包含 rows 数组
+  const rows = card.props.children as Array<{ props?: { children?: unknown } }>
+  assert.equal(rows.length, 3, '卡片必须严格包含 3 行配置')
+})
+
+test('周几排程在不同语言下的分隔符测试（西文逗号空格 vs 中日文顿号）', () => {
+  const schedule = {
+    kind: 'weekly' as const,
+    weekdays: [1, 3, 5] as const,
+    time: '09:00',
+  }
+
+  const createT = (dict: Record<string, string>) => (k: string, params?: Record<string, string | number>) => {
+    let text = dict[k] ?? k
+    if (params) {
+      for (const [pKey, pVal] of Object.entries(params)) {
+        text = text.replace(new RegExp(`\\{${pKey}\\}`, 'g'), String(pVal))
+      }
+    }
+    return text
+  }
+
+  // 中文：周一、周三、周五 · 09:00
+  const zhText = formatSchedule(schedule, createT(zh as any) as any)
+  assert.equal(zhText, '周一、周三、周五 · 09:00')
+
+  // 英文：Mon, Wed, Fri · 09:00
+  const enText = formatSchedule(schedule, createT(en as any) as any)
+  assert.equal(enText, 'Mon, Wed, Fri · 09:00')
+
+  // 德文：Mo, Mi, Fr · 09:00
+  const deText = formatSchedule(schedule, createT(de as any) as any)
+  assert.equal(deText, 'Mo, Mi, Fr · 09:00')
 })
