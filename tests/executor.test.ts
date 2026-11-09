@@ -246,6 +246,74 @@ test('增量订阅只保留摘要需要的 turn 边界事件', () => {
   watched.stop()
 })
 
+test('执行器把任务配置的推理档位写入 AgentOptions', async () => {
+  const definition = createDefinition({
+    id: 'automation_effort', name: '档位检查', prompt: '检查推理档位。',
+    schedule: { kind: 'daily', time: '09:00', timeZone: 'Asia/Shanghai' },
+    workspaceId: 'ws_1', cwd: 'D:\\work\\demo', agentPreset: 'standard',
+    provider: 'magpie-responses', model: 'codex/gpt-6-luna', reasoningEffort: 'max',
+    permissionPreset: 'danger-full-access',
+    createdBy: { kind: 'web', sessionId: 'source' }, now: '2026-09-06T00:00:00.000Z',
+  })
+  const run = createScheduledRun(definition, '2026-09-06T01:00:00.000Z')
+  assert.equal(run.targetSnapshot.reasoningEffort, 'max')
+
+  const events: SessionEventLike[] = []
+  const listeners: Array<(session: unknown, event: SessionEventLike) => void> = []
+  const session = {
+    get seq() { return events.length },
+    append(type: string, data: Record<string, unknown>) {
+      const event = { seq: events.length, type, data }
+      events.push(event)
+      for (const listener of listeners) listener(session, event)
+    },
+  }
+  const agent = {
+    session,
+    async whenIdle() {},
+    followup() {
+      session.append('turn/start', {})
+      session.append('turn/end', { reason: { kind: 'completed' } })
+    },
+    cancel() {},
+  }
+  let captured: Record<string, unknown> | undefined
+  const ctx = {
+    workspaceRegistry: { get: () => ({ path: definition.cwd, status: async () => 'ok', attachSession: async () => {} }) },
+    agentDefaultModel: { currentSelection: () => ({ provider: 'fallback', model: 'fallback' }) },
+    agentPresets: { mount: async () => {} },
+    permissionPresets: { set() {} },
+    agents: {
+      withoutInitiator: (callback: () => unknown) => callback(),
+      async create(options: { agentOptions: Record<string, unknown>; setup: (ctx: unknown, agent?: unknown) => Promise<void> }) {
+        captured = options.agentOptions
+        await options.setup({}, agent)
+        return { agent, async dispose() {} }
+      },
+    },
+    sessions: { flush: async () => {} },
+    get: () => undefined,
+    on(name: string, listener: (session: unknown, event: SessionEventLike) => void) {
+      if (name !== 'session/event') return () => {}
+      listeners.push(listener)
+      return () => {
+        const index = listeners.indexOf(listener)
+        if (index >= 0) listeners.splice(index, 1)
+      }
+    },
+  }
+  const result = await executeAutomationRun(ctx as never, definition, run, {
+    sessionId: 'automation_effort',
+    runTimeoutMs: 1_000,
+  })
+  assert.equal(result.status, 'succeeded')
+  assert.deepEqual(captured, {
+    provider: 'magpie-responses',
+    model: 'codex/gpt-6-luna',
+    reasoningEffort: 'max',
+  })
+})
+
 function sampleRun() {
   const definition = createDefinition({
     id: 'automation_unload', name: '卸载检查', prompt: '检查卸载。',

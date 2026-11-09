@@ -32,7 +32,12 @@ declare module '@deepseek-ai/dsh-agent' {
     model: string
     reasoningEffort?: string
   }
-  export function installModelSelection(agentCtx: unknown, selection: {
+  /**
+   * DSH 0.2.0-rc.2 → 0.2.1-rc.5 accept a selection ref as the second argument;
+   * DSH 0.2.2-rc.1 accepts only agentCtx and ignores extra arguments, so the
+   * initial reasoning effort must also travel through AgentOptions.
+   */
+  export function installModelSelection(agentCtx: unknown, selection?: {
     current: ModelSelection | undefined
     assembled: ModelSelection | undefined
   }): () => void

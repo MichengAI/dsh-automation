@@ -222,10 +222,19 @@ export async function executeAutomationRun(
       sessionId,
       ...(config.signal === undefined ? {} : { signal: config.signal }),
       meta: { cwd: target.cwd, agentPreset: target.agentPreset },
-      agentOptions: { provider: selection.provider, model: selection.model },
+      // DSH 0.2.2-rc.1 removed the selection argument from installModelSelection
+      // and applies the initial route (including reasoningEffort) from AgentOptions.
+      // The effort must travel here to be recorded in the request header.
+      agentOptions: {
+        provider: selection.provider,
+        model: selection.model,
+        ...(selection.reasoningEffort === undefined ? {} : { reasoningEffort: selection.reasoningEffort }),
+      },
       setup: async (agentCtx: Context, createdAgent?: SetupAgent) => {
         if (ctx.agentPresets === undefined) throw new Error('Host 未提供 agentPresets 服务。')
         await ctx.agentPresets.mount(agentCtx, target.agentPreset)
+        // DSH 0.2.0-rc.2 → 0.2.1-rc.5 select the model through the second argument;
+        // DSH 0.2.2-rc.1 accepts only agentCtx and ignores it (AgentOptions above wins).
         installModelSelection(agentCtx, { current: selection, assembled: undefined })
         if (createdAgent === undefined) throw new Error('automation setup has no scoped Agent')
         const agent = createdAgent
