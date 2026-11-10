@@ -150,12 +150,10 @@ Deux commutateurs natifs et un sélecteur d'emplacement sont mis à disposition 
     runTimeoutMinutes: 60              # Facultatif : délai d'expiration en minutes (défaut : 60, max : 1440)
     misfireGraceMinutes: 15            # Facultatif : tolérance pour les lancements manqués en minutes (défaut : 15)
     historyLimit: 200                  # Facultatif : nombre d'enregistrements d'historique conservés (défaut : 200)
-    updater: false                     # Facultatif : verrouillage des mises à jour en entreprise (alias : onlineUpdate: false)
 ```
 
 ## Mise à jour
 
-Le bouton de mise à jour dans les paramètres du plugin a été supprimé. Pour mettre à jour, réinstallez la dernière version dans le même profil avec la commande `dsh plugin … add @latest`, redémarrez DSH et actualisez le navigateur. En entreprise, `updater: false` ou `onlineUpdate: false` dans Cordis permet de bloquer les requêtes de mise à jour (HTTP 403).
 
 ## Utilisation
 

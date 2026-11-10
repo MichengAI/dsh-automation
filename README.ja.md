@@ -151,14 +151,12 @@ DSH Web を再起動し、ブラウザを強制再読み込み（Ctrl+F5）し�
     runTimeoutMinutes: 60              # 任意：タスクタイムアウト（分、デフォルト：60、最大：1440）
     misfireGraceMinutes: 15            # 任意：遅延実行の許容時間（分、デフォルト：15、最大：10080）
     historyLimit: 200                  # 任意：保持する実行履歴件数（デフォルト：200、最大：5000）
-    updater: false                     # 任意：エンタープライズ向け更新ロック（alias: onlineUpdate: false）
 ```
 
 ## アップデート方法
 
 設定ヘッダーにあったインプラグイン更新ボタン（バージョンバッジと更新確認ボタン）は廃止されました。インストール時と同様に `dsh plugin … add @latest` コマンドで再インストールし、DSH を再起動してブラウザを強制更新してください。
 
-企業管理環境や VibeDev などのインデックスでは、Cordis 設定で `updater: false` または `onlineUpdate: false` を指定することで、サーバー側の更新 API を拒否（HTTP 403）できます。
 
 ## 使用方法
 

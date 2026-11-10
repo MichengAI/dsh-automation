@@ -4,18 +4,15 @@ export type EntryLocation = 'both' | 'sidebar' | 'settings';
 export interface PersistedSettings {
     entryLocation?: EntryLocation | undefined;
     sidebarEntry?: boolean | undefined;
-    onlineUpdate?: boolean | undefined;
     hideOfficialSchedule?: boolean | undefined;
     taskTreeSessions?: boolean | undefined;
 }
 export declare class SettingsManager {
     private readonly file;
-    private readonly hostUpdateDisabled;
     private store;
     constructor(options: {
         ctx: Context;
         stateDir?: string;
-        hostUpdateDisabled?: boolean;
     });
     private load;
     private flush;
@@ -27,8 +24,5 @@ export declare class SettingsManager {
     setHideOfficialSchedule(enabled: boolean): Promise<boolean>;
     getTaskTreeSessions(): boolean;
     setTaskTreeSessions(enabled: boolean): Promise<boolean>;
-    isHostUpdateDisabled(): boolean;
-    isUpdateEnabled(): boolean;
-    setOnlineUpdate(enabled: boolean): Promise<boolean>;
 }
 export declare function registerSettingsApi(ctx: Context, manager: SettingsManager): () => void;

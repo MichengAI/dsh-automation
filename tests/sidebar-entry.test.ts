@@ -55,8 +55,6 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
   } as any
 
   let clientSidebar = false
-  let clientUpdate = true
-  let clientLocked = false
   const mockWorkspaces = { create: (input: any) => ({ id: 'ws-mock-id', ...input }) }
 
   const controller = setupSidebarEntry(mockCtx, {
@@ -68,15 +66,6 @@ test('客户端侧边栏入口与 bundle.config 开关槽位生命周期', async
           return { ok: true, enabled: clientSidebar }
         }
         return { ok: true, enabled: clientSidebar }
-      }
-      if (path === '/online-update') {
-        if (options?.method === 'POST') {
-          if (clientLocked) throw new Error('locked')
-          const body = JSON.parse(options.body as string)
-          clientUpdate = body.enabled
-          return { ok: true, enabled: clientUpdate }
-        }
-        return { ok: true, enabled: clientUpdate, locked: clientLocked }
       }
       throw new Error('unexpected path: ' + path)
     },

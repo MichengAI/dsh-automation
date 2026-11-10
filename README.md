@@ -151,14 +151,12 @@ dsh --profile web --dump-config
     runTimeoutMinutes: 60              # 可选：单次任务超时时间（分钟），默认 60，上限 1440
     misfireGraceMinutes: 15            # 可选：错过执行时间的宽限期（分钟），默认 15，上限 10080
     historyLimit: 200                  # 可选：历史运行记录保留上限，默认 200，上限 5000
-    updater: false                     # 可选：企业级锁定更新（同 onlineUpdate: false）
 ```
 
 ## 更新方式
 
 插件内的在线更新入口（设置标题旁的「检查更新」按钮与版本提示）已移除，升级统一使用上面「安装」一节的 `dsh plugin … add @latest` 命令重装到同一 Profile，随后重启 DSH 并在浏览器硬刷新。
 
-面向精选插件索引（如 VibeDev）或企业合规环境，仍可在 Cordis 配置中声明 `updater: false` 或 `onlineUpdate: false`：服务端更新接口会对任何版本检查与安装请求返回 `HTTP 403`。
 
 ## 使用
 

@@ -151,14 +151,12 @@ The following configuration parameters can be declared under your profile's `cor
     runTimeoutMinutes: 60              # Optional: task execution timeout in minutes (default: 60, max: 1440)
     misfireGraceMinutes: 15            # Optional: grace window for missed runs in minutes (default: 15, max: 10080)
     historyLimit: 200                  # Optional: max audit log entries to retain (default: 200, max: 5000)
-    updater: false                     # Optional: enterprise lockdown for updates (alias: onlineUpdate: false)
 ```
 
 ## Updating
 
 The in-plugin update entry (the version chip and **Check for updates** button in the settings header) has been removed. Upgrade by reinstalling into the same profile with the `dsh plugin … add @latest` command from the installation section above, then restart DSH and hard-refresh the browser.
 
-Curated plugin indexes (such as VibeDev) and restricted enterprise environments can still declare `updater: false` or `onlineUpdate: false` in the Cordis configuration: the server-side update API then returns `HTTP 403` for every check and install request.
 
 ## Usage
 

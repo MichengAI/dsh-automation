@@ -2,7 +2,6 @@ import type { Context } from '@deepseek-ai/cordis'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
-import { resolveUpdateRuntime } from './plugin-updater.ts'
 
 export const SETTINGS_API_HEADER = 'x-michengai-client'
 const MAX_SETTINGS_BODY_BYTES = 64 * 1024
@@ -12,7 +11,6 @@ export type EntryLocation = 'both' | 'sidebar' | 'settings'
 export interface PersistedSettings {
   entryLocation?: EntryLocation | undefined
   sidebarEntry?: boolean | undefined
-  onlineUpdate?: boolean | undefined
   hideOfficialSchedule?: boolean | undefined
   taskTreeSessions?: boolean | undefined
 }
@@ -24,12 +22,18 @@ type UpdateContext = Context & {
 
 function resolveProfileDir(ctx: Context): string {
   try {
-    return resolveUpdateRuntime(ctx as any).profileDir
-  } catch {
-    const env = process.env
-    const home = homedir()
-    return resolve(env.DSH_PROFILE_DIR ?? resolve(home, '.dsh', 'profiles', 'web'))
-  }
+    const profiles = (ctx as any).get?.('desktopProfiles')
+    if (profiles?.current?.dir && typeof profiles.current.dir === 'string' && isAbsolute(profiles.current.dir)) {
+      return resolve(profiles.current.dir)
+    }
+    const launched = (ctx as any).get?.('profileContext')
+    if (launched?.dir && typeof launched.dir === 'string' && isAbsolute(launched.dir)) {
+      return resolve(launched.dir)
+    }
+  } catch {}
+  const env = process.env
+  const home = homedir()
+  return resolve(env.DSH_PROFILE_DIR ?? resolve(home, '.dsh', 'profiles', 'web'))
 }
 
 function header(request: { headers?: Record<string, string | string[] | undefined> }, name: string): string | undefined {
@@ -49,15 +53,12 @@ function validateApiMutation(request: { method?: string; headers?: Record<string
 
 export class SettingsManager {
   private readonly file: string
-  private readonly hostUpdateDisabled: boolean
   private store: PersistedSettings = {}
 
   constructor(options: {
     ctx: Context
     stateDir?: string
-    hostUpdateDisabled?: boolean
   }) {
-    this.hostUpdateDisabled = options.hostUpdateDisabled === true
     if (options.stateDir !== undefined && options.stateDir !== '') {
       this.file = isAbsolute(options.stateDir) ? join(options.stateDir, 'settings.json') : resolve(options.stateDir, 'settings.json')
     } else {
@@ -81,7 +82,6 @@ export class SettingsManager {
         this.store = {
           entryLocation,
           sidebarEntry: typeof item.sidebarEntry === 'boolean' ? item.sidebarEntry : undefined,
-          onlineUpdate: typeof item.onlineUpdate === 'boolean' ? item.onlineUpdate : undefined,
           hideOfficialSchedule: typeof item.hideOfficialSchedule === 'boolean' ? item.hideOfficialSchedule : undefined,
           taskTreeSessions: typeof item.taskTreeSessions === 'boolean' ? item.taskTreeSessions : undefined,
         }
@@ -148,23 +148,6 @@ export class SettingsManager {
   async setTaskTreeSessions(enabled: boolean): Promise<boolean> {
     if (typeof enabled !== 'boolean') throw new Error('enabled 必须是布尔值')
     this.store.taskTreeSessions = enabled
-    this.flush()
-    return enabled
-  }
-
-  isHostUpdateDisabled(): boolean {
-    return this.hostUpdateDisabled
-  }
-
-  isUpdateEnabled(): boolean {
-    if (this.hostUpdateDisabled) return false
-    return this.store.onlineUpdate !== false
-  }
-
-  async setOnlineUpdate(enabled: boolean): Promise<boolean> {
-    if (typeof enabled !== 'boolean') throw new Error('enabled 必须是布尔值')
-    if (this.hostUpdateDisabled) throw new Error('在线更新已被宿主配置锁定禁用')
-    this.store.onlineUpdate = enabled
     this.flush()
     return enabled
   }
@@ -276,44 +259,6 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
     },
   })
 
-  const offUpdate = host.webServer.register({
-    kind: 'exact',
-    path: '/api/michengai/dsh-automation/online-update',
-    handler: async (request: any, response: any) => {
-      if (!checkAuthAndMutation(request, response)) return
-      const method = request.method
-      if (method === 'GET' || method === 'HEAD') {
-        if (method === 'HEAD') {
-          response.writeHead(200, { 'cache-control': 'no-store' })
-          response.end()
-          return
-        }
-        json(response, 200, {
-          ok: true,
-          enabled: manager.isUpdateEnabled(),
-          locked: manager.isHostUpdateDisabled(),
-        })
-        return
-      }
-      if (method === 'POST') {
-        if (manager.isHostUpdateDisabled()) {
-          json(response, 403, { ok: false, error: '在线更新已被宿主配置锁定禁用' })
-          return
-        }
-        const bodyRes = await readBody(request)
-        if (!bodyRes.ok || !bodyRes.data || typeof bodyRes.data.enabled !== 'boolean') {
-          json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? 'enabled 必须是布尔值' })
-          return
-        }
-        const enabled = await manager.setOnlineUpdate(bodyRes.data.enabled)
-        json(response, 200, { ok: true, enabled })
-        return
-      }
-      response.writeHead(405, { allow: 'GET, HEAD, POST' })
-      response.end()
-    },
-  })
-
   const offOfficial = host.webServer.register({
     kind: 'exact',
     path: '/api/michengai/dsh-automation/official-schedule',
@@ -382,7 +327,6 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
 
   return () => {
     try { offSidebar() } catch {}
-    try { offUpdate() } catch {}
     try { offOfficial() } catch {}
     try { offTaskTreeSessions() } catch {}
   }

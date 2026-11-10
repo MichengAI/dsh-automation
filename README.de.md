@@ -150,12 +150,10 @@ Es stehen zwei native Schalter und eine Anzeigeort-Auswahl zur Verfügung:
     runTimeoutMinutes: 60              # Optional: Zeitlimit pro Aufgabe in Minuten (Standard: 60, Max: 1440)
     misfireGraceMinutes: 15            # Optional: Toleranzfenster für verpasste Ausführungen (Minuten, Standard: 15)
     historyLimit: 200                  # Optional: Maximale Anzahl an Verlaufseinträgen (Standard: 200)
-    updater: false                     # Optional: Update-Sperre für Unternehmensumgebungen (alias: onlineUpdate: false)
 ```
 
 ## Updates
 
-Die Aktualisierungsschaltfläche in den Plugin-Einstellungen wurde entfernt. Zur Aktualisierung installieren Sie einfach die neueste Version im selben Profil via `dsh plugin … add @latest`, starten DSH neu und aktualisieren den Browser. In gesperrten Unternehmensumgebungen kann `updater: false` oder `onlineUpdate: false` in Cordis konfiguriert werden, um Update-Anfragen abzuweisen (HTTP 403).
 
 ## Bedienung
 

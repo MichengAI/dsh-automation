@@ -150,12 +150,10 @@ São fornecidos dois interruptores nativos e um seletor de localização:
     runTimeoutMinutes: 60              # Opcional: tempo limite da tarefa em minutos (padrão: 60, máx: 1440)
     misfireGraceMinutes: 15            # Opcional: tolerância para execuções perdidas (minutos)
     historyLimit: 200                  # Opcional: total de registros de histórico (padrão: 200)
-    updater: false                     # Opcional: bloqueio de atualizações corporativas (alias: onlineUpdate: false)
 ```
 
 ## Atualizações
 
-O botão interno de atualização foi removido. Para atualizar, reinstale a versão mais recente com o comando `dsh plugin … add @latest`, reinicie o DSH e recarregue o navegador. Em redes corporativas fechadas, declare `updater: false` ou `onlineUpdate: false` no Cordis para rejeitar requisições de atualização (HTTP 403).
 
 ## Como usar
 
