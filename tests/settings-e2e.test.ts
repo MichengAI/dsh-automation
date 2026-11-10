@@ -33,7 +33,7 @@ test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', as
     },
   }
 
-  const manager = new SettingsManager({ ctx: fakeCtx, stateDir: tmpDir, hostUpdateDisabled: false })
+  const manager = new SettingsManager({ ctx: fakeCtx, stateDir: tmpDir })
   registerSettingsApi(fakeCtx, manager)
 
   const server = http.createServer(async (req, res) => {
