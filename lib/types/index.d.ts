@@ -28,6 +28,12 @@ export declare function needsHumanApproval(exec: {
     readonly signal: AbortSignal;
 }, isMountedAgent: boolean, policy?: SessionApprovalPolicy): boolean;
 export declare function humanApprovalReason(toolName: string): string;
+/**
+ * 判断 Agent 是否为应挂载管理工具的顶层根会话。
+ * 旧宿主沿用 ctx.agents.roots()；新宿主按会话 origin/delegationDepth、
+ * 运行选项 subagentDepth 以及可选 subagents.rootOf() 共同拦截子代理。
+ */
+export declare function isRootAgent(ctx: Context, agent: any): boolean;
 export declare function apply(ctx: Context, rawConfig: Config): Promise<void>;
 export type * from './types.ts';
 export { automationDomainSpec } from './domain.ts';

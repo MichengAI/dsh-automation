@@ -76,8 +76,8 @@ Para um ambiente de desktop, baixe o [DSH Codex Desktop](https://github.com/Mich
 
 ## Pré-requisitos
 
-- Compatibilidade com o host: linha completa DeepSeek Harness `0.2.x` (`>=0.2.0-rc.1 <0.3.0-0`), validado em `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5` e `0.2.2-rc.1`, com suporte garantido a versões RC futuras. Hosts no `0.1.x` devem permanecer na versão `0.1.66` do plugin. Faça backup do armazenamento e das sessões antes de atualizar o host; a versão `0.2.0` grava sessões no formato V4, que se tornam ilegíveis após um downgrade.
-- As dependências peerDependencies oficiais abrangem a faixa `>=0.2.0-rc.1 <0.3.0-0`. As dependências de desenvolvimento são fixadas em `0.2.2-rc.1`. Versões legadas e alterações incompatíveis da linha `0.3.0` são barradas. `@deepseek-ai/dsh-agent-presets` e `@deepseek-ai/dsh-agent-preset-registry` não são peers, utilizando o serviço `agentPresets` do host.
+- Compatibilidade com o host: linha completa DeepSeek Harness `0.2.x` (`>=0.2.0-rc.1 <0.3.0-0`), validado em `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5`, `0.2.2-rc.1` e `0.2.2-rc.2`, com suporte garantido a versões RC futuras. Hosts no `0.1.x` devem permanecer na versão `0.1.66` do plugin. Faça backup do armazenamento e das sessões antes de atualizar o host; a versão `0.2.0` grava sessões no formato V4, que se tornam ilegíveis após um downgrade.
+- As dependências peerDependencies oficiais abrangem a faixa `>=0.2.0-rc.1 <0.3.0-0`. As dependências de desenvolvimento são fixadas em `0.2.2-rc.2`. Versões legadas e alterações incompatíveis da linha `0.3.0` são barradas. `@deepseek-ai/dsh-agent-presets` e `@deepseek-ai/dsh-agent-preset-registry` não são peers, utilizando o serviço `agentPresets` do host.
 - Outras versões situam-se fora do escopo homologado.
 - O pacote não sobrescreve a entrada Connection oficial. Cada host mantém suas próprias dependências e opções; a automação registra seus endpoints RPC em escopo próprio.
 - Instalação operacional do DeepSeek Harness Web com comando `dsh` no PowerShell.

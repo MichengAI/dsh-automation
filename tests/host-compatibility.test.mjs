@@ -1,8 +1,10 @@
 // 独立进程加载 npm 宿主实现，不使用 register-dsh-stubs；模型响应固定且不联网。
 import assert from "node:assert/strict";
 import test from "node:test";
+import { mkdtempSync, rmSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import { Context, Inject } from "@deepseek-ai/cordis";
@@ -20,6 +22,7 @@ import AgentLoop from "@deepseek-ai/dsh-agent-loop";
 import ApprovalService from "@deepseek-ai/dsh-user-approval";
 import PermissionPresets from "@deepseek-ai/dsh-permission-presets";
 import * as Connection from "@deepseek-ai/dsh-client-connection";
+import { apply as applyAutomation, inject as automationInject } from "../src/index.ts";
 import { registerAutomationRpc } from "../src/rpc.ts";
 import { createDefinition, createScheduledRun } from "../src/domain.ts";
 import { executeAutomationRun } from "../src/executor.ts";
@@ -261,4 +264,124 @@ test("真实 DSH Schema 可编译全部自动化管理工具", async () => {
     }
   }
   dispose();
+});
+
+test(`${hostVersion} 真实 AgentRegistry 下 apply 正常启动并仅向根会话挂载管理工具`, {
+  timeout: 10_000,
+}, async (t) => {
+  const ctx = new Context();
+  const stateDir = mkdtempSync(join(tmpdir(), "dsh-automation-compat-apply-"));
+  t.after(async () => {
+    await ctx.fiber.dispose();
+    rmSync(stateDir, { recursive: true, force: true });
+  });
+  await ctx.plugin(LlmRuntime);
+  await ctx.plugin(SessionStore);
+  await ctx.plugin(SessionProjectionRegistry);
+  await ctx.plugin(SystemPrompt);
+  await ctx.plugin(ToolRuntime);
+  await ctx.plugin(AgentRegistry);
+  await ctx.plugin(ApprovalService);
+  ctx.provide("shell", { sandboxMode: "workspace-write" });
+  await ctx.plugin(PermissionPresets, { defaultPreset: "workspace-write" });
+  await ctx.plugin(AgentLoop, { agents: [] });
+  ctx.llm.registerAdapter(["compat"], new FixedAdapter());
+  const cwd = process.cwd();
+  const memTable = () => {
+    const map = new Map();
+    return {
+      get: (k) => map.get(k),
+      entries: () => map.entries(),
+      keys: () => map.keys(),
+      get size() { return map.size; },
+      async put(k, v) { map.set(k, v); },
+      async delete(k) { return map.delete(k); },
+      async update(k, fn) { const n = fn(map.get(k)); map.set(k, n); return n; },
+    };
+  };
+  const tables = new Map([["definitions", memTable()], ["runs", memTable()]]);
+  ctx.provide("storageDomain", {
+    async open() {
+      return {
+        name: "dsh_automation",
+        table: (name) => tables.get(name),
+        async close() {},
+      };
+    },
+  });
+  ctx.provide("workspaceRegistry", {
+    list: () => [],
+    get: () => undefined,
+    resolveByPath: async () => undefined,
+  });
+  ctx.provide("agentDefaultModel", {
+    currentSelection: () => ({ provider: "compat", model: "fixed" }),
+  });
+  ctx.provide("agentPresets", {
+    defaultId: "standard",
+    async mount() {},
+  });
+  ctx.provide("connection", {
+    rpc: { handle: () => async () => {} },
+  });
+  ctx.provide("webServer", {
+    register: () => () => {},
+  });
+
+  const legacyRoots = typeof ctx.agents.roots === "function";
+  const createChild = async (sessionId, rootAgent) => ctx.agents.create(
+    legacyRoots
+      ? {
+          sessionId,
+          parentAgent: rootAgent,
+          meta: { cwd },
+          agentOptions: { provider: "compat", model: "fixed" },
+          setup: async () => {},
+        }
+      : {
+          sessionId,
+          meta: { cwd, origin: "subagent", delegationDepth: 1 },
+          agentOptions: { provider: "compat", model: "fixed", subagentDepth: 1 },
+          setup: async () => {},
+        },
+  );
+
+  const startupRoot = await ctx.agents.create({
+    sessionId: "compat-apply-startup-root",
+    meta: { cwd },
+    agentOptions: { provider: "compat", model: "fixed" },
+    setup: async () => {},
+  });
+  const startupChild = await createChild("compat-apply-startup-child", startupRoot.agent);
+
+  await ctx.plugin({
+    inject: automationInject,
+    apply: (pluginCtx) => applyAutomation(pluginCtx, {
+      runTimeoutMinutes: 60,
+      misfireGraceMinutes: 15,
+      historyLimit: 200,
+      stateDir,
+    }),
+  });
+
+  assert.ok(ctx.tools.get("automation_create", startupRoot.agent) !== undefined);
+  assert.equal(ctx.tools.get("automation_create", startupChild.agent), undefined);
+
+  const liveRoot = await ctx.agents.create({
+    sessionId: "compat-apply-live-root",
+    meta: { cwd },
+    agentOptions: { provider: "compat", model: "fixed" },
+    setup: async () => {},
+  });
+  const liveChild = await createChild("compat-apply-live-child", liveRoot.agent);
+  const ownedAutomation = await ctx.agents.create({
+    sessionId: "dsh-automation-session-compat-owned",
+    meta: { cwd },
+    agentOptions: { provider: "compat", model: "fixed" },
+    setup: async () => {},
+  });
+
+  assert.ok(ctx.tools.get("automation_create", liveRoot.agent) !== undefined);
+  assert.equal(ctx.tools.get("automation_create", liveChild.agent), undefined);
+  assert.equal(ctx.tools.get("automation_create", ownedAutomation.agent), undefined);
 });

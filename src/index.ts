@@ -76,6 +76,56 @@ export function humanApprovalReason(toolName: string): string {
     : '此操作会创建或扩大无人值守的未来工作。请核对任务说明、计划、工作区和权限边界。'
 }
 
+/**
+ * 枚举当前存活的候选 Agent。
+ * DSH 0.2.0-rc.1 ～ 0.2.2-rc.1 提供 ctx.agents.roots()；0.2.2-rc.2 起宿主移除 roots()，
+ * 改由 ctx.agents.list() 枚举存活实例并交由 isRootAgent 过滤委派子代理。
+ */
+function listLiveAgents(ctx: Context): readonly any[] {
+  const agents = ctx.agents as {
+    roots?(): readonly any[]
+    list?(): readonly any[]
+  } | undefined
+  if (typeof agents?.roots === 'function') return agents.roots()
+  if (typeof agents?.list === 'function') return agents.list()
+  return []
+}
+
+/**
+ * 判断 Agent 是否为应挂载管理工具的顶层根会话。
+ * 旧宿主沿用 ctx.agents.roots()；新宿主按会话 origin/delegationDepth、
+ * 运行选项 subagentDepth 以及可选 subagents.rootOf() 共同拦截子代理。
+ */
+export function isRootAgent(ctx: Context, agent: any): boolean {
+  const agents = ctx.agents as { roots?(): readonly any[] } | undefined
+  if (typeof agents?.roots === 'function') {
+    return agents.roots().includes(agent)
+  }
+  const header = agent?.session?.header as {
+    readonly origin?: unknown
+    readonly delegationDepth?: unknown
+  } | undefined
+  if (header?.origin === 'subagent') return false
+  if (typeof header?.delegationDepth === 'number' && header.delegationDepth > 0) return false
+  if (typeof agent?.options?.subagentDepth === 'number' && agent.options.subagentDepth > 0) return false
+
+  let subagents: { rootOf?(caller: unknown): unknown } | undefined
+  try {
+    subagents = ctx.get('subagents') as { rootOf?(caller: unknown): unknown } | undefined
+  } catch {
+    subagents = undefined
+  }
+  if (typeof subagents?.rootOf === 'function') {
+    try {
+      // 保留 subagents 服务实例的 this 上下文，避免 Cordis traceable 代理丢失接收者。
+      if (subagents.rootOf(agent) !== agent) return false
+    } catch {
+      return false
+    }
+  }
+  return true
+}
+
 export async function apply(ctx: Context, rawConfig: Config): Promise<void> {
   const settingsManager = new SettingsManager({
     ctx,
@@ -125,14 +175,14 @@ export async function apply(ctx: Context, rawConfig: Config): Promise<void> {
       const mountTools = (agent: any): void => {
         if (!alive || agentTools.has(agent)
           || service.ownsSession(String(agent.id), agent.session)) return
-        if (!ctx.agents.roots().includes(agent)) return
+        if (!isRootAgent(ctx, agent)) return
         const dispose = agent.ctx.effect(
           () => registerAutomationTools(service, agent),
           'dsh-automation: management tools',
         )
         agentTools.set(agent, dispose)
       }
-      for (const agent of ctx.agents.roots()) mountTools(agent)
+      for (const agent of listLiveAgents(ctx)) mountTools(agent)
       stopCreated = ctx.on('agent/created', ({ agent }: any) => { mountTools(agent) })
       stopDisposed = ctx.on('agent/disposed', ({ agent }: any) => { agentTools.delete(agent) })
       stopSessionGone = ctx.on('session/disposed', (session: { readonly id?: string }) => {

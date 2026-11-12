@@ -76,8 +76,8 @@ Für eine Desktop-Umgebung laden Sie [DSH Codex Desktop](https://github.com/Mich
 
 ## Voraussetzungen
 
-- Host-Kompatibilität: Volle DeepSeek Harness `0.2.x`-Reihe (`>=0.2.0-rc.1 <0.3.0-0`), verifiziert mit `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5` und `0.2.2-rc.1`, und vorwärtskompatibel mit nachfolgenden 0.2.x RC-Releases. Hosts auf `0.1.x` sollten bei Plugin `0.1.66` verbleiben. Sichern Sie Speicher und Sitzungen im Profil vor dem Host-Upgrade; `0.2.0` schreibt V4-Sitzungen, die nach einem Downgrade nicht mehr lesbar sind.
-- Offizielle DSH-peerDependencies decken den Generationsbereich `>=0.2.0-rc.1 <0.3.0-0` ab. Entwicklungsabhängigkeiten sind auf `0.2.2-rc.1` festgelegt. Ältere Versionen und inkompatible `0.3.0`-Änderungen werden durch das Versionsgate abgewiesen. `@deepseek-ai/dsh-agent-presets` und `@deepseek-ai/dsh-agent-preset-registry` sind keine Peers, sondern nutzen den Host-Dienst `agentPresets`.
+- Host-Kompatibilität: Volle DeepSeek Harness `0.2.x`-Reihe (`>=0.2.0-rc.1 <0.3.0-0`), verifiziert mit `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5`, `0.2.2-rc.1` und `0.2.2-rc.2`, und vorwärtskompatibel mit nachfolgenden 0.2.x RC-Releases. Hosts auf `0.1.x` sollten bei Plugin `0.1.66` verbleiben. Sichern Sie Speicher und Sitzungen im Profil vor dem Host-Upgrade; `0.2.0` schreibt V4-Sitzungen, die nach einem Downgrade nicht mehr lesbar sind.
+- Offizielle DSH-peerDependencies decken den Generationsbereich `>=0.2.0-rc.1 <0.3.0-0` ab. Entwicklungsabhängigkeiten sind auf `0.2.2-rc.2` festgelegt. Ältere Versionen und inkompatible `0.3.0`-Änderungen werden durch das Versionsgate abgewiesen. `@deepseek-ai/dsh-agent-presets` und `@deepseek-ai/dsh-agent-preset-registry` sind keine Peers, sondern nutzen den Host-Dienst `agentPresets`.
 - Andere Versionen liegen außerhalb des deklarierten Bereichs. Strengere Peer-Prüfungen lehnen sie ab.
 - Das Bundle überschreibt nicht den offiziellen Connection-Eintrag. Jeder Host behält seine Abhängigkeiten und Konfiguration; Automation registriert seinen RPC-Kanal im eigenen Plugin-Scope.
 - Eine lauffähige DeepSeek Harness Web-Installation mit `dsh` in PowerShell.
