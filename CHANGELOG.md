@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.23] - 2026-11-12
+
+### Fixes & Compatibility
+
+- **DSH `0.2.2-rc.2` startup fix (#29)**: fixed plugin startup and scheduler initialization failing on DeepSeek Harness `0.2.2-rc.2`, while continuing to restrict automation management tools to top-level root sessions (and ordinary session forks) and keeping delegated subagents and automation-owned sessions isolated. Compatible across the full DSH `0.2.x` series (`0.2.0-rc.1` through `0.2.2-rc.2` and subsequent `0.2.x` releases).
+- **Removed legacy online updater routes**: cleaned up the remaining obsolete in-plugin update endpoints and `updater` / `onlineUpdate` options; updates are now managed directly through DeepSeek Harness.
+
 ## [1.0.22] - 2026-11-09
 
 ### Fixes
