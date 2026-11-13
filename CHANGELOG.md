@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.25] - 2026-11-13
+
+### UI & Layout Fixes
+
+- **Sidebar workspace tree width and button alignment**: resolved an issue where the sidebar workspace tree failed to stretch to the full column width on certain host versions, causing the search, view options, and add workspace action buttons to stop short of the right margin. The workspace tree and row highlights now cleanly span the full sidebar width with properly right-aligned header controls.
+
 ## [1.0.24] - 2026-11-13
 
 ### Settings UI Standardization
