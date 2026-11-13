@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createNativeTabRegistry } from '../src/client/native-tabs.ts'
+import { CSS_TEXT } from '../src/client/styles.ts'
 // @ts-expect-error 组件级测试使用可控 Hook，不属于生产接口。
 import { createShellHarness, findNode } from './sidebar-shell-harness.mjs'
 
@@ -84,4 +85,11 @@ test('侧栏在展开(wide: true)与收起(wide: false)之间切换时，Hook �
     shell.render(propsWide)
   }
 })
+
+test('侧栏外壳与官方树容器声明 flex-direction: column，避免横向坍缩退化为 max-content', () => {
+  assert.match(CSS_TEXT, /\.dsh-st-official-tree\{[^}]*flex-direction:column[^}]*\}/)
+  assert.match(CSS_TEXT, /\.dsh-st-schedule-tree\{[^}]*flex-direction:column[^}]*\}/)
+  assert.match(CSS_TEXT, /\.dsh-st-shell-body\{[^}]*flex-direction:column[^}]*\}/)
+})
+
 
