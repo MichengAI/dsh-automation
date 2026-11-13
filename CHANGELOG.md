@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.24] - 2026-11-13
+
+### Settings UI Standardization
+
+- Unified settings header card: standardized heading typography to 24px bold and wrapped it in a bordered card container.
+- Native button and icon styling: updated the issue feedback action to use the host's native pen icon and outline button primitive.
+
 ## [1.0.23] - 2026-11-12
 
 ### Fixes & Compatibility
