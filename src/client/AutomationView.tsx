@@ -30,6 +30,7 @@ import {
   IconEllipsisOutline,
   IconFlatListOutline,
   IconInfoOutline,
+  IconListPenOutline,
   IconNewChatOutline,
   IconPlusOutline,
   IconRefreshOutline,
@@ -186,15 +187,17 @@ export function AutomationView({ t, permissionT, modelT, runtime, closeSettings,
   return (
     <div className="dsh-st-shell">
       <header className="dsh-st-top">
-        <div className="dsh-st-heading">
-          <div className="dsh-st-heading-row">
-            <h1>{t('tab')}</h1>
-            <div className="dsh-st-heading-links">
-              <Button variant="outline" size="sm" aria-label={t('header.githubProject')} icon={<GithubIcon />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation', '_blank', 'noreferrer') }}>{t('header.githubProject')}</Button>
-              <Button variant="outline" size="sm" aria-label={t('header.githubFeedback')} icon={<IconEditOutline size={16} />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation/issues', '_blank', 'noreferrer') }}>{t('header.githubFeedback')}</Button>
+        <div className="dsh-st-heading-card">
+          <div className="dsh-st-heading">
+            <div className="dsh-st-heading-row">
+              <h2 className="dsh-st-heading-title">{t('tab')}</h2>
+              <div className="dsh-st-heading-links">
+                <Button variant="outline" size="sm" aria-label={t('header.githubProject')} icon={<GithubIcon />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation', '_blank', 'noreferrer') }}>{t('header.githubProject')}</Button>
+                <Button variant="outline" size="sm" aria-label={t('header.githubFeedback')} icon={<IconListPenOutline size={14} />} onClick={() => { window.open('https://github.com/MichengAI/dsh-automation/issues', '_blank', 'noreferrer') }}>{t('header.githubFeedback')}</Button>
+              </div>
             </div>
+            <p>{t('header.lead')}</p>
           </div>
-          <p>{t('header.lead')}</p>
         </div>
         <div className="dsh-st-toolbar">
           <Input className="dsh-st-search" value={query} placeholder={t('search.placeholder')} onChange={event => setQuery(event.target.value)} />
