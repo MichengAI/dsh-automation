@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.27] - 2026-11-15
+
+### UI & Layout Fixes
+
+- The Task / Channel / Scheduled tab strip no longer scrolls out of view when the sidebar workspace list is scrolled: the sidebar shell now matches the scroll area exactly, so the tabs stay in place while the list scrolls beneath them.
+
 ## [1.0.26] - 2026-11-14
 
 ### Host Compatibility
