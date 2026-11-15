@@ -92,4 +92,13 @@ test('侧栏外壳与官方树容器声明 flex-direction: column，避免横向
   assert.match(CSS_TEXT, /\.dsh-st-shell-body\{[^}]*flex-direction:column[^}]*\}/)
 })
 
+test('壳内官方树扣掉页签条高度，滚动区不再多出可滚距离（Issue #100）', () => {
+  // 宿主工作区树按 max-height:100cqh 自撑满侧栏滚动区；页签条叠在它上面会让整个壳比滚动区
+  // 高出页签条高度，滚动区因此多出可滚距离，滚一格就把页签裁出可视区。
+  assert.match(CSS_TEXT, /\.dsh-st-official-tree>\*\{[^}]*max-height:calc\(100cqh - var\(--dsh-st-strip-h,42px\)\)!important/)
+  assert.match(CSS_TEXT, /\.dsh-st-shell-rail\{[^}]*--dsh-st-strip-h:42px/)
+  const capRules = CSS_TEXT.match(/max-height:calc\(100cqh[^}]*/g) ?? []
+  assert.equal(capRules.length, 1, '只允许一条 100cqh 收口：定时任务自己的树不能被同样收口')
+})
+
 

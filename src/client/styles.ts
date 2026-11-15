@@ -151,7 +151,7 @@ export const CSS_TEXT = `
 .dsh-st-overview-row:not(.is-paused) .dsh-st-overview-next strong{color:#45d483}
 .dsh-st-overview-toggle{position:absolute;top:4px;right:6px;z-index:1;display:inline-flex;align-items:center}
 .dsh-st-rail-empty{padding:16px 10px;color:var(--dsw-alias-label-tertiary,#8b8f98);font-size:12px}
-.dsh-st-shell-rail{display:flex;flex-direction:column;min-height:0;flex:1;height:100%;overflow:hidden}
+.dsh-st-shell-rail{display:flex;flex-direction:column;min-height:0;flex:1;height:100%;overflow:hidden;--dsh-st-strip-h:42px}
 .dsh-st-shell-tabs-wrap{display:flex;margin:2px var(--dsh-sidebar-inline-padding,12px) 8px 0;padding:0;width:auto}
 .dsh-st-shell-tabs-wrap .dsh-st-shell-segmented-tabs{display:grid!important;width:100%!important;box-sizing:border-box!important;height:32px!important;min-height:32px!important;max-height:32px!important;padding:2px!important;border:0!important;border-radius:var(--dsw-radius-sm,8px)!important;box-shadow:inset 0 0 0 .5px var(--dsw-alias-border-l2,rgba(255,255,255,.08))!important;background:var(--dsw-alias-bg-layer-1,rgba(255,255,255,.02))!important}
 .dsh-st-shell-tabs-wrap .dsh-st-shell-segmented-tabs>span[aria-hidden="true"]{inset:2px auto 2px 2px!important;width:calc((100% - 4px)/var(--dsh-st-tab-count,3))!important;border-radius:6px!important;border:0.5px solid var(--dsw-alias-border-l3,rgba(255,255,255,.12))!important;background:var(--dsw-alias-bg-layer-3,rgba(255,255,255,.08))!important;box-shadow:none!important}
@@ -161,6 +161,10 @@ export const CSS_TEXT = `
 .dsh-st-shell-tabs-wrap .dsh-st-shell-segmented-tabs [role=tab][aria-selected=true]{color:var(--dsw-alias-label-primary,inherit)!important;font-weight:600!important}
 .dsh-st-shell-body{display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
 .dsh-st-shell-body>*{min-width:0;flex:1}.dsh-st-official-tree{display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}.dsh-st-official-tree>*{min-width:0;flex:1}
+/* Issue #100：宿主工作区树按 max-height:100cqh 自撑满侧栏滚动区，页签条叠在它上面会让整个壳
+   比滚动区高出页签条高度，滚动区因此多出可滚距离 —— 滚一格就把页签裁出可视区。
+   把壳内官方树的高度上限扣掉页签条高度（2 + 32 + 8），壳正好等于滚动区，页签永远不动。 */
+.dsh-st-official-tree>*{max-height:calc(100cqh - var(--dsh-st-strip-h,42px))!important}
 .dsh-st-schedule-tree{display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
 .dsh-st-schedule-tree>*{min-width:0;flex:1}
 /* 记录视图的分组是自动化任务：保留 … 菜单供注入「任务设置」，只隐藏组头新建按钮。 */
