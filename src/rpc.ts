@@ -176,6 +176,8 @@ async function snapshotValue(service: AutomationService, payload: Record<string,
       reasoningEffort: definition.reasoningEffort,
       createdAt: definition.createdAt,
       updatedAt: definition.updatedAt,
+      sessionMode: definition.sessionMode ?? 'fresh',
+      activeSessionId: definition.activeSessionId ?? null,
     })),
     runs: snapshot.runs.map(run => ({
       id: run.id,
@@ -236,6 +238,7 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
             ...(input.provider === undefined ? {} : { provider: input.provider === null ? null : string(input.provider, 'input.provider') }),
             ...(input.model === undefined ? {} : { model: input.model === null ? null : string(input.model, 'input.model') }),
             ...(input.reasoningEffort === undefined ? {} : { reasoningEffort: input.reasoningEffort === null ? null : string(input.reasoningEffort, 'input.reasoningEffort') }),
+            ...(input.sessionMode === undefined ? {} : { sessionMode: input.sessionMode === 'reuse' ? 'reuse' : 'fresh' }),
           }, signal)
           return { ok: true, value: { id: created.id } }
         }
@@ -269,6 +272,7 @@ export function registerAutomationRpc(ctx: RpcContext, service: AutomationServic
             ...(input.provider === undefined ? {} : { provider: input.provider === null ? null : string(input.provider, 'input.provider') }),
             ...(input.model === undefined ? {} : { model: input.model === null ? null : string(input.model, 'input.model') }),
             ...(input.reasoningEffort === undefined ? {} : { reasoningEffort: input.reasoningEffort === null ? null : string(input.reasoningEffort, 'input.reasoningEffort') }),
+            ...(input.sessionMode === undefined ? {} : { sessionMode: input.sessionMode === 'reuse' ? 'reuse' : 'fresh' }),
           }, signal)
           return { ok: true, value: { id: value.id, revision: value.revision } }
         }

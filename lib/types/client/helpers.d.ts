@@ -1,5 +1,5 @@
 import type { Translate } from './contracts.js';
-import type { AutomationSchedule, AutomationRunViewModel, AutomationViewModel, CreateAutomationInput, ModelOption, WorkspaceOption } from './protocol.js';
+import type { AutomationSchedule, AutomationRunViewModel, AutomationSessionMode, AutomationViewModel, CreateAutomationInput, ModelOption, WorkspaceOption } from './protocol.js';
 export type ScheduleKind = 'once' | 'interval' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
 /** 使用宿主实际产生的触发类型和统一文案，避免把手动运行显示为定时。 */
 export declare function formatRunTrigger(trigger: AutomationRunViewModel['trigger'], t: Translate): string;
@@ -23,6 +23,7 @@ export interface AutomationFormState {
     readonly modelKey: string;
     readonly reasoningEffort: string;
     readonly skills: readonly string[];
+    readonly sessionMode?: AutomationSessionMode;
 }
 export type FormErrorKey = 'form.error.maxConcurrentRuns' | 'form.error.name' | 'form.error.prompt' | 'form.error.once' | 'form.error.interval' | 'form.error.weekdays' | 'form.error.workspace';
 export declare class AutomationFormError extends Error {

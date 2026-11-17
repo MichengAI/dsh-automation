@@ -988,3 +988,24 @@ test("编辑表单会还原任务当前的 Agent 预设", () => {
   );
   assert.equal(form.agentPreset, "ptc");
 });
+
+test("表单状态默认 sessionMode 为 fresh，提交输入带上所选 sessionMode", () => {
+  const form = { ...defaultFormState(new Date(), workspaces), name: "会话模式任务", prompt: "检查" };
+  assert.equal(form.sessionMode, "fresh");
+  assert.equal(buildCreateInput(form, workspaces, []).sessionMode, "fresh");
+  assert.equal(buildCreateInput({ ...form, sessionMode: "reuse" }, workspaces, []).sessionMode, "reuse");
+});
+
+test("编辑表单会还原任务当前的 sessionMode，缺省时回落为 fresh", () => {
+  const formReuse = formFromAutomation(
+    { ...automationView("a1", "复用任务", "2026-08-16T00:00:00.000Z"), sessionMode: "reuse" },
+    workspaces,
+  );
+  assert.equal(formReuse.sessionMode, "reuse");
+
+  const formFresh = formFromAutomation(
+    { ...automationView("a2", "默认任务", "2026-08-16T00:00:00.000Z") },
+    workspaces,
+  );
+  assert.equal(formFresh.sessionMode, "fresh");
+});

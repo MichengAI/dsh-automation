@@ -32,8 +32,14 @@ test('工具注册覆盖六个管理入口，并校验计划字段组合', () =>
   assert.deepEqual(definitions.get('automation_create')?.parameters?.kind?.enum, [
     'once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom',
   ])
+  assert.deepEqual(definitions.get('automation_create')?.parameters?.session_mode?.enum, [
+    'fresh', 'reuse',
+  ])
   assert.deepEqual(definitions.get('automation_update')?.parameters?.kind?.enum, [
     'once', 'interval', 'hourly', 'daily', 'weekly', 'monthly', 'custom',
+  ])
+  assert.deepEqual(definitions.get('automation_update')?.parameters?.session_mode?.enum, [
+    'fresh', 'reuse',
   ])
   dispose()
 })

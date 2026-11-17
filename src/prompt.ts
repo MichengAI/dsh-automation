@@ -12,6 +12,7 @@ export const AUTOMATION_PROMPT_TEXT = [
   '未指定时区时使用 Asia/Shanghai。prompt 必须写成每次独立运行都能看懂的完整任务说明。',
   'automation_create 和 automation_update 支持 provider、model 和 reasoning_effort。provider/model 使用提供方和模型 ID；推理等级使用该模型公布的 reasoningEfforts 值。将 provider 和 model 都设为 null 可跟随每次运行时的全局模型；reasoning_effort=null 恢复模型默认。更新时省略这些字段保持不变。',
   '指定或修改模型时 provider/model 必须成对传入非空 ID 或成对设为 null。先调用 automation_list 查询 models 和 reasoning.efforts，目录加载失败见 modelFailures。切换模型时未指定 reasoning_effort 会清除旧等级，恢复模型默认。',
+  'automation_create 和 automation_update 支持 session_mode（fresh 默认每次新建会话；reuse 复用专属会话并保留上下文，失效自动重建）。',
 ].join('\n')
 
 export const AUTOMATION_CREATE_DESCRIPTION = [
@@ -22,6 +23,7 @@ export const AUTOMATION_CREATE_DESCRIPTION = [
   '同时支持 hourly(minute)、monthly(month_day + time) 和 custom(every_days + time)。',
   '可用 provider、model、reasoning_effort 固定模型和推理等级。省略模型继承当前会话或全局选择；provider/model 都设为 null 跟随每次运行时的全局选择；省略或清空 reasoning_effort 使用模型默认。返回保存后的完整定义。',
   '可用 agent_preset 指定 Agent 预设；省略时使用宿主默认预设，宿主未设置默认值时必须显式指定。先调用 automation_list 查看 agentPresets 与 defaultAgentPreset。',
+  '可用 session_mode 指定会话模式：fresh（默认每次触发新开会话）或 reuse（复用专属长程会话，保留历史上下文，失效自动重建）。',
   '必须使用显式 IANA 时区。最短间隔 1 分钟。默认权限来自 Host；不需要写入时应显式选择 read-only，只有需要改文件时才选 workspace-write。',
 ].join('')
 

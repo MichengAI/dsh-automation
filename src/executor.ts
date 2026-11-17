@@ -71,6 +71,7 @@ export interface ExecutorConfig {
   readonly runTimeoutMs: number
   readonly sessionId: string
   readonly signal?: AbortSignal
+  readonly reusedAgent?: unknown
 }
 
 /** 先应用官方预设的完整语义，再让无人值守审批 fail-closed。 */
@@ -213,44 +214,52 @@ export async function executeAutomationRun(
       }
     : fallbackSelection
   const sessionId = SessionId(config.sessionId)
+  const isReuseMode = definition.sessionMode === 'reuse'
+  const isReused = config.reusedAgent !== undefined
+  let liveAgent: any = config.reusedAgent
   let handle: Awaited<ReturnType<Context['agents']['create']>> | undefined
   let timeout: ReturnType<typeof setTimeout> | undefined
   let removeCancellationListener = () => {}
   let watched: SessionEventWatch | undefined
   try {
-    handle = await ctx.agents.withoutInitiator(() => ctx.agents.create({
-      sessionId,
-      ...(config.signal === undefined ? {} : { signal: config.signal }),
-      meta: { cwd: target.cwd, agentPreset: target.agentPreset },
-      // DSH 0.2.2-rc.1 removed the selection argument from installModelSelection
-      // and applies the initial route (including reasoningEffort) from AgentOptions.
-      // The effort must travel here to be recorded in the request header.
-      agentOptions: {
-        provider: selection.provider,
-        model: selection.model,
-        ...(selection.reasoningEffort === undefined ? {} : { reasoningEffort: selection.reasoningEffort }),
-      },
-      setup: async (agentCtx: Context, createdAgent?: SetupAgent) => {
-        if (ctx.agentPresets === undefined) throw new Error('Host 未提供 agentPresets 服务。')
-        await ctx.agentPresets.mount(agentCtx, target.agentPreset)
-        // DSH 0.2.0-rc.2 → 0.2.1-rc.5 select the model through the second argument;
-        // DSH 0.2.2-rc.1 accepts only agentCtx and ignores it (AgentOptions above wins).
-        installModelSelection(agentCtx, { current: selection, assembled: undefined })
-        if (createdAgent === undefined) throw new Error('automation setup has no scoped Agent')
-        const agent = createdAgent
-        applyUnattendedPermission(ctx.permissionPresets, agent.session, target.permissionPreset)
-      },
-    }))
-    await handle.agent.whenIdle()
+    if (liveAgent === undefined) {
+      handle = await ctx.agents.withoutInitiator(() => ctx.agents.create({
+        sessionId,
+        ...(config.signal === undefined ? {} : { signal: config.signal }),
+        meta: { cwd: target.cwd, agentPreset: target.agentPreset },
+        // DSH 0.2.2-rc.1 removed the selection argument from installModelSelection
+        // and applies the initial route (including reasoningEffort) from AgentOptions.
+        // The effort must travel here to be recorded in the request header.
+        agentOptions: {
+          provider: selection.provider,
+          model: selection.model,
+          ...(selection.reasoningEffort === undefined ? {} : { reasoningEffort: selection.reasoningEffort }),
+        },
+        setup: async (agentCtx: Context, createdAgent?: SetupAgent) => {
+          if (ctx.agentPresets === undefined) throw new Error('Host 未提供 agentPresets 服务。')
+          await ctx.agentPresets.mount(agentCtx, target.agentPreset)
+          // DSH 0.2.0-rc.2 → 0.2.1-rc.5 select the model through the second argument;
+          // DSH 0.2.2-rc.1 accepts only agentCtx and ignores it (AgentOptions above wins).
+          installModelSelection(agentCtx, { current: selection, assembled: undefined })
+          if (createdAgent === undefined) throw new Error('automation setup has no scoped Agent')
+          const agent = createdAgent
+          applyUnattendedPermission(ctx.permissionPresets, agent.session, target.permissionPreset)
+        },
+      }))
+      liveAgent = handle.agent
+    }
+    await liveAgent.whenIdle()
     await workspace.attachSession(sessionId)
-    pinAutomationSessionTitle(ctx, handle.agent.session, automationSessionTitle(
-      definition.name,
-      run.startedAt ?? run.scheduledFor,
-      definition.timeZone,
-    ))
-    const firstSeq = handle.agent.session.seq
-    watched = watchSessionEvents(ctx, handle.agent.session, firstSeq)
-    handle.agent.followup(createUserMessage({
+    if (!isReused) {
+      pinAutomationSessionTitle(ctx, liveAgent.session, automationSessionTitle(
+        definition.name,
+        run.startedAt ?? run.scheduledFor,
+        definition.timeZone,
+      ))
+    }
+    const firstSeq = liveAgent.session.seq
+    watched = watchSessionEvents(ctx, liveAgent.session, firstSeq)
+    liveAgent.followup(createUserMessage({
       content: [{ type: 'text', text: run.promptSnapshot }],
       source: {
         kind: 'automation',
@@ -262,11 +271,11 @@ export async function executeAutomationRun(
 
     let timedOut = false
     let aborted = false
-    const idle = handle.agent.whenIdle()
+    const idle = liveAgent.whenIdle()
     const deadline = new Promise<void>((resolve) => {
       timeout = setTimeout(() => {
         timedOut = true
-        handle?.agent.cancel({ kind: 'hook', reason: 'automation run timeout' })
+        liveAgent?.cancel({ kind: 'hook', reason: 'automation run timeout' })
         resolve()
       }, config.runTimeoutMs)
     })
@@ -274,7 +283,7 @@ export async function executeAutomationRun(
       if (config.signal === undefined) return
       const cancel = () => {
         aborted = true
-        handle?.agent.cancel({ kind: 'hook', reason: 'automation service disposed' })
+        liveAgent?.cancel({ kind: 'hook', reason: 'automation service disposed' })
         resolve()
       }
       if (config.signal.aborted) cancel()
@@ -296,8 +305,8 @@ export async function executeAutomationRun(
       }
     }
     if (timeout !== undefined) clearTimeout(timeout)
-    await ctx.sessions.flush(handle.agent.session)
-    const outcome = summarizeCollectedRun(watched.events, handle.agent.session, firstSeq)
+    await ctx.sessions.flush(liveAgent.session)
+    const outcome = summarizeCollectedRun(watched.events, liveAgent.session, firstSeq)
     const summary = boundSummary(outcome.text)
     if (aborted) {
       return {
@@ -327,13 +336,13 @@ export async function executeAutomationRun(
   } catch (error: unknown) {
     if (isAbortRequested(config.signal) || isInactiveEffect(error)) {
       return {
-        ...(handle === undefined ? {} : { sessionId: String(sessionId) }),
+        ...(liveAgent === undefined ? {} : { sessionId: String(sessionId) }),
         status: 'cancelled',
         error: { code: 'cancelled', message: '自动化因其所属服务停止而被取消。' },
       }
     }
     return {
-      ...(handle === undefined ? {} : { sessionId: String(sessionId) }),
+      ...(liveAgent === undefined ? {} : { sessionId: String(sessionId) }),
       status: 'failed',
       error: {
         code: 'executor_error',
@@ -344,7 +353,7 @@ export async function executeAutomationRun(
     watched?.stop()
     removeCancellationListener()
     if (timeout !== undefined) clearTimeout(timeout)
-    if (handle !== undefined) {
+    if (handle !== undefined && !isReuseMode) {
       await settlesWithin(handle.dispose().catch(() => {}), CANCEL_CONVERGENCE_TIMEOUT_MS)
     }
   }

@@ -46,6 +46,7 @@ const targetSnapshot = z.object({
   model: z.string().nullable(),
   reasoningEffort: z.string().min(1).nullable().optional(),
   permissionPreset,
+  sessionMode: z.enum(['fresh', 'reuse']).optional(),
 })
 
 export const automationDefinitionSchema: z.ZodType<AutomationDefinition> = z.object({
@@ -69,6 +70,8 @@ export const automationDefinitionSchema: z.ZodType<AutomationDefinition> = z.obj
   createdBy: creator,
   createdAt: instant,
   updatedAt: instant,
+  sessionMode: z.enum(['fresh', 'reuse']).default('fresh'),
+  activeSessionId: z.string().nullable().default(null),
 }).superRefine((value, ctx) => {
   try {
     if (value.timeZone !== value.schedule.timeZone) {
@@ -135,6 +138,8 @@ export function createDefinition(input: CreateAutomationInput): AutomationDefini
     createdBy: input.createdBy,
     createdAt: now,
     updatedAt: now,
+    sessionMode: input.sessionMode ?? 'fresh',
+    activeSessionId: null,
   })
 }
 
@@ -163,7 +168,22 @@ export function updateDefinition(
     permissionPreset: input.permissionPreset ?? current.permissionPreset,
     workspaceId: input.workspaceId === undefined ? current.workspaceId : requireNonBlank(input.workspaceId, 'workspaceId'),
     cwd: input.cwd === undefined ? current.cwd : requireNonBlank(input.cwd, 'cwd'),
+    sessionMode: input.sessionMode === undefined ? (current.sessionMode ?? 'fresh') : input.sessionMode,
+    activeSessionId: current.activeSessionId ?? null,
     updatedAt: parseInstant(input.now, 'now'),
+  })
+}
+
+export function bindDefinitionSession(
+  current: AutomationDefinition,
+  sessionId: string | null,
+  now: string,
+): AutomationDefinition {
+  automationDefinitionSchema.parse(current)
+  return automationDefinitionSchema.parse({
+    ...current,
+    activeSessionId: sessionId ?? null,
+    updatedAt: parseInstant(now, 'now'),
   })
 }
 
@@ -247,6 +267,7 @@ function queuedRun(
       model: definition.model,
       ...(definition.reasoningEffort === undefined ? {} : { reasoningEffort: definition.reasoningEffort }),
       permissionPreset: definition.permissionPreset,
+      sessionMode: definition.sessionMode ?? 'fresh',
     },
     sessionId: null,
     startedAt: null,

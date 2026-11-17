@@ -1,5 +1,6 @@
 export type AutomationStatus = 'active' | 'paused';
 export type AutomationRunStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped' | 'cancelled';
+export type AutomationSessionMode = 'fresh' | 'reuse';
 export type Weekday = 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA' | 'SU';
 /** 权限预设名称由 Host 的 permissionPresets 服务动态提供。 */
 export type PermissionPreset = string;
@@ -80,6 +81,8 @@ export interface AutomationDefinition {
     readonly createdBy: AutomationCreator;
     readonly createdAt: string;
     readonly updatedAt: string;
+    readonly sessionMode: AutomationSessionMode;
+    readonly activeSessionId: string | null;
 }
 export interface AutomationTargetSnapshot {
     readonly workspaceId: string;
@@ -89,6 +92,7 @@ export interface AutomationTargetSnapshot {
     readonly model: string | null;
     readonly reasoningEffort?: string | null | undefined;
     readonly permissionPreset: PermissionPreset;
+    readonly sessionMode?: AutomationSessionMode | undefined;
 }
 export interface AutomationRunError {
     readonly code: string;
@@ -128,6 +132,7 @@ export interface CreateAutomationInput {
     readonly permissionPreset?: PermissionPreset;
     readonly createdBy: AutomationCreator;
     readonly now: string;
+    readonly sessionMode?: AutomationSessionMode | undefined;
 }
 export interface UpdateAutomationInput {
     readonly name?: string;
@@ -143,6 +148,7 @@ export interface UpdateAutomationInput {
     readonly workspaceId?: string;
     readonly cwd?: string;
     readonly now: string;
+    readonly sessionMode?: AutomationSessionMode | undefined;
 }
 export interface DeleteAutomationPlan {
     readonly id: string;

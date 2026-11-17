@@ -399,3 +399,127 @@ test('执行器其他异常仍记为 executor_error', async () => {
   assert.equal(result.error?.code, 'executor_error')
   assert.match(result.error?.message ?? '', /watch failed/)
 })
+
+test('sessionMode 为 reuse 时首次创建会话不会在运行结束时被 dispose', async () => {
+  const { definition: baseDef, run: baseRun } = sampleRun()
+  const definition = { ...baseDef, sessionMode: 'reuse' as const }
+  const run = { ...baseRun, targetSnapshot: { ...baseRun.targetSnapshot, sessionMode: 'reuse' as const } }
+  let disposed = false
+  const listeners: any[] = []
+  const events: any[] = []
+  const session = {
+    get seq() { return events.length },
+    append(type: string, data: any) {
+      const evt = { seq: events.length, type, data }
+      events.push(evt)
+      for (const l of listeners) l(session, evt)
+    },
+  }
+  const agent = {
+    session,
+    async whenIdle() {},
+    followup() {
+      session.append('turn/start', {})
+      session.append('turn/end', { reason: { kind: 'completed' } })
+    },
+    cancel() {},
+  }
+  const ctx = {
+    workspaceRegistry: { get: () => ({ path: 'D:\\work\\demo', status: async () => 'ok', attachSession: async () => {} }) },
+    agentDefaultModel: { currentSelection: () => ({ provider: 'test', model: 'test' }) },
+    agentPresets: { mount: async () => {} },
+    permissionPresets: { set() {} },
+    agents: {
+      withoutInitiator: (callback: () => unknown) => callback(),
+      async create(options: any) {
+        await options?.setup?.(ctx, agent)
+        return {
+          agent,
+          async dispose() {
+            disposed = true
+          },
+        }
+      },
+    },
+    sessions: { flush: async () => {} },
+    get: () => undefined,
+    on(name: string, listener: any) {
+      if (name === 'session/event') listeners.push(listener)
+      return () => {}
+    },
+  }
+  const result = await executeAutomationRun(ctx as never, definition, run, {
+    sessionId: 'automation_reuse_first',
+    runTimeoutMs: 1_000,
+  })
+  assert.equal(result.status, 'succeeded')
+  assert.equal(disposed, false, '复用模式下新创建的专属会话不应被 dispose')
+})
+
+test('sessionMode 为 reuse 且传入已有 agent 时直接复用并不重新建会话与标题', async () => {
+  const { definition: baseDef, run: baseRun } = sampleRun()
+  const definition = { ...baseDef, sessionMode: 'reuse' as const, activeSessionId: 'existing_session' }
+  const run = { ...baseRun, targetSnapshot: { ...baseRun.targetSnapshot, sessionMode: 'reuse' as const } }
+  const events: any[] = []
+  const listeners: any[] = []
+  const existingSession = {
+    id: 'existing_session',
+    get seq() { return events.length },
+    append(type: string, data: any) {
+      const evt = { seq: events.length, type, data }
+      events.push(evt)
+      for (const l of listeners) l(existingSession, evt)
+    },
+  }
+  let followupCalled = false
+  let createCalled = false
+  let renamed = false
+  const existingAgent = {
+    session: existingSession,
+    async whenIdle() {},
+    followup(msg: any) {
+      followupCalled = true
+      assert.equal(msg.source?.kind, 'automation')
+      assert.equal(msg.source?.automationId, definition.id)
+      existingSession.append('turn/start', {})
+      existingSession.append('assistant/message', { message: { content: [{ type: 'text', text: '复用会话产出' }] } })
+      existingSession.append('turn/end', { reason: { kind: 'completed' } })
+    },
+  }
+  const ctx = {
+    workspaceRegistry: { get: () => ({ path: 'D:\\work\\demo', status: async () => 'ok', attachSession: async () => {} }) },
+    agentDefaultModel: { currentSelection: () => ({ provider: 'test', model: 'test' }) },
+    agentPresets: { mount: async () => {} },
+    permissionPresets: { set() {} },
+    agents: {
+      withoutInitiator: (callback: () => unknown) => callback(),
+      async create() {
+        createCalled = true
+        throw new Error('不应调用 create')
+      },
+    },
+    sessions: { flush: async () => {} },
+    get: (name: string) => {
+      if (name === 'sessionTitle') {
+        return {
+          rename() { renamed = true },
+        }
+      }
+      return undefined
+    },
+    on(name: string, listener: any) {
+      if (name === 'session/event') listeners.push(listener)
+      return () => {}
+    },
+  }
+  const result = await executeAutomationRun(ctx as never, definition, run, {
+    sessionId: 'existing_session',
+    runTimeoutMs: 1_000,
+    reusedAgent: existingAgent,
+  })
+  assert.equal(result.status, 'succeeded')
+  assert.equal(result.summary, '复用会话产出')
+  assert.equal(createCalled, false, '复用会话时不应调用 agents.create')
+  assert.equal(followupCalled, true, '应调用 existingAgent.followup 开启新一轮')
+  assert.equal(renamed, false, '复用已有会话时不应覆写其原始标题')
+})

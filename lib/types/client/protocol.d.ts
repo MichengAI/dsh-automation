@@ -2,6 +2,7 @@
 export type AutomationStatus = 'active' | 'paused';
 export type AutomationRunStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped' | 'cancelled' | 'interrupted';
 export type AutomationPermission = string;
+export type AutomationSessionMode = 'fresh' | 'reuse';
 export interface PermissionOption {
     readonly value: string;
     readonly name: string;
@@ -94,6 +95,8 @@ export interface AutomationViewModel {
     readonly lastRunStatus?: AutomationRunStatus;
     readonly createdAt: string;
     readonly updatedAt: string;
+    readonly sessionMode?: AutomationSessionMode | undefined;
+    readonly activeSessionId?: string | null | undefined;
 }
 export interface AutomationRunViewModel {
     readonly id: string;
@@ -145,6 +148,7 @@ export interface CreateAutomationInput {
     readonly provider?: string | null;
     readonly model?: string | null;
     readonly reasoningEffort?: string | null | undefined;
+    readonly sessionMode?: AutomationSessionMode | undefined;
 }
 export interface CreateRequest {
     readonly sessionId?: string;

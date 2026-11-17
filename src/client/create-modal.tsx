@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { ModelTranslate, Translate } from './contracts.js'
-import type { AgentPresetOption, ModelCatalogFailure, ModelOption, PermissionOption } from './protocol.js'
+import type { AgentPresetOption, AutomationSessionMode, ModelCatalogFailure, ModelOption, PermissionOption } from './protocol.js'
 import { permissionLabel, type PermissionTranslate } from './permissions.js'
 import { buildAgentPresetOptions, type PresetTranslate } from './agent-presets.js'
 import {
@@ -366,6 +366,18 @@ export function CreateModal({
                 options={buildAgentPresetOptions(agentPresets, form.agentPreset, t, presetT)}
                 onChange={value => update({ agentPreset: value })}
                 disabled={presetMissing}
+              />
+            </label>
+            <label className="dsh-st-picker-field">
+              <span>{t('form.fieldSessionMode')}</span>
+              <MenuSelect
+                value={form.sessionMode ?? 'fresh'}
+                label={t('form.fieldSessionMode')}
+                options={[
+                  { value: 'fresh', label: t('form.sessionModeFresh') },
+                  { value: 'reuse', label: t('form.sessionModeReuse') },
+                ]}
+                onChange={value => update({ sessionMode: value as AutomationSessionMode })}
               />
             </label>
           </div>

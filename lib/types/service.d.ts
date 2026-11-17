@@ -3,7 +3,7 @@ import type { Context } from "@deepseek-ai/cordis";
 import { type SessionOwnershipHint } from "./executor.ts";
 import { type PermissionOption } from "./permission-presets.ts";
 import { type AgentPresetOption } from "./agent-presets.ts";
-import type { AutomationDefinition, AutomationRun, AutomationSchedule, PermissionPreset, UpdateAutomationInput } from "./types.ts";
+import type { AutomationDefinition, AutomationRun, AutomationSchedule, AutomationSessionMode, PermissionPreset, UpdateAutomationInput } from "./types.ts";
 export declare const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
 export interface AutomationConfig {
     readonly runTimeoutMs: number;
@@ -48,6 +48,7 @@ export interface CreateRequest {
     readonly model?: string | null;
     readonly reasoningEffort?: string | null;
     readonly agentPreset?: string;
+    readonly sessionMode?: AutomationSessionMode;
 }
 export interface AutomationScope {
     readonly sessionId: string;
@@ -150,6 +151,7 @@ export declare class AutomationService {
     private claimLatestDue;
     private startQueuedRuns;
     private startRun;
+    private resolveReusableAgent;
     private executeRun;
     private armNextTimer;
     private armRetryTimer;

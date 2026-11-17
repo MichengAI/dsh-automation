@@ -1734,3 +1734,139 @@ test("来源会话目录未注册工作区时，显式指定工作区并确认 c
     await service.dispose();
   }
 });
+
+test("sessionMode 为 reuse 时遵循「没有或者不可用就新建，可以则复用」的自愈流", async () => {
+  const liveSessions = new Map<string, any>();
+  const events: any[] = [];
+  const listeners: any[] = [];
+  const createMockAgent = (sessionId: string) => {
+    const session = {
+      id: sessionId,
+      get seq() { return events.length },
+      append(type: string, data: any) {
+        const evt = { seq: events.length, type, data };
+        events.push(evt);
+        for (const l of listeners) l(session, evt);
+      },
+    };
+    const agentObj = {
+      session,
+      async whenIdle() {},
+      followup() {
+        session.append("turn/start", {});
+        session.append("assistant/message", { message: { content: [{ type: "text", text: "已执行" }] } });
+        session.append("turn/end", { reason: { kind: "completed" } });
+      },
+      cancel() {},
+    };
+    return agentObj;
+  };
+
+  const defaultAgent = {
+    session: {
+      header: { cwd: "D:\\work\\demo", agentPreset: "standard" },
+      requestHeader: () => ({ config: { provider: "deepseek", model: "v4" } }),
+    },
+    ctx: {},
+  };
+
+  const { service, definitions, runs } = await makeService({}, {}, {
+    agents: {
+      withoutInitiator: (callback: () => unknown) => callback(),
+      get(id: unknown) {
+        if (String(id) === "session_1") return defaultAgent;
+        return liveSessions.get(String(id));
+      },
+      async create(options: any) {
+        const newSessionId = String(options.sessionId);
+        const newAgent = createMockAgent(newSessionId);
+        await options?.setup?.({}, newAgent);
+        liveSessions.set(newSessionId, newAgent);
+        return {
+          agent: newAgent,
+          async dispose() {},
+        };
+      },
+    },
+    workspaceRegistry: {
+      get(id: unknown) {
+        return String(id) === "ws_1"
+          ? { id: "ws_1", title: "demo", path: "D:\\work\\demo", status: async () => "ok", attachSession: async () => {} }
+          : undefined;
+      },
+      async resolveByPath(path: string) {
+        return path === "D:\\work\\demo"
+          ? { id: "ws_1", title: "demo", path: "D:\\work\\demo", status: async () => "ok", attachSession: async () => {} }
+          : undefined;
+      },
+    },
+    agentPresets: {
+      mount: async () => {},
+      composedPreset: () => "standard",
+    },
+    sessions: { flush: async () => {} },
+    get: () => undefined,
+    on(name: string, listener: any) {
+      if (name === "session/event") listeners.push(listener);
+      return () => {};
+    },
+  });
+
+  try {
+    const scope = { sessionId: "session_1", creatorKind: "web" as const };
+    // 1. 创建 reuse 模式任务
+    const created = await service.create(scope, {
+      name: "长期巡检任务",
+      prompt: "检查状态",
+      schedule: { kind: "daily", time: "09:00", timeZone: "Asia/Shanghai" },
+      sessionMode: "reuse",
+    });
+    assert.equal(created.sessionMode, "reuse");
+    assert.equal(created.activeSessionId, null);
+
+    service.start();
+
+    // 2. 首次运行：没有会话 -> 自动新建会话
+    const run1 = await service.runNow(scope, created.id);
+    const waitSettled = async (runId: string) => {
+      for (let i = 0; i < 50; i++) {
+        const item = runs.get(runId);
+        if (item && item.status !== "queued" && item.status !== "running") return item;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      return runs.get(runId);
+    };
+
+    const finished1 = await waitSettled(run1.id);
+    assert.equal(finished1?.status, "succeeded", `首轮运行应成功: ${JSON.stringify(finished1?.error)}`);
+    assert.ok(finished1?.sessionId, "首轮应产生 sessionId");
+    const session1Id = finished1!.sessionId!;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const defAfterRun1 = definitions.get(created.id);
+    assert.equal(defAfterRun1?.activeSessionId, session1Id, "首轮完成后应将新创建的 sessionId 绑定到定义中");
+
+    // 3. 第二次运行：会话可用 -> 复用该会话
+    const run2 = await service.runNow(scope, created.id);
+    const finished2 = await waitSettled(run2.id);
+    assert.equal(finished2?.status, "succeeded", `第二轮运行应成功: ${JSON.stringify(finished2?.error)}`);
+    assert.equal(finished2?.sessionId, session1Id, "第二轮应复用 session1Id");
+    const defAfterRun2 = definitions.get(created.id);
+    assert.equal(defAfterRun2?.activeSessionId, session1Id, "复用后绑定的 sessionId 保持不变");
+
+    // 4. 模拟会话不可用（从活跃中移除，模拟被用户删除或归档）
+    liveSessions.delete(session1Id);
+
+    // 5. 第三次运行：会话不可用 -> 自动自愈新建新会话，并重新绑定
+    const run3 = await service.runNow(scope, created.id);
+    const finished3 = await waitSettled(run3.id);
+    assert.equal(finished3?.status, "succeeded");
+    assert.ok(finished3?.sessionId);
+    assert.notEqual(finished3!.sessionId, session1Id, "会话不可用时应自愈创建新会话");
+    const session2Id = finished3!.sessionId!;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const defAfterRun3 = definitions.get(created.id);
+    assert.equal(defAfterRun3?.activeSessionId, session2Id, "自愈后应将新会话 ID 重新绑定到定义中");
+  } finally {
+    await service.dispose();
+  }
+});

@@ -8,6 +8,7 @@ import {
   occurrenceKey,
   pauseDefinition,
   updateDefinition,
+  bindDefinitionSession,
 } from '../src/domain.ts'
 
 function baseInput() {
@@ -83,4 +84,27 @@ test('间隔定义接受一分钟并拒绝不足一分钟', () => {
   for (const everyMinutes of [0, -1, 0.5]) {
     assert.throws(() => createDefinition({ ...baseInput(), schedule: { ...schedule, everyMinutes } }))
   }
+})
+
+test('会话模式默认 fresh，支持 reuse 并在更新和绑定会话时保持自愈契约', () => {
+  const defDefault = createDefinition(baseInput())
+  assert.equal(defDefault.sessionMode, 'fresh')
+  assert.equal(defDefault.activeSessionId, null)
+
+  const defReuse = createDefinition({ ...baseInput(), sessionMode: 'reuse' })
+  assert.equal(defReuse.sessionMode, 'reuse')
+  assert.equal(defReuse.activeSessionId, null)
+
+  const bound = bindDefinitionSession(defReuse, 'session_123', '2026-08-16T01:05:00.000Z')
+  assert.equal(bound.activeSessionId, 'session_123')
+  assert.equal(bound.revision, defReuse.revision, '绑定活动会话不应增加 revision')
+  assert.equal(bound.sessionMode, 'reuse')
+
+  const unbound = bindDefinitionSession(bound, null, '2026-08-16T01:10:00.000Z')
+  assert.equal(unbound.activeSessionId, null)
+  assert.equal(unbound.revision, defReuse.revision)
+
+  const switchedToFresh = updateDefinition(bound, { sessionMode: 'fresh', now: '2026-08-16T01:15:00.000Z' })
+  assert.equal(switchedToFresh.sessionMode, 'fresh')
+  assert.equal(switchedToFresh.revision, bound.revision + 1)
 })

@@ -42,6 +42,7 @@ interface CreateArgs extends ScheduleArgs, ModelArgs {
   readonly agent_preset?: string
   readonly workspace?: string
   readonly cross_workspace?: boolean
+  readonly session_mode?: 'fresh' | 'reuse'
 }
 
 interface UpdateArgs extends ScheduleArgs, ModelArgs {
@@ -54,6 +55,7 @@ interface UpdateArgs extends ScheduleArgs, ModelArgs {
   readonly agent_preset?: string
   readonly workspace?: string
   readonly cross_workspace?: boolean
+  readonly session_mode?: 'fresh' | 'reuse'
 }
 
 interface ListArgs {
@@ -121,6 +123,8 @@ function briefDefinition(view: AutomationDefinitionView, includePrompt: boolean)
     permissionPreset: view.permissionPreset,
     revision: view.revision,
     updatedAt: view.updatedAt,
+    sessionMode: view.sessionMode ?? 'fresh',
+    activeSessionId: view.activeSessionId ?? null,
     promptChars: view.prompt.length,
     ...(includePrompt ? { prompt: view.prompt } : {}),
     lastRun:
@@ -267,6 +271,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         agent_preset: { type: 'string', description: '目标 Agent 预设 ID。省略时使用宿主默认预设；宿主未设置默认值时必须显式指定。可先调用 automation_list 查看 agentPresets。' },
         workspace: { type: 'string', description: '可选。目标工作区的名称（如 yyrenting）、ID 或目录路径。省略时默认使用当前会话所在工作区。' },
         cross_workspace: { type: 'boolean', description: '若目标工作区非当前会话所在工作区，必须显式设为 true。' },
+        session_mode: { type: 'string', enum: ['fresh', 'reuse'], description: '会话模式：fresh（每次创建全新独立会话，默认）或 reuse（复用专属长效会话，保留多轮上下文；没有或不可用时自动新建）。' },
         ...MODEL_PARAMETERS,
       },
       output: JSON_OUTPUT,
@@ -282,6 +287,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
             ...(args.permission === undefined ? {} : { permissionPreset: args.permission }),
             ...(args.agent_preset === undefined ? {} : { agentPreset: args.agent_preset }),
             ...(args.workspace === undefined ? {} : { workspace: args.workspace }),
+            ...(args.session_mode === undefined ? {} : { sessionMode: args.session_mode }),
             ...modelFromArgs(args),
           }, exec.signal)
           return json({ ok: true, automation: value })
@@ -349,6 +355,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
         max_concurrent_runs: { type: 'integer', description: '同一自动化的并发运行上限，必须为正整数，默认 1' },
         permission: { type: 'string', enum: permissionNames },
         agent_preset: { type: 'string', description: '目标 Agent 预设 ID。省略时保持原值；可先调用 automation_list 查看 agentPresets。' },
+        session_mode: { type: 'string', enum: ['fresh', 'reuse'], description: '会话模式：fresh（每次创建全新独立会话）或 reuse（复用专属长效会话）。' },
         ...MODEL_PARAMETERS,
       },
       output: JSON_OUTPUT,
@@ -364,6 +371,7 @@ export function registerAutomationTools(service: AutomationService, agent: ToolA
           if (args.max_concurrent_runs !== undefined) input.maxConcurrentRuns = args.max_concurrent_runs
           if (args.permission !== undefined) input.permissionPreset = args.permission
           if (args.agent_preset !== undefined) input.agentPreset = args.agent_preset
+          if (args.session_mode !== undefined) input.sessionMode = args.session_mode
           if (args.kind !== undefined) input.schedule = scheduleFromArgs(args, new Date().toISOString())
           if (Object.keys(input).length === 0) throw new Error('automation_update 至少需要一个变更字段')
           const opScope = args.cross_workspace ? { ...scope, crossWorkspace: true } : scope

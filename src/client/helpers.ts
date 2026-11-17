@@ -3,6 +3,7 @@ import type {
   AutomationSchedule,
   AutomationRunStatus,
   AutomationRunViewModel,
+  AutomationSessionMode,
   AutomationViewModel,
   CreateAutomationInput,
   ModelOption,
@@ -36,6 +37,7 @@ export interface AutomationFormState {
   readonly modelKey: string
   readonly reasoningEffort: string
   readonly skills: readonly string[]
+  readonly sessionMode?: AutomationSessionMode
 }
 
 export type FormErrorKey =
@@ -169,6 +171,7 @@ export function defaultFormState(
       : `${defaultModel.provider}::${defaultModel.model}`,
     reasoningEffort: defaultModel?.reasoning?.defaultEffort ?? 'none',
     skills: [],
+    sessionMode: 'fresh',
   }
 }
 
@@ -251,6 +254,7 @@ export function buildCreateInput(
     cwd: workspace.path,
     ...(selected === undefined ? { provider: null, model: null } : { provider: selected.provider, model: selected.model }),
     reasoningEffort: form.reasoningEffort === 'none' ? null : form.reasoningEffort,
+    ...(form.sessionMode !== undefined ? { sessionMode: form.sessionMode } : {}),
   }
 }
 
@@ -478,6 +482,7 @@ export function formFromAutomation(
     modelKey,
     reasoningEffort: item.reasoningEffort ?? 'none',
     timeZone: item.timeZone || schedule.timeZone || base.timeZone,
+    sessionMode: item.sessionMode ?? 'fresh',
   }
   switch (schedule.kind) {
     case 'once':

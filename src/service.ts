@@ -12,6 +12,7 @@ import type { Domain, KvTable } from "@deepseek-ai/dsh-storage-domain";
 import { WorkspaceId } from "@deepseek-ai/dsh-workspace";
 import {
   automationDomainSpec,
+  bindDefinitionSession,
   createDefinition,
   createManualRun,
   createScheduledRun,
@@ -37,6 +38,7 @@ import type {
   AutomationDefinition,
   AutomationRun,
   AutomationSchedule,
+  AutomationSessionMode,
   PermissionPreset,
   UpdateAutomationInput,
 } from "./types.ts";
@@ -92,6 +94,7 @@ export interface CreateRequest {
   readonly model?: string | null;
   readonly reasoningEffort?: string | null;
   readonly agentPreset?: string;
+  readonly sessionMode?: AutomationSessionMode;
 }
 
 export interface AutomationScope {
@@ -491,6 +494,7 @@ export class AutomationService {
           permissionPreset: this.requirePermission(request.permissionPreset),
           createdBy: { kind: scope.creatorKind, sessionId: scope.sessionId },
           now,
+          ...(request.sessionMode === undefined ? {} : { sessionMode: request.sessionMode }),
         });
       } catch (error) {
         throw new AutomationRequestError(asMessage(error));
@@ -1269,6 +1273,53 @@ export class AutomationService {
     this.active.set(run.id, { abort, promise });
   }
 
+  private async resolveReusableAgent(
+    workspaceId: string,
+    sessionId: string,
+  ): Promise<any | undefined> {
+    const trimmed = sessionId.trim();
+    if (trimmed === "") return undefined;
+    const registry = this.ctx.workspaceRegistry as {
+      get?: (id: unknown) => any;
+      archivedSessionIds?: readonly string[];
+    };
+    if (registry?.archivedSessionIds?.includes(trimmed)) return undefined;
+    const ws = registry?.get?.(WorkspaceId(workspaceId));
+    if (ws === undefined) return undefined;
+    if (typeof ws.status === "function") {
+      try {
+        if ((await ws.status()) !== "ok") return undefined;
+      } catch {
+        return undefined;
+      }
+    }
+
+    // 1. 优先尝试从活跃内存中获取 Live Agent
+    const live = this.ctx.agents?.get?.(SessionId(trimmed));
+    if (
+      live !== undefined &&
+      typeof live.whenIdle === "function" &&
+      typeof live.followup === "function"
+    ) {
+      return live;
+    }
+
+    // 2. 若宿主提供了 sessionController，尝试解析/唤醒会话
+    const sessionController = (this.ctx as any).get?.("sessionController") ?? (this.ctx as any).sessionController;
+    if (typeof sessionController?.resolveAgent === "function") {
+      try {
+        const resolved = await sessionController.resolveAgent(trimmed);
+        if (resolved && !("error" in resolved)) {
+          return resolved.agent ?? resolved;
+        }
+      } catch {
+        return undefined;
+      }
+    }
+
+    return undefined;
+  }
+
   private async executeRun(
     run: AutomationRun,
     signal: AbortSignal,
@@ -1288,7 +1339,26 @@ export class AutomationService {
       return;
     }
     const startedAt = toIso();
-    const sessionId = `${AUTOMATION_SESSION_PREFIX}${randomUUID()}`;
+    let sessionId: string;
+    let reusedAgent: any | undefined;
+    if (
+      definition.sessionMode === "reuse" &&
+      typeof definition.activeSessionId === "string" &&
+      definition.activeSessionId.trim() !== ""
+    ) {
+      reusedAgent = await this.resolveReusableAgent(
+        definition.workspaceId,
+        definition.activeSessionId,
+      );
+      if (reusedAgent !== undefined) {
+        sessionId = definition.activeSessionId;
+      } else {
+        sessionId = `${AUTOMATION_SESSION_PREFIX}${randomUUID()}`;
+      }
+    } else {
+      sessionId = `${AUTOMATION_SESSION_PREFIX}${randomUUID()}`;
+    }
+
     const running: AutomationRun = {
       ...run,
       status: "running",
@@ -1300,6 +1370,7 @@ export class AutomationService {
       runTimeoutMs: this.config.runTimeoutMs,
       sessionId,
       signal,
+      reusedAgent,
     });
     const finishedAt = toIso();
     const boundSessionId = completion.sessionId ?? running.sessionId;
@@ -1314,6 +1385,13 @@ export class AutomationService {
     }));
     if (typeof boundSessionId === "string" && boundSessionId !== "") {
       await this.adoptSession(boundSessionId).catch(() => undefined);
+      if (definition.sessionMode === "reuse") {
+        const latestDef = this.definitions.get(definition.id);
+        if (latestDef !== undefined && latestDef.activeSessionId !== boundSessionId) {
+          const updatedDef = bindDefinitionSession(latestDef, boundSessionId, toIso());
+          await this.definitions.put(latestDef.id, updatedDef);
+        }
+      }
     }
     await this.pruneWorkspaceHistory(run.targetSnapshot.workspaceId);
   }

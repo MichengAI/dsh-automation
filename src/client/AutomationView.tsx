@@ -480,6 +480,12 @@ function TaskCard({
       <div className="dsh-st-card-foot">
         <span className="dsh-st-chip" title={scheduleText}><IconClockOutline size={14} /><span className="dsh-st-chip-text">{scheduleText}</span></span>
         <span className="dsh-st-chip" title={`${t('card.agentPreset')}: ${presetName}`}><IconSettingsOutline size={14} /><span className="dsh-st-chip-text">{presetName}</span></span>
+        {item.sessionMode === 'reuse' && (
+          <span className="dsh-st-chip" title={item.activeSessionId ? `${t('card.sessionModeReuse')}: ${item.activeSessionId}` : t('card.sessionModeReuse')}>
+            <IconNewChatOutline size={14} />
+            <span className="dsh-st-chip-text">{t('card.sessionModeReuse')}</span>
+          </span>
+        )}
         <span className="dsh-st-card-next" title={nextRunText}>{nextRunText}</span>
       </div>
     </article>

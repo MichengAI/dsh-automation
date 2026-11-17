@@ -57,6 +57,7 @@ export declare const automationDomainSpec: {
 };
 export declare function createDefinition(input: CreateAutomationInput): AutomationDefinition;
 export declare function updateDefinition(current: AutomationDefinition, input: UpdateAutomationInput): AutomationDefinition;
+export declare function bindDefinitionSession(current: AutomationDefinition, sessionId: string | null, now: string): AutomationDefinition;
 export declare function pauseDefinition(current: AutomationDefinition, now: string): AutomationDefinition;
 export declare function deleteDefinition(current: AutomationDefinition): DeleteAutomationPlan;
 export declare function occurrenceKey(automationId: string, definitionRevision: number, scheduledFor: string): string;
