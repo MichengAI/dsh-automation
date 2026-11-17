@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.28] - 2026-11-17
+
+### New Features
+
+- **Dedicated session reuse (#31)**: support selecting "Reuse session" when creating or editing an automation task. Subsequent scheduled executions will continue injecting messages into the same dedicated session, preserving original context, history, and workspace progress. If the session is removed or unavailable, a new session is automatically created and bound.
+
+### UX & Layout Fixes
+
+- **Concurrency locking in reuse mode**: when reuse mode is selected, the concurrency input is automatically locked to serial execution with descriptive hints to prevent interleaved turns within the shared session.
+- **Sidebar session deduplication**: resolved an issue where scheduled tasks in reuse mode listed duplicate entries for the same session in the sidebar task tree; now shows a single consolidated session item with the latest execution status.
+
 ## [1.0.27] - 2026-11-15
 
 ### UI & Layout Fixes

@@ -1780,7 +1780,7 @@ test("sessionMode 为 reuse 时遵循「没有或者不可用就新建，可以�
       async create(options: any) {
         const newSessionId = String(options.sessionId);
         const newAgent = createMockAgent(newSessionId);
-        await options?.setup?.({}, newAgent);
+        await options?.setup?.({ on: () => () => {} }, newAgent);
         liveSessions.set(newSessionId, newAgent);
         return {
           agent: newAgent,
@@ -1926,7 +1926,7 @@ test("sessionMode 为 reuse 时，若任务迁移到其他工作区，必须拒�
         const newSessionId = String(options.sessionId);
         const cwd = options?.meta?.cwd ?? "D:\\work\\ws1";
         const newAgent = createMockAgent(newSessionId, cwd);
-        await options?.setup?.({}, newAgent);
+        await options?.setup?.({ on: () => () => {} }, newAgent);
         liveSessions.set(newSessionId, newAgent);
         return {
           agent: newAgent,
@@ -2062,7 +2062,7 @@ test("sessionMode 为 reuse 时，宿主重启导致 Live Agent 丢失后，能�
         const newSessionId = String(options.sessionId);
         const cwd = options?.meta?.cwd ?? "D:\\work\\ws1";
         const newAgent = createMockAgent(newSessionId, cwd);
-        await options?.setup?.({}, newAgent);
+        await options?.setup?.({ on: () => () => {} }, newAgent);
         liveSessions.set(newSessionId, newAgent);
         return {
           agent: newAgent,
@@ -2084,7 +2084,7 @@ test("sessionMode 为 reuse 时，宿主重启导致 Live Agent 丢失后，能�
           },
           cancel() {},
         };
-        await options?.setup?.({}, resumedAgent);
+        await options?.setup?.({ on: () => () => {} }, resumedAgent);
         liveSessions.set(sessionId, resumedAgent);
         return {
           agent: resumedAgent,
@@ -2215,7 +2215,7 @@ test("sessionMode 为 reuse 时，若任务变更了 agentPreset，必须拒绝�
         const preset = options?.meta?.agentPreset ?? "standard";
         createdPreset = preset;
         const newAgent = createMockAgent(newSessionId, cwd, preset);
-        await options?.setup?.({}, newAgent);
+        await options?.setup?.({ on: () => () => {} }, newAgent);
         liveSessions.set(newSessionId, newAgent);
         return {
           agent: newAgent,
@@ -2348,7 +2348,7 @@ test("sessionMode 为 reuse 时，若 activeSessionId 处于 archivedSessionIds 
         const newSessionId = String(options.sessionId);
         const cwd = options?.meta?.cwd ?? "D:\\work\\ws1";
         const newAgent = createMockAgent(newSessionId, cwd);
-        await options?.setup?.({}, newAgent);
+        await options?.setup?.({ on: () => () => {} }, newAgent);
         return {
           agent: newAgent,
           async dispose() {},
@@ -2359,7 +2359,7 @@ test("sessionMode 为 reuse 时，若 activeSessionId 处于 archivedSessionIds 
         const sessionId = String(options.resumeSessionId);
         const session = persistedSessions.get(sessionId);
         const resumedAgent = createMockAgent(sessionId, "D:\\work\\ws1");
-        await options?.setup?.({}, resumedAgent);
+        await options?.setup?.({ on: () => () => {} }, resumedAgent);
         return {
           agent: resumedAgent,
           async dispose() {},
@@ -2494,7 +2494,7 @@ test("sessionMode 为 reuse 且宿主无 LiveAgent 时，若持久化会话的�
         const cwd = options?.meta?.cwd ?? "D:\\work\\ws1";
         const preset = options?.meta?.agentPreset ?? "standard";
         const newAgent = createMockAgent(newSessionId, cwd, preset);
-        await options?.setup?.({}, newAgent);
+        await options?.setup?.({ on: () => () => {} }, newAgent);
         return {
           agent: newAgent,
           async dispose() {},
@@ -2505,7 +2505,7 @@ test("sessionMode 为 reuse 且宿主无 LiveAgent 时，若持久化会话的�
         const sessionId = String(options.resumeSessionId);
         const session = persistedSessions.get(sessionId);
         const resumedAgent = createMockAgent(sessionId, session?.header?.cwd ?? "D:\\work\\ws1", session?.header?.agentPreset ?? "standard");
-        await options?.setup?.({}, resumedAgent);
+        await options?.setup?.({ on: () => () => {} }, resumedAgent);
         return {
           agent: resumedAgent,
           async dispose() {},
@@ -2708,7 +2708,7 @@ test("sessionMode 为 reuse 时首次运行分配 sessionId 后在执行中 defi
           // 在执行开始时检查 definition 的 activeSessionId 是否已经提前被写入！
           const currentDef = definitions.get(definition.id);
           capturedSessionIdDuringRun = currentDef?.activeSessionId ?? null;
-          await opts?.setup?.({}, mockAgent);
+          await opts?.setup?.({ on: () => () => {} }, mockAgent);
           return {
             agent: mockAgent,
             async dispose() {},
