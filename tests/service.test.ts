@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createDefinition, createManualRun } from "../src/domain.ts";
-import { AutomationService, type AutomationConfig } from "../src/service.ts";
+import { AutomationService, AUTOMATION_SESSION_PREFIX, type AutomationConfig } from "../src/service.ts";
 import type { AutomationDefinition, AutomationRun } from "../src/types.ts";
 import { registerAutomationTools } from "../src/tools.ts";
 
@@ -2433,6 +2433,182 @@ test("sessionMode 为 reuse 时，若 activeSessionId 处于 archivedSessionIds 
     assert.equal(resumeCalled, false, "已归档会话严禁调用 resume");
     assert.notEqual(def2?.activeSessionId, session1Id, "必须自愈重新绑定新会话");
     assert.equal(createCount, 2, "必须通过 create 新建会话");
+  } finally {
+    await service.dispose();
+  }
+});
+
+test("sessionMode 为 reuse 且宿主无 LiveAgent 时，若持久化会话的预设与任务当前预设不一致，canResumeSession 必须拒绝并自愈新建", async () => {
+  const persistedSessions = new Map<string, any>();
+  const events: any[] = [];
+  const listeners: any[] = [];
+  const createMockAgent = (sessionId: string, cwd: string, preset: string) => {
+    const session = {
+      id: sessionId,
+      header: { cwd, agentPreset: preset },
+      get seq() { return events.length },
+      append(type: string, data: any) {
+        const evt = { seq: events.length, type, data };
+        events.push(evt);
+        for (const l of listeners) l(session, evt);
+      },
+    };
+    persistedSessions.set(sessionId, session);
+    return {
+      session,
+      async whenIdle() {},
+      followup() {
+        session.append("turn/start", {});
+        session.append("assistant/message", { message: { content: [{ type: "text", text: "已执行" }] } });
+        session.append("turn/end", { reason: { kind: "completed" } });
+      },
+      cancel() {},
+    };
+  };
+
+  const workspaces: Record<string, any> = {
+    ws_1: { id: "ws_1", title: "ws1", path: "D:\\work\\ws1", status: async () => "ok", attachSession: async () => {} },
+  };
+
+  const defaultAgent = {
+    session: {
+      header: { cwd: "D:\\work\\ws1", agentPreset: "standard" },
+      requestHeader: () => ({ config: { provider: "deepseek", model: "v4" } }),
+    },
+    ctx: {},
+  };
+
+  let createCount = 0;
+  let resumeCalled = false;
+  const { service, definitions, runs } = await makeService({}, {}, {
+    agents: {
+      withoutInitiator: (callback: () => unknown) => callback(),
+      get(id: unknown) {
+        if (String(id) === "session_1") return defaultAgent;
+        // 模拟重启后无 LiveAgent
+        return undefined;
+      },
+      async create(options: any) {
+        createCount++;
+        const newSessionId = String(options.sessionId);
+        const cwd = options?.meta?.cwd ?? "D:\\work\\ws1";
+        const preset = options?.meta?.agentPreset ?? "standard";
+        const newAgent = createMockAgent(newSessionId, cwd, preset);
+        await options?.setup?.({}, newAgent);
+        return {
+          agent: newAgent,
+          async dispose() {},
+        };
+      },
+      async resume(options: any) {
+        resumeCalled = true;
+        const sessionId = String(options.resumeSessionId);
+        const session = persistedSessions.get(sessionId);
+        const resumedAgent = createMockAgent(sessionId, session?.header?.cwd ?? "D:\\work\\ws1", session?.header?.agentPreset ?? "standard");
+        await options?.setup?.({}, resumedAgent);
+        return {
+          agent: resumedAgent,
+          async dispose() {},
+        };
+      },
+    },
+    workspaceRegistry: {
+      get(id: unknown) {
+        return workspaces[String(id)];
+      },
+      async resolveByPath(path: string) {
+        return Object.values(workspaces).find((w) => w.path === path);
+      },
+    },
+    agentPresets: {
+      mount: async () => {},
+      composedPreset: () => "standard",
+    },
+    sessions: {
+      flush: async () => {},
+      get(id: unknown) {
+        return persistedSessions.get(String(id));
+      },
+    },
+    get: () => undefined,
+    on(name: string, listener: any) {
+      if (name === "session/event") listeners.push(listener);
+      return () => {};
+    },
+  });
+
+  try {
+    const scope = { sessionId: "session_1", creatorKind: "web" as const };
+    const created = await service.create(scope, {
+      name: "持久化预设不一致防御测试",
+      prompt: "检查",
+      schedule: { kind: "daily", time: "09:00", timeZone: "Asia/Shanghai" },
+      sessionMode: "reuse",
+      agentPreset: "standard",
+      workspace: "ws_1",
+    });
+
+    service.start();
+
+    // 1. 首轮运行，绑定 standard 预设会话
+    const run1 = await service.runNow(scope, created.id);
+    for (let i = 0; i < 50; i++) {
+      const item = runs.get(run1.id);
+      if (item && item.status !== "queued" && item.status !== "running") break;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    await new Promise((r) => setTimeout(r, 50));
+    const def1 = definitions.get(created.id);
+    const session1Id = def1?.activeSessionId;
+    assert.ok(session1Id, "首轮必须绑定 activeSessionId");
+
+    // 2. 将任务的预设更新为 ptc
+    await service.update(scope, created.id, {
+      agentPreset: "ptc",
+    });
+
+    // 3. 再次运行：canResumeSession 必须检测出持久化会话的预设(standard)与目标预设(ptc)不一致，严禁调用 resume
+    resumeCalled = false;
+    const run2 = await service.runNow(scope, created.id);
+    for (let i = 0; i < 50; i++) {
+      const item = runs.get(run2.id);
+      if (item && item.status !== "queued" && item.status !== "running") break;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    await new Promise((r) => setTimeout(r, 50));
+    const def2 = definitions.get(created.id);
+    assert.equal(resumeCalled, false, "预设不一致时 canResumeSession 必须返回 false，严禁调用 resume");
+    assert.notEqual(def2?.activeSessionId, session1Id, "必须自愈重新绑定新会话");
+    assert.equal(createCount, 2, "必须通过 create 新建会话");
+  } finally {
+    await service.dispose();
+  }
+});
+
+test("canResumeSession: 当工作区物理路径与 expectedCwd 不一致时必须拒绝 resume 返回 false", async () => {
+  const sessionId = AUTOMATION_SESSION_PREFIX + "test_path_mismatch";
+  const workspaces: Record<string, any> = {
+    ws_1: { id: "ws_1", title: "ws1", path: "D:\work\ws1_migrated", status: async () => "ok" },
+  };
+  const persistedSessions = new Map<string, any>([
+    [sessionId, { id: sessionId, header: { cwd: "D:\work\ws1", agentPreset: "standard" } }],
+  ]);
+  const { service } = await makeService({}, {}, {
+    agents: {
+      get: () => undefined,
+      resume: async () => ({}),
+    },
+    workspaceRegistry: {
+      get: (id: unknown) => workspaces[String(id)],
+    },
+    sessions: {
+      get: (id: unknown) => persistedSessions.get(String(id)),
+    },
+  });
+
+  try {
+    const canResume = await (service as any).canResumeSession("ws_1", "D:\work\ws1", "standard", sessionId);
+    assert.equal(canResume, false, "ws.path !== expectedCwd 时必须拒绝 resume 返回 false");
   } finally {
     await service.dispose();
   }

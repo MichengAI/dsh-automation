@@ -879,13 +879,12 @@ test('执行器复用会话时，若 session cwd 与目标 cwd 不一致，必�
 })
 
 
-test('初始 whenIdle 纳入超时保护：runTimeout 到期后必须触发 cancel 并返回 timeout 失败', async () => {
+test('初始 whenIdle 纳入超时保护：runTimeout 到期后必须触发 cancel 并在未收敛时返回 cancel_convergence_timeout', { timeout: 300 }, async () => {
   const { definition: baseDef, run: baseRun } = sampleRun()
   const definition = { ...baseDef, sessionMode: 'reuse' as const, activeSessionId: 's_timeout_idle' }
   const run = { ...baseRun, targetSnapshot: { ...baseRun.targetSnapshot, sessionMode: 'reuse' as const } }
 
   let cancelCalled = false
-  let resolveIdle: (() => void) | undefined
   const busyAgent = {
     session: {
       id: 's_timeout_idle',
@@ -893,12 +892,10 @@ test('初始 whenIdle 纳入超时保护：runTimeout 到期后必须触发 canc
       seq: 0,
       append() {},
     },
-    whenIdle: () => new Promise<void>((resolve) => {
-      resolveIdle = resolve
-    }),
+    // 永久 pending，模拟挂死不收敛的 agent；若缺少 Promise.race 将导致 await initialIdle 永久挂死
+    whenIdle: () => new Promise<void>(() => {}),
     cancel: () => {
       cancelCalled = true
-      resolveIdle?.()
     },
     followup: () => {},
   }
@@ -923,14 +920,16 @@ test('初始 whenIdle 纳入超时保护：runTimeout 到期后必须触发 canc
   const started = Date.now()
   const result = await executeAutomationRun(ctx as never, definition, run, {
     sessionId: 's_timeout_idle',
-    runTimeoutMs: 50,
+    runTimeoutMs: 30,
+    cancelConvergenceTimeoutMs: 20,
     reusedAgent: busyAgent,
   })
   const elapsed = Date.now() - started
   assert.equal(result.status, 'failed')
-  assert.equal(result.error?.code, 'timeout')
+  assert.equal(result.error?.code, 'cancel_convergence_timeout')
   assert.equal(cancelCalled, true, '超时必须触发 cancel')
-  assert.ok(elapsed < 400, `超时后应迅速收敛退出，实际耗时 ${elapsed}ms`)
+  assert.ok(elapsed >= 30, '至少等待 runTimeoutMs')
+  assert.ok(elapsed < 250, `超时后应在收敛时限内迅速退出，实际耗时 ${elapsed}ms`)
 })
 
 test('执行器复用会话时，若 session 预设与目标预设不一致，必须拒绝并自愈新建', async () => {

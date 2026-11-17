@@ -74,6 +74,7 @@ export interface ExecutorConfig {
   readonly signal?: AbortSignal
   readonly reusedAgent?: unknown
   readonly resumeSession?: boolean
+  readonly cancelConvergenceTimeoutMs?: number
 }
 
 /** 先应用官方预设的完整语义，再让无人值守审批 fail-closed。 */
@@ -223,6 +224,7 @@ export async function executeAutomationRun(
   let timeout: ReturnType<typeof setTimeout> | undefined
   let removeCancellationListener = () => {}
   let watched: SessionEventWatch | undefined
+  const cancelConvergenceTimeoutMs = config.cancelConvergenceTimeoutMs ?? CANCEL_CONVERGENCE_TIMEOUT_MS
   try {
     if (liveAgent === undefined) {
       if (config.resumeSession === true && typeof ctx.agents?.resume === 'function') {
@@ -365,7 +367,7 @@ export async function executeAutomationRun(
     await Promise.race([initialIdle, deadline, cancellation])
     if (timedOut || aborted) {
       removeCancellationListener()
-      if (!await settlesWithin(initialIdle, CANCEL_CONVERGENCE_TIMEOUT_MS)) {
+      if (!await settlesWithin(initialIdle, cancelConvergenceTimeoutMs)) {
         return {
           sessionId: String(sessionId),
           status: aborted ? 'cancelled' : 'failed',
@@ -413,7 +415,7 @@ export async function executeAutomationRun(
     const turnIdle = liveAgent.whenIdle()
     await Promise.race([turnIdle, deadline, cancellation])
     removeCancellationListener()
-    if ((timedOut || aborted) && !await settlesWithin(turnIdle, CANCEL_CONVERGENCE_TIMEOUT_MS)) {
+    if ((timedOut || aborted) && !await settlesWithin(turnIdle, cancelConvergenceTimeoutMs)) {
       return {
         sessionId: String(sessionId),
         status: aborted ? 'cancelled' : 'failed',
@@ -473,7 +475,7 @@ export async function executeAutomationRun(
     removeCancellationListener()
     if (timeout !== undefined) clearTimeout(timeout)
     if (handle !== undefined && !isReuseMode) {
-      await settlesWithin(handle.dispose().catch(() => {}), CANCEL_CONVERGENCE_TIMEOUT_MS)
+      await settlesWithin(handle.dispose().catch(() => {}), cancelConvergenceTimeoutMs)
     }
   }
 }

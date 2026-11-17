@@ -39,6 +39,7 @@ export interface ExecutorConfig {
     readonly signal?: AbortSignal;
     readonly reusedAgent?: unknown;
     readonly resumeSession?: boolean;
+    readonly cancelConvergenceTimeoutMs?: number;
 }
 /** 先应用官方预设的完整语义，再让无人值守审批 fail-closed。 */
 export declare function applyUnattendedPermission(presets: PermissionPresetService, session: unknown, permission: AutomationDefinition['permissionPreset']): void;
