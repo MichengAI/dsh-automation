@@ -152,6 +152,7 @@ export declare class AutomationService {
     private startQueuedRuns;
     private startRun;
     private resolveReusableAgent;
+    private canResumeSession;
     private executeRun;
     private armNextTimer;
     private armRetryTimer;

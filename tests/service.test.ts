@@ -1870,3 +1870,293 @@ test("sessionMode 为 reuse 时遵循「没有或者不可用就新建，可以�
     await service.dispose();
   }
 });
+
+test("sessionMode 为 reuse 时，若任务迁移到其他工作区，必须拒绝跨工作区复用并自愈新建", async () => {
+  const liveSessions = new Map<string, any>();
+  const events: any[] = [];
+  const listeners: any[] = [];
+  const createMockAgent = (sessionId: string, cwd: string) => {
+    const session = {
+      id: sessionId,
+      header: { cwd },
+      get seq() { return events.length },
+      append(type: string, data: any) {
+        const evt = { seq: events.length, type, data };
+        events.push(evt);
+        for (const l of listeners) l(session, evt);
+      },
+    };
+    return {
+      session,
+      async whenIdle() {},
+      followup() {
+        session.append("turn/start", {});
+        session.append("assistant/message", { message: { content: [{ type: "text", text: "已执行" }] } });
+        session.append("turn/end", { reason: { kind: "completed" } });
+      },
+      cancel() {},
+    };
+  };
+
+  const workspaces: Record<string, any> = {
+    ws_1: { id: "ws_1", title: "ws1", path: "D:\\work\\ws1", status: async () => "ok", attachSession: async () => {} },
+    ws_2: { id: "ws_2", title: "ws2", path: "D:\\work\\ws2", status: async () => "ok", attachSession: async () => {} },
+  };
+
+  const defaultAgent = {
+    session: {
+      header: { cwd: "D:\\work\\ws1", agentPreset: "standard" },
+      requestHeader: () => ({ config: { provider: "deepseek", model: "v4" } }),
+    },
+    ctx: {},
+  };
+
+  let createdCount = 0;
+  const { service, definitions, runs } = await makeService({}, {}, {
+    agents: {
+      withoutInitiator: (callback: () => unknown) => callback(),
+      get(id: unknown) {
+        if (String(id) === "session_1") {
+          return defaultAgent;
+        }
+        return liveSessions.get(String(id));
+      },
+      async create(options: any) {
+        createdCount++;
+        const newSessionId = String(options.sessionId);
+        const cwd = options?.meta?.cwd ?? "D:\\work\\ws1";
+        const newAgent = createMockAgent(newSessionId, cwd);
+        await options?.setup?.({}, newAgent);
+        liveSessions.set(newSessionId, newAgent);
+        return {
+          agent: newAgent,
+          async dispose() {},
+        };
+      },
+    },
+    workspaceRegistry: {
+      get(id: unknown) {
+        return workspaces[String(id)];
+      },
+      async resolveByPath(path: string) {
+        return Object.values(workspaces).find((w) => w.path === path);
+      },
+    },
+    agentPresets: {
+      mount: async () => {},
+      composedPreset: () => "standard",
+    },
+    sessions: {
+      flush: async () => {},
+      get(id: unknown) {
+        return liveSessions.get(String(id))?.session;
+      },
+    },
+    get: () => undefined,
+    on(name: string, listener: any) {
+      if (name === "session/event") listeners.push(listener);
+      return () => {};
+    },
+  });
+
+  try {
+    const scope = { sessionId: "session_1", creatorKind: "web" as const };
+    const created = await service.create(scope, {
+      name: "跨区自愈任务",
+      prompt: "检查",
+      schedule: { kind: "daily", time: "09:00", timeZone: "Asia/Shanghai" },
+      sessionMode: "reuse",
+      workspace: "ws_1",
+    });
+
+    service.start();
+
+    // 1. 在 ws_1 下首轮运行，绑定了 session1（cwd: D:\work\ws1）
+    const run1 = await service.runNow(scope, created.id);
+    for (let i = 0; i < 50; i++) {
+      const item = runs.get(run1.id);
+      if (item && item.status !== "queued" && item.status !== "running") break;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    await new Promise((r) => setTimeout(r, 50));
+    const def1 = definitions.get(created.id);
+    const session1Id = def1?.activeSessionId;
+    assert.ok(session1Id, "首轮必须绑定 activeSessionId");
+
+    // 2. 将任务迁移到 ws_2（cwd: D:\work\ws2）
+    await service.update({ ...scope, hostWide: true }, created.id, {
+      workspace: "ws_2",
+    });
+    const defMigrated = definitions.get(created.id);
+    assert.equal(defMigrated?.workspaceId, "ws_2");
+    assert.equal(defMigrated?.activeSessionId, session1Id, "更新未清空 activeSessionId");
+
+    // 3. 在 ws_2 下触发第二轮运行：原 session1 属于 ws1，必须拒绝复用，自愈新建绑定到 ws_2
+    const run2 = await service.runNow({ ...scope, hostWide: true }, created.id);
+    for (let i = 0; i < 50; i++) {
+      const item = runs.get(run2.id);
+      if (item && item.status !== "queued" && item.status !== "running") break;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    await new Promise((r) => setTimeout(r, 50));
+    const def2 = definitions.get(created.id);
+    assert.ok(def2?.activeSessionId);
+    assert.notEqual(def2?.activeSessionId, session1Id, "跨工作区时必须拒绝复用旧会话并自愈新建");
+  } finally {
+    await service.dispose();
+  }
+});
+
+test("sessionMode 为 reuse 时，宿主重启导致 Live Agent 丢失后，能通过 resume 恢复复用已有会话", async () => {
+  const liveSessions = new Map<string, any>();
+  const persistedSessions = new Map<string, any>();
+  const events: any[] = [];
+  const listeners: any[] = [];
+  const createMockAgent = (sessionId: string, cwd: string) => {
+    const session = {
+      id: sessionId,
+      header: { cwd },
+      get seq() { return events.length },
+      append(type: string, data: any) {
+        const evt = { seq: events.length, type, data };
+        events.push(evt);
+        for (const l of listeners) l(session, evt);
+      },
+    };
+    persistedSessions.set(sessionId, session);
+    return {
+      session,
+      async whenIdle() {},
+      followup() {
+        session.append("turn/start", {});
+        session.append("assistant/message", { message: { content: [{ type: "text", text: "已执行" }] } });
+        session.append("turn/end", { reason: { kind: "completed" } });
+      },
+      cancel() {},
+    };
+  };
+
+  const workspaces: Record<string, any> = {
+    ws_1: { id: "ws_1", title: "ws1", path: "D:\\work\\ws1", status: async () => "ok", attachSession: async () => {} },
+  };
+
+  const defaultAgent = {
+    session: {
+      header: { cwd: "D:\\work\\ws1", agentPreset: "standard" },
+      requestHeader: () => ({ config: { provider: "deepseek", model: "v4" } }),
+    },
+    ctx: {},
+  };
+
+  let resumeCalled = false;
+  const { service, definitions, runs } = await makeService({}, {}, {
+    agents: {
+      withoutInitiator: (callback: () => unknown) => callback(),
+      get(id: unknown) {
+        if (String(id) === "session_1") {
+          return defaultAgent;
+        }
+        return liveSessions.get(String(id));
+      },
+      async create(options: any) {
+        const newSessionId = String(options.sessionId);
+        const cwd = options?.meta?.cwd ?? "D:\\work\\ws1";
+        const newAgent = createMockAgent(newSessionId, cwd);
+        await options?.setup?.({}, newAgent);
+        liveSessions.set(newSessionId, newAgent);
+        return {
+          agent: newAgent,
+          async dispose() {},
+        };
+      },
+      async resume(options: any) {
+        resumeCalled = true;
+        const sessionId = String(options.resumeSessionId);
+        const session = persistedSessions.get(sessionId);
+        if (!session) throw new Error("persisted session not found");
+        const resumedAgent = {
+          session,
+          async whenIdle() {},
+          followup() {
+            session.append("turn/start", {});
+            session.append("assistant/message", { message: { content: [{ type: "text", text: "恢复执行" }] } });
+            session.append("turn/end", { reason: { kind: "completed" } });
+          },
+          cancel() {},
+        };
+        await options?.setup?.({}, resumedAgent);
+        liveSessions.set(sessionId, resumedAgent);
+        return {
+          agent: resumedAgent,
+          async dispose() {},
+        };
+      },
+    },
+    workspaceRegistry: {
+      get(id: unknown) {
+        return workspaces[String(id)];
+      },
+      async resolveByPath(path: string) {
+        return Object.values(workspaces).find((w) => w.path === path);
+      },
+    },
+    agentPresets: {
+      mount: async () => {},
+      composedPreset: () => "standard",
+    },
+    sessions: {
+      flush: async () => {},
+      get(id: unknown) {
+        return persistedSessions.get(String(id));
+      },
+    },
+    get: () => undefined,
+    on(name: string, listener: any) {
+      if (name === "session/event") listeners.push(listener);
+      return () => {};
+    },
+  });
+
+  try {
+    const scope = { sessionId: "session_1", creatorKind: "web" as const };
+    const created = await service.create(scope, {
+      name: "重启恢复测试",
+      prompt: "检查",
+      schedule: { kind: "daily", time: "09:00", timeZone: "Asia/Shanghai" },
+      sessionMode: "reuse",
+      workspace: "ws_1",
+    });
+
+    service.start();
+
+    // 1. 首轮运行，绑定 session1
+    const run1 = await service.runNow(scope, created.id);
+    for (let i = 0; i < 50; i++) {
+      const item = runs.get(run1.id);
+      if (item && item.status !== "queued" && item.status !== "running") break;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    await new Promise((r) => setTimeout(r, 50));
+    const def1 = definitions.get(created.id);
+    const session1Id = def1?.activeSessionId;
+    assert.ok(session1Id, "首轮必须绑定 activeSessionId");
+
+    // 2. 模拟宿主重启：清空内存中存活的 Agent，只保留持久化数据库 session 记录
+    liveSessions.clear();
+    assert.equal(liveSessions.size, 0, "内存 Agent 已随宿主重启清空");
+
+    // 3. 再次触发运行：必须通过 resume 恢复旧会话
+    const run2 = await service.runNow(scope, created.id);
+    for (let i = 0; i < 50; i++) {
+      const item = runs.get(run2.id);
+      if (item && item.status !== "queued" && item.status !== "running") break;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    await new Promise((r) => setTimeout(r, 50));
+    const def2 = definitions.get(created.id);
+    assert.equal(resumeCalled, true, "宿主重启后必须调用 agents.resume 恢复会话");
+    assert.equal(def2?.activeSessionId, session1Id, "恢复成功后必须继续复用同一个 activeSessionId");
+  } finally {
+    await service.dispose();
+  }
+});

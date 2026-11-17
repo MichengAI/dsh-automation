@@ -1,5 +1,6 @@
 /** 已认领 run 的独立 Agent 执行边界。 */
 
+import { randomUUID } from 'node:crypto'
 import { installModelSelection, type ModelSelection } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/dsh-agent-presets'
@@ -72,6 +73,7 @@ export interface ExecutorConfig {
   readonly sessionId: string
   readonly signal?: AbortSignal
   readonly reusedAgent?: unknown
+  readonly resumeSession?: boolean
 }
 
 /** 先应用官方预设的完整语义，再让无人值守审批 fail-closed。 */
@@ -213,9 +215,9 @@ export async function executeAutomationRun(
         ...(target.reasoningEffort ? { reasoningEffort: target.reasoningEffort } : {}),
       }
     : fallbackSelection
-  const sessionId = SessionId(config.sessionId)
+  let sessionId = SessionId(config.sessionId)
   const isReuseMode = definition.sessionMode === 'reuse'
-  const isReused = config.reusedAgent !== undefined
+  let isReused = config.reusedAgent !== undefined
   let liveAgent: any = config.reusedAgent
   let handle: Awaited<ReturnType<Context['agents']['create']>> | undefined
   let timeout: ReturnType<typeof setTimeout> | undefined
@@ -223,55 +225,106 @@ export async function executeAutomationRun(
   let watched: SessionEventWatch | undefined
   try {
     if (liveAgent === undefined) {
-      handle = await ctx.agents.withoutInitiator(() => ctx.agents.create({
-        sessionId,
-        ...(config.signal === undefined ? {} : { signal: config.signal }),
-        meta: { cwd: target.cwd, agentPreset: target.agentPreset },
-        // DSH 0.2.2-rc.1 removed the selection argument from installModelSelection
-        // and applies the initial route (including reasoningEffort) from AgentOptions.
-        // The effort must travel here to be recorded in the request header.
-        agentOptions: {
-          provider: selection.provider,
-          model: selection.model,
-          ...(selection.reasoningEffort === undefined ? {} : { reasoningEffort: selection.reasoningEffort }),
-        },
-        setup: async (agentCtx: Context, createdAgent?: SetupAgent) => {
-          if (ctx.agentPresets === undefined) throw new Error('Host 未提供 agentPresets 服务。')
-          await ctx.agentPresets.mount(agentCtx, target.agentPreset)
-          // DSH 0.2.0-rc.2 → 0.2.1-rc.5 select the model through the second argument;
-          // DSH 0.2.2-rc.1 accepts only agentCtx and ignores it (AgentOptions above wins).
-          installModelSelection(agentCtx, { current: selection, assembled: undefined })
-          if (createdAgent === undefined) throw new Error('automation setup has no scoped Agent')
-          const agent = createdAgent
-          applyUnattendedPermission(ctx.permissionPresets, agent.session, target.permissionPreset)
-        },
-      }))
-      liveAgent = handle.agent
+      if (config.resumeSession === true && typeof ctx.agents?.resume === 'function') {
+        try {
+          handle = await ctx.agents.withoutInitiator(() => ctx.agents.resume({
+            resumeSessionId: sessionId,
+            ...(config.signal === undefined ? {} : { signal: config.signal }),
+            agentOptions: {
+              provider: selection.provider,
+              model: selection.model,
+              ...(selection.reasoningEffort === undefined ? {} : { reasoningEffort: selection.reasoningEffort }),
+            },
+            setup: async (agentCtx: Context, resumedAgent?: SetupAgent) => {
+              if (ctx.agentPresets !== undefined) {
+                await ctx.agentPresets.mount(agentCtx, target.agentPreset)
+              }
+              installModelSelection(agentCtx, { current: selection, assembled: undefined })
+              if (resumedAgent !== undefined) {
+                applyUnattendedPermission(ctx.permissionPresets, resumedAgent.session, target.permissionPreset)
+              }
+            },
+          }))
+          liveAgent = handle.agent
+          isReused = true
+        } catch {
+          // 持久化会话恢复失败（例如会话损坏或不存在），自愈回退到新建
+          sessionId = SessionId(`dsh-automation-session-${randomUUID()}`)
+          isReused = false
+        }
+      }
+      if (liveAgent === undefined) {
+        handle = await ctx.agents.withoutInitiator(() => ctx.agents.create({
+          sessionId,
+          ...(config.signal === undefined ? {} : { signal: config.signal }),
+          meta: { cwd: target.cwd, agentPreset: target.agentPreset },
+          // DSH 0.2.2-rc.1 removed the selection argument from installModelSelection
+          // and applies the initial route (including reasoningEffort) from AgentOptions.
+          // The effort must travel here to be recorded in the request header.
+          agentOptions: {
+            provider: selection.provider,
+            model: selection.model,
+            ...(selection.reasoningEffort === undefined ? {} : { reasoningEffort: selection.reasoningEffort }),
+          },
+          setup: async (agentCtx: Context, createdAgent?: SetupAgent) => {
+            if (ctx.agentPresets === undefined) throw new Error('Host 未提供 agentPresets 服务。')
+            await ctx.agentPresets.mount(agentCtx, target.agentPreset)
+            // DSH 0.2.0-rc.2 → 0.2.1-rc.5 select the model through the second argument;
+            // DSH 0.2.2-rc.1 accepts only agentCtx and ignores it (AgentOptions above wins).
+            installModelSelection(agentCtx, { current: selection, assembled: undefined })
+            if (createdAgent === undefined) throw new Error('automation setup has no scoped Agent')
+            const agent = createdAgent
+            applyUnattendedPermission(ctx.permissionPresets, agent.session, target.permissionPreset)
+          },
+        }))
+        liveAgent = handle.agent
+      }
     }
-    await liveAgent.whenIdle()
-    await workspace.attachSession(sessionId)
-    if (!isReused) {
-      pinAutomationSessionTitle(ctx, liveAgent.session, automationSessionTitle(
-        definition.name,
-        run.startedAt ?? run.scheduledFor,
-        definition.timeZone,
-      ))
+
+    // 跨工作区逃逸防御：若复用的会话 cwd 与当前任务目标 cwd 不一致，必须拒绝复用并自愈新建
+    if (isReused && liveAgent !== undefined) {
+      const sessionCwd =
+        liveAgent?.session?.header?.cwd ??
+        liveAgent?.session?.meta?.cwd ??
+        liveAgent?.meta?.cwd
+      if (sessionCwd !== undefined && sessionCwd !== target.cwd) {
+        sessionId = SessionId(`dsh-automation-session-${randomUUID()}`)
+        isReused = false
+        liveAgent = undefined
+        handle = await ctx.agents.withoutInitiator(() => ctx.agents.create({
+          sessionId,
+          ...(config.signal === undefined ? {} : { signal: config.signal }),
+          meta: { cwd: target.cwd, agentPreset: target.agentPreset },
+          agentOptions: {
+            provider: selection.provider,
+            model: selection.model,
+            ...(selection.reasoningEffort === undefined ? {} : { reasoningEffort: selection.reasoningEffort }),
+          },
+          setup: async (agentCtx: Context, createdAgent?: SetupAgent) => {
+            if (ctx.agentPresets === undefined) throw new Error('Host 未提供 agentPresets 服务。')
+            await ctx.agentPresets.mount(agentCtx, target.agentPreset)
+            installModelSelection(agentCtx, { current: selection, assembled: undefined })
+            if (createdAgent === undefined) throw new Error('automation setup has no scoped Agent')
+            const agent = createdAgent
+            applyUnattendedPermission(ctx.permissionPresets, agent.session, target.permissionPreset)
+          },
+        }))
+        liveAgent = handle.agent
+      }
     }
-    const firstSeq = liveAgent.session.seq
-    watched = watchSessionEvents(ctx, liveAgent.session, firstSeq)
-    liveAgent.followup(createUserMessage({
-      content: [{ type: 'text', text: run.promptSnapshot }],
-      source: {
-        kind: 'automation',
-        automationId: definition.id,
-        runId: run.id,
-        scheduledFor: run.scheduledFor,
-      },
-    }))
+
+    // 复用会话必须始终重新应用当前任务定义的权限预设、fail-closed 审批策略与模型选择
+    if (isReused) {
+      if (ctx.permissionPresets !== undefined && liveAgent?.session !== undefined) {
+        applyUnattendedPermission(ctx.permissionPresets, liveAgent.session, target.permissionPreset)
+      }
+      if (typeof liveAgent?.model?.select === 'function') {
+        liveAgent.model.select(selection)
+      }
+    }
 
     let timedOut = false
     let aborted = false
-    const idle = liveAgent.whenIdle()
     const deadline = new Promise<void>((resolve) => {
       timeout = setTimeout(() => {
         timedOut = true
@@ -292,9 +345,61 @@ export async function executeAutomationRun(
         removeCancellationListener = () => { config.signal?.removeEventListener('abort', cancel) }
       }
     })
-    await Promise.race([idle, deadline, cancellation])
+
+    // 等待初始空闲状态（受到超时与取消监听器保护，防止忙碌会话永久挂起）
+    const initialIdle = liveAgent.whenIdle()
+    await Promise.race([initialIdle, deadline, cancellation])
+    if (timedOut || aborted) {
+      removeCancellationListener()
+      if (!await settlesWithin(initialIdle, CANCEL_CONVERGENCE_TIMEOUT_MS)) {
+        return {
+          sessionId: String(sessionId),
+          status: aborted ? 'cancelled' : 'failed',
+          error: {
+            code: 'cancel_convergence_timeout',
+            message: '自动化取消后未能在安全时限内停止。',
+          },
+        }
+      }
+      if (timeout !== undefined) clearTimeout(timeout)
+      if (aborted) {
+        return {
+          sessionId: String(sessionId),
+          status: 'cancelled',
+          error: { code: 'cancelled', message: '自动化因其所属服务停止而被取消。' },
+        }
+      }
+      return {
+        sessionId: String(sessionId),
+        status: 'failed',
+        error: { code: 'timeout', message: '自动化超过最大运行时限。' },
+      }
+    }
+
+    await workspace.attachSession(sessionId)
+    if (!isReused) {
+      pinAutomationSessionTitle(ctx, liveAgent.session, automationSessionTitle(
+        definition.name,
+        run.startedAt ?? run.scheduledFor,
+        definition.timeZone,
+      ))
+    }
+    const firstSeq = liveAgent.session.seq
+    watched = watchSessionEvents(ctx, liveAgent.session, firstSeq)
+    liveAgent.followup(createUserMessage({
+      content: [{ type: 'text', text: run.promptSnapshot }],
+      source: {
+        kind: 'automation',
+        automationId: definition.id,
+        runId: run.id,
+        scheduledFor: run.scheduledFor,
+      },
+    }))
+
+    const turnIdle = liveAgent.whenIdle()
+    await Promise.race([turnIdle, deadline, cancellation])
     removeCancellationListener()
-    if ((timedOut || aborted) && !await settlesWithin(idle, CANCEL_CONVERGENCE_TIMEOUT_MS)) {
+    if ((timedOut || aborted) && !await settlesWithin(turnIdle, CANCEL_CONVERGENCE_TIMEOUT_MS)) {
       return {
         sessionId: String(sessionId),
         status: aborted ? 'cancelled' : 'failed',

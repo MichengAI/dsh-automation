@@ -1275,6 +1275,7 @@ export class AutomationService {
 
   private async resolveReusableAgent(
     workspaceId: string,
+    expectedCwd: string,
     sessionId: string,
   ): Promise<any | undefined> {
     const trimmed = sessionId.trim();
@@ -1293,6 +1294,9 @@ export class AutomationService {
         return undefined;
       }
     }
+    if (typeof ws.path === "string" && ws.path !== expectedCwd) {
+      return undefined;
+    }
 
     // 1. 优先尝试从活跃内存中获取 Live Agent
     const live = this.ctx.agents?.get?.(SessionId(trimmed));
@@ -1301,6 +1305,17 @@ export class AutomationService {
       typeof live.whenIdle === "function" &&
       typeof live.followup === "function"
     ) {
+      const sessionCwd =
+        live.session?.header?.cwd ??
+        live.session?.meta?.cwd ??
+        (live as any).meta?.cwd;
+      if (
+        sessionCwd !== undefined &&
+        sessionCwd !== expectedCwd &&
+        sessionCwd !== ws.path
+      ) {
+        return undefined;
+      }
       return live;
     }
 
@@ -1310,7 +1325,19 @@ export class AutomationService {
       try {
         const resolved = await sessionController.resolveAgent(trimmed);
         if (resolved && !("error" in resolved)) {
-          return resolved.agent ?? resolved;
+          const agent = resolved.agent ?? resolved;
+          const sessionCwd =
+            agent?.session?.header?.cwd ??
+            agent?.session?.meta?.cwd ??
+            agent?.meta?.cwd;
+          if (
+            sessionCwd !== undefined &&
+            sessionCwd !== expectedCwd &&
+            sessionCwd !== ws.path
+          ) {
+            return undefined;
+          }
+          return agent;
         }
       } catch {
         return undefined;
@@ -1318,6 +1345,56 @@ export class AutomationService {
     }
 
     return undefined;
+  }
+
+  private async canResumeSession(
+    workspaceId: string,
+    expectedCwd: string,
+    sessionId: string,
+  ): Promise<boolean> {
+    const trimmed = sessionId.trim();
+    if (trimmed === "") return false;
+    if (!trimmed.startsWith(AUTOMATION_SESSION_PREFIX)) return false;
+    if (
+      typeof this.ctx.agents?.resume !== "function" &&
+      typeof (this.ctx as any).sessionController?.resolveAgent !== "function"
+    ) {
+      return false;
+    }
+
+    const registry = this.ctx.workspaceRegistry as {
+      get?: (id: unknown) => any;
+      archivedSessionIds?: readonly string[];
+    };
+    if (registry?.archivedSessionIds?.includes(trimmed)) return false;
+    const ws = registry?.get?.(WorkspaceId(workspaceId));
+    if (ws === undefined) return false;
+    if (typeof ws.status === "function") {
+      try {
+        if ((await ws.status()) !== "ok") return false;
+      } catch {
+        return false;
+      }
+    }
+    if (typeof ws.path === "string" && ws.path !== expectedCwd) {
+      return false;
+    }
+
+    const session = this.ctx.sessions?.get?.(SessionId(trimmed));
+    if (session !== undefined) {
+      const sessionCwd =
+        session.header?.cwd ??
+        session.meta?.cwd ??
+        (session as any).cwd;
+      if (
+        sessionCwd !== undefined &&
+        sessionCwd !== expectedCwd &&
+        sessionCwd !== ws.path
+      ) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private async executeRun(
@@ -1341,6 +1418,7 @@ export class AutomationService {
     const startedAt = toIso();
     let sessionId: string;
     let reusedAgent: any | undefined;
+    let resumeSession = false;
     if (
       definition.sessionMode === "reuse" &&
       typeof definition.activeSessionId === "string" &&
@@ -1348,10 +1426,20 @@ export class AutomationService {
     ) {
       reusedAgent = await this.resolveReusableAgent(
         definition.workspaceId,
+        definition.cwd,
         definition.activeSessionId,
       );
       if (reusedAgent !== undefined) {
         sessionId = definition.activeSessionId;
+      } else if (
+        await this.canResumeSession(
+          definition.workspaceId,
+          definition.cwd,
+          definition.activeSessionId,
+        )
+      ) {
+        sessionId = definition.activeSessionId;
+        resumeSession = true;
       } else {
         sessionId = `${AUTOMATION_SESSION_PREFIX}${randomUUID()}`;
       }
@@ -1371,6 +1459,7 @@ export class AutomationService {
       sessionId,
       signal,
       reusedAgent,
+      resumeSession,
     });
     const finishedAt = toIso();
     const boundSessionId = completion.sessionId ?? running.sessionId;
