@@ -1,6 +1,7 @@
 export type AutomationStatus = 'active' | 'paused';
 export type AutomationRunStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'skipped' | 'cancelled';
 export type AutomationSessionMode = 'fresh' | 'reuse';
+export declare const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
 export type Weekday = 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA' | 'SU';
 /** 权限预设名称由 Host 的 permissionPresets 服务动态提供。 */
 export type PermissionPreset = string;

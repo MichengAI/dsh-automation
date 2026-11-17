@@ -11,7 +11,7 @@ import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { WorkspaceId } from '@deepseek-ai/dsh-workspace'
 import { automationSessionTitle } from './run-title.ts'
 import type { PermissionPresetService } from './permission-presets.ts'
-import type { AutomationDefinition, AutomationRun } from './types.ts'
+import { AUTOMATION_SESSION_PREFIX, type AutomationDefinition, type AutomationRun } from './types.ts'
 
 interface TextBlock { readonly type: string; readonly text?: string }
 interface SetupAgent { readonly session: unknown }
@@ -249,7 +249,7 @@ export async function executeAutomationRun(
           isReused = true
         } catch {
           // 持久化会话恢复失败（例如会话损坏或不存在），自愈回退到新建
-          sessionId = SessionId(`dsh-automation-session-${randomUUID()}`)
+          sessionId = SessionId(`${AUTOMATION_SESSION_PREFIX}${randomUUID()}`)
           isReused = false
         }
       }
@@ -281,14 +281,28 @@ export async function executeAutomationRun(
       }
     }
 
-    // 跨工作区逃逸防御：若复用的会话 cwd 与当前任务目标 cwd 不一致，必须拒绝复用并自愈新建
+    // 跨工作区逃逸与预设不匹配防御：若复用的会话 cwd 或预设与当前任务目标不一致，必须拒绝复用并自愈新建
     if (isReused && liveAgent !== undefined) {
       const sessionCwd =
         liveAgent?.session?.header?.cwd ??
         liveAgent?.session?.meta?.cwd ??
         liveAgent?.meta?.cwd
-      if (sessionCwd !== undefined && sessionCwd !== target.cwd) {
-        sessionId = SessionId(`dsh-automation-session-${randomUUID()}`)
+      const sessionPreset =
+        liveAgent?.session?.header?.agentPreset ??
+        liveAgent?.session?.meta?.agentPreset ??
+        liveAgent?.meta?.agentPreset
+      const isCwdMismatched = sessionCwd !== undefined && sessionCwd !== target.cwd
+      const isPresetMismatched =
+        sessionPreset !== undefined &&
+        target.agentPreset !== undefined &&
+        sessionPreset !== target.agentPreset
+
+      if (isCwdMismatched || isPresetMismatched) {
+        if (handle !== undefined) {
+          await handle.dispose().catch(() => {})
+          handle = undefined
+        }
+        sessionId = SessionId(`${AUTOMATION_SESSION_PREFIX}${randomUUID()}`)
         isReused = false
         liveAgent = undefined
         handle = await ctx.agents.withoutInitiator(() => ctx.agents.create({

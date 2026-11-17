@@ -854,6 +854,7 @@ test('执行器复用会话时，若 session cwd 与目标 cwd 不一致，必�
       async create(options: any) {
         createCalled = true
         createdSessionId = String(options.sessionId)
+        await options?.setup?.({}, freshAgent)
         return { agent: freshAgent, async dispose() {} }
       },
     },
@@ -874,5 +875,147 @@ test('执行器复用会话时，若 session cwd 与目标 cwd 不一致，必�
   assert.equal(result.status, 'succeeded')
   assert.equal(createCalled, true, '跨工作区旧会话必须被执行器拦截并自愈调用 create')
   assert.notEqual(result.sessionId, 's_stale_ws')
+  assert.equal(result.sessionId, createdSessionId)
+})
+
+
+test('初始 whenIdle 纳入超时保护：runTimeout 到期后必须触发 cancel 并返回 timeout 失败', async () => {
+  const { definition: baseDef, run: baseRun } = sampleRun()
+  const definition = { ...baseDef, sessionMode: 'reuse' as const, activeSessionId: 's_timeout_idle' }
+  const run = { ...baseRun, targetSnapshot: { ...baseRun.targetSnapshot, sessionMode: 'reuse' as const } }
+
+  let cancelCalled = false
+  let resolveIdle: (() => void) | undefined
+  const busyAgent = {
+    session: {
+      id: 's_timeout_idle',
+      header: { cwd: definition.cwd },
+      seq: 0,
+      append() {},
+    },
+    whenIdle: () => new Promise<void>((resolve) => {
+      resolveIdle = resolve
+    }),
+    cancel: () => {
+      cancelCalled = true
+      resolveIdle?.()
+    },
+    followup: () => {},
+  }
+
+  const ctx = {
+    workspaceRegistry: {
+      get: () => ({ path: definition.cwd, status: async () => 'ok', attachSession: async () => {} }),
+      resolveByPath: async () => ({ id: 'w1', path: definition.cwd, status: async () => 'ok', attachSession: async () => {} }),
+    },
+    agentDefaultModel: { currentSelection: () => ({ provider: 'test', model: 'test' }) },
+    permissionPresets: { set() {} },
+    agentPresets: { mount: async () => {} },
+    agents: {
+      withoutInitiator: (callback: () => unknown) => callback(),
+      async create() { throw new Error('should not create') },
+    },
+    sessions: { flush: async () => {} },
+    get: () => undefined,
+    on() { return () => {} },
+  }
+
+  const started = Date.now()
+  const result = await executeAutomationRun(ctx as never, definition, run, {
+    sessionId: 's_timeout_idle',
+    runTimeoutMs: 50,
+    reusedAgent: busyAgent,
+  })
+  const elapsed = Date.now() - started
+  assert.equal(result.status, 'failed')
+  assert.equal(result.error?.code, 'timeout')
+  assert.equal(cancelCalled, true, '超时必须触发 cancel')
+  assert.ok(elapsed < 400, `超时后应迅速收敛退出，实际耗时 ${elapsed}ms`)
+})
+
+test('执行器复用会话时，若 session 预设与目标预设不一致，必须拒绝并自愈新建', async () => {
+  const { definition: baseDef, run: baseRun } = sampleRun()
+  const definition = { ...baseDef, sessionMode: 'reuse' as const, agentPreset: 'ptc', activeSessionId: 's_preset_mismatch' }
+  const run = {
+    ...baseRun,
+    targetSnapshot: { ...baseRun.targetSnapshot, sessionMode: 'reuse' as const, agentPreset: 'ptc' },
+  }
+
+  const stalePresetAgent = {
+    session: {
+      id: 's_preset_mismatch',
+      header: { cwd: definition.cwd, agentPreset: 'standard' },
+      seq: 0,
+    },
+    whenIdle: async () => {},
+    cancel: () => {},
+    followup: () => {},
+  }
+
+  let createCalled = false
+  let createdSessionId: string | undefined
+  let createdPreset: string | undefined
+  const events: any[] = []
+  const listeners: any[] = []
+  const freshSession = {
+    id: 's_fresh',
+    header: { cwd: definition.cwd, agentPreset: 'ptc' },
+    get seq() { return events.length },
+    append(type: string, data: any) {
+      const evt = { seq: events.length, type, data }
+      events.push(evt)
+      for (const l of listeners) l(freshSession, evt)
+    },
+  }
+  const freshAgent = {
+    session: freshSession,
+    whenIdle: async () => {},
+    cancel: () => {},
+    followup() {
+      freshSession.append('turn/start', {})
+      freshSession.append('assistant/message', { message: { content: [{ type: 'text', text: '新预设执行成功' }] } })
+      freshSession.append('turn/end', { reason: { kind: 'completed' } })
+    },
+  }
+
+  const ctx = {
+    workspaceRegistry: {
+      get: () => ({ path: definition.cwd, status: async () => 'ok', attachSession: async () => {} }),
+      resolveByPath: async () => ({ id: 'w1', path: definition.cwd, status: async () => 'ok', attachSession: async () => {} }),
+    },
+    agentDefaultModel: { currentSelection: () => ({ provider: 'test', model: 'test' }) },
+    permissionPresets: { set() {} },
+    agentPresets: {
+      mount: async (_ctx: any, preset: string) => {
+        createdPreset = preset
+      },
+    },
+    agents: {
+      withoutInitiator: (callback: () => unknown) => callback(),
+      async create(options: any) {
+        createCalled = true
+        createdSessionId = String(options.sessionId)
+        await options?.setup?.({}, freshAgent)
+        return { agent: freshAgent, async dispose() {} }
+      },
+    },
+    sessions: { flush: async () => {} },
+    get: () => undefined,
+    on(name: string, listener: any) {
+      if (name === 'session/event') listeners.push(listener)
+      return () => {}
+    },
+  }
+
+  const result = await executeAutomationRun(ctx as never, definition, run, {
+    sessionId: 's_preset_mismatch',
+    runTimeoutMs: 1_000,
+    reusedAgent: stalePresetAgent,
+  })
+
+  assert.equal(result.status, 'succeeded')
+  assert.equal(createCalled, true, '预设不匹配时必须拒绝复用并新建')
+  assert.equal(createdPreset, 'ptc', '必须以新预设 mount')
+  assert.notEqual(result.sessionId, 's_preset_mismatch')
   assert.equal(result.sessionId, createdSessionId)
 })

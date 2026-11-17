@@ -34,18 +34,20 @@ import {
   normalizeAgentPreset,
   type AgentPresetOption,
 } from "./agent-presets.ts";
-import type {
-  AutomationDefinition,
-  AutomationRun,
-  AutomationSchedule,
-  AutomationSessionMode,
-  PermissionPreset,
-  UpdateAutomationInput,
+import {
+  AUTOMATION_SESSION_PREFIX,
+  type AutomationDefinition,
+  type AutomationRun,
+  type AutomationSchedule,
+  type AutomationSessionMode,
+  type PermissionPreset,
+  type UpdateAutomationInput,
 } from "./types.ts";
+
+export { AUTOMATION_SESSION_PREFIX };
 
 const MAX_TIMER_DELAY_MS = 2_147_483_647;
 const OPTION_CACHE_TTL_MS = 30_000;
-export const AUTOMATION_SESSION_PREFIX = "dsh-automation-session-";
 
 export interface AutomationConfig {
   readonly runTimeoutMs: number;
@@ -1276,6 +1278,7 @@ export class AutomationService {
   private async resolveReusableAgent(
     workspaceId: string,
     expectedCwd: string,
+    expectedAgentPreset: string | undefined,
     sessionId: string,
   ): Promise<any | undefined> {
     const trimmed = sessionId.trim();
@@ -1316,6 +1319,17 @@ export class AutomationService {
       ) {
         return undefined;
       }
+      const sessionPreset =
+        live.session?.header?.agentPreset ??
+        live.session?.meta?.agentPreset ??
+        (live as any).meta?.agentPreset;
+      if (
+        sessionPreset !== undefined &&
+        expectedAgentPreset !== undefined &&
+        sessionPreset !== expectedAgentPreset
+      ) {
+        return undefined;
+      }
       return live;
     }
 
@@ -1337,6 +1351,17 @@ export class AutomationService {
           ) {
             return undefined;
           }
+          const sessionPreset =
+            agent?.session?.header?.agentPreset ??
+            agent?.session?.meta?.agentPreset ??
+            agent?.meta?.agentPreset;
+          if (
+            sessionPreset !== undefined &&
+            expectedAgentPreset !== undefined &&
+            sessionPreset !== expectedAgentPreset
+          ) {
+            return undefined;
+          }
           return agent;
         }
       } catch {
@@ -1350,6 +1375,7 @@ export class AutomationService {
   private async canResumeSession(
     workspaceId: string,
     expectedCwd: string,
+    expectedAgentPreset: string | undefined,
     sessionId: string,
   ): Promise<boolean> {
     const trimmed = sessionId.trim();
@@ -1393,6 +1419,17 @@ export class AutomationService {
       ) {
         return false;
       }
+      const sessionPreset =
+        session.header?.agentPreset ??
+        session.meta?.agentPreset ??
+        (session as any).agentPreset;
+      if (
+        sessionPreset !== undefined &&
+        expectedAgentPreset !== undefined &&
+        sessionPreset !== expectedAgentPreset
+      ) {
+        return false;
+      }
     }
     return true;
   }
@@ -1427,6 +1464,7 @@ export class AutomationService {
       reusedAgent = await this.resolveReusableAgent(
         definition.workspaceId,
         definition.cwd,
+        definition.agentPreset,
         definition.activeSessionId,
       );
       if (reusedAgent !== undefined) {
@@ -1435,6 +1473,7 @@ export class AutomationService {
         await this.canResumeSession(
           definition.workspaceId,
           definition.cwd,
+          definition.agentPreset,
           definition.activeSessionId,
         )
       ) {
