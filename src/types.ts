@@ -103,6 +103,7 @@ export interface AutomationDefinition {
   readonly updatedAt: string
   readonly sessionMode: AutomationSessionMode
   readonly activeSessionId: string | null
+  readonly activeSessionPreset: string | null
 }
 
 export interface AutomationTargetSnapshot {

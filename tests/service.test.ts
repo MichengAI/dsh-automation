@@ -2526,9 +2526,8 @@ test("sessionMode 为 reuse 且宿主无 LiveAgent 时，若持久化会话的�
     },
     sessions: {
       flush: async () => {},
-      get(id: unknown) {
-        return persistedSessions.get(String(id));
-      },
+      // 真实宿主冷启动时内存中无 live session，sessions.get 必须返回 undefined
+      get: () => undefined,
     },
     get: () => undefined,
     on(name: string, listener: any) {
@@ -2561,6 +2560,7 @@ test("sessionMode 为 reuse 且宿主无 LiveAgent 时，若持久化会话的�
     const def1 = definitions.get(created.id);
     const session1Id = def1?.activeSessionId;
     assert.ok(session1Id, "首轮必须绑定 activeSessionId");
+    assert.equal(def1?.activeSessionPreset, "standard", "首轮必须记录 activeSessionPreset 为 standard");
 
     // 2. 将任务的预设更新为 ptc
     await service.update(scope, created.id, {
@@ -2579,6 +2579,7 @@ test("sessionMode 为 reuse 且宿主无 LiveAgent 时，若持久化会话的�
     const def2 = definitions.get(created.id);
     assert.equal(resumeCalled, false, "预设不一致时 canResumeSession 必须返回 false，严禁调用 resume");
     assert.notEqual(def2?.activeSessionId, session1Id, "必须自愈重新绑定新会话");
+    assert.equal(def2?.activeSessionPreset, "ptc", "重新自愈后必须更新 activeSessionPreset 为 ptc");
     assert.equal(createCount, 2, "必须通过 create 新建会话");
   } finally {
     await service.dispose();
@@ -2609,6 +2610,35 @@ test("canResumeSession: 当工作区物理路径与 expectedCwd 不一致时必�
   try {
     const canResume = await (service as any).canResumeSession("ws_1", "D:\work\ws1", "standard", sessionId);
     assert.equal(canResume, false, "ws.path !== expectedCwd 时必须拒绝 resume 返回 false");
+  } finally {
+    await service.dispose();
+  }
+});
+
+test("canResumeSession: 当 boundPreset 与 expectedAgentPreset 不一致时必须拒绝 resume 返回 false", async () => {
+  const sessionId = AUTOMATION_SESSION_PREFIX + "test_preset_mismatch";
+  const workspaces: Record<string, any> = {
+    ws_1: { id: "ws_1", title: "ws1", path: "D:/work/ws1", status: async () => "ok" },
+  };
+  const { service } = await makeService({}, {}, {
+    agents: {
+      get: () => undefined,
+      resume: async () => ({}),
+    },
+    workspaceRegistry: {
+      get: (id: unknown) => workspaces[String(id)],
+    },
+    sessions: {
+      get: () => undefined,
+    },
+  });
+
+  try {
+    const canResumeMismatch = await (service as any).canResumeSession("ws_1", "D:/work/ws1", "ptc", sessionId, "standard");
+    assert.equal(canResumeMismatch, false, "boundPreset 与 expectedAgentPreset 不一致时必须返回 false");
+
+    const canResumeMatch = await (service as any).canResumeSession("ws_1", "D:/work/ws1", "ptc", sessionId, "ptc");
+    assert.equal(canResumeMatch, true, "boundPreset 与 expectedAgentPreset 一致时应返回 true");
   } finally {
     await service.dispose();
   }

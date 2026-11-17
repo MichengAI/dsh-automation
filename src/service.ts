@@ -1377,6 +1377,7 @@ export class AutomationService {
     expectedCwd: string,
     expectedAgentPreset: string | undefined,
     sessionId: string,
+    boundPreset?: string | null | undefined,
   ): Promise<boolean> {
     const trimmed = sessionId.trim();
     if (trimmed === "") return false;
@@ -1403,6 +1404,15 @@ export class AutomationService {
       }
     }
     if (typeof ws.path === "string" && ws.path !== expectedCwd) {
+      return false;
+    }
+
+    if (
+      boundPreset !== undefined &&
+      boundPreset !== null &&
+      expectedAgentPreset !== undefined &&
+      boundPreset !== expectedAgentPreset
+    ) {
       return false;
     }
 
@@ -1475,6 +1485,7 @@ export class AutomationService {
           definition.cwd,
           definition.agentPreset,
           definition.activeSessionId,
+          definition.activeSessionPreset,
         )
       ) {
         sessionId = definition.activeSessionId;
@@ -1515,8 +1526,17 @@ export class AutomationService {
       await this.adoptSession(boundSessionId).catch(() => undefined);
       if (definition.sessionMode === "reuse") {
         const latestDef = this.definitions.get(definition.id);
-        if (latestDef !== undefined && latestDef.activeSessionId !== boundSessionId) {
-          const updatedDef = bindDefinitionSession(latestDef, boundSessionId, toIso());
+        if (
+          latestDef !== undefined &&
+          (latestDef.activeSessionId !== boundSessionId ||
+            latestDef.activeSessionPreset !== definition.agentPreset)
+        ) {
+          const updatedDef = bindDefinitionSession(
+            latestDef,
+            boundSessionId,
+            definition.agentPreset,
+            toIso(),
+          );
           await this.definitions.put(latestDef.id, updatedDef);
         }
       }

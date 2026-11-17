@@ -72,6 +72,7 @@ export const automationDefinitionSchema: z.ZodType<AutomationDefinition> = z.obj
   updatedAt: instant,
   sessionMode: z.enum(['fresh', 'reuse']).default('fresh'),
   activeSessionId: z.string().nullable().default(null),
+  activeSessionPreset: z.string().nullable().default(null),
 }).superRefine((value, ctx) => {
   try {
     if (value.timeZone !== value.schedule.timeZone) {
@@ -140,6 +141,7 @@ export function createDefinition(input: CreateAutomationInput): AutomationDefini
     updatedAt: now,
     sessionMode: input.sessionMode ?? 'fresh',
     activeSessionId: null,
+    activeSessionPreset: null,
   })
 }
 
@@ -170,6 +172,7 @@ export function updateDefinition(
     cwd: input.cwd === undefined ? current.cwd : requireNonBlank(input.cwd, 'cwd'),
     sessionMode: input.sessionMode === undefined ? (current.sessionMode ?? 'fresh') : input.sessionMode,
     activeSessionId: current.activeSessionId ?? null,
+    activeSessionPreset: current.activeSessionPreset ?? null,
     updatedAt: parseInstant(input.now, 'now'),
   })
 }
@@ -177,12 +180,27 @@ export function updateDefinition(
 export function bindDefinitionSession(
   current: AutomationDefinition,
   sessionId: string | null,
+  agentPreset: string | null,
   now: string,
+): AutomationDefinition
+export function bindDefinitionSession(
+  current: AutomationDefinition,
+  sessionId: string | null,
+  now: string,
+): AutomationDefinition
+export function bindDefinitionSession(
+  current: AutomationDefinition,
+  sessionId: string | null,
+  presetOrNow: string | null,
+  maybeNow?: string,
 ): AutomationDefinition {
+  const agentPreset = maybeNow === undefined ? null : presetOrNow
+  const now = maybeNow ?? presetOrNow!
   automationDefinitionSchema.parse(current)
   return automationDefinitionSchema.parse({
     ...current,
     activeSessionId: sessionId ?? null,
+    activeSessionPreset: sessionId === null ? null : (agentPreset ?? current.activeSessionPreset ?? current.agentPreset ?? null),
     updatedAt: parseInstant(now, 'now'),
   })
 }

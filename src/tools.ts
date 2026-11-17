@@ -125,6 +125,7 @@ function briefDefinition(view: AutomationDefinitionView, includePrompt: boolean)
     updatedAt: view.updatedAt,
     sessionMode: view.sessionMode ?? 'fresh',
     activeSessionId: view.activeSessionId ?? null,
+    activeSessionPreset: view.activeSessionPreset ?? null,
     promptChars: view.prompt.length,
     ...(includePrompt ? { prompt: view.prompt } : {}),
     lastRun:

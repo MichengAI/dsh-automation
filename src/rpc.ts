@@ -178,6 +178,7 @@ async function snapshotValue(service: AutomationService, payload: Record<string,
       updatedAt: definition.updatedAt,
       sessionMode: definition.sessionMode ?? 'fresh',
       activeSessionId: definition.activeSessionId ?? null,
+      activeSessionPreset: definition.activeSessionPreset ?? null,
     })),
     runs: snapshot.runs.map(run => ({
       id: run.id,

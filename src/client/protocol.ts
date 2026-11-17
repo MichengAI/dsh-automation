@@ -81,6 +81,7 @@ export interface AutomationViewModel {
   readonly updatedAt: string
   readonly sessionMode?: AutomationSessionMode | undefined
   readonly activeSessionId?: string | null | undefined
+  readonly activeSessionPreset?: string | null | undefined
 }
 
 export interface AutomationRunViewModel {
