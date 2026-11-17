@@ -269,9 +269,19 @@ export function CreateModal({
               {form.scheduleKind === 'interval' && <span className="dsh-st-plan-hint">{t('form.intervalHint')}</span>}
               {form.scheduleKind === 'custom' && <span className="dsh-st-plan-hint">{t('form.customHint')}</span>}
             </div>
-            <label className="dsh-st-field dsh-st-concurrency" title={t('form.maxConcurrentRunsHint')}>
+            <label
+              className="dsh-st-field dsh-st-concurrency"
+              title={form.sessionMode === 'reuse' ? t('form.maxConcurrentRunsReuseHint') : t('form.maxConcurrentRunsHint')}
+            >
               {t('form.maxConcurrentRuns')}
-              <Input type="number" min={1} step={1} value={form.maxConcurrentRuns} onChange={event => update({ maxConcurrentRuns: event.target.value })} />
+              <Input
+                type="number"
+                min={1}
+                step={1}
+                disabled={form.sessionMode === 'reuse'}
+                value={form.sessionMode === 'reuse' ? '1' : form.maxConcurrentRuns}
+                onChange={event => update({ maxConcurrentRuns: event.target.value })}
+              />
             </label>
           </div>
           {form.scheduleKind === 'weekly' && (

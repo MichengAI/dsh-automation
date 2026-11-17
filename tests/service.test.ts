@@ -2643,3 +2643,138 @@ test("canResumeSession: 当 boundPreset 与 expectedAgentPreset 不一致时必�
     await service.dispose();
   }
 });
+
+test("sessionMode 为 reuse 时无论 maxConcurrentRuns 设置为几，有效并发限制都强制为 1，运行中禁止并发触发", async () => {
+  const definition = sampleDefinition({
+    sessionMode: "reuse",
+    maxConcurrentRuns: 3,
+  });
+  const { service, runs } = await makeService({ definitions: [definition] });
+  const scope = { sessionId: "session_1", creatorKind: "web" as const };
+
+  try {
+    // 第一次手动触发成功，排队 1 个
+    const first = await service.runNow(scope, definition.id);
+    assert.equal(first.status, "queued");
+
+    // 第二次手动触发应该被拒绝（reuse 模式同一时间只能有 1 个任务）
+    await assert.rejects(
+      () => service.runNow(scope, definition.id),
+      /并发上限/
+    );
+
+    // 定时调度 claimLatestDue 也应跳过
+    const internals = service as any;
+    await internals.claimLatestDue(
+      definition,
+      "2026-08-16T01:00:00.000Z",
+      [...runs.entries()].map(([, r]) => r)
+    );
+    const skipped = [...runs.entries()].map(([, r]) => r).filter((r) => r.status === "skipped");
+    assert.equal(skipped.length, 1);
+    assert.equal(skipped[0]?.error?.code, "overlap");
+  } finally {
+    await service.dispose();
+  }
+});
+
+test("sessionMode 为 reuse 时首次运行分配 sessionId 后在执行中 definition 的 activeSessionId 就已提前绑定", async () => {
+  let capturedSessionIdDuringRun: string | null = null;
+  let runningPromiseResolve: (() => void) | undefined;
+  const runningGate = new Promise<void>((resolve) => {
+    runningPromiseResolve = resolve;
+  });
+
+  const mockAgent = {
+    session: { id: "mock", append: () => {} },
+    whenIdle: async () => {},
+    followup: () => {},
+    cancel: () => {},
+  };
+
+  const definition = sampleDefinition({
+    sessionMode: "reuse",
+  });
+
+  const { service, definitions, runs } = await makeService(
+    { definitions: [definition] },
+    {},
+    {
+      agents: {
+        withoutInitiator: (cb: () => unknown) => cb(),
+        get: () => undefined,
+        async create(opts: any) {
+          const sid = String(opts.sessionId);
+          // 在执行开始时检查 definition 的 activeSessionId 是否已经提前被写入！
+          const currentDef = definitions.get(definition.id);
+          capturedSessionIdDuringRun = currentDef?.activeSessionId ?? null;
+          await opts?.setup?.({}, mockAgent);
+          return {
+            agent: mockAgent,
+            async dispose() {},
+          };
+        },
+      },
+      workspaceRegistry: {
+        get: () => ({ id: "ws_1", path: definition.cwd, status: async () => "ok", attachSession: async () => {} }),
+      },
+      sessions: { flush: async () => {} },
+    }
+  );
+
+  try {
+    const internals = service as any;
+    const run = createManualRun(definition, "2026-08-16T00:50:00.000Z");
+    await internals.executeRun(run, new AbortController().signal);
+    assert.ok(capturedSessionIdDuringRun !== null, "执行期间 definition.activeSessionId 必须已提前绑定");
+    assert.match(capturedSessionIdDuringRun!, /^dsh-automation-session-/);
+  } finally {
+    await service.dispose();
+  }
+});
+
+test("sessionMode 为 reuse 且首次运行创建失败未产出会话时，必须回滚提前绑定的 activeSessionId", async () => {
+  const definition = sampleDefinition({ sessionMode: "reuse", activeSessionId: null });
+  const { service, definitions } = await makeService(
+    { definitions: [definition] },
+    {},
+    {
+      agents: {
+        withoutInitiator: (cb: () => unknown) => cb(),
+        get: () => undefined,
+        async create() {
+          throw new Error("工作区不存在，会话创建失败");
+        },
+      },
+      workspaceRegistry: {
+        get: () => ({ id: "ws_1", path: definition.cwd, status: async () => "ok", attachSession: async () => {} }),
+      },
+      sessions: { flush: async () => {} },
+    }
+  );
+
+  try {
+    const internals = service as any;
+    const run = createManualRun(definition, "2026-08-16T00:50:00.000Z");
+    await internals.executeRun(run, new AbortController().signal);
+    const updatedDef = definitions.get(definition.id);
+    assert.equal(updatedDef?.activeSessionId, null, "执行失败未产出会话时，activeSessionId 必须回滚为 null，杜绝幽灵会话");
+  } finally {
+    await service.dispose();
+  }
+});
+
+test("sessionMode 为 reuse 且 maxConcurrentRuns 为 2 时，startQueuedRuns 也严格限制并发数为 1", async () => {
+  const definition = sampleDefinition({ sessionMode: "reuse", maxConcurrentRuns: 2 });
+  const { service, runs } = await makeService({ definitions: [definition] });
+  const first = createManualRun(definition, "2026-08-16T00:50:00.000Z");
+  const second = createManualRun(definition, "2026-08-16T00:51:00.000Z");
+  await runs.put(first.id, { ...first, status: "queued" });
+  await runs.put(second.id, { ...second, status: "queued" });
+
+  const internals = service as any;
+  const started: string[] = [];
+  internals.startRun = (run: AutomationRun) => started.push(run.id);
+  await internals.startQueuedRuns();
+  assert.equal(started.length, 1, "reuse 模式下 startQueuedRuns 必须只启动 1 个排队任务");
+});

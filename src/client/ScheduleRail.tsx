@@ -171,9 +171,11 @@ export function ScheduledRecordsView({
     }
     const groups: SyntheticTaskGroup[] = []
     for (const group of groupScheduledSessions(snapshot.automations, snapshot.runs)) {
-      const sessionIds = group.sessions
-        .filter(session => scheduledSessionVisible(session.id, archived, archivedFilter))
-        .map(session => session.id)
+      const sessionIds = Array.from(new Set(
+        group.sessions
+          .filter(session => scheduledSessionVisible(session.id, archived, archivedFilter))
+          .map(session => session.id),
+      ))
       const createdAt = createdAtById.get(group.id) ?? earliestRunAtById.get(group.id)
       // 没有可信创建时间的分组不合成：官方树会据此排序并渲染悬停卡片。
       if (createdAt === undefined || sessionIds.length === 0) continue

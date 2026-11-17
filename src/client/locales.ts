@@ -161,6 +161,7 @@ export type AutomationLocaleKey =
   | 'form.timeZone'
   | 'form.maxConcurrentRuns'
   | 'form.maxConcurrentRunsHint'
+  | 'form.maxConcurrentRunsReuseHint'
   | 'form.error.maxConcurrentRuns'
   | 'form.permission'
   | 'permission.readOnly'

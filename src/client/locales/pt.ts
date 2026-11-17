@@ -140,6 +140,7 @@ export const pt: Record<AutomationLocaleKey, string> = {
   "form.timeZone": "Fuso horário",
   "form.maxConcurrentRuns": "Execuções simultâneas",
   "form.maxConcurrentRunsHint": "Limite conjunto de execuções na fila e ativas para esta tarefa (padrão: 1). Ao atingir o limite, o disparo agendado é ignorado e disparos manuais são recusados.",
+  "form.maxConcurrentRunsReuseHint": "O modo de reutilização é executado em série na sessão compartilhada; a simultaneidade é fixada em 1.",
   "form.error.maxConcurrentRuns": "O número de execuções simultâneas deve ser um número inteiro maior ou igual a 1.",
   "form.permission": "Limite de permissões",
   "permission.readOnly": "Somente leitura",

@@ -140,6 +140,7 @@ export const ja: Record<AutomationLocaleKey, string> = {
   "form.timeZone": "タイムゾーン",
   "form.maxConcurrentRuns": "最大並行実行数",
   "form.maxConcurrentRunsHint": "同一タスクのキューイングおよび実行中の合計上限数です（デフォルト: 1）。上限到達時は今回のスケジュール実行をスキップし、手動実行も拒否されます。",
+  "form.maxConcurrentRunsReuseHint": "セッション再利用モードでは同一セッション内で直列に実行されるため、並行実行数は 1 に固定されます。",
   "form.error.maxConcurrentRuns": "並行実行数は 1 以上の整数である必要があります。",
   "form.permission": "権限の境界",
   "permission.readOnly": "読み取り専用",

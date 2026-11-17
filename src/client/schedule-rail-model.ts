@@ -98,6 +98,7 @@ export function groupScheduledSessions(
         .filter(run => run.automationId === id && run.sessionId !== undefined && run.sessionId !== '')
         .slice()
         .sort((left, right) => Date.parse(right.startedAt ?? right.scheduledFor) - Date.parse(left.startedAt ?? left.scheduledFor))
+        .filter((run, index, list) => list.findIndex(candidate => candidate.sessionId === run.sessionId) === index)
         .map(run => ({
           id: run.sessionId as string,
           running: run.status === 'running' || run.status === 'queued',

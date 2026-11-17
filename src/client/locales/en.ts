@@ -140,6 +140,7 @@ export const en: Record<AutomationLocaleKey, string> = {
   "form.timeZone": "Time zone",
   "form.maxConcurrentRuns": "Concurrency",
   "form.maxConcurrentRunsHint": "Queued and running executions share this limit. Defaults to 1; when full, scheduled triggers are skipped and manual runs are rejected.",
+  "form.maxConcurrentRunsReuseHint": "Reuse mode runs serially within the shared session; concurrency is locked to 1.",
   "form.error.maxConcurrentRuns": "Enter a positive whole number for concurrent runs.",
   "form.permission": "Permission boundary",
   "permission.readOnly": "Read Only",

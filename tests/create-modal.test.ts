@@ -132,6 +132,13 @@ test('删除任务必须先显示确认对话框', () => {
   assert.doesNotMatch(confirmation, /dsh-st-n-danger-button/)
   assert.doesNotMatch(confirmation, /antd/)
   assert.match(confirmation, /card\.confirmDelete/)
-  assert.match(confirmation, /card\.confirmDeleteHint/)
-  assert.match(confirmation, /card\.confirm/)
+  assert.match(confirmation, /card.confirmDeleteHint/)
+  assert.match(confirmation, /card.confirm/)
+})
+
+test('sessionMode 为 reuse 时并发数量输入框禁用并锁定为 1，并显示专用说明文案', () => {
+  const modal = readFileSync(new URL('../src/client/create-modal.tsx', import.meta.url), 'utf8')
+  assert.match(modal, /disabled=\{form\.sessionMode === 'reuse'\}/)
+  assert.match(modal, /value=\{form\.sessionMode === 'reuse' \? '1' : form\.maxConcurrentRuns\}/)
+  assert.match(modal, /form\.maxConcurrentRunsReuseHint/)
 })

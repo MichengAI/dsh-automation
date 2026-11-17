@@ -140,6 +140,7 @@ export const zh: Record<AutomationLocaleKey, string> = {
   "form.timeZone": "时区",
   "form.maxConcurrentRuns": "并发数量",
   "form.maxConcurrentRunsHint": "同一任务的排队及运行次数共用此上限，默认 1；满额时跳过当次定时触发，手动运行将被拒绝。",
+  "form.maxConcurrentRunsReuseHint": "复用会话模式固定为单轮串行执行，并发数量锁定为 1。",
   "form.error.maxConcurrentRuns": "并发数量必须为大于等于 1 的整数。",
   "form.permission": "权限边界",
   "permission.readOnly": "只读",

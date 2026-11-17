@@ -84,6 +84,22 @@ test('schedule rail groups runs by task name', () => {
   assert.equal(groups[0]?.sessions[0]?.label, '2026-08-16 10:30 - auto-report')
 })
 
+test('schedule rail 对复用同一会话的多次运行去重并展示最新运行状态', () => {
+  const groups = groupScheduledSessions(
+    [{ id: 'a1', name: 'auto-report', timeZone: 'Asia/Shanghai' }],
+    [
+      { automationId: 'a1', sessionId: 'sess-reuse-1', status: 'running', startedAt: '2026-08-16T04:30:00.000Z', scheduledFor: '2026-08-16T04:30:00.000Z' },
+      { automationId: 'a1', sessionId: 'sess-reuse-1', status: 'succeeded', startedAt: '2026-08-16T03:30:00.000Z', scheduledFor: '2026-08-16T03:30:00.000Z' },
+      { automationId: 'a1', sessionId: 'sess-reuse-1', status: 'succeeded', startedAt: '2026-08-16T02:30:00.000Z', scheduledFor: '2026-08-16T02:30:00.000Z' },
+    ],
+  )
+  assert.equal(groups.length, 1)
+  assert.equal(groups[0]?.sessions.length, 1)
+  assert.equal(groups[0]?.sessions[0]?.id, 'sess-reuse-1')
+  assert.equal(groups[0]?.sessions[0]?.running, true)
+  assert.equal(groups[0]?.sessions[0]?.label, '2026-08-16 12:30 - auto-report')
+})
+
 test('任务总览包含从未运行的任务并保留下次执行时间', () => {
   const rows = deriveTaskOverviewRows(
     [

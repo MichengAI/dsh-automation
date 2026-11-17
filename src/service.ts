@@ -643,7 +643,7 @@ export class AutomationService {
     const run = await this.serialize(async () => {
       const definition = await this.ownedDefinition(scope, id);
       throwIfCancelled(signal);
-      const limit = definition.maxConcurrentRuns ?? 1;
+      const limit = definition.sessionMode === "reuse" ? 1 : (definition.maxConcurrentRuns ?? 1);
       const activeCount = [...this.runs.entries()].filter(
         ([, candidate]) =>
           candidate.automationId === id &&
@@ -1193,9 +1193,10 @@ export class AutomationService {
       return;
     const candidate = createScheduledRun(definition, scheduledFor);
     if (this.runs.get(candidate.id) !== undefined) return;
+    const limit = definition.sessionMode === "reuse" ? 1 : (definition.maxConcurrentRuns ?? 1);
     const overlapping = related.filter(
       (run) => run.status === "queued" || run.status === "running",
-    ).length >= (definition.maxConcurrentRuns ?? 1);
+    ).length >= limit;
     const age = Date.parse(now) - Date.parse(scheduledFor);
     if (overlapping || age > this.config.misfireGraceMs) {
       const reason = overlapping
@@ -1233,7 +1234,8 @@ export class AutomationService {
     const queued: AutomationRun[] = [];
     for (const run of candidates) {
       const count = activeCounts.get(run.automationId) ?? 0;
-      const limit = this.definitions.get(run.automationId)?.maxConcurrentRuns ?? 1;
+      const def = this.definitions.get(run.automationId);
+      const limit = def?.sessionMode === "reuse" ? 1 : (def?.maxConcurrentRuns ?? 1);
       if (count >= limit) continue;
       activeCounts.set(run.automationId, count + 1);
       queued.push(run);
@@ -1504,6 +1506,27 @@ export class AutomationService {
       sessionId,
     };
     await this.runs.put(run.id, running);
+    const previousActiveSessionId = definition.activeSessionId;
+    const previousActiveSessionPreset = definition.activeSessionPreset;
+    let didEarlyBind = false;
+    if (definition.sessionMode === "reuse") {
+      const latestDef = this.definitions.get(definition.id);
+      if (
+        latestDef !== undefined &&
+        (latestDef.activeSessionId !== sessionId ||
+          latestDef.activeSessionPreset !== definition.agentPreset)
+      ) {
+        const updatedDef = bindDefinitionSession(
+          latestDef,
+          sessionId,
+          definition.agentPreset,
+          toIso(),
+        );
+        await this.definitions.put(latestDef.id, updatedDef);
+        didEarlyBind = true;
+      }
+      await this.adoptSession(sessionId).catch(() => undefined);
+    }
     const completion = await executeAutomationRun(this.ctx, definition, run, {
       runTimeoutMs: this.config.runTimeoutMs,
       sessionId,
@@ -1512,33 +1535,47 @@ export class AutomationService {
       resumeSession,
     });
     const finishedAt = toIso();
-    const boundSessionId = completion.sessionId ?? running.sessionId;
+    const effectiveSessionId =
+      typeof completion.sessionId === "string" && completion.sessionId !== ""
+        ? completion.sessionId
+        : undefined;
     await this.runs.update(run.id, (current) => ({
       ...current,
       status: completion.status,
-      sessionId: completion.sessionId ?? null,
+      sessionId: effectiveSessionId ?? null,
       finishedAt,
       summary: completion.summary ?? null,
       error: completion.error ?? null,
       unread: true,
     }));
-    if (typeof boundSessionId === "string" && boundSessionId !== "") {
-      await this.adoptSession(boundSessionId).catch(() => undefined);
+    if (effectiveSessionId !== undefined) {
+      await this.adoptSession(effectiveSessionId).catch(() => undefined);
       if (definition.sessionMode === "reuse") {
         const latestDef = this.definitions.get(definition.id);
         if (
           latestDef !== undefined &&
-          (latestDef.activeSessionId !== boundSessionId ||
+          (latestDef.activeSessionId !== effectiveSessionId ||
             latestDef.activeSessionPreset !== definition.agentPreset)
         ) {
           const updatedDef = bindDefinitionSession(
             latestDef,
-            boundSessionId,
+            effectiveSessionId,
             definition.agentPreset,
             toIso(),
           );
           await this.definitions.put(latestDef.id, updatedDef);
         }
+      }
+    } else if (didEarlyBind) {
+      const latestDef = this.definitions.get(definition.id);
+      if (latestDef !== undefined && latestDef.activeSessionId === sessionId) {
+        const revertedDef = bindDefinitionSession(
+          latestDef,
+          previousActiveSessionId ?? null,
+          previousActiveSessionPreset,
+          toIso(),
+        );
+        await this.definitions.put(latestDef.id, revertedDef);
       }
     }
     await this.pruneWorkspaceHistory(run.targetSnapshot.workspaceId);

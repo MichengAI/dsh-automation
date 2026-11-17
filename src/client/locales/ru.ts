@@ -140,6 +140,7 @@ export const ru: Record<AutomationLocaleKey, string> = {
   "form.timeZone": "Часовой пояс",
   "form.maxConcurrentRuns": "Параллельные запуски",
   "form.maxConcurrentRunsHint": "Общий лимит запусков в очереди и в процессе выполнения (по умолчанию 1). При исчерпании лимита плановый запуск пропускается, а ручной отклоняется.",
+  "form.maxConcurrentRunsReuseHint": "В режиме повторного использования выполнение происходит последовательно; количество запусков зафиксировано на 1.",
   "form.error.maxConcurrentRuns": "Количество параллельных запусков должно быть целым числом не меньше 1.",
   "form.permission": "Границы разрешений",
   "permission.readOnly": "Только чтение",

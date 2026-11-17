@@ -140,6 +140,7 @@ export const de: Record<AutomationLocaleKey, string> = {
   "form.timeZone": "Zeitzone",
   "form.maxConcurrentRuns": "Gleichzeitige Läufe",
   "form.maxConcurrentRunsHint": "Kombiniertes Limit für wartende und aktive Läufe dieser Aufgabe (Standard: 1). Bei Erreichen wird der geplante Lauf übersprungen und manuelle Starts werden abgelehnt.",
+  "form.maxConcurrentRunsReuseHint": "Im Wiederverwendungsmodus wird die Aufgabe seriell ausgeführt; die Anzahl gleichzeitiger Läufe ist auf 1 festgelegt.",
   "form.error.maxConcurrentRuns": "Die Anzahl gleichzeitiger Läufe muss eine ganze Zahl größer oder gleich 1 sein.",
   "form.permission": "Berechtigungsgrenzen",
   "permission.readOnly": "Schreibgeschützt",
