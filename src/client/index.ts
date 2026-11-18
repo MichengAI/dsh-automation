@@ -266,6 +266,22 @@ export function apply(ctx: ClientContext): void {
     let warnedUnsupportedFilter = false
     let syncing = false
     let retryTimer: number | undefined
+    const globalStore = typeof window !== 'undefined' ? (window as unknown as Record<string, unknown>) : (globalThis as unknown as Record<string, unknown>)
+    const SIDEBAR_OWNER_KEY = '__dshAutomationSidebarOwner__'
+    const instanceId = { id: 'automation-' + Math.random().toString(36).slice(2) }
+    let warnedDuplicate = false
+    const isDuplicateOwner = (): boolean => {
+      const owner = globalStore[SIDEBAR_OWNER_KEY]
+      return owner !== undefined && owner !== instanceId
+    }
+    const claimOwnership = (): void => {
+      globalStore[SIDEBAR_OWNER_KEY] = instanceId
+    }
+    const releaseOwnership = (): void => {
+      if (globalStore[SIDEBAR_OWNER_KEY] === instanceId) {
+        delete globalStore[SIDEBAR_OWNER_KEY]
+      }
+    }
     // 直接替换 component 不触发宿主插槽通知；与 IM 共用事件，在本次同步完成后重新协调。
     const notifyPeers = (): void => { queueMicrotask(() => window.dispatchEvent(new Event('dsh-native-sidebar-change'))) }
     const stopRetry = (): void => {
@@ -325,6 +341,7 @@ export function apply(ctx: ClientContext): void {
       removeInsertedOpener()
       removeInsertedOpener = (): void => undefined
       clearFilter()
+      releaseOwnership()
       activeFilterRegistry = undefined
       insertedRegistry = undefined
       if (wrappedEntry !== undefined) {
@@ -429,6 +446,13 @@ export function apply(ctx: ClientContext): void {
     }
     const sync = (): void => {
       if (syncing) return
+      if (isDuplicateOwner()) {
+        if (!warnedDuplicate) {
+          warnedDuplicate = true
+          console.warn('[dsh-automation] 检测到同模块已有活跃的侧栏实例，跳过重复包装与页签注入')
+        }
+        return
+      }
       syncing = true
       try {
         if (hasCodexUiSidebar(readSlotEntries(ctx, 'sidebar'))) {
@@ -439,11 +463,13 @@ export function apply(ctx: ClientContext): void {
         const active = entries.find(entry => (entry as MutableSlotEntry)?.component !== undefined) as MutableSlotEntry | undefined
         if (wrappedEntry !== undefined && (active !== wrappedEntry || active.component !== ownedWrapper)) unwrap()
         if (active === wrappedEntry && active?.component === ownedWrapper && ownedWrapper !== undefined) {
+          claimOwnership()
           ensureScheduleTab()
           return
         }
         if (active === undefined) { unwrap(); return }
         if (active.component !== ownedWrapper && isForeignSidebarHost(active.component)) {
+          claimOwnership()
           ensureScheduleTab()
           return
         }
@@ -482,6 +508,7 @@ export function apply(ctx: ClientContext): void {
         const tree = originalComp
         attachNativeTabRegistry(marked, registry)
         ensureFilter(registry)
+        claimOwnership()
         occupant.component = marked
         ownedWrapper = marked
         wrappedEntry = occupant
@@ -504,6 +531,7 @@ export function apply(ctx: ClientContext): void {
       unsubSidebar()
       window.removeEventListener('dsh-native-sidebar-change', sync)
       unwrap()
+      releaseOwnership()
     }
   })
   ctx.slots.inject('conversation.input.left', () => ctx.slots.register({

@@ -89,3 +89,29 @@ test('源码提取拒绝缺失、重复、倒序标记和残缺闭包', () => {
   assert.throws(() => extractBlock('BEGIN notifyPeers END', 'BEGIN', 'END', '测试闭包', ['ownedWrapper']), /缺少 ownedWrapper/)
   assert.equal(extractBlock('BEGIN\r\nbody\r\nEND', 'BEGIN', '\nEND', '测试闭包'), 'BEGIN\nbody')
 })
+
+test('同一个页面已存在活跃实例时，后续实例跳过包装并输出诊断日志', async () => {
+  const h = createHarness(compiledBody, 'automation')
+  const entry = h.add()
+  const original = entry.component
+  const warnings: string[] = []
+  const origWarn = console.warn
+  console.warn = (...args: unknown[]) => warnings.push(args.join(' '))
+  let stop1: (() => void) | undefined
+  let stop2: (() => void) | undefined
+  try {
+    stop1 = h.start()
+    assert.notEqual(entry.component, original, '第一实例成功接管外壳')
+    const wrappedByFirst = entry.component
+
+    // 模拟同一个页面启动了第二个实例（重复加载）
+    stop2 = h.start()
+    assert.equal(entry.component, wrappedByFirst, '第二实例不重复接管或破坏已有外壳')
+    assert.ok(warnings.some(msg => msg.includes('[dsh-automation]') && msg.includes('已有活跃')), '第二实例输出重复实例诊断日志')
+  } finally {
+    console.warn = origWarn
+    if (stop2) stop2()
+    if (stop1) stop1()
+  }
+})
+
