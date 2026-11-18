@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.29] - 2026-11-18
+
+### Sidebar Tab Strip & Layout Stability
+
+- **Sidebar single-strip layout fix**: Resolved an issue where multiple stacked tab bars could occasionally appear in the sidebar under duplicate plugin initialization or repeated view re-entry, which compressed and truncated the workspace and session list. The sidebar now strictly maintains a single unified tab strip across all view transitions, ensuring uninterrupted visibility for workspace sessions.
+
 ## [1.0.28] - 2026-11-17
 
 ### New Features
