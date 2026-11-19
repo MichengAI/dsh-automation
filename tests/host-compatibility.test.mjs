@@ -46,7 +46,7 @@ class FixedAdapter extends LlmAdapter {
   }
 }
 
-const hostVersion = process.env.DSH_TEST_VERSION ?? "0.2.1-rc.2";
+const hostVersion = process.env.DSH_TEST_VERSION ?? "0.2.2-rc.5";
 const explicitAgent = hostVersion.startsWith("0.2.");
 const sessionHeaderVersion = 4;
 
@@ -54,7 +54,7 @@ test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动�
   const ctx = new Context();
   t.after(() => ctx.fiber.dispose());
   const routes = new Set();
-  const startupService = /^0\.2\.1-/.test(hostVersion) ? "webStartup" : "webRuntime";
+  const startupService = "webRuntime";
   ctx.provide(startupService, { trustedHosts: [] });
   // 与真实 Loader 一致：WebServer 来自兄弟插件，不能用根 Context 的无条件提供掩盖缺失注入。
   await ctx.plugin({
@@ -121,25 +121,24 @@ test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动�
   assert.ok(![...routes].some((route) => route.path === "/dsh-automation"));
 });
 
-test("自动化补丁保留新旧 Connection 的配置及自定义注入", async () => {
+test("自动化补丁保留 Connection 的配置及自定义注入", async () => {
   const patches = load(
     await readFile(new URL("../cordis.patch.yml", import.meta.url), "utf8"),
   );
   assert.ok(Array.isArray(patches));
-  for (const service of ["webRuntime", "webStartup"]) {
-    const base = [{
-      id: "connection",
-      name: "@deepseek-ai/dsh-client-connection",
-      inject: [service, "customExtra"],
-      config: {
-        trustedHosts: { __jsExpr: `ctx.${service}.trustedHosts` },
-        recovery: { maxRetries: 7 },
-      },
-    }];
-    const applied = applyEntryPatches(base, patches, () => assert.fail("补丁不应告警"));
-    assert.deepEqual(applied[0], base[0]);
-    assert.notEqual(applied[0], base[0]);
-  }
+  const service = "webRuntime";
+  const base = [{
+    id: "connection",
+    name: "@deepseek-ai/dsh-client-connection",
+    inject: [service, "customExtra"],
+    config: {
+      trustedHosts: { __jsExpr: `ctx.${service}.trustedHosts` },
+      recovery: { maxRetries: 7 },
+    },
+  }];
+  const applied = applyEntryPatches(base, patches, () => assert.fail("补丁不应告警"));
+  assert.deepEqual(applied[0], base[0]);
+  assert.notEqual(applied[0], base[0]);
 });
 
 test(`${hostVersion} 真实 AgentLoop 执行自动化、保留权限日志并释放 Agent`, {

@@ -6,7 +6,6 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Context } from "@deepseek-ai/cordis";
 import type {} from "@deepseek-ai/dsh-agent-default-model";
-import type {} from "@deepseek-ai/dsh-agent-presets";
 import { SessionId } from "@deepseek-ai/dsh-session";
 import type { Domain, KvTable } from "@deepseek-ai/dsh-storage-domain";
 import { WorkspaceId } from "@deepseek-ai/dsh-workspace";

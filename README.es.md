@@ -30,7 +30,7 @@ Deje que DSH se encargue de las tareas repetitivas de forma programada. Configur
 - **Ajuste de programación en cualquier momento**: cree, pause, reanude, ejecute de inmediato o elimine tareas.
 - **Revisión de resultados**: consulte las conversaciones por nombre de tarea y hora de ejecución en la pestaña **Programado**, o filtre el historial en Ajustes.
 - **Ejecución independiente**: cada ejecución utiliza las instrucciones guardadas y no hereda el contexto de la conversación que la creó.
-- **Interfaz en 8 idiomas**: español, inglés, chino, japonés, francés, alemán, ruso y portugués, siguiendo el idioma global de DSH (requiere DSH `0.2.2-rc.1` o superior para idiomas distintos de chino e inglés).
+- **Interfaz en 8 idiomas**: español, inglés, chino, japonés, francés, alemán, ruso y portugués, siguiendo el idioma global de DSH.
 
 ## Vista previa de la interfaz
 
@@ -76,8 +76,8 @@ Para un entorno de escritorio, descargue [DSH Codex Desktop](https://github.com/
 
 ## Requisitos previos
 
-- Compatibilidad de host: serie completa DeepSeek Harness `0.2.x` (`>=0.2.0-rc.1 <0.3.0-0`), verificado en `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5`, `0.2.2-rc.1` `0.2.2-rc.2`, y `0.2.2-rc.3`, compatible hacia adelante con versiones RC posteriores. Los hosts en `0.1.x` deben permanecer en el complemento `0.1.66`. Realice una copia de seguridad del almacenamiento de automatización y de las sesiones en el perfil antes de actualizar; `0.2.0` escribe sesiones V4, que no se pueden leer tras una degradación.
-- Las dependencias peerDependencies oficiales cubren el rango generacional `>=0.2.0-rc.1 <0.3.0-0`. Las dependencias de desarrollo están fijadas en `0.2.2-rc.3`. Las versiones anteriores y cambios incompatibles en `0.3.0` son rechazados por la puerta de versión. `@deepseek-ai/dsh-agent-presets` y `@deepseek-ai/dsh-agent-preset-registry` no son peers, sino que utilizan el servicio `agentPresets` del host.
+- Compatibilidad de host: serie DeepSeek Harness `0.2.x` (`>=0.2.2-rc.1 <0.3.0-0`), verificado en `0.2.2-rc.1`–`0.2.2-rc.5`, compatible hacia adelante con versiones RC posteriores. Los hosts en `0.1.x` deben permanecer en el complemento `0.1.66`. Realice una copia de seguridad del almacenamiento de automatización y de las sesiones en el perfil antes de actualizar.
+- Las dependencias peerDependencies oficiales cubren el rango `>=0.2.2-rc.1 <0.3.0-0`. Las dependencias de desarrollo están fijadas en `0.2.2-rc.5`. Las versiones anteriores y cambios incompatibles en `0.3.0` son rechazados por la puerta de versión. `@deepseek-ai/dsh-agent-presets` y `@deepseek-ai/dsh-agent-preset-registry` no son peers, sino que utilizan el servicio `agentPresets` del host.
 - Otras versiones quedan fuera del rango declarado; la validación estricta de peers las rechazará.
 - El paquete no anula la entrada oficial Connection. Cada host conserva sus dependencias y configuración; la automatización registra su canal RPC en su propio ámbito de complemento.
 - Instalación operativa de DeepSeek Harness Web con comando `dsh` en PowerShell.

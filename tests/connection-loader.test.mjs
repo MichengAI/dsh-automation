@@ -12,8 +12,8 @@ import { registerAutomationRpc } from '../src/rpc.ts'
 
 const require = createRequire(import.meta.resolve('@deepseek-ai/cordis-plugin-include'))
 const { default: Loader, EntryTree } = await import(pathToFileURL(require.resolve('@deepseek-ai/cordis-plugin-loader')).href)
-const version = process.env.DSH_TEST_VERSION ?? '0.2.1-rc.2'
-const startupService = 'webStartup'
+const version = process.env.DSH_TEST_VERSION ?? '0.2.2-rc.5'
+const startupService = 'webRuntime'
 
 test(`${version} 真实 Loader 保留可信地址表达式并按消费者生命周期卸载 RPC`, async (t) => {
   const ctx = new Context()

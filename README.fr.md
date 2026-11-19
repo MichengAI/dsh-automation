@@ -30,7 +30,7 @@ Confiez à DSH les tâches répétitives récurrentes. Configurez des tâches da
 - **Ajustement du calendrier à tout moment** : créez, suspendez, reprenez, exécutez immédiatement ou supprimez des tâches.
 - **Examen des résultats** : parcourez les conversations par nom de tâche et heure d'exécution dans l'onglet **Planifié**, ou filtrez l'historique dans les paramètres.
 - **Sessions indépendantes** : chaque exécution démarre dans une nouvelle session avec les instructions enregistrées, sans hériter du contexte de création.
-- **Interface en 8 langues** : français, anglais, chinois, japonais, espagnol, allemand, russe et portugais, s'alignant sur la langue globale de DSH (requiert DSH `0.2.2-rc.1` ou supérieur pour les langues autres que chinois/anglais).
+- **Interface en 8 langues** : français, anglais, chinois, japonais, espagnol, allemand, russe et portugais, s'alignant sur la langue globale de DSH.
 
 ## Aperçu de l'interface
 
@@ -76,8 +76,8 @@ Pour un environnement de bureau complet, téléchargez [DSH Codex Desktop](https
 
 ## Prérequis
 
-- Compatibilité hôte : gamme complète DeepSeek Harness `0.2.x` (`>=0.2.0-rc.1 <0.3.0-0`), validée sur `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5`, `0.2.2-rc.1` `0.2.2-rc.2`, et `0.2.2-rc.3`, compatible avec les versions RC futures. Les hôtes sous `0.1.x` doivent conserver le plugin `0.1.66`. Sauvegardez le stockage et les sessions de l'automatisation avant toute mise à niveau ; `0.2.0` enregistre les sessions en V4, qui ne peuvent plus être lues après un retour en arrière.
-- Les peerDependencies officielles acceptent la plage génrationnelle `>=0.2.0-rc.1 <0.3.0-0`. Les dépendances de développement sont figées sur `0.2.2-rc.3`. Les versions antérieures et ruptures en `0.3.0` sont rejetées par le filtre de version. `@deepseek-ai/dsh-agent-presets` et `@deepseek-ai/dsh-agent-preset-registry` ne sont pas des pairs, mais exploitent le service hôte `agentPresets`.
+- Compatibilité hôte : gamme DeepSeek Harness `0.2.x` (`>=0.2.2-rc.1 <0.3.0-0`), validée sur `0.2.2-rc.1`–`0.2.2-rc.5`, compatible avec les versions RC futures. Les hôtes sous `0.1.x` doivent conserver le plugin `0.1.66`. Sauvegardez le stockage et les sessions de l'automatisation avant toute mise à niveau.
+- Les peerDependencies officielles acceptent la plage `>=0.2.2-rc.1 <0.3.0-0`. Les dépendances de développement sont figées sur `0.2.2-rc.5`. Les versions antérieures et ruptures en `0.3.0` sont rejetées par le filtre de version. `@deepseek-ai/dsh-agent-presets` et `@deepseek-ai/dsh-agent-preset-registry` ne sont pas des pairs, mais exploitent le service hôte `agentPresets`.
 - Les autres versions sortent du cadre de compatibilité garanti.
 - Le bundle ne modifie pas l'entrée officielle Connection. Chaque hôte conserve ses dépendances et sa configuration ; l'automatisation déclare son canal RPC dans sa propre portée.
 - Une installation fonctionnelle de DeepSeek Harness Web avec la commande `dsh` accessible dans PowerShell.

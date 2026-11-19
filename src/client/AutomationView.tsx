@@ -26,7 +26,6 @@ import { automationToggleMutation } from './schedule-rail-model.js'
 import { GithubIcon } from './icons.js'
 import {
   IconClockOutline,
-  IconEditOutline,
   IconEllipsisOutline,
   IconFlatListOutline,
   IconInfoOutline,

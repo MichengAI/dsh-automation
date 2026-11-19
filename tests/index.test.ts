@@ -280,7 +280,7 @@ test('0.2.2-rc.2 无 subagents 服务时仍可启动并按会话字段区分根�
   assert.equal(createdSub.registered.length, 0)
 })
 
-test('0.2.0-rc.1 ~ 0.2.2-rc.1 提供 ctx.agents.roots() 时沿用 roots() 判据', async (t) => {
+test('0.2.2-rc.1 提供 ctx.agents.roots() 时沿用 roots() 判据', async (t) => {
   const rootsSet = new Set<any>()
   const live = new Map<string, any>()
   let rootAgent!: ReturnType<typeof makeFakeAgent>

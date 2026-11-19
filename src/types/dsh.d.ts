@@ -33,18 +33,13 @@ declare module '@deepseek-ai/dsh-agent' {
     reasoningEffort?: string
   }
   /**
-   * DSH 0.2.0-rc.2 → 0.2.1-rc.5 accept a selection ref as the second argument;
-   * DSH 0.2.2-rc.1 accepts only agentCtx and ignores extra arguments, so the
-   * initial reasoning effort must also travel through AgentOptions.
+   * DSH 0.2.2-rc.1 起 installModelSelection 仅接收 agentCtx，
+   * 初始模型路由与推理等级通过 AgentOptions 传递。
    */
-  export function installModelSelection(agentCtx: unknown, selection?: {
-    current: ModelSelection | undefined
-    assembled: ModelSelection | undefined
-  }): () => void
+  export function installModelSelection(agentCtx: unknown): () => void
 }
 
 declare module '@deepseek-ai/dsh-agent-default-model' {}
-declare module '@deepseek-ai/dsh-agent-presets' {}
 declare module '@deepseek-ai/dsh-permission-presets' {}
 declare module '@deepseek-ai/dsh-client-connection' {}
 

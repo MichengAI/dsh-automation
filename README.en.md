@@ -30,7 +30,7 @@ Let DSH handle work on a schedule. Set up tasks in Settings or describe the timi
 - **Adjust the schedule anytime**: create, pause, resume, run immediately, or delete tasks.
 - **Review results**: browse task conversations by name and run time in the **Scheduled** tab, or filter run history in Settings.
 - **Keep each run independent**: each run uses the saved task instructions and does not inherit the conversation that created it.
-- **Eight built-in languages**: Chinese, English, Japanese, Spanish, French, German, Russian, and Portuguese, following the global DSH language setting. The six non-Chinese/English options require the matching host language packs (DSH `0.2.2-rc.1` or later).
+- **Eight built-in languages**: Chinese, English, Japanese, Spanish, French, German, Russian, and Portuguese, following the global DSH language setting.
 
 ## Interface
 
@@ -76,8 +76,8 @@ For a desktop workbench, download [DSH Codex Desktop](https://github.com/Micheng
 
 ## Prerequisites
 
-- Host compatibility: Full DeepSeek Harness `0.2.x` line (`>=0.2.0-rc.1 <0.3.0-0`), verified with `0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-rc.1`–`0.2.1-rc.5`, `0.2.2-rc.1`, `0.2.2-rc.2`, and `0.2.2-rc.3`, and forwards-compatible with subsequent `0.2.x` RC releases without requiring routine plugin version bumps. Hosts still on `0.1.x` should stay on plugin `0.1.66`. Back up automation storage and sessions in the Profile before upgrading the Host. `0.2.0` writes V4 sessions, and V4 sessions cannot be read after downgrading.
-- Official DSH peerDependencies are broadened to the generation range `>=0.2.0-rc.1 <0.3.0-0`. Development dependencies are pinned to `0.2.2-rc.3`. Legacy versions and breaking changes in the `0.3.0` generation are rejected by the version gate. `@deepseek-ai/dsh-agent-presets` and `@deepseek-ai/dsh-agent-preset-registry` are not peers: scheduled tasks use the host `agentPresets` service. Use one consistent official package version within each Host.
+- Host compatibility: DeepSeek Harness `0.2.x` series (`>=0.2.2-rc.1 <0.3.0-0`), verified with `0.2.2-rc.1`–`0.2.2-rc.5`, and forwards-compatible with subsequent `0.2.x` RC releases without requiring routine plugin version bumps. Hosts still on `0.1.x` should stay on plugin `0.1.66`. Back up automation storage and sessions in the Profile before upgrading the Host.
+- Official DSH peerDependencies are set to `>=0.2.2-rc.1 <0.3.0-0`. Development dependencies are pinned to `0.2.2-rc.5`. Legacy versions and breaking changes in the `0.3.0` generation are rejected by the version gate. `@deepseek-ai/dsh-agent-presets` and `@deepseek-ai/dsh-agent-preset-registry` are not peers: scheduled tasks use the host `agentPresets` service. Use one consistent official package version within each Host.
 - Other versions are outside the declared compatibility range. Installers may warn, and strict peer validation rejects them. Extend and pass the version matrix before adding a new rc.
 - The automation bundle does not override the official Connection entry. Each Host keeps its own startup dependencies, trusted-host expressions, and custom configuration; automation registers its RPC channel in its own plugin scope.
 - A working DeepSeek Harness Web installation with `dsh` available in PowerShell.

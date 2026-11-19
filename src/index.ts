@@ -78,7 +78,7 @@ export function humanApprovalReason(toolName: string): string {
 
 /**
  * 枚举当前存活的候选 Agent。
- * DSH 0.2.0-rc.1 ～ 0.2.2-rc.1 提供 ctx.agents.roots()；0.2.2-rc.2 起宿主移除 roots()，
+ * DSH 0.2.2-rc.1 提供 ctx.agents.roots()；0.2.2-rc.2 起宿主移除 roots()，
  * 改由 ctx.agents.list() 枚举存活实例并交由 isRootAgent 过滤委派子代理。
  */
 function listLiveAgents(ctx: Context): readonly any[] {

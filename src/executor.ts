@@ -3,7 +3,6 @@
 import { randomUUID } from 'node:crypto'
 import { installModelSelection, type ModelSelection } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-default-model'
-import type {} from '@deepseek-ai/dsh-agent-presets'
 import type { Context } from '@deepseek-ai/cordis'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -241,7 +240,7 @@ export async function executeAutomationRun(
               if (ctx.agentPresets !== undefined) {
                 await ctx.agentPresets.mount(agentCtx, target.agentPreset)
               }
-              installModelSelection(agentCtx, { current: selection, assembled: undefined })
+              installModelSelection(agentCtx)
               if (resumedAgent !== undefined) {
                 applyUnattendedPermission(ctx.permissionPresets, resumedAgent.session, target.permissionPreset)
               }
@@ -260,9 +259,8 @@ export async function executeAutomationRun(
           sessionId,
           ...(config.signal === undefined ? {} : { signal: config.signal }),
           meta: { cwd: target.cwd, agentPreset: target.agentPreset },
-          // DSH 0.2.2-rc.1 removed the selection argument from installModelSelection
-          // and applies the initial route (including reasoningEffort) from AgentOptions.
-          // The effort must travel here to be recorded in the request header.
+          // DSH 0.2.2-rc.1 起移除 installModelSelection 的 selection 参数，
+          // 初始路由（含 reasoningEffort）完全通过 AgentOptions 传递并在请求头中生效。
           agentOptions: {
             provider: selection.provider,
             model: selection.model,
@@ -271,9 +269,7 @@ export async function executeAutomationRun(
           setup: async (agentCtx: Context, createdAgent?: SetupAgent) => {
             if (ctx.agentPresets === undefined) throw new Error('Host 未提供 agentPresets 服务。')
             await ctx.agentPresets.mount(agentCtx, target.agentPreset)
-            // DSH 0.2.0-rc.2 → 0.2.1-rc.5 select the model through the second argument;
-            // DSH 0.2.2-rc.1 accepts only agentCtx and ignores it (AgentOptions above wins).
-            installModelSelection(agentCtx, { current: selection, assembled: undefined })
+            installModelSelection(agentCtx)
             if (createdAgent === undefined) throw new Error('automation setup has no scoped Agent')
             const agent = createdAgent
             applyUnattendedPermission(ctx.permissionPresets, agent.session, target.permissionPreset)
@@ -319,7 +315,7 @@ export async function executeAutomationRun(
           setup: async (agentCtx: Context, createdAgent?: SetupAgent) => {
             if (ctx.agentPresets === undefined) throw new Error('Host 未提供 agentPresets 服务。')
             await ctx.agentPresets.mount(agentCtx, target.agentPreset)
-            installModelSelection(agentCtx, { current: selection, assembled: undefined })
+            installModelSelection(agentCtx)
             if (createdAgent === undefined) throw new Error('automation setup has no scoped Agent')
             const agent = createdAgent
             applyUnattendedPermission(ctx.permissionPresets, agent.session, target.permissionPreset)
