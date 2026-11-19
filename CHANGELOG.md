@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.0] - 2026-11-19
+
+### Host Compatibility (Breaking Changes)
+
+- **Narrow supported host versions to 0.2.2 series**: Supported host range is now `>=0.2.2-rc.1 <0.3.0-0`, with official package baselines aligned to `0.2.2-rc.5` and verified across `0.2.2-rc.1` through `0.2.2-rc.5`. Hosts on earlier `0.2.0`/`0.2.1` versions should remain on plugin `1.0.29`; hosts on `0.1.x` should continue using `0.1.66`.
+
+### UX & Performance Improvements
+
+- **Asset and bundle cleanup**: Removed deprecated icons and unused localization strings to streamline client bundle size and optimize runtime performance.
+
 ## [1.0.29] - 2026-11-18
 
 ### Sidebar Tab Strip & Layout Stability

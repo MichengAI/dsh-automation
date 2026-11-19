@@ -76,7 +76,7 @@ Para un entorno de escritorio, descargue [DSH Codex Desktop](https://github.com/
 
 ## Requisitos previos
 
-- Compatibilidad de host: serie DeepSeek Harness `0.2.x` (`>=0.2.2-rc.1 <0.3.0-0`), verificado en `0.2.2-rc.1`–`0.2.2-rc.5`, compatible hacia adelante con versiones RC posteriores. Los hosts en `0.1.x` deben permanecer en el complemento `0.1.66`. Realice una copia de seguridad del almacenamiento de automatización y de las sesiones en el perfil antes de actualizar.
+- Compatibilidad de host: serie DeepSeek Harness `0.2.x` (`>=0.2.2-rc.1 <0.3.0-0`), verificado en `0.2.2-rc.1`–`0.2.2-rc.5`, compatible hacia adelante con versiones RC posteriores. Los hosts en `0.2.0`/`0.2.1` deben permanecer en el complemento `1.0.29`; los hosts en `0.1.x` deben permanecer en `0.1.66`. Realice una copia de seguridad del almacenamiento de automatización y de las sesiones en el perfil antes de actualizar.
 - Las dependencias peerDependencies oficiales cubren el rango `>=0.2.2-rc.1 <0.3.0-0`. Las dependencias de desarrollo están fijadas en `0.2.2-rc.5`. Las versiones anteriores y cambios incompatibles en `0.3.0` son rechazados por la puerta de versión. `@deepseek-ai/dsh-agent-presets` y `@deepseek-ai/dsh-agent-preset-registry` no son peers, sino que utilizan el servicio `agentPresets` del host.
 - Otras versiones quedan fuera del rango declarado; la validación estricta de peers las rechazará.
 - El paquete no anula la entrada oficial Connection. Cada host conserva sus dependencias y configuración; la automatización registra su canal RPC en su propio ámbito de complemento.

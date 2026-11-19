@@ -12,7 +12,6 @@ const versions = ['0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3', '0.2.2-rc.4', '0.2.2
 const versionsToRun = process.env.DSH_MATRIX_ONLY ? process.env.DSH_MATRIX_ONLY.split(',') : versions
 const legacyPreset = '@deepseek-ai/dsh-agent-presets'
 const presetRegistry = '@deepseek-ai/dsh-agent-preset-registry'
-const modernHosts = new Set(versions)
 const hostRange = '>=0.2.2-rc.1 <0.3.0-0'
 assert.equal(manifest.engines?.dsh, hostRange, 'engines.dsh 必须为 0.2.x 代际范围')
 assert.equal(manifest.peerDependencies[legacyPreset], undefined, '旧包名不能进 peer，安装门不看 optional')
@@ -87,7 +86,7 @@ for (const version of versionsToRun) {
     for (const name of Object.keys(manifest.devDependencies)) {
       if (!name.startsWith('@deepseek-ai/dsh-')) continue
       if (name === presetRegistry || name === legacyPreset) {
-        if (modernHosts.has(version)) dependencies[presetRegistry] = version
+        if (name === presetRegistry) dependencies[presetRegistry] = version
         continue
       }
       dependencies[name] = version

@@ -11,7 +11,6 @@ export declare const IconPlusOutline: import("./host-icon-resolve.js").HostIcon;
 export declare const IconRefreshOutline: import("./host-icon-resolve.js").HostIcon;
 export declare const IconInfoOutline: import("./host-icon-resolve.js").HostIcon;
 export declare const IconNewChatOutline: import("./host-icon-resolve.js").HostIcon;
-export declare const IconEditOutline: import("./host-icon-resolve.js").HostIcon;
 export declare const IconChevronDownOutline: import("./host-icon-resolve.js").HostIcon;
 export declare const IconSettingsOutline: import("./host-icon-resolve.js").HostIcon;
 export declare const IconListPenOutline: import("./host-icon-resolve.js").HostIcon;

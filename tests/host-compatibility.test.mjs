@@ -47,7 +47,6 @@ class FixedAdapter extends LlmAdapter {
 }
 
 const hostVersion = process.env.DSH_TEST_VERSION ?? "0.2.2-rc.5";
-const explicitAgent = hostVersion.startsWith("0.2.");
 const sessionHeaderVersion = 4;
 
 test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动化 RPC`, async (t) => {
@@ -196,9 +195,7 @@ test(`${hostVersion} 真实 AgentLoop 执行自动化、保留权限日志并释
   });
   ctx.provide("agentPresets", {
     mount: async (agentCtx) => {
-      if (explicitAgent)
-        assert.throws(() => agentCtx.agent, /cannot get property "agent"/);
-      else assert.ok(agentCtx.agent.session);
+      assert.throws(() => agentCtx.agent, /cannot get property "agent"/);
     },
   });
   let session;
