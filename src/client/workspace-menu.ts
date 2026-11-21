@@ -40,16 +40,28 @@ function checkIcon(): string {
 function hideOtherItems(
   menu: HTMLElement,
   ours: HTMLButtonElement,
-  hiddenItems: Map<HTMLButtonElement, { display: string; ariaHidden: string | null }>,
+  hiddenItems: Map<HTMLElement, { display: string; ariaHidden: string | null }>,
 ): void {
+  const hideElement = (el: HTMLElement | null | undefined): void => {
+    if (!el || typeof el.getAttribute !== 'function') return
+    if (!hiddenItems.has(el)) {
+      hiddenItems.set(el, { display: el.style.display || '', ariaHidden: el.getAttribute('aria-hidden') })
+    }
+    el.style.display = 'none'
+    el.setAttribute('aria-hidden', 'true')
+  }
+
   for (const item of menu.querySelectorAll<HTMLButtonElement>(MENU_ITEM_SELECTOR)) {
     if (item === ours) continue
-    // 归档插件只理解宿主工作区 ID，合成任务组不能显示它的归档入口。
-    if (!item.hasAttribute('data-dsham-archive-workspace')
-      && !/^(重命名|Rename|删除工作区|Delete workspace)$/i.test((item.textContent ?? '').trim())) continue
-    if (!hiddenItems.has(item)) hiddenItems.set(item, { display: item.style.display, ariaHidden: item.getAttribute('aria-hidden') })
-    item.style.display = 'none'
-    item.setAttribute('aria-hidden', 'true')
+    hideElement(item)
+    const wrapper = item.parentElement
+    if (wrapper !== null && wrapper !== menu && wrapper.parentElement === menu && !wrapper.contains(ours)) {
+      hideElement(wrapper)
+    }
+  }
+
+  for (const sep of menu.querySelectorAll<HTMLElement>('[role="separator"], hr, [class*="separator"], [class*="divider"]')) {
+    hideElement(sep)
   }
 }
 
@@ -97,7 +109,7 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
   let workspaceId: string | undefined
   let rememberedAt = 0
   let frame: number | undefined
-  const hiddenItems = new Map<HTMLButtonElement, { display: string; ariaHidden: string | null }>()
+  const hiddenItems = new Map<HTMLElement, { display: string; ariaHidden: string | null }>()
 
   const rememberWorkspace = (event: Event): void => {
     const target = event.target instanceof Element ? event.target : undefined
