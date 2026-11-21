@@ -54,6 +54,40 @@ function hideOtherItems(
 }
 
 /**
+ * 替换菜单项内的图标与文案，兼容各种带有嵌套包装、CSS Module 类名或纯结构节点的宿主 DOM。
+ */
+export function replaceMenuItemContent(
+  button: HTMLElement,
+  templateText: string,
+  label: string,
+  icon?: string,
+): void {
+  const iconContainer = (button.querySelector<HTMLElement>('[class*="itemIcon"], [class*="Icon"]') ?? button.firstElementChild) as HTMLElement | null | undefined
+  const isInsideIcon = (el: Element): boolean => Boolean(iconContainer && typeof iconContainer.contains === 'function' && iconContainer.contains(el))
+  const labelContainer = (button.querySelector<HTMLElement>('[class*="itemLabel"], [class*="Label"]')
+    ?? [...button.querySelectorAll<HTMLElement>('span, div')].find((el) => el !== iconContainer && !isInsideIcon(el) && (el.textContent ?? '').trim() === templateText)
+    ?? (button.children.length > 1 ? button.children[1] : null)
+    ?? button.lastElementChild) as HTMLElement | null | undefined
+
+  if (iconContainer && icon !== undefined) {
+    iconContainer.innerHTML = icon
+  }
+  if (labelContainer && labelContainer !== iconContainer) {
+    labelContainer.textContent = label
+  } else {
+    const directChildren = [...button.children] as HTMLElement[]
+    const firstChild = directChildren[0]
+    const secondChild = directChildren[1]
+    if (firstChild !== undefined && secondChild !== undefined) {
+      if (icon !== undefined) firstChild.innerHTML = icon
+      secondChild.textContent = label
+    } else {
+      button.textContent = label
+    }
+  }
+}
+
+/**
  * 安装工作区菜单注入器。
  * @param options 菜单文案、分组解析和打开任务设置的回调。
  * @returns 卸载函数。
@@ -108,6 +142,8 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
     button.removeAttribute('data-dsham-archive-workspace')
     button.removeAttribute('aria-disabled')
     button.removeAttribute('disabled')
+    button.removeAttribute('aria-keyshortcuts')
+    button.removeAttribute('aria-describedby')
     button.disabled = false
     button.style.display = ''
     button.removeAttribute('aria-hidden')
@@ -115,11 +151,9 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
     button.style.cursor = ''
     button.setAttribute(ITEM_ATTRIBUTE, 'true')
     button.classList.remove('danger')
+    for (const extra of button.querySelectorAll('[class*="check"], [class*="shortcut"]')) extra.remove()
     const label = typeof options.label === 'function' ? options.label() : options.label
-    const spans = button.querySelectorAll('span')
-    if (spans[0] !== undefined) spans[0].innerHTML = settingsIcon()
-    if (spans[1] !== undefined) spans[1].textContent = label
-    else button.textContent = label
+    replaceMenuItemContent(button, (template.textContent ?? '').trim(), label, settingsIcon())
     button.addEventListener('click', (event) => {
       event.preventDefault()
       event.stopPropagation()
@@ -211,13 +245,13 @@ export function installTaskGroupOption(options: TaskGroupOptionOptions): () => v
     button.setAttribute(GROUP_TASK_ATTRIBUTE, 'true')
     button.removeAttribute('aria-disabled')
     button.removeAttribute('disabled')
+    button.removeAttribute('aria-keyshortcuts')
+    button.removeAttribute('aria-describedby')
     button.disabled = false
     button.classList.remove('danger')
     for (const svg of button.querySelectorAll(':scope > svg')) svg.remove()
-    const spans = button.querySelectorAll('span')
-    if (spans[0] !== undefined) spans[0].innerHTML = taskGroupIcon()
-    if (spans[1] !== undefined) spans[1].textContent = options.label
-    else button.textContent = options.label
+    for (const check of button.querySelectorAll('[class*="check"], svg[class*="check"]')) check.remove()
+    replaceMenuItemContent(button, (first.textContent ?? '').trim(), options.label, taskGroupIcon())
     if (options.checked) {
       const check = document.createElement('span')
       check.innerHTML = checkIcon()

@@ -19,6 +19,10 @@ export interface TaskSettingsMenuInjectorOptions {
     }) => void;
 }
 /**
+ * 替换菜单项内的图标与文案，兼容各种带有嵌套包装、CSS Module 类名或纯结构节点的宿主 DOM。
+ */
+export declare function replaceMenuItemContent(button: HTMLElement, templateText: string, label: string, icon?: string): void;
+/**
  * 安装工作区菜单注入器。
  * @param options 菜单文案、分组解析和打开任务设置的回调。
  * @returns 卸载函数。
