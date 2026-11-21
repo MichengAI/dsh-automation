@@ -9,7 +9,7 @@ test('合成任务组隐藏所有非任务设置菜单项（在文件夹显示�
   const end = source.indexOf('\n/**', start)
   assert.ok(start >= 0 && end > start)
   const code = ts.transpileModule(source.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
-  const hide = new Function('MENU_ITEM_SELECTOR', code + '; return hideOtherItems;')('button[role="menuitem"]')
+  const hide = new Function('MENU_ITEM_SELECTOR', 'MENU_SELECTOR', code + '; return hideOtherItems;')('button[role="menuitem"]', '[role="menu"]')
   const item = (textContent: string, isSeparator = false) => ({
     textContent,
     style: { display: '' },
@@ -599,4 +599,228 @@ test('installTaskGroupOption 正确注入「按任务」分组项，并清理模
 
   dispose()
 })
+
+test('hideOtherItems 在真实宿主 .viewport 嵌套结构下必须隐藏 itemWrap，且隐藏 footer 分割线容器', async () => {
+  const { hideOtherItems } = await import('../src/client/workspace-menu.js') as any
+  assert.equal(typeof hideOtherItems, 'function', 'hideOtherItems 必须导出供测试与维护')
+
+  class DomNode {
+    tagName: string
+    className: string
+    style: Record<string, string> = {}
+    attributes = new Map<string, string>()
+    children: DomNode[] = []
+    parentElement: DomNode | null = null
+    isConnected = true
+
+    constructor(tagName: string, className = '') {
+      this.tagName = tagName.toUpperCase()
+      this.className = className
+      if (className) this.attributes.set('class', className)
+    }
+
+    setAttribute(k: string, v: string) { this.attributes.set(k, v) }
+    getAttribute(k: string) { return this.attributes.get(k) ?? null }
+    removeAttribute(k: string) { this.attributes.delete(k) }
+
+    appendChild(child: DomNode) {
+      child.parentElement = this
+      this.children.push(child)
+      return child
+    }
+
+    contains(other: DomNode | null): boolean {
+      let curr = other
+      while (curr) {
+        if (curr === this) return true
+        curr = curr.parentElement
+      }
+      return false
+    }
+
+    matches(sel: string): boolean {
+      if (sel === '[role="menu"]') return this.getAttribute('role') === 'menu'
+      if (sel === 'button[role="menuitem"]') return this.tagName === 'BUTTON' && this.getAttribute('role') === 'menuitem'
+      if (sel === '[role="separator"]') return this.getAttribute('role') === 'separator'
+      if (sel.includes('footer') || sel.includes('Footer')) {
+        return this.className.includes('footer') || this.className.includes('Footer') || this.getAttribute('data-slot') === 'footer'
+      }
+      if (sel.includes('separator') || sel.includes('divider') || sel === 'hr') {
+        return this.className.includes('separator') || this.className.includes('divider') || this.tagName === 'HR'
+      }
+      return false
+    }
+
+    closest(sel: string): DomNode | null {
+      let curr: DomNode | null = this
+      while (curr) {
+        if (curr.matches(sel)) return curr
+        curr = curr.parentElement
+      }
+      return null
+    }
+
+    querySelectorAll(sel: string): DomNode[] {
+      const parts = sel.split(',').map(s => s.trim())
+      const res: DomNode[] = []
+      const traverse = (node: DomNode) => {
+        for (const child of node.children) {
+          if (parts.some(p => child.matches(p))) res.push(child)
+          traverse(child)
+        }
+      }
+      traverse(this)
+      return res
+    }
+  }
+
+  // 模拟真实宿主结构：menu -> viewport -> itemWrap -> button
+  const menu = new DomNode('div')
+  menu.setAttribute('role', 'menu')
+
+  const viewport = new DomNode('div', '_viewport_70kcw_19')
+  menu.appendChild(viewport)
+
+  const oursWrap = new DomNode('div', '_itemWrap_70kcw_100')
+  const oursBtn = new DomNode('button', '_item_70kcw_173')
+  oursBtn.setAttribute('role', 'menuitem')
+  oursWrap.appendChild(oursBtn)
+  viewport.appendChild(oursWrap)
+
+  const renameWrap = new DomNode('div', '_itemWrap_70kcw_100')
+  const renameBtn = new DomNode('button', '_item_70kcw_173')
+  renameBtn.setAttribute('role', 'menuitem')
+  renameWrap.appendChild(renameBtn)
+  viewport.appendChild(renameWrap)
+
+  // 带有 afterContent 的 footer 容器（自带 0.5px border-top 分割线）
+  const footer = new DomNode('div', '_footer_70kcw_300')
+  const afterBtn = new DomNode('button', '_item_70kcw_173')
+  afterBtn.setAttribute('role', 'menuitem')
+  footer.appendChild(afterBtn)
+  menu.appendChild(footer)
+
+  const hiddenMap = new Map()
+  hideOtherItems(menu as any, oursBtn as any, hiddenMap)
+
+  // 1. 验证 viewport 下的 renameWrap 必须被设置 display: none 与 aria-hidden: true（非死代码）
+  assert.equal(renameWrap.style.display, 'none', '宿主 .viewport 内部的 itemWrap 必须被隐藏')
+  assert.equal(renameWrap.getAttribute('aria-hidden'), 'true', 'itemWrap 必须标记 aria-hidden')
+
+  // 2. 验证 footer 容器必须被隐藏，消除 0.5px 残留线
+  assert.equal(footer.style.display, 'none', 'footer 容器必须被隐藏以消除残留分割线')
+
+  // 3. 验证 oursWrap 绝不能被隐藏
+  assert.equal(oursWrap.style.display || '', '', 'oursWrap 必须保持可见')
+
+  // 4. 验证 hiddenItems 清理：当旧节点被宿主从 DOM 树移除后（isConnected: false），再次调用必须清理掉
+  renameWrap.isConnected = false
+  renameBtn.isConnected = false
+  viewport.children = viewport.children.filter(c => c !== renameWrap)
+  hideOtherItems(menu as any, oursBtn as any, hiddenMap)
+  assert.equal(hiddenMap.has(renameWrap), false, '已断开连接的 renameWrap 必须被从 hiddenItems 清理')
+  assert.equal(hiddenMap.has(renameBtn), false, '已断开连接的 renameBtn 必须被从 hiddenItems 清理')
+})
+
+test('replaceMenuItemContent 在无 .itemIcon 结构的模板行上绝不丢失图标', async () => {
+  const { replaceMenuItemContent } = await import('../src/client/workspace-menu.js')
+
+  // 场景 A：模板只有一个 label span，无显式 itemIcon 容器
+  class SimpleMockNode {
+    tagName: string
+    className: string
+    children: SimpleMockNode[] = []
+    parentElement: SimpleMockNode | null = null
+    _textContent = ''
+    _innerHTML = ''
+
+    constructor(tagName: string, className = '') {
+      this.tagName = tagName.toUpperCase()
+      this.className = className
+    }
+
+    get firstElementChild(): SimpleMockNode | null { return this.children[0] ?? null }
+    get lastElementChild(): SimpleMockNode | null { return this.children[this.children.length - 1] ?? null }
+
+    get textContent(): string {
+      if (this.children.length === 0) return this._textContent
+      return this.children.map(c => c.textContent).join('')
+    }
+    set textContent(v: string) {
+      this._textContent = v
+      this.children = []
+    }
+
+    get innerHTML() { return this._innerHTML }
+    set innerHTML(v: string) {
+      this._innerHTML = v
+      this._textContent = v
+    }
+
+    cloneNode(_deep = true): SimpleMockNode {
+      const copy = new SimpleMockNode(this.tagName, this.className)
+      copy._textContent = this._textContent
+      copy._innerHTML = this._innerHTML
+      for (const c of this.children) copy.appendChild(c.cloneNode(true))
+      return copy
+    }
+
+    appendChild(child: SimpleMockNode) {
+      child.parentElement = this
+      this.children.push(child)
+      return child
+    }
+
+    insertBefore(newNode: SimpleMockNode, refNode: SimpleMockNode | null) {
+      newNode.parentElement = this
+      const idx = refNode ? this.children.indexOf(refNode) : -1
+      if (idx === -1) this.children.push(newNode)
+      else this.children.splice(idx, 0, newNode)
+      return newNode
+    }
+
+    querySelector(sel: string): SimpleMockNode | null {
+      for (const c of this.children) {
+        if (sel === 'span' && c.tagName === 'SPAN') return c
+        if (sel.includes('itemIcon') && c.className.includes('itemIcon')) return c
+        if (sel.includes('itemLabel') && c.className.includes('itemLabel')) return c
+        const found = c.querySelector(sel)
+        if (found) return found
+      }
+      return null
+    }
+
+    querySelectorAll(sel: string): SimpleMockNode[] {
+      const res: SimpleMockNode[] = []
+      for (const c of this.children) {
+        if (sel.includes('span') && c.tagName === 'SPAN') res.push(c)
+        res.push(...c.querySelectorAll(sel))
+      }
+      return res
+    }
+
+    contains(other: SimpleMockNode | null): boolean {
+      let curr = other
+      while (curr) {
+        if (curr === this) return true
+        curr = curr.parentElement
+      }
+      return false
+    }
+  }
+
+  const btn = new SimpleMockNode('button')
+  const labelSpan = new SimpleMockNode('span')
+  labelSpan.textContent = '重命名'
+  btn.appendChild(labelSpan)
+
+  const iconSvg = '<svg class="icon"><path d="task"></path></svg>'
+  replaceMenuItemContent(btn as any, '重命名', '任务设置', iconSvg)
+
+  // 必须同时具备图标和文案
+  assert.equal(btn.children.length, 2, '必须有 2 个子节点（图标容器与文案容器）')
+  assert.match(btn.children[0]!.innerHTML, /<svg/, '第一个子节点必须是图标容器且写入了 svg 图标')
+  assert.equal(btn.children[1]!.textContent, '任务设置', '第二个子节点必须是文案容器且文案为「任务设置」')
+})
+
 

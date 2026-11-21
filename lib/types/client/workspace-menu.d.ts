@@ -18,6 +18,10 @@ export interface TaskSettingsMenuInjectorOptions {
         sessionIds: string[];
     }) => void;
 }
+export declare function hideOtherItems(menu: HTMLElement, ours: HTMLButtonElement, hiddenItems: Map<HTMLElement, {
+    display: string;
+    ariaHidden: string | null;
+}>): void;
 /**
  * 替换菜单项内的图标与文案，兼容各种带有嵌套包装、CSS Module 类名或纯结构节点的宿主 DOM。
  */

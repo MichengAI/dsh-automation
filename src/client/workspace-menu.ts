@@ -37,11 +37,17 @@ function checkIcon(): string {
   return checkIconMarkup ??= hostIconMarkup(IconCheckOutline)
 }
 
-function hideOtherItems(
+export function hideOtherItems(
   menu: HTMLElement,
   ours: HTMLButtonElement,
   hiddenItems: Map<HTMLElement, { display: string; ariaHidden: string | null }>,
 ): void {
+  for (const [el] of hiddenItems) {
+    if (el.isConnected === false) {
+      hiddenItems.delete(el)
+    }
+  }
+
   const hideElement = (el: HTMLElement | null | undefined): void => {
     if (!el || typeof el.getAttribute !== 'function') return
     if (!hiddenItems.has(el)) {
@@ -55,13 +61,22 @@ function hideOtherItems(
     if (item === ours) continue
     hideElement(item)
     const wrapper = item.parentElement
-    if (wrapper !== null && wrapper !== menu && wrapper.parentElement === menu && !wrapper.contains(ours)) {
+    if (
+      wrapper !== null
+      && wrapper !== menu
+      && (typeof wrapper.contains !== 'function' || !wrapper.contains(ours))
+      && (typeof wrapper.closest !== 'function' || wrapper.closest(MENU_SELECTOR) === menu)
+    ) {
       hideElement(wrapper)
     }
   }
 
-  for (const sep of menu.querySelectorAll<HTMLElement>('[role="separator"], hr, [class*="separator"], [class*="divider"]')) {
-    hideElement(sep)
+  for (const sep of menu.querySelectorAll<HTMLElement>(
+    '[role="separator"], hr, [class*="separator"], [class*="divider"], [class*="footer"], [class*="Footer"], [data-slot="footer"]'
+  )) {
+    if (typeof sep.contains !== 'function' || !sep.contains(ours)) {
+      hideElement(sep)
+    }
   }
 }
 
@@ -74,28 +89,70 @@ export function replaceMenuItemContent(
   label: string,
   icon?: string,
 ): void {
-  const iconContainer = (button.querySelector<HTMLElement>('[class*="itemIcon"], [class*="Icon"]') ?? button.firstElementChild) as HTMLElement | null | undefined
-  const isInsideIcon = (el: Element): boolean => Boolean(iconContainer && typeof iconContainer.contains === 'function' && iconContainer.contains(el))
-  const labelContainer = (button.querySelector<HTMLElement>('[class*="itemLabel"], [class*="Label"]')
-    ?? [...button.querySelectorAll<HTMLElement>('span, div')].find((el) => el !== iconContainer && !isInsideIcon(el) && (el.textContent ?? '').trim() === templateText)
-    ?? (button.children.length > 1 ? button.children[1] : null)
-    ?? button.lastElementChild) as HTMLElement | null | undefined
+  const explicitIcon = button.querySelector<HTMLElement>('[class*="itemIcon"], [class*="Icon"]')
+  const isInsideIcon = (el: Element): boolean => Boolean(explicitIcon && typeof explicitIcon.contains === 'function' && explicitIcon.contains(el))
+  const explicitLabel = (button.querySelector<HTMLElement>('[class*="itemLabel"], [class*="Label"]')
+    ?? [...button.querySelectorAll<HTMLElement>('span, div')].find((el) => el !== explicitIcon && !isInsideIcon(el) && (el.textContent ?? '').trim() === templateText)) as HTMLElement | null | undefined
 
-  if (iconContainer && icon !== undefined) {
-    iconContainer.innerHTML = icon
+  if (explicitIcon && explicitLabel) {
+    if (icon !== undefined) explicitIcon.innerHTML = icon
+    explicitLabel.textContent = label
+    return
   }
-  if (labelContainer && labelContainer !== iconContainer) {
-    labelContainer.textContent = label
-  } else {
-    const directChildren = [...button.children] as HTMLElement[]
-    const firstChild = directChildren[0]
-    const secondChild = directChildren[1]
+
+  if (explicitIcon) {
+    if (icon !== undefined) explicitIcon.innerHTML = icon
+    const otherChild = [...button.children].find((c) => c !== explicitIcon) as HTMLElement | undefined
+    if (otherChild) {
+      otherChild.textContent = label
+    } else {
+      const doc = button.ownerDocument ?? (typeof document !== 'undefined' ? document : null)
+      const labelSpan = doc ? doc.createElement('span') : (button.cloneNode(false) as HTMLElement)
+      labelSpan.className = ''
+      labelSpan.textContent = label
+      button.append(labelSpan)
+    }
+    return
+  }
+
+  // 没有显式图标容器时（例如模板只有 label 或纯文本，或第三方无图标项）
+  const children = [...button.children] as HTMLElement[]
+  if (children.length >= 2) {
+    const [firstChild, secondChild] = children
     if (firstChild !== undefined && secondChild !== undefined) {
       if (icon !== undefined) firstChild.innerHTML = icon
       secondChild.textContent = label
-    } else {
-      button.textContent = label
+      return
     }
+  }
+
+  if (children.length === 1) {
+    const [onlyChild] = children
+    if (onlyChild !== undefined) {
+      onlyChild.textContent = label
+      if (icon !== undefined) {
+        const iconSpan = onlyChild.cloneNode(false) as HTMLElement
+        iconSpan.className = ''
+        iconSpan.innerHTML = icon
+        button.insertBefore(iconSpan, onlyChild)
+      }
+      return
+    }
+  }
+
+  // children.length === 0 或 fallback
+  if (icon !== undefined) {
+    const doc = button.ownerDocument ?? (typeof document !== 'undefined' ? document : null)
+    const iconSpan = doc ? doc.createElement('span') : (button.cloneNode(false) as HTMLElement)
+    iconSpan.className = ''
+    iconSpan.innerHTML = icon
+    const labelSpan = doc ? doc.createElement('span') : (button.cloneNode(false) as HTMLElement)
+    labelSpan.className = ''
+    labelSpan.textContent = label
+    button.textContent = ''
+    button.append(iconSpan, labelSpan)
+  } else {
+    button.textContent = label
   }
 }
 
@@ -190,6 +247,9 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
 
   const scan = (): void => {
     frame = undefined
+    for (const [el] of hiddenItems) {
+      if (el.isConnected === false) hiddenItems.delete(el)
+    }
     if (workspaceId === undefined || performance.now() - rememberedAt > 2_000) return
     const task = options.resolveTask(workspaceId)
     if (task === undefined) return
@@ -212,10 +272,13 @@ export function installTaskSettingsMenuInjector(options: TaskSettingsMenuInjecto
     document.removeEventListener('click', rememberWorkspace, true)
     for (const item of document.querySelectorAll(`[${ITEM_ATTRIBUTE}="true"]`)) item.parentElement?.remove()
     for (const [item, original] of hiddenItems) {
-      item.style.display = original.display
-      if (original.ariaHidden === null) item.removeAttribute('aria-hidden')
-      else item.setAttribute('aria-hidden', original.ariaHidden)
+      if (item.isConnected !== false) {
+        item.style.display = original.display
+        if (original.ariaHidden === null) item.removeAttribute('aria-hidden')
+        else item.setAttribute('aria-hidden', original.ariaHidden)
+      }
     }
+    hiddenItems.clear()
   }
 }
 
