@@ -823,4 +823,165 @@ test('replaceMenuItemContent 在无 .itemIcon 结构的模板行上绝不丢失�
   assert.equal(btn.children[1]!.textContent, '任务设置', '第二个子节点必须是文案容器且文案为「任务设置」')
 })
 
+test('replaceMenuItemContent 遇到快捷键与复杂模板时防覆盖、防丢文案并继承宿主图标类名', async () => {
+  const { replaceMenuItemContent } = await import('../src/client/workspace-menu.js')
+
+  class AdvancedMockNode {
+    tagName: string
+    className: string
+    children: AdvancedMockNode[] = []
+    parentElement: AdvancedMockNode | null = null
+    style: Record<string, string> = {}
+    _textContent = ''
+    _innerHTML = ''
+
+    constructor(tagName: string, className = '') {
+      this.tagName = tagName.toUpperCase()
+      this.className = className
+    }
+
+    get firstElementChild(): AdvancedMockNode | null { return this.children[0] ?? null }
+    get lastElementChild(): AdvancedMockNode | null { return this.children[this.children.length - 1] ?? null }
+
+    get textContent(): string {
+      if (this.children.length === 0) return this._textContent
+      return this.children.map(c => c.textContent).join('')
+    }
+    set textContent(v: string) {
+      this._textContent = v
+      this.children = []
+    }
+
+    get innerHTML() { return this._innerHTML }
+    set innerHTML(v: string) {
+      this._innerHTML = v
+      this._textContent = v
+    }
+
+    remove() {
+      if (this.parentElement) {
+        this.parentElement.children = this.parentElement.children.filter(c => c !== this)
+        this.parentElement = null
+      }
+    }
+
+    cloneNode(_deep = true): AdvancedMockNode {
+      const copy = new AdvancedMockNode(this.tagName, this.className)
+      copy._textContent = this._textContent
+      copy._innerHTML = this._innerHTML
+      copy.style = { ...this.style }
+      for (const c of this.children) copy.appendChild(c.cloneNode(true))
+      return copy
+    }
+
+    appendChild(child: AdvancedMockNode) {
+      child.parentElement = this
+      this.children.push(child)
+      return child
+    }
+
+    append(...children: AdvancedMockNode[]) {
+      for (const c of children) this.appendChild(c)
+    }
+
+    insertBefore(newNode: AdvancedMockNode, refNode: AdvancedMockNode | null) {
+      newNode.parentElement = this
+      const idx = refNode ? this.children.indexOf(refNode) : -1
+      if (idx === -1) this.children.push(newNode)
+      else this.children.splice(idx, 0, newNode)
+      return newNode
+    }
+
+    querySelector(sel: string): AdvancedMockNode | null {
+      const all = this.querySelectorAll(sel)
+      return all[0] ?? null
+    }
+
+    querySelectorAll(sel: string): AdvancedMockNode[] {
+      const res: AdvancedMockNode[] = []
+      const match = (n: AdvancedMockNode): boolean => {
+        if (sel === 'button[role="menuitem"]' && n.tagName === 'BUTTON') return true
+        if (sel.includes('itemIcon') && n.className.includes('itemIcon')) return true
+        if (sel.includes('itemLabel') && n.className.includes('itemLabel')) return true
+        if (sel.includes('shortcut') && n.className.toLowerCase().includes('shortcut')) return true
+        if (sel.includes('span') && n.tagName === 'SPAN') return true
+        return false
+      }
+      for (const c of this.children) {
+        if (match(c)) res.push(c)
+        res.push(...c.querySelectorAll(sel))
+      }
+      return res
+    }
+
+    closest(sel: string): AdvancedMockNode | null {
+      let curr: AdvancedMockNode | null = this
+      while (curr) {
+        if (sel === '[role="menu"]' && (curr.className.includes('menu') || curr.tagName === 'DIV')) return curr
+        curr = curr.parentElement
+      }
+      return null
+    }
+
+    contains(other: AdvancedMockNode | null): boolean {
+      let curr = other
+      while (curr) {
+        if (curr === this) return true
+        curr = curr.parentElement
+      }
+      return false
+    }
+  }
+
+  // 场景 1：无 explicitIcon，但模板有两个子元素：[labelSpan, shortcutSpan]
+  // 必须把 labelSpan 文案改为「任务设置」，不能把 labelSpan 当成图标，且必须在前面插入新图标，shortcut 必须被清理
+  const btn1 = new AdvancedMockNode('button')
+  const label1 = new AdvancedMockNode('span', 'custom-label')
+  label1.textContent = '重命名'
+  const shortcut1 = new AdvancedMockNode('span', 'itemShortcut')
+  shortcut1.textContent = 'F2'
+  btn1.appendChild(label1)
+  btn1.appendChild(shortcut1)
+
+  replaceMenuItemContent(btn1 as any, '重命名', '任务设置', '<svg><path d="icon"></path></svg>')
+  assert.equal(btn1.querySelectorAll('.itemShortcut').length, 0, '快捷键元素必须被清理')
+  assert.equal(label1.textContent, '任务设置', '原 label 容器文本必须被更新为任务设置，而不是被写入 svg 图标')
+  assert.equal(btn1.children.length, 2, '必须由 [新图标, 原label] 组成')
+  assert.match(btn1.children[0]!.innerHTML, /<svg/, '第一项必须是新插入的图标容器')
+  assert.equal(btn1.children[1], label1, '第二项必须是原 label 容器')
+
+  // 场景 2：有 explicitIcon 但无 explicitLabel 且带有 shortcutSpan
+  // 不能把 shortcut 覆盖成文案，必须清理 shortcut，并创建独立的 label 容器
+  const btn2 = new AdvancedMockNode('button')
+  const icon2 = new AdvancedMockNode('span', 'itemIcon')
+  const shortcut2 = new AdvancedMockNode('span', 'itemShortcut')
+  shortcut2.textContent = 'Ctrl+R'
+  btn2.appendChild(icon2)
+  btn2.appendChild(shortcut2)
+
+  replaceMenuItemContent(btn2 as any, '未匹配文案', '任务设置', '<svg><path d="new"></path></svg>')
+  assert.equal(btn2.querySelectorAll('.itemShortcut').length, 0, '快捷键元素必须被清理')
+  assert.match(icon2.innerHTML, /d="new"/, '已有 explicitIcon 必须被写入新图标')
+  assert.equal(btn2.children.length, 2, '必须有 [icon, 新建label]')
+  assert.equal(btn2.children[1]!.textContent, '任务设置', '新建的 label 容器必须包含任务设置文案')
+
+  // 场景 3：回退新建图标容器时，从菜单上下文自动继承宿主 .itemIcon 类名
+  const menu = new AdvancedMockNode('div', 'host-menu')
+  const siblingBtn = new AdvancedMockNode('button')
+  const hostIconSpan = new AdvancedMockNode('span', 'host_itemIcon_hash123')
+  siblingBtn.appendChild(hostIconSpan)
+  menu.appendChild(siblingBtn)
+
+  const btn3 = new AdvancedMockNode('button')
+  const label3 = new AdvancedMockNode('span')
+  label3.textContent = '纯文本'
+  btn3.appendChild(label3)
+  menu.appendChild(btn3)
+
+  replaceMenuItemContent(btn3 as any, '纯文本', '任务设置', '<svg></svg>')
+  const createdIconSpan = btn3.children[0]!
+  assert.equal(createdIconSpan.className, 'host_itemIcon_hash123', '新建的图标容器必须继承宿主 itemIcon 类名')
+})
+
+
 

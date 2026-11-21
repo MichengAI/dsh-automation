@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1] - 2026-11-21
+
+### UI & Workspace Menu Improvements
+
+- **Task group context menu cleanup**: Resolved an issue where non-task options (such as Reveal in Finder, Archive, and Delete workspace) along with trailing divider lines and empty container spacing remained visible when right-clicking on task-grouped workspaces. The context menu now cleanly displays only the task settings entry.
+- **Menu item icon and label stability**: Fixed label text and icon rendering across varying host menu templates (including templates with keyboard shortcut hints or plain-text labels), ensuring the task settings action consistently presents the intended icon and text without residual shortcut tags.
+- **Interactive resource cleanup**: Improved DOM reference recycling when repeatedly opening workspace context menus over long-running sessions to maintain smooth UI responsiveness.
+
 ## [1.1.0] - 2026-11-19
 
 ### Host Compatibility (Breaking Changes)

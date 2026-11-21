@@ -80,6 +80,47 @@ export function hideOtherItems(
   }
 }
 
+function findTemplateClass(button: HTMLElement, selector: string): string {
+  const menu = (typeof button.closest === 'function' ? button.closest(MENU_SELECTOR) : null) ?? button.parentElement
+  const el = menu?.querySelector?.<HTMLElement>(selector)
+    ?? (typeof document !== 'undefined' ? document.querySelector<HTMLElement>(`${MENU_SELECTOR} ${selector}`) : null)
+  return el?.className ? String(el.className) : ''
+}
+
+function createIconSpan(button: HTMLElement, icon?: string): HTMLElement {
+  const doc = button.ownerDocument ?? (typeof document !== 'undefined' ? document : null)
+  const iconSpan = doc ? doc.createElement('span') : (button.cloneNode(false) as HTMLElement)
+  const templateClass = findTemplateClass(button, '[class*="itemIcon"], [class*="Icon"]')
+  if (templateClass) {
+    iconSpan.className = templateClass
+  } else {
+    iconSpan.className = ''
+    if (iconSpan.style) {
+      iconSpan.style.display = 'inline-flex'
+      iconSpan.style.alignItems = 'center'
+      iconSpan.style.justifyContent = 'center'
+      iconSpan.style.flexShrink = '0'
+    }
+  }
+  if (icon !== undefined) {
+    iconSpan.innerHTML = icon
+  }
+  return iconSpan
+}
+
+function createLabelSpan(button: HTMLElement, label: string): HTMLElement {
+  const doc = button.ownerDocument ?? (typeof document !== 'undefined' ? document : null)
+  const labelSpan = doc ? doc.createElement('span') : (button.cloneNode(false) as HTMLElement)
+  const templateClass = findTemplateClass(button, '[class*="itemLabel"], [class*="Label"]')
+  if (templateClass) {
+    labelSpan.className = templateClass
+  } else {
+    labelSpan.className = ''
+  }
+  labelSpan.textContent = label
+  return labelSpan
+}
+
 /**
  * 替换菜单项内的图标与文案，兼容各种带有嵌套包装、CSS Module 类名或纯结构节点的宿主 DOM。
  */
@@ -89,9 +130,14 @@ export function replaceMenuItemContent(
   label: string,
   icon?: string,
 ): void {
-  const explicitIcon = button.querySelector<HTMLElement>('[class*="itemIcon"], [class*="Icon"]')
+  // 1. 清理原有的快捷键与多余角标（任务设置无快捷键，避免残留或误识别为文案）
+  for (const extra of button.querySelectorAll<HTMLElement>('[class*=\"shortcut\"], [class*=\"Shortcut\"], [data-slot=\"shortcut\"]')) {
+    extra.remove()
+  }
+
+  const explicitIcon = button.querySelector<HTMLElement>('[class*=\"itemIcon\"], [class*=\"Icon\"]')
   const isInsideIcon = (el: Element): boolean => Boolean(explicitIcon && typeof explicitIcon.contains === 'function' && explicitIcon.contains(el))
-  const explicitLabel = (button.querySelector<HTMLElement>('[class*="itemLabel"], [class*="Label"]')
+  const explicitLabel = (button.querySelector<HTMLElement>('[class*=\"itemLabel\"], [class*=\"Label\"]')
     ?? [...button.querySelectorAll<HTMLElement>('span, div')].find((el) => el !== explicitIcon && !isInsideIcon(el) && (el.textContent ?? '').trim() === templateText)) as HTMLElement | null | undefined
 
   if (explicitIcon && explicitLabel) {
@@ -106,17 +152,28 @@ export function replaceMenuItemContent(
     if (otherChild) {
       otherChild.textContent = label
     } else {
-      const doc = button.ownerDocument ?? (typeof document !== 'undefined' ? document : null)
-      const labelSpan = doc ? doc.createElement('span') : (button.cloneNode(false) as HTMLElement)
-      labelSpan.className = ''
-      labelSpan.textContent = label
-      button.append(labelSpan)
+      button.append(createLabelSpan(button, label))
     }
     return
   }
 
   // 没有显式图标容器时（例如模板只有 label 或纯文本，或第三方无图标项）
+  // 优先匹配文案容器：通过 templateText 匹配或者取单子节点
   const children = [...button.children] as HTMLElement[]
+  const labelChild = explicitLabel
+    ?? children.find((c) => (c.textContent ?? '').trim() === templateText)
+    ?? (children.length === 1 ? children[0] : undefined)
+
+  if (labelChild) {
+    labelChild.textContent = label
+    if (icon !== undefined) {
+      const iconSpan = createIconSpan(button, icon)
+      button.insertBefore(iconSpan, labelChild)
+    }
+    return
+  }
+
+  // 兜底分支：无明确文案容器，检查是否有两个及以上子节点
   if (children.length >= 2) {
     const [firstChild, secondChild] = children
     if (firstChild !== undefined && secondChild !== undefined) {
@@ -126,29 +183,10 @@ export function replaceMenuItemContent(
     }
   }
 
-  if (children.length === 1) {
-    const [onlyChild] = children
-    if (onlyChild !== undefined) {
-      onlyChild.textContent = label
-      if (icon !== undefined) {
-        const iconSpan = onlyChild.cloneNode(false) as HTMLElement
-        iconSpan.className = ''
-        iconSpan.innerHTML = icon
-        button.insertBefore(iconSpan, onlyChild)
-      }
-      return
-    }
-  }
-
   // children.length === 0 或 fallback
   if (icon !== undefined) {
-    const doc = button.ownerDocument ?? (typeof document !== 'undefined' ? document : null)
-    const iconSpan = doc ? doc.createElement('span') : (button.cloneNode(false) as HTMLElement)
-    iconSpan.className = ''
-    iconSpan.innerHTML = icon
-    const labelSpan = doc ? doc.createElement('span') : (button.cloneNode(false) as HTMLElement)
-    labelSpan.className = ''
-    labelSpan.textContent = label
+    const iconSpan = createIconSpan(button, icon)
+    const labelSpan = createLabelSpan(button, label)
     button.textContent = ''
     button.append(iconSpan, labelSpan)
   } else {
