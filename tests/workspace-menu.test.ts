@@ -983,5 +983,209 @@ test('replaceMenuItemContent 遇到快捷键与复杂模板时防覆盖、防丢
   assert.equal(createdIconSpan.className, 'host_itemIcon_hash123', '新建的图标容器必须继承宿主 itemIcon 类名')
 })
 
+test('findTemplateClass 必须严格限定在 [role="menu"] 作用域内，不得被页面其它位置的 Icon/Label 类名污染', async () => {
+  const { replaceMenuItemContent } = await import('../src/client/workspace-menu.js')
+
+  class TestDOMNode {
+    tagName: string
+    className: string
+    attributes: Record<string, string> = {}
+    children: TestDOMNode[] = []
+    parentElement: TestDOMNode | null = null
+    ownerDocument: any = null
+    style: Record<string, string> = {}
+    _textContent = ''
+    _innerHTML = ''
+
+    constructor(tagName: string, className = '', attrs: Record<string, string> = {}) {
+      this.tagName = tagName.toUpperCase()
+      this.className = className
+      this.attributes = { ...attrs }
+    }
+
+    getAttribute(name: string) { return this.attributes[name] ?? null }
+    setAttribute(name: string, val: string) { this.attributes[name] = val }
+
+    createElement(tagName: string): TestDOMNode {
+      const node = new TestDOMNode(tagName)
+      node.ownerDocument = this
+      return node
+    }
+
+    get textContent(): string {
+      if (this.children.length === 0) return this._textContent
+      return this.children.map(c => c.textContent).join('')
+    }
+    set textContent(v: string) {
+      this._textContent = v
+      this.children = []
+    }
+
+    get innerHTML() { return this._innerHTML }
+    set innerHTML(v: string) {
+      this._innerHTML = v
+      this._textContent = v
+    }
+
+    remove() {
+      if (this.parentElement) {
+        this.parentElement.children = this.parentElement.children.filter(c => c !== this)
+        this.parentElement = null
+      }
+    }
+
+    cloneNode(_deep = true): TestDOMNode {
+      const copy = new TestDOMNode(this.tagName, this.className, this.attributes)
+      copy.ownerDocument = this.ownerDocument
+      copy._textContent = this._textContent
+      copy._innerHTML = this._innerHTML
+      copy.style = { ...this.style }
+      for (const c of this.children) copy.appendChild(c.cloneNode(true))
+      return copy
+    }
+
+    appendChild(child: TestDOMNode) {
+      child.parentElement = this
+      child.ownerDocument = this.ownerDocument ?? this
+      this.children.push(child)
+      return child
+    }
+
+    append(...children: TestDOMNode[]) {
+      for (const c of children) this.appendChild(c)
+    }
+
+    insertBefore(newNode: TestDOMNode, refNode: TestDOMNode | null) {
+      newNode.parentElement = this
+      newNode.ownerDocument = this.ownerDocument ?? this
+      const idx = refNode ? this.children.indexOf(refNode) : -1
+      if (idx === -1) this.children.push(newNode)
+      else this.children.splice(idx, 0, newNode)
+      return newNode
+    }
+
+    closest(sel: string): TestDOMNode | null {
+      let curr: TestDOMNode | null = this
+      while (curr) {
+        if (sel === '[role="menu"]' && curr.getAttribute('role') === 'menu') return curr
+        curr = curr.parentElement
+      }
+      return null
+    }
+
+    contains(other: TestDOMNode | null): boolean {
+      let curr = other
+      while (curr) {
+        if (curr === this) return true
+        curr = curr.parentElement
+      }
+      return false
+    }
+
+    querySelector(sel: string): TestDOMNode | null {
+      return this.querySelectorAll(sel)[0] ?? null
+    }
+
+    querySelectorAll(sel: string): TestDOMNode[] {
+      const parts = sel.split(',').map(s => s.trim())
+      const res: TestDOMNode[] = []
+      
+      const matchSingle = (n: TestDOMNode, part: string): boolean => {
+        if (part.startsWith('[role="menu"] ')) {
+          let p = n.parentElement
+          let insideMenu = false
+          while (p) {
+            if (p.getAttribute('role') === 'menu') { insideMenu = true; break }
+            p = p.parentElement
+          }
+          if (!insideMenu) return false
+          part = part.slice('[role="menu"] '.length).trim()
+        }
+        if (part.startsWith('button[role="menuitem"] ')) {
+          let p = n.parentElement
+          let insideItem = false
+          while (p) {
+            if (p.tagName === 'BUTTON' && p.getAttribute('role') === 'menuitem') { insideItem = true; break }
+            p = p.parentElement
+          }
+          if (!insideItem) return false
+          part = part.slice('button[role="menuitem"] '.length).trim()
+        }
+        if (part === '[role="menu"]') return n.getAttribute('role') === 'menu'
+        if (part === 'button[role="menuitem"]') return n.tagName === 'BUTTON' && n.getAttribute('role') === 'menuitem'
+        if (part === '[class*="itemIcon"]') return n.className.includes('itemIcon')
+        if (part === '[class*="Icon"]') return n.className.includes('Icon')
+        if (part === '[class*="itemLabel"]') return n.className.includes('itemLabel')
+        if (part === '[class*="Label"]') return n.className.includes('Label')
+        return false
+      }
+
+      const traverse = (node: TestDOMNode) => {
+        for (const c of node.children) {
+          if (parts.some(p => matchSingle(c, p))) {
+            if (!res.includes(c)) res.push(c)
+          }
+          traverse(c)
+        }
+      }
+      traverse(this)
+      return res
+    }
+  }
+
+  // 1. 构建一个包含全局干扰项的 document
+  const mockDoc = new TestDOMNode('#document')
+  mockDoc.ownerDocument = mockDoc
+
+  // 位于文档前部的非菜单无关图标与文案
+  const header = new TestDOMNode('div', 'header')
+  const unrelatedIcon = new TestDOMNode('span', '_fileTypeIcon_other_zzz')
+  const unrelatedLabel = new TestDOMNode('span', '_itemLabel_unrelated_abc')
+  header.append(unrelatedIcon, unrelatedLabel)
+  mockDoc.appendChild(header)
+
+  // 位于文档后部的右键菜单 [role="menu"]
+  const menu = new TestDOMNode('div', 'portal-menu', { role: 'menu' })
+  const menuItem = new TestDOMNode('button', 'menu-item', { role: 'menuitem' })
+  const menuIcon = new TestDOMNode('span', '_itemIcon_70kcw_233')
+  const menuLabel = new TestDOMNode('span', '_itemLabel_70kcw_text')
+  menuItem.append(menuIcon, menuLabel)
+  menu.appendChild(menuItem)
+  mockDoc.appendChild(menu)
+
+  // 2. 一个尚未插入 DOM 的克隆按钮（button.closest('[role="menu"]') === null）
+  const cloneBtn = new TestDOMNode('button', 'menu-item', { role: 'menuitem' })
+  cloneBtn.ownerDocument = mockDoc
+  const cloneLabel = new TestDOMNode('span')
+  cloneLabel.textContent = '纯文本'
+  cloneBtn.appendChild(cloneLabel)
+
+  const originalDoc = (globalThis as any).document
+  try {
+    (globalThis as any).document = mockDoc
+    replaceMenuItemContent(cloneBtn as any, '纯文本', '任务设置', '<svg></svg>')
+
+    const emptyBtn = new TestDOMNode('button', 'menu-item', { role: 'menuitem' })
+    emptyBtn.ownerDocument = mockDoc
+    replaceMenuItemContent(emptyBtn as any, '', '任务设置', '<svg></svg>')
+
+    const createdLabelSpan = emptyBtn.children[1]!
+    assert.equal(
+      createdLabelSpan.className,
+      '_itemLabel_70kcw_text',
+      '新建文案容器必须继承菜单内的 _itemLabel_70kcw_text，绝不能污染为 _itemLabel_unrelated_abc'
+    )
+  } finally {
+    (globalThis as any).document = originalDoc
+  }
+
+  const iconSpan = cloneBtn.children[0]!
+  assert.equal(
+    iconSpan.className,
+    '_itemIcon_70kcw_233',
+    '必须继承菜单内的 _itemIcon_70kcw_233 类名，绝不能污染为全局其它位置的 _fileTypeIcon_other_zzz'
+  )
+})
+
 
 

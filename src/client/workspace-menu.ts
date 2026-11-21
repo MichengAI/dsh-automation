@@ -80,17 +80,37 @@ export function hideOtherItems(
   }
 }
 
-function findTemplateClass(button: HTMLElement, selector: string): string {
-  const menu = (typeof button.closest === 'function' ? button.closest(MENU_SELECTOR) : null) ?? button.parentElement
-  const el = menu?.querySelector?.<HTMLElement>(selector)
-    ?? (typeof document !== 'undefined' ? document.querySelector<HTMLElement>(`${MENU_SELECTOR} ${selector}`) : null)
-  return el?.className ? String(el.className) : ''
+function findTemplateClass(button: HTMLElement, candidateSelectors: readonly string[]): string {
+  const doc = button.ownerDocument ?? (typeof document !== 'undefined' ? document : null)
+  const menu = ((typeof button.closest === 'function' ? button.closest(MENU_SELECTOR) : null)
+    ?? (button.parentElement && typeof button.parentElement.closest === 'function' ? button.parentElement.closest(MENU_SELECTOR) : null)) as HTMLElement | null
+
+  const menus: HTMLElement[] = []
+  if (menu) {
+    menus.push(menu)
+  } else if (doc && typeof doc.querySelectorAll === 'function') {
+    const allMenus = [...(doc.querySelectorAll<HTMLElement>(MENU_SELECTOR) as Iterable<HTMLElement>)]
+    menus.push(...allMenus.reverse())
+  }
+
+  for (const selector of candidateSelectors) {
+    for (const m of menus) {
+      if (typeof m.querySelector !== 'function') continue
+      const elInItem = m.querySelector<HTMLElement>(`${MENU_ITEM_SELECTOR} ${selector}`)
+      if (elInItem?.className) return String(elInItem.className)
+
+      const elInMenu = m.querySelector<HTMLElement>(selector)
+      if (elInMenu?.className) return String(elInMenu.className)
+    }
+  }
+
+  return ''
 }
 
 function createIconSpan(button: HTMLElement, icon?: string): HTMLElement {
   const doc = button.ownerDocument ?? (typeof document !== 'undefined' ? document : null)
   const iconSpan = doc ? doc.createElement('span') : (button.cloneNode(false) as HTMLElement)
-  const templateClass = findTemplateClass(button, '[class*="itemIcon"], [class*="Icon"]')
+  const templateClass = findTemplateClass(button, ['[class*="itemIcon"]', '[class*="Icon"]'])
   if (templateClass) {
     iconSpan.className = templateClass
   } else {
@@ -111,7 +131,7 @@ function createIconSpan(button: HTMLElement, icon?: string): HTMLElement {
 function createLabelSpan(button: HTMLElement, label: string): HTMLElement {
   const doc = button.ownerDocument ?? (typeof document !== 'undefined' ? document : null)
   const labelSpan = doc ? doc.createElement('span') : (button.cloneNode(false) as HTMLElement)
-  const templateClass = findTemplateClass(button, '[class*="itemLabel"], [class*="Label"]')
+  const templateClass = findTemplateClass(button, ['[class*="itemLabel"]', '[class*="Label"]'])
   if (templateClass) {
     labelSpan.className = templateClass
   } else {
@@ -131,13 +151,15 @@ export function replaceMenuItemContent(
   icon?: string,
 ): void {
   // 1. 清理原有的快捷键与多余角标（任务设置无快捷键，避免残留或误识别为文案）
-  for (const extra of button.querySelectorAll<HTMLElement>('[class*=\"shortcut\"], [class*=\"Shortcut\"], [data-slot=\"shortcut\"]')) {
+  for (const extra of button.querySelectorAll<HTMLElement>('[class*="shortcut"], [class*="Shortcut"], [data-slot="shortcut"]')) {
     extra.remove()
   }
 
-  const explicitIcon = button.querySelector<HTMLElement>('[class*=\"itemIcon\"], [class*=\"Icon\"]')
+  const explicitIcon = button.querySelector<HTMLElement>('[class*="itemIcon"]')
+    ?? button.querySelector<HTMLElement>('[class*="Icon"]')
   const isInsideIcon = (el: Element): boolean => Boolean(explicitIcon && typeof explicitIcon.contains === 'function' && explicitIcon.contains(el))
-  const explicitLabel = (button.querySelector<HTMLElement>('[class*=\"itemLabel\"], [class*=\"Label\"]')
+  const explicitLabel = (button.querySelector<HTMLElement>('[class*="itemLabel"]')
+    ?? button.querySelector<HTMLElement>('[class*="Label"]')
     ?? [...button.querySelectorAll<HTMLElement>('span, div')].find((el) => el !== explicitIcon && !isInsideIcon(el) && (el.textContent ?? '').trim() === templateText)) as HTMLElement | null | undefined
 
   if (explicitIcon && explicitLabel) {
