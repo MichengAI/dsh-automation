@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.2] - 2026-11-24
+
+### Host Compatibility & Stability
+
+- **Support for DeepSeek Harness 0.2.3 host environment**: Added full compatibility and verified support for the latest DSH host releases, ensuring automated tasks, settings, management panel, and sidebar entries continue to operate smoothly and securely after host upgrades.
+
 ## [1.1.1] - 2026-11-21
 
 ### UI & Workspace Menu Improvements
