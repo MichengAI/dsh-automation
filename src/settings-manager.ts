@@ -168,9 +168,18 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
   const checkAuthAndMutation = (request: any, response: any): boolean => {
     const connection = (typeof ctx.get === 'function' ? ctx.get('connection') : undefined) as {
       requestRejection?: (request: { headers: any }) => 401 | 403 | undefined
+      admit?: (request: { headers: any }) => { rejection?: 401 | 403; peer?: any } | undefined
     } | undefined
-    if (typeof connection?.requestRejection === 'function') {
-      const rejection = connection.requestRejection(request)
+    if (connection) {
+      let rejection: 401 | 403 | undefined
+      if (typeof connection.requestRejection === 'function') {
+        rejection = connection.requestRejection(request)
+      } else if (typeof connection.admit === 'function') {
+        const admission = connection.admit(request)
+        if (admission && typeof admission === 'object' && 'rejection' in admission) {
+          rejection = admission.rejection as 401 | 403
+        }
+      }
       if (rejection !== undefined) {
         json(response, rejection, { ok: false, error: rejection === 401 ? '请先登录 DSH / Sign in to DSH first' : '宿主拒绝此请求 / Request forbidden' })
         return false

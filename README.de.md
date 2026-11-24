@@ -76,8 +76,8 @@ Für eine Desktop-Umgebung laden Sie [DSH Codex Desktop](https://github.com/Mich
 
 ## Voraussetzungen
 
-- Host-Kompatibilität: DeepSeek Harness `0.2.x`-Reihe (`>=0.2.2-rc.1 <0.3.0-0`), verifiziert mit `0.2.2-rc.1`–`0.2.2-rc.5`, und vorwärtskompatibel mit nachfolgenden 0.2.x RC-Releases. Hosts auf `0.2.0`/`0.2.1` sollten bei Plugin `1.0.29` verbleiben; Hosts auf `0.1.x` bei Plugin `0.1.66`. Sichern Sie Speicher und Sitzungen im Profil vor dem Host-Upgrade.
-- Offizielle DSH-peerDependencies decken den Bereich `>=0.2.2-rc.1 <0.3.0-0` ab. Entwicklungsabhängigkeiten sind auf `0.2.2-rc.5` festgelegt. Ältere Versionen und inkompatible `0.3.0`-Änderungen werden durch das Versionsgate abgewiesen. `@deepseek-ai/dsh-agent-presets` und `@deepseek-ai/dsh-agent-preset-registry` sind keine Peers, sondern nutzen den Host-Dienst `agentPresets`.
+- Host-Kompatibilität: DeepSeek Harness `0.2.x`-Reihe (`>=0.2.2-rc.1 <0.3.0-0`), verifiziert mit `0.2.2-rc.1`–`0.2.3-alpha.2`, und vorwärtskompatibel mit nachfolgenden 0.2.x RC/Alpha-Releases. Hosts auf `0.2.0`/`0.2.1` sollten bei Plugin `1.0.29` verbleiben; Hosts auf `0.1.x` bei Plugin `0.1.66`. Sichern Sie Speicher und Sitzungen im Profil vor dem Host-Upgrade.
+- Offizielle DSH-peerDependencies decken den Bereich `>=0.2.2-rc.1 <0.3.0-0` ab. Entwicklungsabhängigkeiten sind auf `0.2.3-alpha.2` festgelegt. Ältere Versionen und inkompatible `0.3.0`-Änderungen werden durch das Versionsgate abgewiesen. `@deepseek-ai/dsh-agent-presets` und `@deepseek-ai/dsh-agent-preset-registry` sind keine Peers, sondern nutzen den Host-Dienst `agentPresets`.
 - Andere Versionen liegen außerhalb des deklarierten Bereichs. Strengere Peer-Prüfungen lehnen sie ab.
 - Das Bundle überschreibt nicht den offiziellen Connection-Eintrag. Jeder Host behält seine Abhängigkeiten und Konfiguration; Automation registriert seinen RPC-Kanal im eigenen Plugin-Scope.
 - Eine lauffähige DeepSeek Harness Web-Installation mit `dsh` in PowerShell.

@@ -46,7 +46,7 @@ class FixedAdapter extends LlmAdapter {
   }
 }
 
-const hostVersion = process.env.DSH_TEST_VERSION ?? "0.2.2-rc.5";
+const hostVersion = process.env.DSH_TEST_VERSION ?? "0.2.3-alpha.2";
 const sessionHeaderVersion = 4;
 
 test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动化 RPC`, async (t) => {
@@ -96,9 +96,10 @@ test(`${hostVersion} 真实 Connection 在插件作用域注册和卸载自动�
     },
   ];
   // 先用官方引擎替换配置，再按 Loader 语义合并插件源码依赖，覆盖两个层次。
-  const entries = applyEntryPatches(base, patches, (...args) =>
+  const applied = applyEntryPatches(base, patches, (...args) =>
     warnings.push(args),
   );
+  const entries = Array.isArray(applied) ? applied : applied.data;
   const entry = entries.find((item) => item.id === "connection");
   assert.deepEqual(warnings, []);
   assert.deepEqual(entry?.inject, [startupService], "必须保留官方 Connection 的配置依赖");
@@ -135,7 +136,8 @@ test("自动化补丁保留 Connection 的配置及自定义注入", async () =>
       recovery: { maxRetries: 7 },
     },
   }];
-  const applied = applyEntryPatches(base, patches, () => assert.fail("补丁不应告警"));
+  const appliedResult = applyEntryPatches(base, patches, () => assert.fail("补丁不应告警"));
+  const applied = Array.isArray(appliedResult) ? appliedResult : appliedResult.data;
   assert.deepEqual(applied[0], base[0]);
   assert.notEqual(applied[0], base[0]);
 });

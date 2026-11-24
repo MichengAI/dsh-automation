@@ -12,7 +12,7 @@ import { registerAutomationRpc } from '../src/rpc.ts'
 
 const require = createRequire(import.meta.resolve('@deepseek-ai/cordis-plugin-include'))
 const { default: Loader, EntryTree } = await import(pathToFileURL(require.resolve('@deepseek-ai/cordis-plugin-loader')).href)
-const version = process.env.DSH_TEST_VERSION ?? '0.2.2-rc.5'
+const version = process.env.DSH_TEST_VERSION ?? '0.2.3-alpha.2'
 const startupService = 'webRuntime'
 
 test(`${version} 真实 Loader 保留可信地址表达式并按消费者生命周期卸载 RPC`, async (t) => {
@@ -54,7 +54,8 @@ test(`${version} 真实 Loader 保留可信地址表达式并按消费者生命�
     config: { trustedHosts: { __jsExpr: `ctx.${startupService}.trustedHosts` } },
   }]
   const patches = load(await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8'))
-  const entries = applyEntryPatches(base, patches, () => assert.fail('补丁不应告警'))
+  const appliedResult = applyEntryPatches(base, patches, () => assert.fail('补丁不应告警'))
+  const entries = Array.isArray(appliedResult) ? appliedResult : appliedResult.data
   // 只挂载本测试关注的 Connection；自动化路由使用生产注册函数。
   await tree.root.update([entries[0], { id: 'consumer', name: 'cordis:consumer' }])
   await tree.await()
@@ -74,12 +75,20 @@ test(`${version} 真实 Loader 保留可信地址表达式并按消费者生命�
   await ctx.loader.await()
   assert.deepEqual(configuration?.trustedHosts, trustedHosts)
   assert.ok([...routes].some(route => route.path === '/dsh-automation'))
-  assert.equal(ctx.get('connection').requestRejection({
-    headers: { host: trustedHosts[0], origin: `http://${trustedHosts[0]}` },
-    socket: { remoteAddress: '203.0.113.10' },
-  }), 401, '可信远端仍必须经过官方浏览器认证')
+  const connectionService = ctx.get('connection')
+  const rejection = typeof connectionService?.requestRejection === 'function'
+    ? connectionService.requestRejection({
+        headers: { host: trustedHosts[0], origin: `http://${trustedHosts[0]}` },
+        socket: { remoteAddress: '203.0.113.10' },
+      })
+    : connectionService?.admit({
+        headers: { host: trustedHosts[0], origin: `http://${trustedHosts[0]}` },
+        socket: { remoteAddress: '203.0.113.10' },
+      })?.rejection
+  assert.equal(rejection, 401, '可信远端仍必须经过官方浏览器认证')
   tree.remove('consumer')
   await tree.await()
+  await ctx.loader.await()
   assert.ok(![...routes].some(route => route.path === '/dsh-automation'))
   assert.ok([...routes].some(route => route.path === '/api'), '消费者卸载不应移除官方 API')
 })

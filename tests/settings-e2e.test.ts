@@ -10,7 +10,9 @@ test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', as
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-automation-e2e-'))
 
   let rejectionCode: 401 | 403 | undefined = undefined
+  let connectionMode: 'requestRejection' | 'admit' = 'requestRejection'
   const routes: any[] = []
+
   const mockWebServer = {
     register(route: any) {
       routes.push(route)
@@ -22,6 +24,11 @@ test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', as
     webServer: mockWebServer,
     get(name: string) {
       if (name === 'connection') {
+        if (connectionMode === 'admit') {
+          return {
+            admit: () => (rejectionCode !== undefined ? { rejection: rejectionCode } : {}),
+          }
+        }
         return {
           requestRejection: () => rejectionCode,
         }
@@ -128,6 +135,17 @@ test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', as
     const res10 = await fetch(`${base}/api/michengai/dsh-automation/sidebar-entry`)
     assert.strictEqual(res10.status, 401)
     rejectionCode = undefined
+
+    // 10.1 新版宿主 connection.admit = { rejection: 401 } / { rejection: 403 } 拦截
+    connectionMode = 'admit'
+    rejectionCode = 401
+    const resAdmit401 = await fetch(`${base}/api/michengai/dsh-automation/sidebar-entry`)
+    assert.strictEqual(resAdmit401.status, 401)
+    rejectionCode = 403
+    const resAdmit403 = await fetch(`${base}/api/michengai/dsh-automation/sidebar-entry`)
+    assert.strictEqual(resAdmit403.status, 403)
+    rejectionCode = undefined
+    connectionMode = 'requestRejection'
 
     // 11. 超大 body (70KB > 64KB) -> 413
     const hugeBody = JSON.stringify({ enabled: true, pad: 'x'.repeat(70 * 1024) })

@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
-const versions = ['0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3', '0.2.2-rc.4', '0.2.2-rc.5']
+const versions = ['0.2.2-rc.1', '0.2.2-rc.2', '0.2.2-rc.3', '0.2.2-rc.4', '0.2.2-rc.5', '0.2.3-alpha.1', '0.2.3-alpha.2']
 const versionsToRun = process.env.DSH_MATRIX_ONLY ? process.env.DSH_MATRIX_ONLY.split(',') : versions
 const legacyPreset = '@deepseek-ai/dsh-agent-presets'
 const presetRegistry = '@deepseek-ai/dsh-agent-preset-registry'
@@ -73,7 +73,15 @@ for (const version of versionsToRun) {
   const cwd = join(directory, version)
   await mkdir(cwd)
   try {
-    const toolchain = {
+    const is023 = version.startsWith('0.2.3')
+    const toolchain = is023 ? {
+      '@deepseek-ai/cordis': '4.2.0-alpha.1',
+      '@deepseek-ai/schemastery': '3.20.0-alpha.1',
+      '@deepseek-ai/cordis-plugin-loader': '1.2.0-alpha.1',
+      '@deepseek-ai/cordis-plugin-include': '1.2.0-alpha.1',
+      '@deepseek-ai/cordis-plugin-group': '1.2.0-alpha.1',
+      '@deepseek-ai/cordis-plugin-timer': '1.3.0-alpha.1',
+    } : {
       '@deepseek-ai/cordis': '4.1.0',
       '@deepseek-ai/schemastery': '3.19.0',
       '@deepseek-ai/cordis-plugin-loader': '1.1.0',
