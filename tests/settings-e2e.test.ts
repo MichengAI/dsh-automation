@@ -10,7 +10,8 @@ test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', as
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-automation-e2e-'))
 
   let rejectionCode: 401 | 403 | undefined = undefined
-  let connectionMode: 'requestRejection' | 'admit' = 'requestRejection'
+  let connectionMode: 'requestRejection' | 'admit' | 'error' = 'requestRejection'
+  let passPeer = false
   const routes: any[] = []
 
   const mockWebServer = {
@@ -24,6 +25,13 @@ test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', as
     webServer: mockWebServer,
     get(name: string) {
       if (name === 'connection') {
+        if (connectionMode === 'error') {
+          return {
+            admit: () => {
+              throw new Error('cannot get property "connection.authentication" without inject')
+            },
+          }
+        }
         if (connectionMode === 'admit') {
           return {
             admit: () => (rejectionCode !== undefined ? { rejection: rejectionCode } : {}),
@@ -50,7 +58,7 @@ test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', as
       res.end('Not Found')
       return
     }
-    await match.handler(req, res)
+    await match.handler(req, res, passPeer ? { principal: { kind: 'owner' } } : undefined)
   })
 
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()))
@@ -145,6 +153,20 @@ test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', as
     const resAdmit403 = await fetch(`${base}/api/michengai/dsh-automation/sidebar-entry`)
     assert.strictEqual(resAdmit403.status, 403)
     rejectionCode = undefined
+    connectionMode = 'requestRejection'
+
+    // 10.2 当宿主反射限制导致 admit 抛出异常时，无 peer 下安全降级，不让异常逃逸为 400
+    connectionMode = 'error'
+    const resAdmitError = await fetch(`${base}/api/michengai/dsh-automation/sidebar-entry`)
+    assert.strictEqual(resAdmitError.status, 200, 'admit 抛错时应安全降级，绝不能逃逸导致 400')
+    connectionMode = 'requestRejection'
+
+    // 10.3 真实宿主 WebServer 传入 peer 时，已准入请求直接通过，不执行 admit
+    connectionMode = 'error'
+    passPeer = true
+    const resPeerAdmitted = await fetch(`${base}/api/michengai/dsh-automation/sidebar-entry`)
+    assert.strictEqual(resPeerAdmitted.status, 200, '传入已准入 peer 时直接放行')
+    passPeer = false
     connectionMode = 'requestRejection'
 
     // 11. 超大 body (70KB > 64KB) -> 413

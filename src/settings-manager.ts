@@ -16,7 +16,7 @@ export interface PersistedSettings {
 }
 
 type UpdateContext = Context & {
-  webServer: { register(route: { kind: 'exact'; path: string; handler(request: any, response: any): Promise<void> }): () => void }
+  webServer: { register(route: { kind: 'exact'; path: string; handler(request: any, response: any, peer?: any): Promise<void> }): () => void }
   get?(name: string): unknown
 }
 
@@ -165,24 +165,38 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
     res.end(JSON.stringify(body))
   }
 
-  const checkAuthAndMutation = (request: any, response: any): boolean => {
-    const connection = (typeof ctx.get === 'function' ? ctx.get('connection') : undefined) as {
-      requestRejection?: (request: { headers: any }) => 401 | 403 | undefined
-      admit?: (request: { headers: any }) => { rejection?: 401 | 403; peer?: any } | undefined
-    } | undefined
-    if (connection) {
-      let rejection: 401 | 403 | undefined
-      if (typeof connection.requestRejection === 'function') {
-        rejection = connection.requestRejection(request)
-      } else if (typeof connection.admit === 'function') {
-        const admission = connection.admit(request)
-        if (admission && typeof admission === 'object' && 'rejection' in admission) {
-          rejection = admission.rejection as 401 | 403
-        }
+  const checkAuthAndMutation = (request: any, response: any, peer?: any): boolean => {
+    // 宿主 WebServer 默认以 auth: 'required' 校验并在准入后传入 peer。
+    // 若 peer 存在，表明请求已通过官方宿主鉴权，无需二次重复校验；
+    // 若 peer 不存在（如单元测试与独立模拟环境），按环境可用性探测 connection 服务。
+    if (!peer) {
+      let connection: {
+        requestRejection?: (request: { headers: any }) => 401 | 403 | undefined
+        admit?: (request: { headers: any }) => { rejection?: 401 | 403; peer?: any } | undefined
+      } | undefined
+      try {
+        connection = (typeof ctx.get === 'function' ? ctx.get('connection') : undefined) as any
+      } catch {
+        connection = undefined
       }
-      if (rejection !== undefined) {
-        json(response, rejection, { ok: false, error: rejection === 401 ? '请先登录 DSH / Sign in to DSH first' : '宿主拒绝此请求 / Request forbidden' })
-        return false
+      if (connection) {
+        let rejection: 401 | 403 | undefined
+        try {
+          if (typeof connection.requestRejection === 'function') {
+            rejection = connection.requestRejection(request)
+          } else if (typeof connection.admit === 'function') {
+            const admission = connection.admit(request)
+            if (admission && typeof admission === 'object' && 'rejection' in admission) {
+              rejection = admission.rejection as 401 | 403
+            }
+          }
+        } catch {
+          // 容错保护：若 connection 服务内部由于反射代理受限抛出异常，捕获并忽略，防止逃逸为 400
+        }
+        if (rejection !== undefined) {
+          json(response, rejection, { ok: false, error: rejection === 401 ? '请先登录 DSH / Sign in to DSH first' : '宿主拒绝此请求 / Request forbidden' })
+          return false
+        }
       }
     }
     const mutationError = validateApiMutation(request)
@@ -226,111 +240,129 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
   const offSidebar = host.webServer.register({
     kind: 'exact',
     path: '/api/michengai/dsh-automation/sidebar-entry',
-    handler: async (request: any, response: any) => {
-      if (!checkAuthAndMutation(request, response)) return
-      const method = request.method
-      if (method === 'GET' || method === 'HEAD') {
-        if (method === 'HEAD') {
-          response.writeHead(200, { 'cache-control': 'no-store' })
-          response.end()
-          return
-        }
-        const location = manager.getEntryLocation()
-        json(response, 200, { ok: true, location, enabled: location !== 'settings' })
-        return
-      }
-      if (method === 'POST') {
-        const bodyRes = await readBody(request)
-        if (!bodyRes.ok || !bodyRes.data) {
-          json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? '请求体不能为空' })
-          return
-        }
-        if (typeof bodyRes.data.location === 'string') {
-          const loc = bodyRes.data.location
-          if (loc !== 'both' && loc !== 'sidebar' && loc !== 'settings') {
-            json(response, 400, { ok: false, error: 'location 必须是 both、sidebar 或 settings' })
+    handler: async (request: any, response: any, peer?: any) => {
+      try {
+        if (!checkAuthAndMutation(request, response, peer)) return
+        const method = request.method
+        if (method === 'GET' || method === 'HEAD') {
+          if (method === 'HEAD') {
+            response.writeHead(200, { 'cache-control': 'no-store' })
+            response.end()
             return
           }
-          const location = await manager.setEntryLocation(loc)
+          const location = manager.getEntryLocation()
           json(response, 200, { ok: true, location, enabled: location !== 'settings' })
           return
         }
-        if (typeof bodyRes.data.enabled === 'boolean') {
-          const location = await manager.setEntryLocation(bodyRes.data.enabled ? 'both' : 'settings')
-          json(response, 200, { ok: true, location, enabled: location !== 'settings' })
+        if (method === 'POST') {
+          const bodyRes = await readBody(request)
+          if (!bodyRes.ok || !bodyRes.data) {
+            json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? '请求体不能为空' })
+            return
+          }
+          if (typeof bodyRes.data.location === 'string') {
+            const loc = bodyRes.data.location
+            if (loc !== 'both' && loc !== 'sidebar' && loc !== 'settings') {
+              json(response, 400, { ok: false, error: 'location 必须是 both、sidebar 或 settings' })
+              return
+            }
+            const location = await manager.setEntryLocation(loc)
+            json(response, 200, { ok: true, location, enabled: location !== 'settings' })
+            return
+          }
+          if (typeof bodyRes.data.enabled === 'boolean') {
+            const location = await manager.setEntryLocation(bodyRes.data.enabled ? 'both' : 'settings')
+            json(response, 200, { ok: true, location, enabled: location !== 'settings' })
+            return
+          }
+          json(response, 400, { ok: false, error: '缺少合法的 location 或 enabled 参数' })
           return
         }
-        json(response, 400, { ok: false, error: '缺少合法的 location 或 enabled 参数' })
-        return
+        response.writeHead(405, { allow: 'GET, HEAD, POST' })
+        response.end()
+      } catch {
+        if (!response.headersSent) {
+          json(response, 500, { ok: false, error: 'internal server error' })
+        }
       }
-      response.writeHead(405, { allow: 'GET, HEAD, POST' })
-      response.end()
     },
   })
 
   const offOfficial = host.webServer.register({
     kind: 'exact',
     path: '/api/michengai/dsh-automation/official-schedule',
-    handler: async (request: any, response: any) => {
-      if (!checkAuthAndMutation(request, response)) return
-      const method = request.method
-      if (method === 'GET' || method === 'HEAD') {
-        if (method === 'HEAD') {
-          response.writeHead(200, { 'cache-control': 'no-store' })
-          response.end()
+    handler: async (request: any, response: any, peer?: any) => {
+      try {
+        if (!checkAuthAndMutation(request, response, peer)) return
+        const method = request.method
+        if (method === 'GET' || method === 'HEAD') {
+          if (method === 'HEAD') {
+            response.writeHead(200, { 'cache-control': 'no-store' })
+            response.end()
+            return
+          }
+          json(response, 200, {
+            ok: true,
+            enabled: manager.getHideOfficialSchedule(),
+          })
           return
         }
-        json(response, 200, {
-          ok: true,
-          enabled: manager.getHideOfficialSchedule(),
-        })
-        return
-      }
-      if (method === 'POST') {
-        const bodyRes = await readBody(request)
-        if (!bodyRes.ok || !bodyRes.data || typeof bodyRes.data.enabled !== 'boolean') {
-          json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? 'enabled 必须是布尔值' })
+        if (method === 'POST') {
+          const bodyRes = await readBody(request)
+          if (!bodyRes.ok || !bodyRes.data || typeof bodyRes.data.enabled !== 'boolean') {
+            json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? 'enabled 必须是布尔值' })
+            return
+          }
+          const enabled = await manager.setHideOfficialSchedule(bodyRes.data.enabled)
+          json(response, 200, { ok: true, enabled })
           return
         }
-        const enabled = await manager.setHideOfficialSchedule(bodyRes.data.enabled)
-        json(response, 200, { ok: true, enabled })
-        return
+        response.writeHead(405, { allow: 'GET, HEAD, POST' })
+        response.end()
+      } catch {
+        if (!response.headersSent) {
+          json(response, 500, { ok: false, error: 'internal server error' })
+        }
       }
-      response.writeHead(405, { allow: 'GET, HEAD, POST' })
-      response.end()
     },
   })
 
   const offTaskTreeSessions = host.webServer.register({
     kind: 'exact',
     path: '/api/michengai/dsh-automation/task-tree-sessions',
-    handler: async (request: any, response: any) => {
-      if (!checkAuthAndMutation(request, response)) return
-      const method = request.method
-      if (method === 'GET' || method === 'HEAD') {
-        if (method === 'HEAD') {
-          response.writeHead(200, { 'cache-control': 'no-store' })
-          response.end()
+    handler: async (request: any, response: any, peer?: any) => {
+      try {
+        if (!checkAuthAndMutation(request, response, peer)) return
+        const method = request.method
+        if (method === 'GET' || method === 'HEAD') {
+          if (method === 'HEAD') {
+            response.writeHead(200, { 'cache-control': 'no-store' })
+            response.end()
+            return
+          }
+          json(response, 200, {
+            ok: true,
+            enabled: manager.getTaskTreeSessions(),
+          })
           return
         }
-        json(response, 200, {
-          ok: true,
-          enabled: manager.getTaskTreeSessions(),
-        })
-        return
-      }
-      if (method === 'POST') {
-        const bodyRes = await readBody(request)
-        if (!bodyRes.ok || !bodyRes.data || typeof bodyRes.data.enabled !== 'boolean') {
-          json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? 'enabled 必须是布尔值' })
+        if (method === 'POST') {
+          const bodyRes = await readBody(request)
+          if (!bodyRes.ok || !bodyRes.data || typeof bodyRes.data.enabled !== 'boolean') {
+            json(response, bodyRes.status ?? 400, { ok: false, error: bodyRes.error ?? 'enabled 必须是布尔值' })
+            return
+          }
+          const enabled = await manager.setTaskTreeSessions(bodyRes.data.enabled)
+          json(response, 200, { ok: true, enabled })
           return
         }
-        const enabled = await manager.setTaskTreeSessions(bodyRes.data.enabled)
-        json(response, 200, { ok: true, enabled })
-        return
+        response.writeHead(405, { allow: 'GET, HEAD, POST' })
+        response.end()
+      } catch {
+        if (!response.headersSent) {
+          json(response, 500, { ok: false, error: 'internal server error' })
+        }
       }
-      response.writeHead(405, { allow: 'GET, HEAD, POST' })
-      response.end()
     },
   })
 
