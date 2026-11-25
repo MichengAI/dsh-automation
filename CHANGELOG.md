@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3] - 2026-11-25
+
+### Stability & Performance Improvements
+
+- **Sidebar and task list data loading fix**: Resolved an issue where accessing the automation sidebar entry, scheduled tasks, and session lists could occasionally fail to load UI data on certain host environments. All automation views, scheduled states, and task sessions now reliably load and refresh in real time.
+- **Host communication reliability**: Enhanced communication stability and error handling across DSH host environments, ensuring uninterrupted background task scheduling and management panel operations.
+
 ## [1.1.2] - 2026-11-24
 
 ### Host Compatibility & Stability
