@@ -24,6 +24,7 @@ import PermissionPresets from "@deepseek-ai/dsh-permission-presets";
 import * as Connection from "@deepseek-ai/dsh-client-connection";
 import { apply as applyAutomation, inject as automationInject } from "../src/index.ts";
 import { registerAutomationRpc } from "../src/rpc.ts";
+import { registerSettingsApi, SettingsManager } from "../src/settings-manager.ts";
 import { createDefinition, createScheduledRun } from "../src/domain.ts";
 import { executeAutomationRun } from "../src/executor.ts";
 
@@ -382,4 +383,71 @@ test(`${hostVersion} 真实 AgentRegistry 下 apply 正常启动并仅向根会�
   assert.ok(ctx.tools.get("automation_create", liveRoot.agent) !== undefined);
   assert.equal(ctx.tools.get("automation_create", liveChild.agent), undefined);
   assert.equal(ctx.tools.get("automation_create", ownedAutomation.agent), undefined);
+});
+
+test(`${hostVersion} 真实 Connection 下 WebServer 路由放行已准入 peer 并对反射限制安全降级`, async (t) => {
+  const rootCtx = new Context();
+  const stateDir = mkdtempSync(join(tmpdir(), "dsh-automation-compat-routes-"));
+  t.after(async () => {
+    await rootCtx.fiber.dispose();
+    rmSync(stateDir, { recursive: true, force: true });
+  });
+
+  const startupService = "webRuntime";
+  rootCtx.provide(startupService, { trustedHosts: ["127.0.0.1"] });
+  await rootCtx.plugin(Connection, { trustedHosts: ["127.0.0.1"] });
+
+  const routes = [];
+  rootCtx.provide("webServer", {
+    register: (route) => {
+      routes.push(route);
+      return () => {};
+    },
+  });
+
+  let pluginCtx;
+  await rootCtx.plugin({
+    inject: ["connection", "webServer"],
+    apply(c) {
+      pluginCtx = c;
+      const manager = new SettingsManager({ ctx: c, stateDir });
+      registerSettingsApi(c, manager);
+    },
+  });
+
+  // 1. 验证真宿主差异：在插件 fiber 下直接调 connection.admit 会抛出 without inject
+  assert.throws(
+    () => pluginCtx.connection.admit({ headers: { host: "127.0.0.1" }, url: "http://127.0.0.1/" }),
+    /cannot get property "connection\.authentication" without inject/,
+  );
+
+  // 2. 找到注册的 sidebar-entry 路由
+  const sidebarRoute = routes.find((r) => r.path === "/api/michengai/dsh-automation/sidebar-entry");
+  assert.ok(sidebarRoute, "必须成功注册 sidebar-entry 路由");
+
+  // 3. 真实 WebServer 准入 (有 peer): 必须直接放行返回 200，绝不触发 connection.admit
+  let writtenData = "";
+  let statusCode = 0;
+  const fakeRes1 = {
+    writeHead(code) { statusCode = code; },
+    end(data) { if (data) writtenData += data; },
+  };
+  const fakeReq1 = { method: "GET", headers: { host: "127.0.0.1" } };
+  await sidebarRoute.handler(fakeReq1, fakeRes1, { principal: { kind: "owner" } });
+  assert.equal(statusCode, 200);
+  const parsed1 = JSON.parse(writtenData);
+  assert.equal(parsed1.ok, true);
+
+  // 4. 无 peer 传入时: 容错捕获，绝不向外抛出未捕获异常
+  writtenData = "";
+  statusCode = 0;
+  const fakeRes2 = {
+    writeHead(code) { statusCode = code; },
+    end(data) { if (data) writtenData += data; },
+  };
+  const fakeReq2 = { method: "GET", headers: { host: "127.0.0.1" } };
+  await sidebarRoute.handler(fakeReq2, fakeRes2, undefined);
+  assert.equal(statusCode, 200);
+  const parsed2 = JSON.parse(writtenData);
+  assert.equal(parsed2.ok, true);
 });

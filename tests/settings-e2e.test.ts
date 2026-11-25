@@ -12,6 +12,8 @@ test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', as
   let rejectionCode: 401 | 403 | undefined = undefined
   let connectionMode: 'requestRejection' | 'admit' | 'error' = 'requestRejection'
   let passPeer = false
+  let admitCalls = 0
+  let requestRejectionCalls = 0
   const routes: any[] = []
 
   const mockWebServer = {
@@ -28,17 +30,24 @@ test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', as
         if (connectionMode === 'error') {
           return {
             admit: () => {
+              admitCalls++
               throw new Error('cannot get property "connection.authentication" without inject')
             },
           }
         }
         if (connectionMode === 'admit') {
           return {
-            admit: () => (rejectionCode !== undefined ? { rejection: rejectionCode } : {}),
+            admit: () => {
+              admitCalls++
+              return rejectionCode !== undefined ? { rejection: rejectionCode } : {}
+            },
           }
         }
         return {
-          requestRejection: () => rejectionCode,
+          requestRejection: () => {
+            requestRejectionCalls++
+            return rejectionCode
+          },
         }
       }
       return undefined
@@ -161,13 +170,25 @@ test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', as
     assert.strictEqual(resAdmitError.status, 200, 'admit 抛错时应安全降级，绝不能逃逸导致 400')
     connectionMode = 'requestRejection'
 
-    // 10.3 真实宿主 WebServer 传入 peer 时，已准入请求直接通过，不执行 admit
-    connectionMode = 'error'
+    // 10.3 真实宿主 WebServer 传入 peer 时，已准入请求直接放行，跳过底层 connection 检查（强差分力）
+    // 验证无论处于 admit 模式还是 requestRejection 模式且设定 401 拒绝，有 peer 时均直接放行且不调用底层鉴权
+    connectionMode = 'admit'
+    rejectionCode = 401
+    admitCalls = 0
     passPeer = true
     const resPeerAdmitted = await fetch(`${base}/api/michengai/dsh-automation/sidebar-entry`)
-    assert.strictEqual(resPeerAdmitted.status, 200, '传入已准入 peer 时直接放行')
-    passPeer = false
+    assert.strictEqual(resPeerAdmitted.status, 200, '传入已准入 peer 时直接放行，底层 rejection=401 不被执行')
+    assert.strictEqual(admitCalls, 0, '传入 peer 时严禁触发 connection.admit')
+
     connectionMode = 'requestRejection'
+    rejectionCode = 401
+    requestRejectionCalls = 0
+    const resPeerRejection = await fetch(`${base}/api/michengai/dsh-automation/sidebar-entry`)
+    assert.strictEqual(resPeerRejection.status, 200, '传入已准入 peer 时直接放行，底层 requestRejection=401 不被执行')
+    assert.strictEqual(requestRejectionCalls, 0, '传入 peer 时严禁触发 connection.requestRejection')
+
+    passPeer = false
+    rejectionCode = undefined
 
     // 11. 超大 body (70KB > 64KB) -> 413
     const hugeBody = JSON.stringify({ enabled: true, pad: 'x'.repeat(70 * 1024) })
