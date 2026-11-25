@@ -190,8 +190,11 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
               rejection = admission.rejection as 401 | 403
             }
           }
-        } catch {
-          // 容错保护：若 connection 服务内部由于反射代理受限抛出异常，捕获并忽略，防止逃逸为 400
+        } catch (error) {
+          // 容错保护：若 connection 服务内部由于反射代理受限抛出异常，捕获并记录警告日志，防止逃逸为 400
+          try {
+            ctx.logger?.warn?.(`dsh-automation: connection admission check degraded: ${error instanceof Error ? error.message : String(error)}`)
+          } catch {}
         }
         if (rejection !== undefined) {
           json(response, rejection, { ok: false, error: rejection === 401 ? '请先登录 DSH / Sign in to DSH first' : '宿主拒绝此请求 / Request forbidden' })
@@ -280,7 +283,10 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
         }
         response.writeHead(405, { allow: 'GET, HEAD, POST' })
         response.end()
-      } catch {
+      } catch (error) {
+        try {
+          ctx.logger?.warn?.(`dsh-automation: webServer sidebar-entry handler error: ${error instanceof Error ? error.message : String(error)}`)
+        } catch {}
         if (!response.headersSent) {
           json(response, 500, { ok: false, error: 'internal server error' })
         }
@@ -319,7 +325,10 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
         }
         response.writeHead(405, { allow: 'GET, HEAD, POST' })
         response.end()
-      } catch {
+      } catch (error) {
+        try {
+          ctx.logger?.warn?.(`dsh-automation: webServer official-schedule handler error: ${error instanceof Error ? error.message : String(error)}`)
+        } catch {}
         if (!response.headersSent) {
           json(response, 500, { ok: false, error: 'internal server error' })
         }
@@ -358,7 +367,10 @@ export function registerSettingsApi(ctx: Context, manager: SettingsManager): () 
         }
         response.writeHead(405, { allow: 'GET, HEAD, POST' })
         response.end()
-      } catch {
+      } catch (error) {
+        try {
+          ctx.logger?.warn?.(`dsh-automation: webServer task-tree-sessions handler error: ${error instanceof Error ? error.message : String(error)}`)
+        } catch {}
         if (!response.headersSent) {
           json(response, 500, { ok: false, error: 'internal server error' })
         }

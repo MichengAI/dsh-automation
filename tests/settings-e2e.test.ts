@@ -6,7 +6,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { registerSettingsApi, SettingsManager } from '../src/settings-manager.ts'
 
-test('SettingsManager HTTP API 真实服务端端到端 (15项用例覆盖)', async () => {
+test('SettingsManager HTTP API 真实服务端端到端 (完整用例覆盖)', async () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-automation-e2e-'))
 
   let rejectionCode: 401 | 403 | undefined = undefined
